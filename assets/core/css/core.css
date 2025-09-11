@@ -16,8 +16,8 @@
     --cor-perigo-hover: #c82333;
     --fonte-principal: 'Poppins', sans-serif;
     --header-height: 85px;
-    --sidebar-width-expanded: 260px; /* Largura do menu aberto */
-    --sidebar-width-collapsed: 80px;  /* Largura do menu fechado */
+    --sidebar-width-expanded: 260px;
+    --sidebar-width-collapsed: 80px;
 }
 
 /* --- Base e Reset --- */
@@ -84,7 +84,13 @@ body {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    visibility: hidden; /* ✅ Esconde a página por padrão */
 }
+/* ✅ Torna a página visível quando o JS adicionar a classe */
+.internal-page-body.body-visible {
+    visibility: visible;
+}
+
 
 .internal-page-body .dashboard-header {
     flex-shrink: 0;
@@ -118,7 +124,7 @@ body {
 }
 
 .sidebar {
-    width: var(--sidebar-width-expanded); /* Começa aberto */
+    width: var(--sidebar-width-expanded);
     flex-shrink: 0;
     background-color: var(--cor-primaria-escura);
     color: var(--cor-texto-claro);
@@ -130,19 +136,12 @@ body {
     flex-grow: 1;
     padding: 30px;
     overflow-y: auto;
-    /* A margem agora é controlada pelo estado do container principal */
     transition: margin-left 0.3s ease; 
 }
 
-/* Estado Fechado: aplica as mudanças quando a classe .sidebar-collapsed está no container */
 .app-container.sidebar-collapsed .sidebar {
     width: var(--sidebar-width-collapsed);
 }
-
-.app-container.sidebar-collapsed + .main-container-panel .content-panel {
-    /* Esta regra pode precisar de ajuste dependendo da estrutura final do JS, mas a ideia é ajustar a margem */
-}
-
 
 /* ==========================================================================
    COMPONENTES
@@ -238,7 +237,7 @@ body {
 }
 
 .sidebar-menu .nav-button svg {
-    flex-shrink: 0; /* Impede que o ícone seja esmagado */
+    flex-shrink: 0;
 }
 
 .sidebar-menu .nav-button .nav-text {
@@ -246,7 +245,6 @@ body {
     transition: opacity 0.2s ease;
 }
 
-/* Estilos para o estado fechado */
 .app-container.sidebar-collapsed .sidebar {
     width: var(--sidebar-width-collapsed);
 }
@@ -426,15 +424,15 @@ body:has(#login-view) {
         grid-template-columns: 1fr;
     }
     .content-panel {
-        margin-left: 0; /* Remove a margem pois a sidebar some */
+        margin-left: 0;
     }
     .sidebar {
-        display: none; /* Em telas muito pequenas, o menu some completamente */
+        display: none;
     }
     .internal-page-body .dashboard-header {
-        height: auto; /* Altura automática no mobile */
+        height: auto;
     }
     #sidebar-toggle-btn {
-        display: none; /* Esconde o botão de toggle no mobile, pois o menu já está escondido */
+        display: none;
     }
 }
