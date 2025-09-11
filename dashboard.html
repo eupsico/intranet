@@ -21,11 +21,10 @@
     
                 <header class="dashboard-header">
                     <div class="welcome-message">
-                        <h1 id="welcome-title">Bem-vindo(a) à Intranet EuPsico!</h1>
-                        <p>Aqui você encontra as principais ferramentas e informações do seu dia a dia.</p>
+                        <h1 id="welcome-title">Bem-vindo(a)!</h1>
                     </div>
                     <div class="user-profile-header">
-                        <img id="user-photo-header" src="https://i.ibb.co/61Ym24n/default-user.png" alt="Foto do usuário">
+                        <img id="user-photo-header" src="" alt="Foto do usuário">
                         <span id="user-email-header">carregando...</span>
                         <a href="#" id="logout-button-dashboard" class="btn btn-danger">Sair</a>
                     </div>
@@ -35,7 +34,8 @@
                     <div class="section-header">
                         <h2>Sobre Nós</h2>
                     </div>
-                    </section>
+                    <p>A EuPsico é um Grupo de Atendimento Multidisciplinar que nasceu em Abril de 2010...</p>
+                </section>
 
                 <section id="quick-access-modules" class="dashboard-section">
                     <div class="section-header">
@@ -46,21 +46,7 @@
                     </div>
                 </section>
 
-                <section id="announcements-section" class="dashboard-section">
-                    <div class="section-header">
-                        <h2>Últimos Avisos</h2>
-                    </div>
-                    <div id="announcements-list">
-                        <p>Em breve, os comunicados mais recentes aparecerão aqui.</p>
-                    </div>
-                </section>
-                
                 <footer class="main-footer">
-                    <p>Avenida Inocêncio Serafico, 141, Centro de Carapicuíba - SP, 06320-290</p>
-                    <p>
-                        <a href="https://wa.me/5511997949074" target="_blank" rel="noopener noreferrer">WhatsApp (11) 99794-9074</a> | 
-                        <a href="mailto:atendimento@eupsico.org.br">atendimento@eupsico.org.br</a>
-                    </p>
                     <p>&copy; 2025 EuPsico. Todos os direitos reservados.</p>
                 </footer>
             </div>
@@ -71,6 +57,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     
+    <script src="./assets/js/firebase-config.js"></script>
     <script type="module" src="./assets/js/app.js"></script>
 </body>
 </html>
