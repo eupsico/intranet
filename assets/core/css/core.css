@@ -15,7 +15,9 @@
     --cor-perigo: #dc3545;
     --cor-perigo-hover: #c82333;
     --fonte-principal: 'Poppins', sans-serif;
-    --header-height: 85px; /* Altura do cabeçalho */
+    --header-height: 85px;
+    --sidebar-width-expanded: 260px; /* Largura do menu aberto */
+    --sidebar-width-collapsed: 80px;  /* Largura do menu fechado */
 }
 
 /* --- Base e Reset --- */
@@ -76,43 +78,70 @@ body {
     margin-bottom: 30px;
 }
 
-/* --- ✅ INÍCIO DA CORREÇÃO: Layout do Painel Interno (com Sidebar) --- */
-
-/* Esta classe será adicionada no body das páginas internas */
+/* --- Layout do Painel Interno Retrátil --- */
 .internal-page-body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    overflow: hidden; /* Previne barras de rolagem duplas */
+    overflow: hidden;
 }
 
-/* Ajusta o header para as páginas internas (sem borda arredondada) */
 .internal-page-body .dashboard-header {
     flex-shrink: 0;
     height: var(--header-height);
+    padding-left: 15px;
+}
+
+.header-left-panel {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#sidebar-toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--cor-texto-claro);
+    cursor: pointer;
+    padding: 5px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+#sidebar-toggle-btn:hover {
+    opacity: 1;
 }
 
 .main-container-panel {
     display: flex;
-    flex-grow: 1; /* Ocupa o resto da altura da tela */
-    overflow: hidden; /* Previne que o container vaze */
+    flex-grow: 1;
+    overflow: hidden;
 }
 
 .sidebar {
-    width: 250px;
-    flex-shrink: 0; /* Impede o menu de encolher */
+    width: var(--sidebar-width-expanded); /* Começa aberto */
+    flex-shrink: 0;
     background-color: var(--cor-primaria-escura);
     color: var(--cor-texto-claro);
-    padding: 24px 0;
-    overflow-y: auto; /* Adiciona rolagem SÓ no menu se ele for muito grande */
+    overflow-y: auto;
+    transition: width 0.3s ease;
 }
 
 .content-panel {
-    flex-grow: 1; /* Ocupa todo o resto da largura */
+    flex-grow: 1;
     padding: 30px;
-    overflow-y: auto; /* Adiciona rolagem SÓ na área de conteúdo */
+    overflow-y: auto;
+    /* A margem agora é controlada pelo estado do container principal */
+    transition: margin-left 0.3s ease; 
 }
-/* --- ✅ FIM DA CORREÇÃO --- */
+
+/* Estado Fechado: aplica as mudanças quando a classe .sidebar-collapsed está no container */
+.app-container.sidebar-collapsed .sidebar {
+    width: var(--sidebar-width-collapsed);
+}
+
+.app-container.sidebar-collapsed + .main-container-panel .content-panel {
+    /* Esta regra pode precisar de ajuste dependendo da estrutura final do JS, mas a ideia é ajustar a margem */
+}
 
 
 /* ==========================================================================
@@ -171,6 +200,69 @@ body {
     padding: 20px;
 }
 
+/* --- Menu Lateral e Navegação Interna --- */
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-menu .nav-button {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: #aebfd1;
+    padding: 15px 25px;
+    text-align: left;
+    font-size: 1em;
+    font-family: var(--fonte-principal);
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-menu a.nav-button {
+    text-decoration: none;
+}
+
+.sidebar-menu .nav-button:hover, 
+.sidebar-menu .nav-button.active {
+    background-color: var(--cor-primaria);
+    color: white;
+    border-left-color: var(--cor-secundaria);
+}
+
+.sidebar-menu .nav-button svg {
+    flex-shrink: 0; /* Impede que o ícone seja esmagado */
+}
+
+.sidebar-menu .nav-button .nav-text {
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+/* Estilos para o estado fechado */
+.app-container.sidebar-collapsed .sidebar {
+    width: var(--sidebar-width-collapsed);
+}
+
+.app-container.sidebar-collapsed .nav-button {
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.app-container.sidebar-collapsed .nav-text {
+    opacity: 0;
+    width: 0;
+    position: absolute;
+}
+
+
 /* --- Outros Componentes --- */
 .section-header {
     margin-bottom: 25px;
@@ -211,7 +303,6 @@ body:has(#login-view) {
     background-color: var(--cor-fundo);
 }
 
-/* --- Estilos para Login e Acesso Negado --- */
 .login-card, .access-denied-card {
     background-color: var(--cor-surface);
     padding: 40px 30px;
@@ -321,7 +412,6 @@ body:has(#login-view) {
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
-
 /* ==========================================================================
    RESPONSIVIDADE
    ========================================================================== */
@@ -336,10 +426,15 @@ body:has(#login-view) {
         grid-template-columns: 1fr;
     }
     .content-panel {
-        margin-left: 0;
-        padding: 20px;
+        margin-left: 0; /* Remove a margem pois a sidebar some */
     }
     .sidebar {
-        display: none;
+        display: none; /* Em telas muito pequenas, o menu some completamente */
+    }
+    .internal-page-body .dashboard-header {
+        height: auto; /* Altura automática no mobile */
+    }
+    #sidebar-toggle-btn {
+        display: none; /* Esconde o botão de toggle no mobile, pois o menu já está escondido */
     }
 }
