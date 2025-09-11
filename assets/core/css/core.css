@@ -235,21 +235,18 @@ body:has(#login-view) {
    ESTILOS DE GRID PARA O DASHBOARD
    ========================================================================== */
 
-/* Coloca os cards de Missão, Visão e Valores lado a lado */
 .mission-vision-values {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 25px;
 }
 
-/* Coloca os módulos de Acesso Rápido em formato de cards lado a lado */
 .modules-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 25px;
 }
 
-/* Adiciona estilo aos itens da lista de Valores */
 .info-card ul { 
     list-style: none; 
     padding: 0; 
@@ -269,6 +266,51 @@ body:has(#login-view) {
 }
 
 /* ==========================================================================
+   COMPONENTES DE PÁGINAS INTERNAS
+   ========================================================================== */
+
+/* --- Menu Secundário do Módulo (Abas) --- */
+.module-nav {
+    display: flex;
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 24px;
+    overflow-x: auto; /* Garante rolagem em telas pequenas */
+}
+
+.module-nav .nav-button {
+    background: none;
+    border: none;
+    padding: 12px 18px;
+    cursor: pointer;
+    font-size: 1em;
+    font-family: var(--fonte-principal);
+    color: var(--cor-texto-suave);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px; /* Alinha a borda com a borda do container */
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.module-nav .nav-button:hover {
+    color: var(--cor-texto);
+}
+
+.module-nav .nav-button.active {
+    color: var(--cor-primaria);
+    font-weight: 600;
+    border-bottom-color: var(--cor-primaria);
+}
+
+/* --- Área de Conteúdo do Módulo --- */
+.module-content-area {
+    background-color: var(--cor-surface);
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+
+/* ==========================================================================
    RESPONSIVIDADE
    ========================================================================== */
 
@@ -283,6 +325,7 @@ body:has(#login-view) {
     }
     .content-panel {
         margin-left: 0;
+        padding: 20px;
     }
     .sidebar {
         display: none;
