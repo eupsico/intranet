@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel Financeiro - Intranet EuPsico</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../../assets/core/css/core.css">
+    
+    <link rel="stylesheet" href="../css/painel.css"> 
+
+    <link rel="icon" type="image/png" href="../../../favicon.png"> 
+</head>
+<body>
+    <div id="app">
+
+        <header class="dashboard-header">
+            <div class="welcome-message">
+                <h1 id="welcome-title">Painel Financeiro</h1>
+            </div>
+            <div class="user-profile-header">
+                <img id="user-photo-header" src="" alt="Foto do usuário">
+                <span id="user-email-header">carregando...</span>
+                <a href="#" id="logout-button-dashboard" class="btn btn-danger">Sair</a>
+            </div>
+        </header>
+
+        <div class="main-container-panel">
+            
+            <aside class="sidebar">
+                <ul id="global-nav-menu">
+                    <li><a href="../../../dashboard.html">Dashboard</a></li>
+                    <li class="active"><a href="#">Financeiro</a></li>
+                    <li><a href="#">Recursos Humanos</a></li>
+                    </ul>
+            </aside>
+
+            <main class="content-panel">
+                
+                <nav class="module-nav">
+                    <button class="nav-button active" data-view="dashboard">Dashboard</button>
+                    <button class="nav-button" data-view="gestao_profissionais">Gestão de Profissionais</button>
+                    <button class="nav-button" data-view="resumo_horas">Resumo de Horas</button>
+                    <button class="nav-button" data-view="cobranca_mensal">Cobrança Mensal</button>
+                    <button class="nav-button" data-view="controle_pagamentos">Controle de Pagamentos</button>
+                    <button class="nav-button" data-view="devedores">Devedores</button>
+                    <button class="nav-button" data-view="acordos">Acordos</button>
+                    <button class="nav-button" data-view="lancamentos">Lançamentos</button>
+                    <button class="nav-button" data-view="envio_comprovantes">Envio de Comprovantes</button>
+                    <button class="nav-button" data-view="repasse">Repasse</button>
+                    <button class="nav-button" data-view="relatorios">Relatórios</button>
+                </nav>
+
+                <div id="content-area" class="module-content-area">
+                    <h2>Carregando...</h2>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    
+    <script src="../../../assets/js/firebase-config.js"></script>
+    <script type="module" src="../js/painel-script.js"></script>
+
+</body>
+</html>
