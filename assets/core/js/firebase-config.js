@@ -1,4 +1,7 @@
-// src/assets/js/firebase-config.js
+// Importa as funções que precisamos do SDK do Firebase
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Suas credenciais do Firebase ficam isoladas aqui.
 const firebaseConfig = {
@@ -12,9 +15,9 @@ const firebaseConfig = {
 };
 
 // Inicializa o Firebase
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
-// Exporta as instâncias que serão usadas em outros lugares do app
-export const auth = firebase.auth();
-export const db = firebase.firestore();
-export const rtdb = firebase.database();
+// Inicializa os serviços que vamos usar e os exporta
+// para que outros scripts possam importá-los
+export const auth = getAuth(app);
+export const db = getFirestore(app);
