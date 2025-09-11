@@ -1,0 +1,185 @@
+// assets/js/app.js
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// --- LÓGICA DE CONTROLE DE PÁGINA ---
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const isLoginPage = !!document.getElementById('login-view');
+    const isDashboardPage = !!document.getElementById('dashboard-view');
+
+    auth.onAuthStateChanged(async (user) => {
+        try {
+            if (user) {
+                // --- USUÁRIO ESTÁ LOGADO ---
+                if (isLoginPage) {
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+                
+                const userDoc = await db.collection("usuarios").doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().funcoes?.length > 0) {
+                    const userData = userDoc.data();
+                    if (isDashboardPage) {
+                        renderDashboard(user, userData);
+                    }
+                    setupInactivityListeners();
+                } else {
+                    renderAccessDenied();
+                }
+
+            } else {
+                // --- USUÁRIO ESTÁ DESLOGADO ---
+                if (!isLoginPage) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                renderLogin();
+            }
+        } catch (error) {
+            console.error("Erro no handleAuth:", error);
+            renderLogin("Ocorreu um erro ao verificar suas permissões.");
+            auth.signOut();
+        }
+    });
+});
+
+// --- FUNÇÕES GLOBAIS ---
+
+let inactivityTimer;
+
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+        alert("Você foi desconectado por inatividade.");
+        auth.signOut();
+    }, 20 * 60 * 1000); // 20 minutos
+}
+
+function setupInactivityListeners() {
+    ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'].forEach(event => 
+        window.addEventListener(event, resetInactivityTimer)
+    );
+    resetInactivityTimer();
+}
+
+function renderLogin(message = "Por favor, faça login para continuar.") {
+    const loginView = document.getElementById('login-view');
+    if (!loginView) return;
+
+    loginView.innerHTML = `
+        <div class="login-card">
+            <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+            <h2>Intranet EuPsico</h2>
+            <p>${message}</p>
+            <button id="login-button" class="btn btn-primary">Login com Google</button>
+        </div>
+    `;
+    document.getElementById('login-button').addEventListener('click', () => {
+        loginView.innerHTML = `<p>Aguarde...</p>`;
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(error => console.error(error));
+    });
+}
+
+function renderAccessDenied() {
+    document.body.innerHTML = `
+        <div class="access-denied-card">
+            <h2>Acesso Negado</h2>
+            <p>Você está autenticado, mas seu usuário não tem permissões. Contate o administrador.</p>
+            <button id="denied-logout" class="btn btn-danger">Sair</button>
+        </div>
+    `;
+    document.getElementById('denied-logout').addEventListener('click', () => auth.signOut());
+}
+
+function renderDashboard(user, userData) {
+    const welcomeTitle = document.getElementById('welcome-title');
+    const userPhoto = document.getElementById('user-photo-header');
+    const userEmail = document.getElementById('user-email-header');
+    const logoutButton = document.getElementById('logout-button-dashboard');
+
+    if (welcomeTitle) {
+        const firstName = userData.nome ? userData.nome.split(' ')[0] : '';
+        welcomeTitle.textContent = `Bem-vindo(a), ${firstName}!`;
+    }
+    if (userPhoto) userPhoto.src = user.photoURL || 'https://i.ibb.co/61Ym24n/default-user.png';
+    if (userEmail) userEmail.textContent = user.email;
+    if (logoutButton) logoutButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        auth.signOut();
+    });
+
+    renderModuleCards(userData);
+}
+
+function renderModuleCards(userData) {
+    const navLinks = document.getElementById('nav-links');
+    if (!navLinks) return;
+    navLinks.innerHTML = '';
+    
+    const icons = {
+        intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
+        administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
+        captacao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
+        financeiro: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+        grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+        marketing: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
+        plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`,
+        rh: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
+        servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+        supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    };
+
+    const areas = {
+        portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modules/portal-voluntario/painel.html', roles: ['todos'], icon: icons.intranet },
+        administrativo: { titulo: 'Administrativo', descricao: 'Processos, documentos e a organização da equipe.', url: './modules/administrativo/painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
+        captacao: { titulo: 'Captação', descricao: 'Ferramentas e informações para captação.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
+        financeiro: { titulo: 'Financeiro', descricao: 'Acesso ao painel de controle financeiro e relatórios.', url: './modules/financeiro/painel.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
+        grupos: { titulo: 'Grupos', descricao: 'Informações e materiais para grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
+        marketing: { titulo: 'Marketing', descricao: 'Materiais de marketing e campanhas.', url: '#', roles: ['admin', 'marketing'], icon: icons.marketing },
+        plantao: { titulo: 'Plantão', descricao: 'Escalas, contatos e procedimentos.', url: '#', roles: ['admin', 'plantao'], icon: icons.plantao },
+        rh: { titulo: 'Recursos Humanos', descricao: 'Informações sobre vagas e comunicados.', url: './modules/rh/painel.html', roles: ['admin', 'rh'], icon: icons.rh },
+        servico_social: { titulo: 'Serviço Social', descricao: 'Documentos e orientações.', url: '#', roles: ['admin', 'servico_social'], icon: icons.servico_social },
+        supervisores: { titulo: 'Painel do Supervisor', descricao: 'Acesse seu perfil, agendamentos e fichas de acompanhamentos.', url: './modules/supervisores/painel.html', roles: ['admin', 'supervisor'], icon: icons.rh },
+        supervisao: { titulo: 'Intranet Supervisão', descricao: 'Acesse perfis de supervisores ou preencha e visualize suas fichas de acompanhamento.', url: './modules/supervisao/painel.html', roles: ['admin', 'atendimento','supervisor', 'psicologo', 'psicopedagoga', 'musicoterapeuta'], icon: icons.supervisao },
+    };
+
+    const userFuncoes = (userData.funcoes || []).map(f => f.toLowerCase());
+    const cardsParaMostrar = [];
+
+    for (const key in areas) {
+        const area = areas[key];
+        const rolesLowerCase = (area.roles || []).map(r => r.toLowerCase());
+        
+        const temPermissao = userFuncoes.includes('admin') || 
+                             rolesLowerCase.includes('todos') || 
+                             rolesLowerCase.some(role => userFuncoes.includes(role));
+
+        if (temPermissao) {
+            cardsParaMostrar.push(area);
+        }
+    }
+    
+    cardsParaMostrar.sort((a, b) => {
+        if (a.titulo === 'Portal do Voluntário') return -1;
+        if (b.titulo === 'Portal do Voluntário') return 1;
+        return a.titulo.localeCompare(b.titulo);
+    });
+    
+    cardsParaMostrar.forEach(config => {
+        const card = document.createElement('a');
+        card.href = config.url;
+        card.className = 'module-card';
+        card.innerHTML = `
+            <div class="card-header">
+                <h3>${config.titulo}</h3>
+            </div>
+            <div class="card-content">
+                <p>${config.descricao}</p>
+            </div>
+        `;
+        navLinks.appendChild(card);
+    });
+}
