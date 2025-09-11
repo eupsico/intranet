@@ -224,10 +224,39 @@ body:has(#login-view) {
     background-color: var(--cor-fundo);
 }
 
-/* Ajustes no botão principal de login */
-.login-card .btn-primary {
-    font-size: 1em;
+/* --- Estilos para Login e Acesso Negado --- */
+.login-card, .access-denied-card {
+    background-color: var(--cor-surface);
+    padding: 40px 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    text-align: center;
+    max-width: 450px;
+    margin: 20px auto;
+}
+
+/* Ajuste do tamanho da logo */
+.login-card img.login-logo {
+    max-width: 90px; /* Reduzindo o tamanho da logo */
+    margin-bottom: 20px;
+}
+
+/* Centralizando e mudando a cor do título "Intranet EuPsico" */
+.login-card h2 {
+    text-align: center;
+    color: #1d70b7; /* Cor azul solicitada */
+    margin-bottom: 15px; /* Ajuste para espaçamento */
+    font-size: 1.8em; /* Garante tamanho consistente */
+}
+
+/* Botão de login com a cor solicitada */
+.btn-primary {
+    background-color: #04396d; /* Cor azul escura solicitada */
+    color: white;
     font-weight: 500;
     padding: 12px;
     width: 100%;
+}
+.btn-primary:hover {
+    background-color: #032a52; /* Um pouco mais escuro no hover */
 }

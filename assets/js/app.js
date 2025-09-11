@@ -64,7 +64,7 @@ function setupInactivityListeners() {
     resetInactivityTimer();
 }
 
-function renderLogin(message = "Por favor, faça login para continuar.") {
+function renderLogin(message = "Utilize o e-mail institucional para logar (@eupsico.org.br)") { // Mensagem padrão alterada
     const loginView = document.getElementById('login-view');
     if (!loginView) return;
 
@@ -73,12 +73,15 @@ function renderLogin(message = "Por favor, faça login para continuar.") {
             <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
             <h2>Intranet EuPsico</h2>
             <p>${message}</p>
-            <button id="login-button" class="btn btn-primary">Login com Google</button>
-        </div>
+            <button id="login-button" class="btn btn-primary">Login</button> </div>
     `;
     document.getElementById('login-button').addEventListener('click', () => {
         loginView.innerHTML = `<p>Aguarde...</p>`;
         const provider = new firebase.auth.GoogleAuthProvider();
+        // Opcional: Forçar a conta Google institucional (se você tiver o domínio configurado no Firebase Auth)
+        provider.setCustomParameters({
+        'hd': 'eupsico.org.br' // Descomentar se quiser forçar o domínio
+        });
         auth.signInWithPopup(provider).catch(error => console.error(error));
     });
 }
