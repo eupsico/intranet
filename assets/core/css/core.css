@@ -203,3 +203,31 @@ body {
         display: none;
     }
 }
+/* ==========================================================================
+   LAYOUT ESPECÍFICO DA PÁGINA DE LOGIN
+   ========================================================================== */
+
+/* Garante que o body e o html ocupem 100% da altura da tela,
+  o que é necessário para a centralização vertical funcionar.
+*/
+html, body {
+    height: 100%;
+}
+
+/* Define o body da página de login como um container flexível
+  que centraliza seu conteúdo.
+*/
+body:has(#login-view) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--cor-fundo);
+}
+
+/* Ajustes no botão principal de login */
+.login-card .btn-primary {
+    font-size: 1em;
+    font-weight: 500;
+    padding: 12px;
+    width: 100%;
+}
