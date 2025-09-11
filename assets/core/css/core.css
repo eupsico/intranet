@@ -237,7 +237,7 @@ body:has(#login-view) {
 
 /* Ajuste do tamanho da logo */
 .login-card img.login-logo {
-    max-width: 90px; /* Reduzindo o tamanho da logo */
+    max-width: 200px; /* Reduzindo o tamanho da logo */
     margin-bottom: 20px;
 }
 
