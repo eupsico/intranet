@@ -139,7 +139,7 @@ function renderModuleCards(userData) {
         portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modules/portal-voluntario/painel.html', roles: ['todos'], icon: icons.intranet },
         administrativo: { titulo: 'Administrativo', descricao: 'Processos, documentos e a organização da equipe.', url: './modules/administrativo/painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
         captacao: { titulo: 'Captação', descricao: 'Ferramentas e informações para captação.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
-        financeiro: { titulo: 'Financeiro', descricao: 'Acesso ao painel de controle financeiro e relatórios.', url: './modules/financeiro/painel.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
+        financeiro: { titulo: 'Financeiro', descricao: 'Acesso ao painel de controle financeiro e relatórios.', url: './modules/financeiro/page/painel.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
         grupos: { titulo: 'Grupos', descricao: 'Informações e materiais para grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
         marketing: { titulo: 'Marketing', descricao: 'Materiais de marketing e campanhas.', url: '#', roles: ['admin', 'marketing'], icon: icons.marketing },
         plantao: { titulo: 'Plantão', descricao: 'Escalas, contatos e procedimentos.', url: '#', roles: ['admin', 'plantao'], icon: icons.plantao },
