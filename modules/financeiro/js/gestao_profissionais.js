@@ -1,18 +1,14 @@
-// modules/financeiro/js/gestao_profissionais.js (Versão de Depuração)
+// modules/financeiro/js/gestao_profissionais.js (Versão com Edição)
 
 (function() {
-    console.log('[Debug] Script gestao_profissionais.js iniciado.');
-
     const db = firebase.firestore();
 
     let tableBody, modal, modalTitle, profissionalForm, cancelButton, addProfissionalButton, deleteButton;
 
     /**
-     * Função que roda uma única vez para configurar os listeners de eventos.
+     * Roda uma única vez para configurar os listeners de eventos.
      */
     function setupEventListeners() {
-        console.log('[Debug] Executando setupEventListeners...');
-        
         const tabLinks = document.querySelectorAll('.tab-link');
         const tabContents = document.querySelectorAll('.tab-content');
 
@@ -31,7 +27,6 @@
             firstTab.click();
         }
 
-        // Selecionando os elementos do DOM
         tableBody = document.querySelector('#profissionais-table tbody');
         modal = document.getElementById('profissional-modal');
         modalTitle = document.getElementById('modal-title');
@@ -40,21 +35,24 @@
         addProfissionalButton = document.getElementById('add-profissional-btn');
         deleteButton = document.getElementById('modal-delete-btn');
 
-        // ✅ PONTO DE VERIFICAÇÃO PRINCIPAL
-        console.log('[Debug] Verificando o botão "Adicionar":', addProfissionalButton);
-
         if (addProfissionalButton) {
             addProfissionalButton.addEventListener('click', abrirModalParaCriar);
-            console.log('[Debug] Evento de clique ADICIONADO ao botão "Adicionar".');
-        } else {
-            console.error('[Debug] ERRO: Botão "Adicionar Profissional" não foi encontrado no DOM.');
         }
-
         if (cancelButton) {
             cancelButton.addEventListener('click', fecharModal);
         }
         if (profissionalForm) {
             profissionalForm.addEventListener('submit', salvarProfissional);
+        }
+        
+        // ✅ NOVO: Event Listener na tabela para capturar cliques nos botões "Editar"
+        if (tableBody) {
+            tableBody.addEventListener('click', (event) => {
+                if (event.target.classList.contains('edit-btn')) {
+                    const id = event.target.dataset.id;
+                    abrirModalParaEditar(id);
+                }
+            });
         }
         
         carregarProfissionais();
@@ -64,33 +62,24 @@
      * Busca os usuários no Firestore e os renderiza na tabela.
      */
     async function carregarProfissionais() {
-        if (!tableBody) {
-            console.error("[Debug] Tabela não encontrada para carregar profissionais.");
-            return;
-        }
+        if (!tableBody) return;
         tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Carregando profissionais...</td></tr>';
-
         try {
             const snapshot = await db.collection('usuarios').orderBy('nome').get();
-            
             if (snapshot.empty) {
                 tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum profissional encontrado.</td></tr>';
                 return;
             }
-
             tableBody.innerHTML = ''; 
-
             snapshot.forEach(doc => {
                 const profissional = doc.data();
                 const tr = document.createElement('tr');
                 tr.dataset.id = doc.id;
-
                 const funcoes = profissional.funcoes ? profissional.funcoes.join(', ') : 'N/A';
                 const inativo = profissional.inativo ? 'Sim' : 'Não';
                 const primeiraFase = profissional.primeiraFase ? 'Sim' : 'Não';
                 const fazAtendimento = profissional.fazAtendimento ? 'Sim' : 'Não';
                 const recebeDireto = profissional.recebeDireto ? 'Sim' : 'Não';
-
                 tr.innerHTML = `
                     <td>${profissional.nome || 'Nome não informado'}</td>
                     <td>${profissional.contato || 'N/A'}</td>
@@ -99,13 +88,10 @@
                     <td>${primeiraFase}</td>
                     <td>${fazAtendimento}</td>
                     <td>${recebeDireto}</td>
-                    <td>
-                        <button class="action-button-small edit-btn" data-id="${doc.id}">Editar</button>
-                    </td>
+                    <td><button class="action-button-small edit-btn" data-id="${doc.id}">Editar</button></td>
                 `;
                 tableBody.appendChild(tr);
             });
-
         } catch (error) {
             console.error("Erro ao carregar profissionais:", error);
             tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Ocorreu um erro ao carregar os dados.</td></tr>';
@@ -116,12 +102,54 @@
      * Abre o modal para adicionar um novo profissional.
      */
     function abrirModalParaCriar() {
-        console.log('[Debug] Função abrirModalParaCriar foi chamada.');
         profissionalForm.reset();
         document.getElementById('profissional-id').value = '';
         modalTitle.textContent = 'Adicionar Novo Profissional';
         if(deleteButton) deleteButton.style.display = 'none';
         if(modal) modal.style.display = 'flex';
+    }
+
+    /**
+     * ✅ NOVA FUNÇÃO: Abre o modal para editar um profissional existente.
+     */
+    async function abrirModalParaEditar(id) {
+        try {
+            const docRef = db.collection('usuarios').doc(id);
+            const docSnap = await docRef.get();
+
+            if (docSnap.exists) {
+                const profissional = docSnap.data();
+                
+                // Preenche o formulário com os dados existentes
+                document.getElementById('profissional-id').value = id;
+                document.getElementById('prof-nome').value = profissional.nome || '';
+                document.getElementById('prof-email').value = profissional.email || '';
+                document.getElementById('prof-contato').value = profissional.contato || '';
+                document.getElementById('prof-profissao').value = profissional.profissao || '';
+
+                // Marca os checkboxes de status
+                document.getElementById('prof-inativo').checked = profissional.inativo || false;
+                document.getElementById('prof-recebeDireto').checked = profissional.recebeDireto || false;
+                document.getElementById('prof-primeiraFase').checked = profissional.primeiraFase || false;
+                document.getElementById('prof-fazAtendimento').checked = profissional.fazAtendimento || false;
+
+                // Marca os checkboxes de funções
+                document.querySelectorAll('input[name="funcoes"]').forEach(checkbox => {
+                    checkbox.checked = (profissional.funcoes || []).includes(checkbox.value);
+                });
+
+                modalTitle.textContent = 'Editar Profissional';
+                if(deleteButton) deleteButton.style.display = 'inline-block'; // Mostra o botão de excluir
+                if(modal) modal.style.display = 'flex';
+
+            } else {
+                console.error("Nenhum documento encontrado com o ID:", id);
+                if(window.showToast) window.showToast('Profissional não encontrado.', 'error');
+            }
+        } catch (error) {
+            console.error("Erro ao buscar profissional para edição:", error);
+            if(window.showToast) window.showToast('Erro ao buscar dados do profissional.', 'error');
+        }
     }
 
     /**
@@ -132,7 +160,7 @@
     }
 
     /**
-     * Salva os dados do formulário no Firestore.
+     * Salva os dados do formulário (criação ou edição).
      */
     async function salvarProfissional(event) {
         event.preventDefault();
@@ -157,7 +185,9 @@
 
         try {
             if (profissionalId) {
-                // Lógica de ATUALIZAÇÃO (próximo passo)
+                // ✅ LÓGICA DE ATUALIZAÇÃO IMPLEMENTADA
+                await db.collection('usuarios').doc(profissionalId).update(dadosProfissional);
+                if(window.showToast) window.showToast('Profissional atualizado com sucesso!');
             } else {
                 await db.collection('usuarios').add(dadosProfissional);
                 if(window.showToast) window.showToast('Profissional adicionado com sucesso!');
