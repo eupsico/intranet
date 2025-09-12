@@ -131,7 +131,7 @@ if (!firebase.apps.length) {
         try {
             contentArea.innerHTML = '<div class="loading-spinner"></div>';
             
-            const response = await fetch(`../pages/${viewName}.html`);
+            const response = await fetch(`../page/${viewName}.html`);
             if (!response.ok) {
                 throw new Error(`Arquivo não encontrado: ${viewName}.html`);
             }
