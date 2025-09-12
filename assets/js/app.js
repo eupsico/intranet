@@ -138,14 +138,14 @@ document.addEventListener('DOMContentLoaded', function() {
             portal_voluntario: { 
                 titulo: 'Portal do Voluntário', 
                 descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', 
-                url: './modulos/administrativo/page/portal-voluntario.html',
+                url: './modulos/voluntario/page/portal-voluntario.html',
                 roles: ['todos'],
                 icon: icons.intranet 
             },
             administrativo: { 
                 titulo: 'Administrativo', 
                 descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', 
-                url: './modulos/voluntario/page/administrativo-painel.html', 
+                url: './modulos/administrativo/page/administrativo-painel.html', 
                 roles: ['admin', 'gestor', 'assistente'], 
                 icon: icons.administrativo 
             },
