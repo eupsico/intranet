@@ -140,12 +140,12 @@ if (!firebase.apps.length) {
             const newStyle = document.createElement('link');
             newStyle.id = 'dynamic-view-style';
             newStyle.rel = 'stylesheet';
-            newStyle.href = `../assets/css/${viewName}.css`;
+            newStyle.href = `../css/${viewName}.css`;
             document.head.appendChild(newStyle);
 
             const newScript = document.createElement('script');
             newScript.id = 'dynamic-view-script';
-            newScript.src = `../assets/js/${viewName}.js`;
+            newScript.src = `../js/${viewName}.js`;
             document.body.appendChild(newScript);
 
         } catch (error) {
