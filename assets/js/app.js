@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loginView.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f9;">
                     <div class="content-box" style="width: 100%; max-width: 450px; text-align: center; padding: 40px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px;">
-                        <img src="/assets/img/logo-eupsico.png" alt="Logo EuPsico" style="max-width: 120px; margin-bottom: 20px;">
+                        <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" style="max-width: 120px; margin-bottom: 20px;">
                         <h2 style="font-size: 1.8em; color: #333; margin-bottom: 10px;">Intranet EuPsico</h2>
                         <p style="color: #555; margin-bottom: 30px;">${message}</p>
                         <button id="login-button" class="action-button" style="width: 100%; padding: 12px; font-size: 1em; background-color: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer;">Login com Google</button>
