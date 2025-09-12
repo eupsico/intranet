@@ -35,8 +35,8 @@
     // --- NOVA FUNÇÃO PARA CARREGAR O CONTEÚDO DAS SEÇÕES ---
     async function loadSectionContent() {
         const sectionsToLoad = [
-            { id: 'gestao', filePath: './portal-voluntario/gestao.html' },
-            { id: 'solicitacoes', filePath: './portal-voluntario/solicitacoes.html' }
+            { id: 'gestao', filePath: '../gestao.html' },
+            { id: 'solicitacoes', filePath: './solicitacoes.html' }
             // Adicione aqui futuras seções que se tornarão modulares
         ];
 
