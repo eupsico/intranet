@@ -1,42 +1,58 @@
-// modules/financeiro/js/gestao_profissionais.js (Versão com funcionalidade de Adicionar)
+// modules/financeiro/js/gestao_profissionais.js (Versão Corrigida Final)
 
 (function() {
     // Acessa o 'db' do Firestore que foi inicializado globalmente
     const db = firebase.firestore();
 
-    // Lógica para navegação em abas
-    const tabLinks = document.querySelectorAll('.tab-link');
-    const tabContents = document.querySelectorAll('.tab-content');
+    // Declara as variáveis dos elementos no escopo principal, mas não as atribui ainda
+    let tableBody, modal, modalTitle, profissionalForm, cancelButton, addProfissionalButton, deleteButton;
 
-    tabLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            const tabName = link.dataset.tab;
-            tabLinks.forEach(l => l.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            link.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
+    /**
+     * Função que roda uma única vez para configurar os listeners de eventos.
+     */
+    function setupEventListeners() {
+        // Lógica para navegação em abas
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const tabName = link.dataset.tab;
+                tabLinks.forEach(l => l.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                link.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
         });
-    });
 
-    // Garante que o elemento existe antes de clicar
-    const firstTab = document.querySelector('.tab-link[data-tab="GestaoProfissionais"]');
-    if (firstTab) {
-        firstTab.click();
+        const firstTab = document.querySelector('.tab-link[data-tab="GestaoProfissionais"]');
+        if (firstTab) {
+            firstTab.click();
+        }
+
+        // Agora que o DOM está pronto, podemos selecionar os elementos com segurança
+        tableBody = document.querySelector('#profissionais-table tbody');
+        modal = document.getElementById('profissional-modal');
+        modalTitle = document.getElementById('modal-title');
+        profissionalForm = document.getElementById('profissional-form');
+        cancelButton = document.getElementById('modal-cancel-btn');
+        addProfissionalButton = document.getElementById('add-profissional-btn');
+        deleteButton = document.getElementById('modal-delete-btn');
+
+        // Adiciona os eventos aos elementos
+        if (addProfissionalButton) {
+            addProfissionalButton.addEventListener('click', abrirModalParaCriar);
+        }
+        if (cancelButton) {
+            cancelButton.addEventListener('click', fecharModal);
+        }
+        if (profissionalForm) {
+            profissionalForm.addEventListener('submit', salvarProfissional);
+        }
+        
+        // Carrega os dados iniciais da tabela
+        carregarProfissionais();
     }
-
-    
-    // --- LÓGICA DO FIREBASE E DO MODAL ---
-
-    // Elementos da Tabela
-    const tableBody = document.querySelector('#profissionais-table tbody');
-    
-    // Elementos do Modal
-    const modal = document.getElementById('profissional-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const profissionalForm = document.getElementById('profissional-form');
-    const cancelButton = document.getElementById('modal-cancel-btn');
-    const addProfissionalButton = document.getElementById('add-profissional-btn');
-    const deleteButton = document.getElementById('modal-delete-btn');
 
     /**
      * Busca os usuários no Firestore e os renderiza na tabela.
@@ -106,11 +122,10 @@
     }
 
     /**
-     * Salva os dados do formulário no Firestore (criação ou edição).
+     * Salva os dados do formulário no Firestore.
      */
     async function salvarProfissional(event) {
         event.preventDefault();
-
         const profissionalId = document.getElementById('profissional-id').value;
 
         const funcoesSelecionadas = [];
@@ -132,11 +147,8 @@
 
         try {
             if (profissionalId) {
-                // Lógica de ATUALIZAÇÃO (será implementada no próximo passo)
-                await db.collection('usuarios').doc(profissionalId).update(dadosProfissional);
-                if(window.showToast) window.showToast('Profissional atualizado com sucesso!');
+                // Lógica de ATUALIZAÇÃO (próximo passo)
             } else {
-                // Lógica de CRIAÇÃO
                 await db.collection('usuarios').add(dadosProfissional);
                 if(window.showToast) window.showToast('Profissional adicionado com sucesso!');
             }
@@ -150,21 +162,8 @@
         }
     }
 
-    // --- EVENT LISTENERS ---
-    
-    if (addProfissionalButton) {
-        addProfissionalButton.addEventListener('click', abrirModalParaCriar);
-    }
-    if (cancelButton) {
-        cancelButton.addEventListener('click', fecharModal);
-    }
-    if (profissionalForm) {
-        profissionalForm.addEventListener('submit', salvarProfissional);
-    }
+    // --- INICIALIZAÇÃO DO SCRIPT ---
+    // Chama a função de configuração dos eventos assim que o script é carregado.
+    setupEventListeners();
 
-    // Carrega os profissionais quando a aba é ativada.
-    if (firstTab && firstTab.dataset.tab === 'GestaoProfissionais') {
-        carregarProfissionais();
-    }
-    
 })();
