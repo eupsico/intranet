@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
             financeiro: { 
                 titulo: 'Financeiro', 
                 descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', 
-                url: './pages/financeiro/painel.html', 
+                url: './modulos/financeiro/painel.html', 
                 roles: ['admin', 'financeiro'], 
                 icon: icons.financeiro 
             },
