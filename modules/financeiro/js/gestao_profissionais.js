@@ -4,6 +4,7 @@
     console.log('[Debug] Script gestao_profissionais.js iniciado.');
 
     const db = firebase.firestore();
+
     let tableBody, modal, modalTitle, profissionalForm, cancelButton, addProfissionalButton, deleteButton;
 
     /**
@@ -31,20 +32,20 @@
         }
 
         // Selecionando os elementos do DOM
-        addProfissionalButton = document.getElementById('add-profissional-btn');
-        cancelButton = document.getElementById('modal-cancel-btn');
-        profissionalForm = document.getElementById('profissional-form');
+        tableBody = document.querySelector('#profissionais-table tbody');
         modal = document.getElementById('profissional-modal');
         modalTitle = document.getElementById('modal-title');
+        profissionalForm = document.getElementById('profissional-form');
+        cancelButton = document.getElementById('modal-cancel-btn');
+        addProfissionalButton = document.getElementById('add-profissional-btn');
         deleteButton = document.getElementById('modal-delete-btn');
-        tableBody = document.querySelector('#profissionais-table tbody');
 
         // ✅ PONTO DE VERIFICAÇÃO PRINCIPAL
         console.log('[Debug] Verificando o botão "Adicionar":', addProfissionalButton);
 
         if (addProfissionalButton) {
             addProfissionalButton.addEventListener('click', abrirModalParaCriar);
-            console.log('[Debug] Evento de clique adicionado ao botão "Adicionar".');
+            console.log('[Debug] Evento de clique ADICIONADO ao botão "Adicionar".');
         } else {
             console.error('[Debug] ERRO: Botão "Adicionar Profissional" não foi encontrado no DOM.');
         }
@@ -59,29 +60,37 @@
         carregarProfissionais();
     }
 
+    /**
+     * Busca os usuários no Firestore e os renderiza na tabela.
+     */
     async function carregarProfissionais() {
         if (!tableBody) {
             console.error("[Debug] Tabela não encontrada para carregar profissionais.");
             return;
         }
         tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Carregando profissionais...</td></tr>';
-        // ... (resto da função carregarProfissionais continua igual)
+
         try {
             const snapshot = await db.collection('usuarios').orderBy('nome').get();
+            
             if (snapshot.empty) {
                 tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum profissional encontrado.</td></tr>';
                 return;
             }
+
             tableBody.innerHTML = ''; 
+
             snapshot.forEach(doc => {
                 const profissional = doc.data();
                 const tr = document.createElement('tr');
                 tr.dataset.id = doc.id;
+
                 const funcoes = profissional.funcoes ? profissional.funcoes.join(', ') : 'N/A';
                 const inativo = profissional.inativo ? 'Sim' : 'Não';
                 const primeiraFase = profissional.primeiraFase ? 'Sim' : 'Não';
                 const fazAtendimento = profissional.fazAtendimento ? 'Sim' : 'Não';
                 const recebeDireto = profissional.recebeDireto ? 'Sim' : 'Não';
+
                 tr.innerHTML = `
                     <td>${profissional.nome || 'Nome não informado'}</td>
                     <td>${profissional.contato || 'N/A'}</td>
@@ -90,16 +99,22 @@
                     <td>${primeiraFase}</td>
                     <td>${fazAtendimento}</td>
                     <td>${recebeDireto}</td>
-                    <td><button class="action-button-small edit-btn" data-id="${doc.id}">Editar</button></td>
+                    <td>
+                        <button class="action-button-small edit-btn" data-id="${doc.id}">Editar</button>
+                    </td>
                 `;
                 tableBody.appendChild(tr);
             });
+
         } catch (error) {
             console.error("Erro ao carregar profissionais:", error);
             tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Ocorreu um erro ao carregar os dados.</td></tr>';
         }
     }
 
+    /**
+     * Abre o modal para adicionar um novo profissional.
+     */
     function abrirModalParaCriar() {
         console.log('[Debug] Função abrirModalParaCriar foi chamada.');
         profissionalForm.reset();
@@ -109,18 +124,25 @@
         if(modal) modal.style.display = 'flex';
     }
 
+    /**
+     * Fecha o modal.
+     */
     function fecharModal() {
         if(modal) modal.style.display = 'none';
     }
 
+    /**
+     * Salva os dados do formulário no Firestore.
+     */
     async function salvarProfissional(event) {
         event.preventDefault();
-        // ... (resto da função salvarProfissional continua igual)
         const profissionalId = document.getElementById('profissional-id').value;
+
         const funcoesSelecionadas = [];
         document.querySelectorAll('input[name="funcoes"]:checked').forEach(checkbox => {
             funcoesSelecionadas.push(checkbox.value);
         });
+
         const dadosProfissional = {
             nome: document.getElementById('prof-nome').value.trim(),
             email: document.getElementById('prof-email').value.trim(),
@@ -132,6 +154,7 @@
             primeiraFase: document.getElementById('prof-primeiraFase').checked,
             fazAtendimento: document.getElementById('prof-fazAtendimento').checked,
         };
+
         try {
             if (profissionalId) {
                 // Lógica de ATUALIZAÇÃO (próximo passo)
@@ -139,8 +162,10 @@
                 await db.collection('usuarios').add(dadosProfissional);
                 if(window.showToast) window.showToast('Profissional adicionado com sucesso!');
             }
+            
             fecharModal();
             carregarProfissionais();
+
         } catch (error) {
             console.error("Erro ao salvar profissional:", error);
             if(window.showToast) window.showToast('Erro ao salvar profissional.', 'error');
