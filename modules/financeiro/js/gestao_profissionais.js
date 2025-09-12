@@ -1,19 +1,13 @@
-// modules/financeiro/js/gestao_profissionais.js (Versão Corrigida Final)
+// modules/financeiro/js/gestao_profissionais.js (Versão de Depuração Final)
 
 (function() {
-    // Acessa os serviços do Firebase inicializados globalmente
     const db = firebase.firestore();
-    const functions = firebase.functions(); // Habilita o uso de Cloud Functions
+    const functions = firebase.functions();
 
-    // Variáveis para os elementos da UI
     let tableBody, modal, modalTitle, profissionalForm, cancelButton, addProfissionalButton, deleteButton, saveButton;
-    let localUsuariosList = []; // Cache local para a lista de profissionais
+    let localUsuariosList = [];
 
-    /**
-     * Roda uma única vez para configurar os listeners de eventos.
-     */
     function setupEventListeners() {
-        // Lógica para navegação em abas
         const tabLinks = document.querySelectorAll('.tab-link');
         const tabContents = document.querySelectorAll('.tab-content');
         tabLinks.forEach(link => {
@@ -56,22 +50,16 @@
         }
     }
 
-    /**
-     * Usa onSnapshot para ouvir por mudanças em tempo real na coleção de usuários.
-     */
     function ouvirMudancasProfissionais() {
         if (!tableBody) return;
         tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Carregando profissionais...</td></tr>';
-
         db.collection('usuarios').orderBy('nome').onSnapshot(snapshot => {
             tableBody.innerHTML = '';
             if (snapshot.empty) {
                 tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum profissional encontrado.</td></tr>';
                 return;
             }
-            
             localUsuariosList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
             localUsuariosList.forEach(profissional => {
                 const tr = document.createElement('tr');
                 const funcoes = profissional.funcoes ? profissional.funcoes.join(', ') : 'N/A';
@@ -93,14 +81,10 @@
         });
     }
 
-    /**
-     * Abre e configura o modal, seja para criar ou editar.
-     */
     function abrirModal(profissional) {
         profissionalForm.reset();
         const emailInput = document.getElementById('prof-email');
-        
-        if (profissional) { // Modo Edição
+        if (profissional) {
             modalTitle.textContent = 'Editar Profissional';
             document.getElementById('profissional-id').value = profissional.id;
             document.getElementById('prof-nome').value = profissional.nome || '';
@@ -116,7 +100,7 @@
                 cb.checked = (profissional.funcoes || []).includes(cb.value);
             });
             if(deleteButton) deleteButton.style.display = 'inline-block';
-        } else { // Modo Criação
+        } else {
             modalTitle.textContent = 'Adicionar Novo Profissional';
             document.getElementById('profissional-id').value = '';
             emailInput.disabled = false;
@@ -129,13 +113,8 @@
         if(modal) modal.style.display = 'none';
     }
 
-    /**
-     * Salva (cria ou atualiza) um profissional.
-     */
     async function salvarProfissional(event) {
         event.preventDefault();
-        
-        // ✅ CORREÇÃO: Inverti as variáveis nome e email que estavam trocadas.
         const nome = document.getElementById('prof-nome').value.trim();
         const email = document.getElementById('prof-email').value.trim();
         const profissionalId = document.getElementById('profissional-id').value;
@@ -144,12 +123,9 @@
             if(window.showToast) window.showToast('Nome e E-mail são obrigatórios.', 'error');
             return;
         }
-
         saveButton.disabled = true;
         saveButton.textContent = 'Salvando...';
-
         const funcoesSelecionadas = Array.from(document.querySelectorAll('input[name="funcoes"]:checked')).map(cb => cb.value);
-
         const dadosProfissional = {
             nome: nome,
             email: email,
@@ -163,16 +139,19 @@
         };
 
         try {
-            if (profissionalId) { // Modo Edição
+            if (profissionalId) {
                 await db.collection('usuarios').doc(profissionalId).update(dadosProfissional);
                 if(window.showToast) window.showToast('Profissional atualizado com sucesso!');
-            } else { // Modo Criação
+            } else {
                 const criarNovoProfissional = functions.httpsCallable('criarNovoProfissional');
                 const resultado = await criarNovoProfissional(dadosProfissional);
                 if(window.showToast) window.showToast(resultado.data.message || 'Profissional criado com sucesso!');
             }
             fecharModal();
         } catch (error) {
+            // ✅ LINHA DE DEPURAÇÃO ADICIONADA
+            alert(`ERRO: ${error.message}`); 
+            
             console.error("Erro ao salvar profissional:", error);
             if(window.showToast) window.showToast(`Erro: ${error.message}`, 'error');
         } finally {
@@ -181,13 +160,9 @@
         }
     }
 
-    /**
-     * Exclui um profissional (apenas do Firestore).
-     */
     async function excluirProfissional() {
         const profissionalId = document.getElementById('profissional-id').value;
         if (!profissionalId) return;
-
         if (confirm('Tem certeza que deseja excluir este profissional? Esta ação não pode ser desfeita e NÃO remove o login do Firebase Authentication.')) {
             try {
                 await db.collection('usuarios').doc(profissionalId).delete();
@@ -200,7 +175,6 @@
         }
     }
 
-    // --- INICIALIZAÇÃO ---
     setupEventListeners();
     ouvirMudancasProfissionais();
 })();
