@@ -1,119 +1,173 @@
-// modules/financeiro/js/painel-script.js (Versão Final Sincronizada)
+// modules/financeiro/js/painel-script.js (Versão Consolidada e Final)
 
-(function() {
-    console.log("Painel Script carregado. Aguardando sinal 'userReady'...");
+document.addEventListener('userReady', function(event) {
+    const { user, userData } = event.detail;
+    const db = firebase.firestore();
+    const functions = firebase.functions();
 
-    // Ouve pelo evento customizado 'userReady' que o main.js dispara
-    document.addEventListener('userReady', function(event) {
-        console.log("Sinal 'userReady' recebido. Inicializando painel do módulo...");
+    // Elementos da UI
+    const contentArea = document.getElementById('content-area');
+    const navButtons = document.querySelectorAll('.sidebar-menu .nav-button');
+    let tableBody, modal, modalTitle, profissionalForm, cancelButton, addProfissionalButton, deleteButton, saveButton;
+    let localUsuariosList = [];
 
-        // Pega os dados do usuário que o main.js enviou
-        const { user, userData } = event.detail;
+    async function loadView(viewName) {
+        navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
         
-        // Constantes do Firebase já estão disponíveis globalmente
-        const db = firebase.firestore();
-        
-        const contentArea = document.getElementById('content-area');
-        const navButtons = document.querySelectorAll('.sidebar-menu .nav-button');
+        try {
+            contentArea.innerHTML = '<div class="loading-spinner">Carregando...</div>';
+            const response = await fetch(`./${viewName}.html`);
+            if (!response.ok) throw new Error(`HTML da view '${viewName}' não encontrado.`);
+            contentArea.innerHTML = await response.text();
 
-        /**
-         * Mostra ou esconde os botões do menu com base nas funções do usuário.
-         */
-        function gerenciarPermissoesMenu(funcoesUsuario = []) {
-            navButtons.forEach(button => {
-                const itemDoMenu = button.closest('li');
-                if (!itemDoMenu) return;
-
-                const rolesNecessarias = button.dataset.roles ? button.dataset.roles.split(',') : [];
-                const temPermissao = rolesNecessarias.length === 0 || 
-                                     funcoesUsuario.includes('admin') || 
-                                     rolesNecessarias.some(role => funcoesUsuario.includes(role.trim()));
-                
-                itemDoMenu.style.display = temPermissao ? 'block' : 'none';
-            });
-        }
-
-        /**
-         * Carrega o conteúdo de uma sub-página (view) dentro da área principal.
-         */
-        async function loadView(viewName) {
-            navButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.view === viewName);
-            });
-            
-            const oldScript = document.getElementById('dynamic-view-script');
-            if (oldScript) oldScript.remove();
-            const oldStyle = document.getElementById('dynamic-view-style');
-            if (oldStyle) oldStyle.remove();
-            
-            try {
-                contentArea.innerHTML = '<div class="loading-spinner">Carregando...</div>';
-                
-                const response = await fetch(`./${viewName}.html`);
-                if (!response.ok) throw new Error(`Arquivo não encontrado: ${viewName}.html`);
-                contentArea.innerHTML = await response.text();
-
-                const stylePath = `../css/${viewName}.css`;
-                fetch(stylePath).then(res => {
-                    if (res.ok) {
-                        const newStyle = document.createElement('link');
-                        newStyle.id = 'dynamic-view-style';
-                        newStyle.rel = 'stylesheet';
-                        newStyle.href = stylePath;
-                        document.head.appendChild(newStyle);
-                    }
-                });
-
-                const scriptPath = `../js/${viewName}.js`;
-                fetch(scriptPath).then(res => {
-                    if (res.ok) {
-                        const newScript = document.createElement('script');
-                        newScript.id = 'dynamic-view-script';
-                        newScript.src = scriptPath;
-                        newScript.type = 'module';
-                        document.body.appendChild(newScript);
-                    }
-                });
-
-            } catch (error) {
-                console.error(`Erro ao carregar a view ${viewName}:`, error);
-                contentArea.innerHTML = `<div class="view-container"><h2>Módulo em Desenvolvimento</h2><p>O conteúdo para a seção '${viewName}' ainda não foi criado.</p></div>`;
+            // Após carregar o HTML da view, inicializa os componentes dela
+            if (viewName === 'gestao_profissionais') {
+                initializeGestaoProfissionais();
             }
-        }
-        
-        /**
-         * Função que inicializa o painel do módulo.
-         */
-        function initializePanel() {
-            const funcoes = userData.funcoes || [];
-            gerenciarPermissoesMenu(funcoes);
-
-            const hash = window.location.hash.substring(1);
-            const requestedButton = document.querySelector(`.sidebar-menu .nav-button[data-view="${hash}"]`);
+            // Adicionar 'else if' para outras views que precisem de JS
             
-            const isButtonVisible = requestedButton && requestedButton.closest('li').style.display !== 'none';
+        } catch (error) {
+            console.error(`Erro ao carregar a view ${viewName}:`, error);
+            contentArea.innerHTML = `<h2>Módulo em Desenvolvimento</h2>`;
+        }
+    }
 
-            if (hash && isButtonVisible) {
-                loadView(hash);
-            } else {
-                loadView('dashboard');
-            }
+    function initializeGestaoProfissionais() {
+        // Seleciona todos os elementos da view recém-carregada
+        tableBody = document.querySelector('#profissionais-table tbody');
+        modal = document.getElementById('profissional-modal');
+        modalTitle = document.getElementById('modal-title');
+        profissionalForm = document.getElementById('profissional-form');
+        cancelButton = document.getElementById('modal-cancel-btn');
+        addProfissionalButton = document.getElementById('add-profissional-btn');
+        deleteButton = document.getElementById('modal-delete-btn');
+        saveButton = document.getElementById('modal-save-btn');
 
-            window.addEventListener('hashchange', () => {
-                const viewName = window.location.hash.substring(1) || 'dashboard';
-                loadView(viewName);
-            });
+        // Adiciona os eventos
+        if (addProfissionalButton) addProfissionalButton.addEventListener('click', () => abrirModal(null));
+        if (cancelButton) cancelButton.addEventListener('click', fecharModal);
+        if (profissionalForm) profissionalForm.addEventListener('submit', salvarProfissional);
+        if (deleteButton) deleteButton.addEventListener('click', excluirProfissional);
 
-            navButtons.forEach(button => {
-                if (button.tagName === 'BUTTON') {
-                    button.addEventListener('click', (e) => {
-                        window.location.hash = e.currentTarget.dataset.view;
-                    });
+        if (tableBody) {
+            tableBody.addEventListener('click', (event) => {
+                if (event.target.classList.contains('edit-btn')) {
+                    const id = event.target.dataset.id;
+                    const profissional = localUsuariosList.find(p => p.id === id);
+                    if (profissional) abrirModal(profissional);
                 }
             });
         }
+        ouvirMudancasProfissionais();
+    }
+    
+    function ouvirMudancasProfissionais() {
+        if (!tableBody) return;
+        tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Carregando...</td></tr>';
+        db.collection('usuarios').orderBy('nome').onSnapshot(snapshot => {
+            tableBody.innerHTML = '';
+            if (snapshot.empty) {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum profissional.</td></tr>';
+                return;
+            }
+            localUsuariosList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            localUsuariosList.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p.nome || ''}</td><td>${p.contato || ''}</td><td>${(p.funcoes || []).join(', ')}</td>
+                    <td>${p.inativo ? 'Sim' : 'Não'}</td><td>${p.primeiraFase ? 'Sim' : 'Não'}</td>
+                    <td>${p.fazAtendimento ? 'Sim' : 'Não'}</td><td>${p.recebeDireto ? 'Sim' : 'Não'}</td>
+                    <td><button class="action-button-small edit-btn" data-id="${p.id}">Editar</button></td>`;
+                tableBody.appendChild(tr);
+            });
+        }, error => console.error("Erro ao ouvir profissionais:", error));
+    }
 
-        // Inicia o painel do módulo, agora com a certeza de que os dados do usuário estão prontos.
-        initializePanel();
+    function abrirModal(p) { // p para profissional
+        profissionalForm.reset();
+        const emailInput = document.getElementById('prof-email');
+        if (p) { // Editando
+            modalTitle.textContent = 'Editar Profissional';
+            document.getElementById('profissional-id').value = p.id;
+            document.getElementById('prof-nome').value = p.nome || '';
+            emailInput.value = p.email || '';
+            emailInput.disabled = true;
+            document.getElementById('prof-contato').value = p.contato || '';
+            document.getElementById('prof-profissao').value = p.profissao || '';
+            document.getElementById('prof-inativo').checked = p.inativo || false;
+            document.getElementById('prof-recebeDireto').checked = p.recebeDireto || false;
+            document.getElementById('prof-primeiraFase').checked = p.primeiraFase || false;
+            document.getElementById('prof-fazAtendimento').checked = p.fazAtendimento || false;
+            document.querySelectorAll('input[name="funcoes"]').forEach(cb => { cb.checked = (p.funcoes || []).includes(cb.value); });
+            if(deleteButton) deleteButton.style.display = 'inline-block';
+        } else { // Criando
+            modalTitle.textContent = 'Adicionar Novo Profissional';
+            document.getElementById('profissional-id').value = '';
+            emailInput.disabled = false;
+            if(deleteButton) deleteButton.style.display = 'none';
+        }
+        if(modal) modal.style.display = 'flex';
+    }
+
+    function fecharModal() { if(modal) modal.style.display = 'none'; }
+
+    async function salvarProfissional(event) {
+        event.preventDefault();
+        const id = document.getElementById('profissional-id').value;
+        const dados = {
+            nome: document.getElementById('prof-nome').value.trim(),
+            email: document.getElementById('prof-email').value.trim(),
+            contato: document.getElementById('prof-contato').value.trim(),
+            profissao: document.getElementById('prof-profissao').value,
+            funcoes: Array.from(document.querySelectorAll('input[name="funcoes"]:checked')).map(cb => cb.value),
+            inativo: document.getElementById('prof-inativo').checked,
+            recebeDireto: document.getElementById('prof-recebeDireto').checked,
+            primeiraFase: document.getElementById('prof-primeiraFase').checked,
+            fazAtendimento: document.getElementById('prof-fazAtendimento').checked,
+        };
+        if (!dados.nome || !dados.email) { return alert('Nome e E-mail são obrigatórios.'); }
+
+        saveButton.disabled = true;
+        saveButton.textContent = 'Salvando...';
+        try {
+            if (id) {
+                await db.collection('usuarios').doc(id).update(dados);
+                alert('Profissional atualizado com sucesso!');
+            } else {
+                const criarNovoProfissional = functions.httpsCallable('criarNovoProfissional');
+                const resultado = await criarNovoProfissional(dados);
+                alert(resultado.data.message || 'Profissional criado com sucesso!');
+            }
+            fecharModal();
+        } catch (error) {
+            console.error("Erro ao salvar:", error);
+            alert(`Erro ao salvar: ${error.message}`);
+        } finally {
+            saveButton.disabled = false;
+            saveButton.textContent = 'Salvar';
+        }
+    }
+
+    async function excluirProfissional() {
+        const id = document.getElementById('profissional-id').value;
+        if (!id || !confirm('Tem certeza? Esta ação NÃO remove o login.')) return;
+        try {
+            await db.collection('usuarios').doc(id).delete();
+            alert('Profissional excluído do Firestore.');
+            fecharModal();
+        } catch (error) {
+            console.error("Erro ao excluir:", error);
+            alert(`Erro ao excluir: ${error.message}`);
+        }
+    }
+
+    // Inicializador do Painel
+    const hash = window.location.hash.substring(1) || 'dashboard';
+    loadView(hash);
+    window.addEventListener('hashchange', () => loadView(window.location.hash.substring(1) || 'dashboard'));
+    navButtons.forEach(button => {
+        if (button.tagName === 'BUTTON') {
+            button.addEventListener('click', (e) => window.location.hash = e.currentTarget.dataset.view);
+        }
     });
-})();
+});
