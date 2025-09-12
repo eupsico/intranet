@@ -39,6 +39,11 @@ document.addEventListener('DOMContentLoaded', function() {
         auth.onAuthStateChanged(async (user) => {
             try {
                 if (user) {
+                    // Se o usuário está logado, ele deve ser direcionado para o dashboard
+                    if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
+                        window.location.href = './dashboard.html';
+                        return;
+                    }
                     const userDoc = await db.collection("usuarios").doc(user.uid).get();
                     if (userDoc.exists && userDoc.data().funcoes?.length > 0) {
                         const userData = userDoc.data();
@@ -48,6 +53,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         renderAccessDenied();
                     }
                 } else {
+                     // Se não está logado e não está na página de login, redireciona para lá
+                    if (!window.location.pathname.endsWith('index.html') && !window.location.pathname.endsWith('/')) {
+                        window.location.href = './index.html';
+                        return;
+                    }
                     renderLogin();
                 }
             } catch (error) {
@@ -59,43 +69,54 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderLogin(message = "Por favor, faça login para continuar.") {
-        dashboardView.style.display = 'none';
-        loginView.style.display = 'block';
-        
-        // --- CORREÇÃO 1: Estilo do Login para o formato de card ---
-        loginView.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f9;">
-                <div class="content-box" style="width: 100%; max-width: 450px; text-align: center; padding: 40px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px;">
-                    <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" style="max-width: 120px; margin-bottom: 20px;">
-                    <h2 style="font-size: 1.8em; color: #333; margin-bottom: 10px;">Intranet EuPsico</h2>
-                    <p style="color: #555; margin-bottom: 30px;">${message}</p>
-                    <button id="login-button" class="action-button" style="width: 100%; padding: 12px; font-size: 1em; background-color: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer;">Login com Google</button>
+        if (dashboardView) {
+            dashboardView.style.display = 'none';
+        }
+        if (loginView) {
+            loginView.style.display = 'block';
+            // ✅ CAMINHO DEFINITIVO
+            loginView.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f9;">
+                    <div class="content-box" style="width: 100%; max-width: 450px; text-align: center; padding: 40px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px;">
+                        <img src="/intraneteupsico/assets/img/logo-eupsico.png" alt="Logo EuPsico" style="max-width: 120px; margin-bottom: 20px;">
+                        <h2 style="font-size: 1.8em; color: #333; margin-bottom: 10px;">Intranet EuPsico</h2>
+                        <p style="color: #555; margin-bottom: 30px;">${message}</p>
+                        <button id="login-button" class="action-button" style="width: 100%; padding: 12px; font-size: 1em; background-color: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer;">Login com Google</button>
+                    </div>
                 </div>
-            </div>
-        `;
-        document.getElementById('login-button').addEventListener('click', () => {
-            loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(error => console.error(error));
-        });
+            `;
+            document.getElementById('login-button').addEventListener('click', () => {
+                loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider).catch(error => console.error(error));
+            });
+        }
     }
 
     function renderAccessDenied() {
-        dashboardView.style.display = 'none';
-        loginView.style.display = 'block';
-        loginView.innerHTML = `
-            <div class="content-box" style="max-width: 800px; margin: 50px auto; text-align: center;">
-                <h2>Acesso Negado</h2>
-                <p>Você está autenticado, mas seu usuário não tem permissões definidas. Contate o administrador.</p>
-                <button id="denied-logout">Sair</button>
-            </div>
-        `;
-        document.getElementById('denied-logout').addEventListener('click', () => auth.signOut());
+        if (dashboardView) {
+            dashboardView.style.display = 'none';
+        }
+        if (loginView) {
+            loginView.style.display = 'block';
+            loginView.innerHTML = `
+                <div class="content-box" style="max-width: 800px; margin: 50px auto; text-align: center;">
+                    <h2>Acesso Negado</h2>
+                    <p>Você está autenticado, mas seu usuário não tem permissões definidas. Contate o administrador.</p>
+                    <button id="denied-logout">Sair</button>
+                </div>
+            `;
+            document.getElementById('denied-logout').addEventListener('click', () => auth.signOut());
+        }
     }
 
     function renderDashboard(user, userData) {
-        loginView.style.display = 'none';
-        dashboardView.style.display = 'block';
+        if (loginView) {
+            loginView.style.display = 'none';
+        }
+        if (dashboardView) {
+            dashboardView.style.display = 'block';
+        }
         
         const welcomeTitle = document.getElementById('welcome-title');
         const userPhoto = document.getElementById('user-photo-header');
@@ -118,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderModuleCards(userData) {
         const navLinks = document.getElementById('nav-links');
-        if (!navLinks) return;
+        if (!navLinks) return; 
         navLinks.innerHTML = '';
         
         const icons = {
@@ -133,19 +154,20 @@ document.addEventListener('DOMContentLoaded', function() {
             servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
             supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
         };
-
+        
+        // ✅ CAMINHO DEFINITIVO
         const areas = {
             portal_voluntario: { 
                 titulo: 'Portal do Voluntário', 
                 descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', 
-                url: './pages/portal-voluntario.html',
+                url: '/intraneteupsico/modules/portal-voluntario/index.html',
                 roles: ['todos'],
                 icon: icons.intranet 
             },
             administrativo: { 
                 titulo: 'Administrativo', 
                 descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', 
-                url: './pages/administrativo-painel.html', 
+                url: '/intraneteupsico/modules/administrativo/index.html', 
                 roles: ['admin', 'gestor', 'assistente'], 
                 icon: icons.administrativo 
             },
@@ -159,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             financeiro: { 
                 titulo: 'Financeiro', 
                 descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', 
-                url: './pages/painel.html', 
+                url: '/intraneteupsico/modules/financeiro/index.html', 
                 roles: ['admin', 'financeiro'], 
                 icon: icons.financeiro 
             },
@@ -201,16 +223,16 @@ document.addEventListener('DOMContentLoaded', function() {
             supervisores: { 
                 titulo: 'Painel do Supervisor', 
                 descricao: 'Acesse seu perfil, agendamentos e fichas de acompanhamentos.', 
-                url: './pages/supervisores-painel.html', 
+                url: '/intraneteupsico/modules/supervisores/index.html', 
                 roles: ['admin', 'supervisor'], 
                 icon: icons.rh 
             },
             supervisao: { 
                 titulo: 'Intranet Supervisão', 
                 descricao: 'Acesse perfis de supervisores ou preencha e visualize suas fichas de acompanhamento.', 
-                url: './pages/supervisao-painel.html', 
+                url: '/intraneteupsico/modules/supervisao/index.html', 
                 roles: ['admin', 'atendimento','supervisor', 'psicologo', 'psicopedagoga', 'musicoterapeuta'],
-                icon: icons.supervisao // Adicionado ícone que estava faltando
+                icon: icons.supervisao
             },
         };
 
@@ -244,8 +266,6 @@ document.addEventListener('DOMContentLoaded', function() {
             card.href = config.url;
             card.className = 'module-card';
             
-            // --- CORREÇÃO 2: Fallback para o ícone ---
-            // Garante que, se um ícone for 'undefined', nada quebre.
             card.innerHTML = `
                 <div class="card-icon">
                     ${config.icon || ''}
