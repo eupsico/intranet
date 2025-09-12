@@ -4,19 +4,24 @@
     <meta charset="UTF-8">
     <title>Painel Financeiro - Intranet EuPsico</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="../../../assets/core/css/core.css">
     <link rel="icon" type="image/png" href="../../../favicon.png"> 
+
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
+    
     <script src="../../../assets/js/firebase-config.js"></script>
     <script type="module" src="../../../assets/js/main.js"></script> 
 </head>
 <body class="internal-page-body">
+    
     <div id="app" class="app-container">
         <header class="dashboard-header">
             <div class="header-left-panel">
@@ -31,17 +36,54 @@
                 <a href="#" id="logout-button-dashboard" class="btn btn-danger">Sair</a>
             </div>
         </header>
+
         <div class="main-container-panel">
             <aside class="sidebar">
                 <ul class="sidebar-menu">
-                    <li><a href="../../../dashboard.html" class="nav-button" data-view="inicio"><svg viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-text">Início da Intranet</span></a></li>
-                    <li><button class="nav-button active" data-view="dashboard"><svg viewBox="0 0 24 24"><path d="M12 20v-6M6 20v-10M18 20V4"/></svg><span class="nav-text">Dashboard</span></button></li>
-                    <li><button class="nav-button" data-view="gestao_profissionais"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="nav-text">Gestão de Profissionais</span></button></li>
+                    <li><a href="../../../dashboard.html" class="nav-button"><svg viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-text">Início da Intranet</span></a></li>
+                    <li class="active"><a href="#gestao_profissionais" class="nav-button"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="nav-text">Gestão de Profissionais</span></a></li>
                     </ul>
             </aside>
+
             <main class="content-panel">
                 <div id="content-area">
-                    <h2>Carregando...</h2>
+                    <div id="gestao_profissionais_content" class="view-content">
+                        <h1>Configurações Gerais do Financeiro</h1>
+                        <div class="table-container">
+                            <button id="add-profissional-btn" class="action-button primary" style="margin-bottom: 20px;">Adicionar Profissional</button>
+                            <table id="profissionais-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th><th>Telefone</th><th>Funções</th><th>Inativo?</th><th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    </div>
+
+                <div id="profissional-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header"><h2 id="modal-title">Adicionar Novo Profissional</h2></div>
+                        <div class="modal-body">
+                            <form id="profissional-form">
+                                <input type="hidden" id="profissional-id">
+                                <div class="form-group">
+                                    <label for="prof-nome">Nome Completo</label>
+                                    <input type="text" id="prof-nome" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="prof-email">E-mail (Login)</label>
+                                    <input type="email" id="prof-email" required>
+                                </div>
+                                </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" id="modal-cancel-btn" class="action-button secondary">Cancelar</button>
+                            <button type="submit" form="profissional-form" id="modal-save-btn" class="action-button primary">Salvar</button>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
