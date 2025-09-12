@@ -1,4 +1,4 @@
-// modules/financeiro/js/gestao_profissionais.js (Versão Final com a sua lógica original)
+// modules/financeiro/js/gestao_profissionais.js (Versão Corrigida Final)
 
 (function() {
     // Acessa os serviços do Firebase inicializados globalmente
@@ -26,11 +26,9 @@
             });
         });
         
-        // Ativa a primeira aba
         const firstTab = document.querySelector('.tab-link[data-tab="GestaoProfissionais"]');
         if (firstTab) firstTab.click();
         
-        // Seleciona os elementos do DOM
         tableBody = document.querySelector('#profissionais-table tbody');
         modal = document.getElementById('profissional-modal');
         modalTitle = document.getElementById('modal-title');
@@ -40,13 +38,11 @@
         deleteButton = document.getElementById('modal-delete-btn');
         saveButton = document.getElementById('modal-save-btn');
 
-        // Adiciona os eventos aos botões
         if (addProfissionalButton) addProfissionalButton.addEventListener('click', () => abrirModal(null));
         if (cancelButton) cancelButton.addEventListener('click', fecharModal);
         if (profissionalForm) profissionalForm.addEventListener('submit', salvarProfissional);
         if (deleteButton) deleteButton.addEventListener('click', excluirProfissional);
 
-        // Event listener na tabela para os botões de edição
         if (tableBody) {
             tableBody.addEventListener('click', (event) => {
                 if (event.target.classList.contains('edit-btn')) {
@@ -109,7 +105,7 @@
             document.getElementById('profissional-id').value = profissional.id;
             document.getElementById('prof-nome').value = profissional.nome || '';
             emailInput.value = profissional.email || '';
-            emailInput.disabled = true; // Bloqueia e-mail na edição
+            emailInput.disabled = true;
             document.getElementById('prof-contato').value = profissional.contato || '';
             document.getElementById('prof-profissao').value = profissional.profissao || '';
             document.getElementById('prof-inativo').checked = profissional.inativo || false;
@@ -134,15 +130,15 @@
     }
 
     /**
-     * ✅ FUNÇÃO SALVAR ATUALIZADA COM A LÓGICA CORRETA
+     * Salva (cria ou atualiza) um profissional.
      */
     async function salvarProfissional(event) {
         event.preventDefault();
         
+        // ✅ CORREÇÃO: Inverti as variáveis nome e email que estavam trocadas.
+        const nome = document.getElementById('prof-nome').value.trim();
+        const email = document.getElementById('prof-email').value.trim();
         const profissionalId = document.getElementById('profissional-id').value;
-        const email = document.getElementById('prof-nome').value.trim();
-        const nome = document.getElementById('prof-email').value.trim();
-
 
         if (!nome || !email) {
             if(window.showToast) window.showToast('Nome e E-mail são obrigatórios.', 'error');
@@ -175,7 +171,7 @@
                 const resultado = await criarNovoProfissional(dadosProfissional);
                 if(window.showToast) window.showToast(resultado.data.message || 'Profissional criado com sucesso!');
             }
-            fecharModal(); // A tabela se atualizará sozinha por causa do 'onSnapshot'
+            fecharModal();
         } catch (error) {
             console.error("Erro ao salvar profissional:", error);
             if(window.showToast) window.showToast(`Erro: ${error.message}`, 'error');
@@ -206,5 +202,5 @@
 
     // --- INICIALIZAÇÃO ---
     setupEventListeners();
-    ouvirMudancasProfissionais(); // Inicia o listener em tempo real
+    ouvirMudancasProfissionais();
 })();
