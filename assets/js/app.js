@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
             portal_voluntario: { 
                 titulo: 'Portal do Voluntário', 
                 descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', 
-                url: './pages/portal-voluntario.html',
+                url: './modulos/portal-voluntario/page/portal-voluntario.html',
                 roles: ['todos'],
                 icon: icons.intranet 
             },
