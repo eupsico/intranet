@@ -140,14 +140,14 @@ document.addEventListener('DOMContentLoaded', function() {
             portal_voluntario: { 
                 titulo: 'Portal do Voluntário', 
                 descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', 
-                url: '/modules/portal-voluntario/index.html',
+                url: './modules/portal-voluntario/index.html',
                 roles: ['todos'],
                 icon: icons.intranet 
             },
             administrativo: { 
                 titulo: 'Administrativo', 
                 descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', 
-                url: '/modules/administrativo/index.html', 
+                url: './modules/administrativo/index.html', 
                 roles: ['admin', 'gestor', 'assistente'], 
                 icon: icons.administrativo 
             },
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
             financeiro: { 
                 titulo: 'Financeiro', 
                 descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', 
-                url: '/modules/financeiro/index.html', 
+                url: './modules/financeiro/index.html', 
                 roles: ['admin', 'financeiro'], 
                 icon: icons.financeiro 
             },
