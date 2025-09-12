@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             administrativo: { 
                 titulo: 'Administrativo', 
                 descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', 
-                url: './modulos/portal-voluntario/page/administrativo-painel.html', 
+                url: './modulos/voluntario/page/administrativo-painel.html', 
                 roles: ['admin', 'gestor', 'assistente'], 
                 icon: icons.administrativo 
             },
