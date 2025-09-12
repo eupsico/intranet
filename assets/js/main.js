@@ -23,19 +23,21 @@ function pageController() {
                     // Usuário logado, mas sem permissões no Firestore
                     alert("Você não tem permissão para acessar esta área. Contate o administrador.");
                     auth.signOut(); // Desloga o usuário
-                    window.location.href = '/index.html'; // Redireciona para o login
+                    // ✅ CORREÇÃO: Aponta para o caminho completo do projeto no GitHub Pages
+                    window.location.href = '/intraneteupsico/index.html';
                 }
             } catch (error) {
                 console.error("Erro ao buscar dados do usuário:", error);
                 alert("Ocorreu um erro ao verificar suas permissões.");
                 auth.signOut();
-                window.location.href = '/index.html';
+                // ✅ CORREÇÃO: Aponta para o caminho completo do projeto no GitHub Pages
+                window.location.href = '/intraneteupsico/index.html';
             }
         } else {
             // --- USUÁRIO ESTÁ DESLOGADO ---
             console.log("Nenhum usuário logado. Redirecionando para a página de login.");
-            // Redireciona para a raiz do site, que é a página de login.
-            window.location.href = '/'; 
+            // ✅ CORREÇÃO: Aponta para o caminho completo do projeto no GitHub Pages
+            window.location.href = '/intraneteupsico/index.html'; 
         }
     });
 }
