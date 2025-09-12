@@ -1,4 +1,4 @@
-// assets/js/main.js
+// assets/js/main.js (Versão Atualizada)
 
 // Define as constantes do Firebase que serão usadas em todo o script
 const auth = firebase.auth();
@@ -23,20 +23,17 @@ function pageController() {
                     // Usuário logado, mas sem permissões no Firestore
                     alert("Você não tem permissão para acessar esta área. Contate o administrador.");
                     auth.signOut(); // Desloga o usuário
-                    // ✅ CORREÇÃO: Aponta para o caminho completo do projeto no GitHub Pages
                     window.location.href = '/intraneteupsico/index.html';
                 }
             } catch (error) {
                 console.error("Erro ao buscar dados do usuário:", error);
                 alert("Ocorreu um erro ao verificar suas permissões.");
                 auth.signOut();
-                // ✅ CORREÇÃO: Aponta para o caminho completo do projeto no GitHub Pages
                 window.location.href = '/intraneteupsico/index.html';
             }
         } else {
             // --- USUÁRIO ESTÁ DESLOGADO ---
             console.log("Nenhum usuário logado. Redirecionando para a página de login.");
-            // ✅ CORREÇÃO: Aponta para o caminho completo do projeto no GitHub Pages
             window.location.href = '/intraneteupsico/index.html'; 
         }
     });
@@ -59,6 +56,10 @@ function initializeApp(user, userData) {
 
     // 4. Inicia o timer de inatividade
     setupInactivityListeners();
+
+    // ✅ ADIÇÃO: Dispara o evento "userReady" para avisar os outros scripts
+    // que o usuário está autenticado e os dados estão prontos.
+    document.dispatchEvent(new CustomEvent('userReady', { detail: { user, userData } }));
 }
 
 
