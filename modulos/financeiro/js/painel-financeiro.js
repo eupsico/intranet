@@ -1,22 +1,16 @@
-
-// Versão: 2.2
-// Descrição: Refatorado para ser um módulo especialista, sem controle de autenticação próprio.
-
-// A configuração e inicialização do Firebase são removidas.
-// O script agora espera receber as instâncias de user, db, e userData.
+// Arquivo: assets/js/painel-financeiro.js
+// Versão: 2.3
+// Descrição: Refatorado para construir o menu de navegação na sidebar principal.
 
 export function initFinancePanel(user, db, userData) {
     
-    // Disponibiliza db para scripts de view que possam ser carregados dinamicamente
     window.db = db;
     
-    // Função de Toast (notificação)
     window.showToast = function(message, type = 'success') {
         const container = document.getElementById('toast-container') || document.body;
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.textContent = message;
-        // Estilos e timeouts para o toast...
         toast.style.position = 'fixed';
         toast.style.top = '20px';
         toast.style.right = '20px';
@@ -41,7 +35,7 @@ export function initFinancePanel(user, db, userData) {
     };
 
     const contentArea = document.getElementById('content-area');
-    const tabsContainer = document.getElementById('finance-tabs');
+    const sidebarMenu = document.getElementById('sidebar-menu'); // ALTERAÇÃO: Agora busca o menu da sidebar
     const viewTemplates = document.getElementById('financial-views');
 
     const views = [
@@ -58,29 +52,47 @@ export function initFinancePanel(user, db, userData) {
         { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'] }
     ];
 
-    function buildTabs(userRoles = []) {
-        if (!tabsContainer) return;
-        tabsContainer.innerHTML = '';
+    // ALTERAÇÃO: Função reescrita para construir o menu na sidebar
+    function buildFinanceSidebarMenu(userRoles = []) {
+        if (!sidebarMenu) return;
+        sidebarMenu.innerHTML = ''; // Limpa o menu global
+
+        // Adiciona um link para voltar ao início
+        const backLink = document.createElement('li');
+        backLink.innerHTML = `
+            <a href="../../../index.html" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>Voltar à Intranet</span>
+            </a>
+        `;
+        sidebarMenu.appendChild(backLink);
+
+        // Adiciona um separador
+        const separator = document.createElement('li');
+        separator.className = 'menu-separator';
+        sidebarMenu.appendChild(separator);
+
 
         views.forEach(view => {
             const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
             if (hasPermission) {
-                const tabButton = document.createElement('button');
-                tabButton.className = 'tab-link';
-                tabButton.dataset.view = view.id;
-                tabButton.textContent = view.name;
-                tabButton.addEventListener('click', () => {
-                    window.location.hash = view.id;
-                });
-                tabsContainer.appendChild(tabButton);
+                const menuItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `#${view.id}`;
+                link.dataset.view = view.id;
+                // Ícones precisam ser definidos ou passados de alguma forma se quisermos usá-los aqui
+                link.innerHTML = `<span>${view.name}</span>`;
+                menuItem.appendChild(link);
+                sidebarMenu.appendChild(menuItem);
             }
         });
     }
 
     async function loadView(viewName) {
-        const tabButtons = tabsContainer.querySelectorAll('.tab-link');
-        tabButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.view === viewName);
+        // Marca o link ativo na sidebar
+        const menuLinks = sidebarMenu.querySelectorAll('a');
+        menuLinks.forEach(link => {
+            link.classList.toggle('active', link.dataset.view === viewName);
         });
         
         try {
@@ -99,7 +111,7 @@ export function initFinancePanel(user, db, userData) {
             try {
                 const viewModule = await import(scriptPath);
                 if (viewModule && typeof viewModule.init === 'function') {
-                    viewModule.init(db, user, userData); // Passa as instâncias para o script da view
+                    viewModule.init(db, user, userData);
                 }
             } catch (e) {
                 console.log(`Nenhum script de inicialização para a view '${viewName}'.`);
@@ -112,7 +124,7 @@ export function initFinancePanel(user, db, userData) {
 
     // --- Ponto de Partida do Módulo Financeiro ---
     const userRoles = userData.funcoes || [];
-    buildTabs(userRoles);
+    buildFinanceSidebarMenu(userRoles);
 
     const hash = window.location.hash.substring(1);
     const viewExists = views.some(v => v.id === hash);
@@ -121,22 +133,16 @@ export function initFinancePanel(user, db, userData) {
     if (hash && viewExists && hasPermissionForHash) {
         loadView(hash);
     } else {
-        const firstAvailableTab = tabsContainer.querySelector('.tab-link');
-        if (firstAvailableTab) {
-            window.location.hash = firstAvailableTab.dataset.view;
+        const firstAvailableLink = sidebarMenu.querySelector('a[data-view]');
+        if (firstAvailableLink) {
+            window.location.hash = firstAvailableLink.dataset.view;
         } else {
             contentArea.innerHTML = '<h2>Você não tem permissão para acessar nenhuma seção deste módulo.</h2>';
         }
     }
 
-    // Adiciona o listener para navegação entre abas via hash
     window.addEventListener('hashchange', () => {
         const viewName = window.location.hash.substring(1);
-        const firstTab = tabsContainer.querySelector('.tab-link')?.dataset.view || '';
-        if (viewName) {
-            loadView(viewName);
-        } else if (firstTab) {
-            loadView(firstTab);
-        }
-    }, { once: true }); // Executa o listener apenas uma vez para evitar múltiplos registros
+        if (viewName) loadView(viewName);
+    });
 }
