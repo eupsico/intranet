@@ -1,7 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.2
-    Descrição: Adiciona os estilos para os componentes internos da página
-               do dashboard (seções, cards, títulos, rodapé).
+    Versão: 1.3
+    Descrição: Adiciona os estilos finais para o menu de navegação da sidebar.
 */
 
 /* --- :root - Definição das Variáveis Globais (da v1.0) --- */
@@ -77,6 +76,8 @@ a:hover {
     background-color: var(--cor-surface);
     border-right: 1px solid var(--cor-borda);
     padding: 20px;
+    display: flex; /* Adicionado para organizar o conteúdo da sidebar */
+    flex-direction: column; /* Organiza os itens verticalmente */
 }
 
 .header {
@@ -104,141 +105,84 @@ a:hover {
 .header .logout-button-dashboard { background-color: var(--cor-erro); color: var(--cor-texto-inverso); padding: 8px 15px; border-radius: 5px; font-size: 0.9em; font-weight: 500; transition: background-color 0.2s; }
 .header .logout-button-dashboard:hover { background-color: #c0392b; text-decoration: none; }
 
-/* --- NOVO: Componentes do Conteúdo do Dashboard v1.2 --- */
-
-/* Contêiner de Seção */
-.dashboard-section {
-    background-color: var(--cor-surface);
-    padding: 30px;
-    border-radius: var(--borda-radius);
-    box-shadow: var(--sombra-padrao);
-    margin-bottom: 30px;
-}
-
-/* Cabeçalho de Seção (títulos como "Sobre Nós") */
-.section-header {
-    margin-bottom: 25px;
-    border-bottom: 2px solid var(--cor-primaria);
-    padding-bottom: 10px;
-}
-
-.section-header h2 {
-    margin: 0;
-    color: var(--cor-primaria);
-    font-size: 1.5em;
-}
-
-/* Cards de Informação (Missão, Visão, Valores) */
-.info-card-about, .info-card {
-    background-color: var(--cor-fundo);
-    padding: 25px;
-    border-radius: var(--borda-radius);
-    border-left: 5px solid var(--cor-secundaria);
-    margin-bottom: 30px;
-}
-
-.info-card h3 {
-    margin-top: 0;
-    color: var(--cor-primaria);
-}
-
+/* --- Componentes do Conteúdo do Dashboard (da v1.2) --- */
+.dashboard-section { background-color: var(--cor-surface); padding: 30px; border-radius: var(--borda-radius); box-shadow: var(--sombra-padrao); margin-bottom: 30px; }
+.section-header { margin-bottom: 25px; border-bottom: 2px solid var(--cor-primaria); padding-bottom: 10px; }
+.section-header h2 { margin: 0; color: var(--cor-primaria); font-size: 1.5em; }
+.info-card-about, .info-card { background-color: var(--cor-fundo); padding: 25px; border-radius: var(--borda-radius); border-left: 5px solid var(--cor-secundaria); margin-bottom: 30px; }
+.info-card h3 { margin-top: 0; color: var(--cor-primaria); }
 .info-card ul { list-style: none; padding: 0; }
 .info-card ul li { margin-bottom: 8px; position: relative; padding-left: 20px; }
 .info-card ul li::before { content: '✓'; color: var(--cor-secundaria); position: absolute; left: 0; font-weight: bold; }
-
-.mission-vision-values {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-    margin-bottom: 30px;
-}
-.mission-vision-values .info-card {
-    margin-bottom: 0; /* Remove a margem pois o grid já tem 'gap' */
-}
-
-
-/* Cards de Módulo (Acesso Rápido) */
-.modules-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px;
-}
-
-.module-card {
-    background-color: var(--cor-surface);
-    border-radius: var(--borda-radius);
-    border: 1px solid var(--cor-borda);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    color: inherit;
-    display: flex; /* Alterado para flex para melhor alinhamento */
-    flex-direction: column;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.module-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-}
-
-.module-card .card-icon {
-    padding: 15px 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    border-bottom: 1px solid var(--cor-borda);
-}
-
-.module-card .card-icon svg {
-    width: 24px;
-    height: 24px;
-    color: var(--cor-primaria);
-    flex-shrink: 0;
-}
-
-.module-card .card-icon h3 {
-    margin: 0;
-    color: var(--cor-texto-principal);
-    font-size: 1.1em;
-}
-
-.module-card .card-content {
-    padding: 20px;
-    flex-grow: 1; /* Faz o conteúdo crescer para preencher o card */
-}
-
-.module-card .card-content p {
-    margin: 0;
-    color: var(--cor-texto-secundario);
-    font-size: 0.95em;
-}
-
-/* Rodapé */
-.main-footer {
-    background-color: var(--cor-primaria);
-    color: var(--cor-texto-inverso);
-    text-align: center;
-    padding: 30px 20px;
-    border-radius: var(--borda-radius);
-}
-
+.mission-vision-values { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 30px; }
+.mission-vision-values .info-card { margin-bottom: 0; }
+.modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+.module-card { background-color: var(--cor-surface); border-radius: var(--borda-radius); border: 1px solid var(--cor-borda); box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: inherit; display: flex; flex-direction: column; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+.module-card:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+.module-card .card-icon { padding: 15px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--cor-borda); }
+.module-card .card-icon svg { width: 24px; height: 24px; color: var(--cor-primaria); flex-shrink: 0; }
+.module-card .card-icon h3 { margin: 0; color: var(--cor-texto-principal); font-size: 1.1em; }
+.module-card .card-content { padding: 20px; flex-grow: 1; }
+.module-card .card-content p { margin: 0; color: var(--cor-texto-secundario); font-size: 0.95em; }
+.main-footer { background-color: var(--cor-primaria); color: var(--cor-texto-inverso); text-align: center; padding: 30px 20px; border-radius: var(--borda-radius); }
 .main-footer p { margin: 5px 0; font-size: 0.9em; }
 .main-footer a { color: var(--cor-secundaria); }
 .main-footer a:hover { color: var(--cor-texto-inverso); }
+.video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; border-radius: var(--borda-radius); margin-top: 30px; }
+.video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-/* Container de Vídeo */
-.video-container {
-    position: relative;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
-    max-width: 100%;
-    background: #000;
-    border-radius: var(--borda-radius);
-    margin-top: 30px;
+
+/* --- NOVO: Estilos da Sidebar e Menu de Navegação v1.3 --- */
+
+/* Cabeçalho da Sidebar (Logo) */
+.sidebar-header {
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--cor-borda);
+    text-align: center;
 }
 
-.video-container iframe {
-    position: absolute;
-    top: 0; left: 0;
-    width: 80%; height: 80%;
+.sidebar-logo {
+    max-width: 130px;
+    height: auto;
+}
+
+/* Lista do Menu */
+.sidebar-menu {
+    list-style: none; /* Remove as bolinhas da lista */
+    margin: 0;
+    padding: 0;
+    overflow-y: auto; /* Adiciona scroll se o menu for muito grande */
+    flex-grow: 1; /* Faz o menu ocupar o espaço disponível */
+}
+
+.sidebar-menu li {
+    margin-bottom: 5px;
+}
+
+/* Links do Menu */
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    color: var(--cor-texto-secundario);
+    font-weight: 500;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-menu a:hover {
+    background-color: var(--cor-fundo);
+    color: var(--cor-primaria);
+    text-decoration: none; /* Remove sublinhado no hover */
+}
+
+/* Ícone dentro do link do menu */
+.sidebar-menu a svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--cor-primaria); /* Ícone sempre na cor primária */
 }
