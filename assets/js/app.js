@@ -1,6 +1,6 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.1
-// Descrição: Adiciona a função renderSidebarMenu para popular a navegação lateral.
+// Versão: 1.2
+// Descrição: Adiciona a funcionalidade de menu retrátil (collapsible).
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
             auth.signOut();
         }, 20 * 60 * 1000); 
     }
+
     function setupInactivityListeners() {
         window.addEventListener('mousemove', resetInactivityTimer);
         window.addEventListener('mousedown', resetInactivityTimer);
@@ -55,18 +56,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderLogin();
                 }
             } catch (error) {
-                console.error("Erro durante a verificação de autenticação:", error);
-                renderLogin(`Ocorreu um erro ao verificar suas permissões: ${error.message}`);
+                console.error("Erro de autenticação:", error);
+                renderLogin(`Ocorreu um erro: ${error.message}`);
                 auth.signOut();
             }
         });
     }
 
-    // --- ALTERAÇÃO: Função renderLogin atualizada para a versão sem estilos inline ---
     function renderLogin(message = "Por favor, faça login para continuar.") {
         dashboardView.style.display = 'none';
         loginView.style.display = 'block';
-        
         loginView.innerHTML = `
             <div class="login-container">
                 <div class="login-card">
@@ -112,31 +111,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (userPhoto) { userPhoto.src = user.photoURL || 'https://i.ibb.co/61Ym24n/default-user.png'; }
         if (userEmail) { userEmail.textContent = user.email; }
-        if (logoutButton) { logoutButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            auth.signOut();
-        });}
+        if (logoutButton) { logoutButton.addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });}
 
-        // --- ALTERAÇÃO: Lógica de permissão agora é compartilhada ---
         const cardsParaMostrar = getVisibleModules(userData);
         renderModuleCards(cardsParaMostrar);
-        renderSidebarMenu(cardsParaMostrar); // Chamada da nova função
+        renderSidebarMenu(cardsParaMostrar);
+        
+        // --- NOVO: Chamada da função para ativar o menu retrátil ---
+        setupSidebarToggle();
     }
 
-    // --- NOVO: Função para gerar o menu da sidebar ---
+    // --- NOVO: Função para controlar o menu retrátil ---
+    function setupSidebarToggle() {
+        const layoutContainer = document.querySelector('.layout-container');
+        const toggleButton = document.getElementById('sidebar-toggle');
+        const buttonText = toggleButton.querySelector('span');
+
+        if (!layoutContainer || !toggleButton || !buttonText) {
+            console.error("Elementos do menu retrátil não encontrados!");
+            return;
+        }
+
+        const updateButton = (isCollapsed) => {
+            if (isCollapsed) {
+                buttonText.textContent = 'Expandir';
+                toggleButton.setAttribute('title', 'Expandir menu');
+            } else {
+                buttonText.textContent = 'Recolher';
+                toggleButton.setAttribute('title', 'Recolher menu');
+            }
+        };
+
+        // Verifica o estado salvo no localStorage ao carregar a página
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            layoutContainer.classList.add('sidebar-collapsed');
+        }
+        updateButton(isCollapsed);
+
+        // Adiciona o evento de clique ao botão
+        toggleButton.addEventListener('click', () => {
+            const currentlyCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
+            updateButton(currentlyCollapsed);
+        });
+    }
+
     function renderSidebarMenu(modules) {
         const menu = document.getElementById('sidebar-menu');
         if (!menu) return;
-        menu.innerHTML = ''; // Limpa o menu antes de preencher
-
+        menu.innerHTML = '';
         modules.forEach(config => {
             const menuItem = document.createElement('li');
-            menuItem.innerHTML = `
-                <a href="${config.url}">
-                    ${config.icon || ''}
-                    <span>${config.titulo}</span>
-                </a>
-            `;
+            menuItem.innerHTML = `<a href="${config.url}">${config.icon || ''}<span>${config.titulo}</span></a>`;
             menu.appendChild(menuItem);
         });
     }
@@ -145,26 +172,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const navLinks = document.getElementById('nav-links');
         if (!navLinks) return;
         navLinks.innerHTML = '';
-        
         modules.forEach(config => {
             const card = document.createElement('a');
             card.href = config.url;
             card.className = 'module-card';
-            
-            card.innerHTML = `
-                <div class="card-icon">
-                    ${config.icon || ''}
-                    <h3>${config.titulo}</h3>
-                </div>
-                <div class="card-content">
-                    <p>${config.descricao}</p>
-                </div>
-            `;
+            card.innerHTML = `<div class="card-icon">${config.icon || ''}<h3>${config.titulo}</h3></div><div class="card-content"><p>${config.descricao}</p></div>`;
             navLinks.appendChild(card);
         });
     }
 
-    // --- ALTERAÇÃO: Lógica de permissão movida para uma função separada para ser reutilizável ---
     function getVisibleModules(userData) {
         const icons = {
             intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
@@ -179,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
             supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
         };
         const areas = {
-            portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
+            portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntário/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
             administrativo: { titulo: 'Administrativo', descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', url: './modulos/administrativo/page/administrativo-painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
             captacao: { titulo: 'Captação', descricao: 'Somente os voluntários da captação tem acesso para acessar as ferramentas e informações para captação.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
             financeiro: { titulo: 'Financeiro', descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', url: './modulos/financeiro/page/painel.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
@@ -197,14 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const area = areas[key];
             const rolesLowerCase = (area.roles || []).map(r => r.toLowerCase());
             let hasPermission = false;
-            if (userFuncoes.includes('admin') || rolesLowerCase.includes('todos')) {
-                hasPermission = true;
-            } else if (rolesLowerCase.some(role => userFuncoes.includes(role))) {
-                hasPermission = true;
-            }
-            if (hasPermission) {
-                modulesToShow.push(area);
-            }
+            if (userFuncoes.includes('admin') || rolesLowerCase.includes('todos')) { hasPermission = true; }
+            else if (rolesLowerCase.some(role => userFuncoes.includes(role))) { hasPermission = true; }
+            if (hasPermission) { modulesToShow.push(area); }
         }
         modulesToShow.sort((a, b) => {
             if (a.titulo === 'Portal do Voluntário') return -1;
