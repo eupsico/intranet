@@ -1,6 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.7.2
-    Descrição: Adiciona correções de overflow e de header para o layout mobile.
+    Versão: 1.7.3
+    Descrição: Adiciona regra específica para corrigir a cor do ícone de menu no header.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -34,7 +34,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .layout-container {
     display: grid;
     height: 100vh;
-    overflow: hidden; /* Previne barras de rolagem indesejadas no container principal */
+    overflow: hidden;
     grid-template-columns: var(--sidebar-width-expanded) 1fr; 
     grid-template-rows: 70px 1fr;
     grid-template-areas:
@@ -81,6 +81,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 #sidebar-toggle svg {
     width: 24px;
     height: 24px;
+    stroke: currentColor; /* ALTERAÇÃO: Garante que o SVG use a cor do botão */
 }
 
 
@@ -186,15 +187,13 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 
 /* --- Estilos para Telas Pequenas (Mobile) --- */
 @media (max-width: 768px) {
-    /* Adiciona overflow para evitar barra de rolagem horizontal */
     body, html {
         overflow-x: hidden;
     }
 
     .layout-container {
-        /* Desfaz o grid de 2 colunas */
         grid-template-columns: 1fr; 
-        grid-template-rows: 60px 1fr; /* Header um pouco menor */
+        grid-template-rows: 60px 1fr;
         grid-template-areas:
             "header"
             "main";
@@ -207,35 +206,30 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
         height: 100%;
         width: var(--sidebar-width-expanded);
         z-index: 1000;
-        transform: translateX(-100%); /* Esconde o menu para a esquerda */
+        transform: translateX(-100%);
         transition: transform 0.3s ease-in-out;
         box-shadow: 0 0 20px rgba(0,0,0,0.2);
     }
     
-    /* Classe que o JS vai adicionar para mostrar o menu */
     .sidebar.is-visible {
         transform: translateX(0);
     }
     
-    /* Mostra o overlay quando o menu está visível */
     .layout-container.mobile-menu-open .menu-overlay {
         display: block;
     }
 
-    /* Ajustes no header para telas pequenas */
     .header {
         padding: 0 15px;
     }
     .header .welcome-message {
-        display: none; /* Esconde a mensagem de boas vindas para economizar espaço */
+        display: none;
     }
 
-    /* Esconde o email do usuário para evitar quebra de layout */
     .header .user-profile-header span {
         display: none;
     }
 
-    /* Reduz o padding do conteúdo principal e das seções em telas pequenas */
     .main-content {
         padding: 15px;
     }
