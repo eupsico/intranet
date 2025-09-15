@@ -1,7 +1,7 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.5.1
-    Descrição: Implementa a correção definitiva do bug de overflow,
-               tornando a própria sidebar o container de rolagem.
+    Versão: 1.6
+    Descrição: Utiliza o div .sidebar-content-wrapper para a correção
+               definitiva do bug de overflow.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -83,22 +83,28 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     height: 24px;
 }
 
-
 /* --- Sidebar --- */
 .sidebar {
     grid-area: sidebar;
     background-color: var(--cor-surface);
     border-right: 1px solid var(--cor-borda);
-    position: relative;
-    padding: 15px; /* ALTERAÇÃO: Padding aplicado aqui */
-    overflow-y: auto; /* ALTERAÇÃO: Container principal da sidebar agora é rolável */
+    overflow: hidden; /* Garante que nada vaze */
+    /* ALTERAÇÃO: padding e overflow-y removidos daqui */
+}
+
+/* NOVO: Container interno para controlar padding e rolagem */
+.sidebar-content-wrapper {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    padding: 15px;
 }
 
 .sidebar-menu {
     list-style: none;
     margin: 0;
-    padding: 0; /* ALTERAÇÃO: Padding removido */
-    /* ALTERAÇÃO: height e overflow removidos */
+    padding: 0;
+    /* height e overflow foram permanentemente removidos daqui */
 }
 .sidebar-menu li { margin-bottom: 5px; }
 .sidebar-menu a {
@@ -123,8 +129,8 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .layout-container.sidebar-collapsed {
     grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
-/* ALTERAÇÃO: O padding do sidebar colapsado também precisa ser ajustado */
-.layout-container.sidebar-collapsed .sidebar {
+/* ALTERAÇÃO: Padding do estado recolhido agora é aplicado no wrapper */
+.layout-container.sidebar-collapsed .sidebar-content-wrapper {
     padding: 15px 10px;
 }
 .layout-container.sidebar-collapsed .sidebar-menu a {
@@ -155,7 +161,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .mission-vision-values .info-card { margin-bottom: 0; }
 .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
 .module-card { background-color: var(--cor-surface); border-radius: var(--borda-radius); border: 1px solid var(--cor-borda); box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: inherit; display: flex; flex-direction: column; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
-.module-card:hover { transform: translateY(--5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+.module-card:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
 .module-card .card-icon { padding: 15px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--cor-borda); }
 .module-card .card-icon svg { width: 24px; height: 24px; color: var(--cor-primaria); flex-shrink: 0; }
 .module-card .card-icon h3 { margin: 0; color: var(--cor-texto-principal); font-size: 1.1em; }
