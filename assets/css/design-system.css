@@ -1,6 +1,7 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.4.1
-    Descrição: Implementa a correção definitiva do bug de overflow com position: absolute.
+    Versão: 1.5
+    Descrição: Remove estilos do footer da sidebar e adiciona os estilos
+               para o novo botão de toggle no header principal.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -21,7 +22,7 @@
     --borda-radius: 8px;
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
-    --sidebar-footer-height: 85px; /* NOVO: Altura fixa para o rodapé da sidebar */
+    /* Variável --sidebar-footer-height removida */
 }
 
 /* --- Reset Básico e Estilos Globais --- */
@@ -53,7 +54,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     align-items: center;
     padding: 0 30px;
 }
-.header-start { display: flex; align-items: center; gap: 20px; }
+.header-start { display: flex; align-items: center; gap: 15px; } /* Gap ajustado */
 .header-logo { height: 40px; width: auto; }
 .header .welcome-message h1 { font-size: 1.5em; margin: 0; }
 .header .welcome-message p { margin: 2px 0 0; font-size: 0.9em; opacity: 0.8; }
@@ -63,23 +64,43 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .header .logout-button-dashboard { background-color: var(--cor-erro); color: var(--cor-texto-inverso); padding: 8px 15px; border-radius: 5px; font-size: 0.9em; font-weight: 500; transition: background-color 0.2s; }
 .header .logout-button-dashboard:hover { background-color: #c0392b; text-decoration: none; }
 
+/* NOVO: Estilo para o botão de toggle DENTRO do header */
+#sidebar-toggle {
+    background: transparent;
+    border: none;
+    color: var(--cor-texto-inverso);
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 5px; /* Espaçamento entre o botão e o logo */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+#sidebar-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+#sidebar-toggle svg {
+    width: 24px;
+    height: 24px;
+}
+
+
 /* --- Sidebar --- */
 .sidebar {
     grid-area: sidebar;
     background-color: var(--cor-surface);
     border-right: 1px solid var(--cor-borda);
-    position: relative; /* ALTERAÇÃO: Essencial para o posicionamento absoluto do footer */
-    /* display: flex e flex-direction removidos */
+    position: relative;
 }
 
 .sidebar-menu {
     list-style: none;
     margin: 0;
-    padding: 20px;
+    padding: 15px; /* Padding ajustado */
     overflow-y: auto;
-    /* ALTERAÇÃO: Altura calculada para deixar espaço para o footer */
-    height: calc(100% - var(--sidebar-footer-height));
-    /* flex-grow removido */
+    height: 100%; /* ALTERAÇÃO: Ocupa toda a altura disponível */
 }
 .sidebar-menu li { margin-bottom: 5px; }
 .sidebar-menu a {
@@ -100,37 +121,8 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .sidebar-menu a span { transition: opacity 0.2s ease, width 0.2s ease; }
 
 
-/* Rodapé da Sidebar e Botão de Controle */
-.sidebar-footer {
-    /* ALTERAÇÃO: Posicionamento absoluto para fixar na base */
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: var(--sidebar-footer-height);
-    background-color: var(--cor-surface); /* Fundo para não ser transparente */
-    padding: 20px;
-    border-top: 1px solid var(--cor-borda);
-}
-#sidebar-toggle {
-    width: 100%;
-    background-color: var(--cor-fundo);
-    border: 1px solid var(--cor-borda);
-    color: var(--cor-texto-secundario);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 6px;
-    font-family: var(--fonte-principal);
-    font-size: 0.9em;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-#sidebar-toggle:hover { background-color: var(--cor-borda); color: var(--cor-texto-principal); }
-#sidebar-toggle svg { transition: transform 0.3s ease; }
+/* REMOVIDO: Todo o bloco de .sidebar-footer e o estilo antigo de #sidebar-toggle foram apagados */
+
 
 /* Estilos do Menu Retrátil */
 .layout-container.sidebar-collapsed {
@@ -140,18 +132,12 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     justify-content: center;
     padding: 12px;
 }
-.layout-container.sidebar-collapsed .sidebar-menu a span,
-.layout-container.sidebar-collapsed #sidebar-toggle span {
+.layout-container.sidebar-collapsed .sidebar-menu a span {
     opacity: 0;
     width: 0;
     overflow: hidden;
 }
-.layout-container.sidebar-collapsed #sidebar-toggle {
-    justify-content: center;
-}
-.layout-container.sidebar-collapsed #sidebar-toggle svg {
-    transform: rotate(180deg);
-}
+/* A rotação do ícone foi removida pois não se aplica ao ícone de hambúrguer */
 
 /* --- Conteúdo Principal --- */
 .main-content {

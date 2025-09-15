@@ -1,6 +1,6 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.2
-// Descrição: Adiciona a funcionalidade de menu retrátil (collapsible).
+// Versão: 1.3
+// Descrição: Adapta a funcionalidade do menu retrátil para o novo botão no header.
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
@@ -117,43 +117,32 @@ document.addEventListener('DOMContentLoaded', function() {
         renderModuleCards(cardsParaMostrar);
         renderSidebarMenu(cardsParaMostrar);
         
-        // --- NOVO: Chamada da função para ativar o menu retrátil ---
         setupSidebarToggle();
     }
-
-    // --- NOVO: Função para controlar o menu retrátil ---
+    
+    // --- ALTERAÇÃO: Função simplificada para o novo botão de ícone ---
     function setupSidebarToggle() {
         const layoutContainer = document.querySelector('.layout-container');
         const toggleButton = document.getElementById('sidebar-toggle');
-        const buttonText = toggleButton.querySelector('span');
 
-        if (!layoutContainer || !toggleButton || !buttonText) {
+        if (!layoutContainer || !toggleButton) {
             console.error("Elementos do menu retrátil não encontrados!");
             return;
         }
-
-        const updateButton = (isCollapsed) => {
-            if (isCollapsed) {
-                buttonText.textContent = 'Expandir';
-                toggleButton.setAttribute('title', 'Expandir menu');
-            } else {
-                buttonText.textContent = 'Recolher';
-                toggleButton.setAttribute('title', 'Recolher menu');
-            }
-        };
 
         // Verifica o estado salvo no localStorage ao carregar a página
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         if (isCollapsed) {
             layoutContainer.classList.add('sidebar-collapsed');
         }
-        updateButton(isCollapsed);
+        toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
+
 
         // Adiciona o evento de clique ao botão
         toggleButton.addEventListener('click', () => {
             const currentlyCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
             localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
-            updateButton(currentlyCollapsed);
+            toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
         });
     }
 
@@ -187,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
             administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
             captacao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
             financeiro: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
-            grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+            grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v--2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
             marketing: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
             plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`,
             rh: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
@@ -195,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
             supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
         };
         const areas = {
-            portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntário/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
+            portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
             administrativo: { titulo: 'Administrativo', descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', url: './modulos/administrativo/page/administrativo-painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
             captacao: { titulo: 'Captação', descricao: 'Somente os voluntários da captação tem acesso para acessar as ferramentas e informações para captação.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
             financeiro: { titulo: 'Financeiro', descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', url: './modulos/financeiro/page/painel.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
