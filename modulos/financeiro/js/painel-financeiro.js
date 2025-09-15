@@ -1,6 +1,6 @@
 // Arquivo: assets/js/painel-financeiro.js
-// Versão: 2.3
-// Descrição: Refatorado para construir o menu de navegação na sidebar principal.
+// Versão: 2.4
+// Descrição: Refatorado para construir o menu na sidebar principal e remove a view 'gestao_profissionais'.
 
 export function initFinancePanel(user, db, userData) {
     
@@ -35,12 +35,12 @@ export function initFinancePanel(user, db, userData) {
     };
 
     const contentArea = document.getElementById('content-area');
-    const sidebarMenu = document.getElementById('sidebar-menu'); // ALTERAÇÃO: Agora busca o menu da sidebar
+    const sidebarMenu = document.getElementById('sidebar-menu');
     const viewTemplates = document.getElementById('financial-views');
 
+    // ALTERAÇÃO: 'gestao_profissionais' removida.
     const views = [
         { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
-        { id: 'gestao_profissionais', name: 'Gestão de Profissionais', roles: ['admin', 'financeiro', 'rh'] },
         { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'] },
         { id: 'cobranca_mensal', name: 'Cobrança Mensal', roles: ['admin', 'financeiro'] },
         { id: 'controle_pagamentos', name: 'Controle de Pagamentos', roles: ['admin', 'financeiro'] },
@@ -52,12 +52,12 @@ export function initFinancePanel(user, db, userData) {
         { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'] }
     ];
 
-    // ALTERAÇÃO: Função reescrita para construir o menu na sidebar
+    // ALTERAÇÃO: Função agora constrói o menu na sidebar
     function buildFinanceSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = ''; // Limpa o menu global
+        sidebarMenu.innerHTML = ''; // Limpa o menu global que o app.js pode ter criado
 
-        // Adiciona um link para voltar ao início
+        // Adiciona um link para voltar à intranet
         const backLink = document.createElement('li');
         backLink.innerHTML = `
             <a href="../../../index.html" class="back-link">
@@ -67,12 +67,11 @@ export function initFinancePanel(user, db, userData) {
         `;
         sidebarMenu.appendChild(backLink);
 
-        // Adiciona um separador
         const separator = document.createElement('li');
         separator.className = 'menu-separator';
         sidebarMenu.appendChild(separator);
 
-
+        // Constrói os links do menu do financeiro
         views.forEach(view => {
             const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
             if (hasPermission) {
@@ -80,7 +79,7 @@ export function initFinancePanel(user, db, userData) {
                 const link = document.createElement('a');
                 link.href = `#${view.id}`;
                 link.dataset.view = view.id;
-                // Ícones precisam ser definidos ou passados de alguma forma se quisermos usá-los aqui
+                // Ícones podem ser adicionados aqui no futuro, se necessário
                 link.innerHTML = `<span>${view.name}</span>`;
                 menuItem.appendChild(link);
                 sidebarMenu.appendChild(menuItem);
@@ -90,7 +89,7 @@ export function initFinancePanel(user, db, userData) {
 
     async function loadView(viewName) {
         // Marca o link ativo na sidebar
-        const menuLinks = sidebarMenu.querySelectorAll('a');
+        const menuLinks = sidebarMenu.querySelectorAll('a[data-view]');
         menuLinks.forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewName);
         });
@@ -141,8 +140,11 @@ export function initFinancePanel(user, db, userData) {
         }
     }
 
+    // Usamos um listener para reagir à mudança de hash
     window.addEventListener('hashchange', () => {
         const viewName = window.location.hash.substring(1);
-        if (viewName) loadView(viewName);
+        if (viewName) {
+            loadView(viewName);
+        }
     });
 }
