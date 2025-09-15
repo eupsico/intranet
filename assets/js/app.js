@@ -1,22 +1,9 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.4
-// Descrição: Adiciona lógica responsiva ao botão de toggle e corrige viewBox dos SVGs.
+// Versão: 1.5
+// Descrição: Remove a configuração duplicada do Firebase e passa a importá-la.
 
-// --- CONFIGURAÇÃO DO FIREBASE ---
-const firebaseConfig = {
-        apiKey: "AIzaSyDJqPJjDDIGo7uRewh3pw1SQZOpMgQJs5M",
-        authDomain: "eupsico-agendamentos-d2048.firebaseapp.com",
-        databaseURL: "https://eupsico-agendamentos-d2048-default-rtdb.firebaseio.com",
-        projectId: "eupsico-agendamentos-d2048",
-        storageBucket: "eupsico-agendamentos-d2048.firebasestorage.app",
-        messagingSenderId: "1041518416343",
-        appId: "1:1041518416343:web:0a11c03c205b802ed7bb92"
-};
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const auth = firebase.auth();
-const db = firebase.firestore();
+// --- IMPORTAÇÃO DA CONFIGURAÇÃO CENTRAL DO FIREBASE ---
+import { auth, db } from './firebase-init.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginView = document.getElementById('login-view');
@@ -135,18 +122,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const isMobile = window.innerWidth <= 768;
 
             if (isMobile) {
-                // Comportamento Mobile: Menu Gaveta (Off-Canvas)
                 sidebar.classList.toggle('is-visible');
                 layoutContainer.classList.toggle('mobile-menu-open');
             } else {
-                // Comportamento Desktop: Menu Retrátil
                 const currentlyCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
                 localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
                 toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
             }
         };
         
-        // Aplica o estado salvo no desktop ao carregar
         if (window.innerWidth > 768) {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (isCollapsed) {
@@ -156,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         toggleButton.addEventListener('click', handleToggle);
-        overlay.addEventListener('click', handleToggle); // Clicar no overlay também fecha o menu
+        overlay.addEventListener('click', handleToggle);
     }
 
     function renderSidebarMenu(modules) {
