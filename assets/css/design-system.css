@@ -1,7 +1,7 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.1
-    Descrição: Adiciona os estilos para o layout global (esqueleto) da aplicação,
-               posicionando o header, sidebar e a área de conteúdo principal.
+    Versão: 1.2
+    Descrição: Adiciona os estilos para os componentes internos da página
+               do dashboard (seções, cards, títulos, rodapé).
 */
 
 /* --- :root - Definição das Variáveis Globais (da v1.0) --- */
@@ -61,15 +61,11 @@ a:hover {
     filter: brightness(0.9);
 }
 
-/* --- NOVO: Layout Principal (O Esqueleto) v1.1 --- 
-*/
-
+/* --- Layout Principal (O Esqueleto) (da v1.1) --- */
 .layout-container {
     display: grid;
     height: 100vh;
-    /* Define a largura da sidebar e o restante para o conteúdo */
     grid-template-columns: 250px 1fr; 
-    /* Define a altura do header e o restante para o conteúdo */
     grid-template-rows: 70px 1fr;
     grid-template-areas:
         "sidebar header"
@@ -95,51 +91,154 @@ a:hover {
 
 .main-content {
     grid-area: main;
-    overflow-y: auto; /* Permite scroll apenas no conteúdo principal */
+    overflow-y: auto;
     padding: 30px;
 }
 
-/* Estilos para o conteúdo DENTRO do Header */
-.header .welcome-message h1 {
-    font-size: 1.5em;
+/* Estilos para o conteúdo DENTRO do Header (da v1.1) */
+.header .welcome-message h1 { font-size: 1.5em; margin: 0; }
+.header .welcome-message p { margin: 2px 0 0; font-size: 0.9em; opacity: 0.8; }
+.header .user-profile-header { display: flex; align-items: center; gap: 15px; }
+.header .user-profile-header img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--cor-secundaria); }
+.header .user-profile-header span { font-weight: 500; }
+.header .logout-button-dashboard { background-color: var(--cor-erro); color: var(--cor-texto-inverso); padding: 8px 15px; border-radius: 5px; font-size: 0.9em; font-weight: 500; transition: background-color 0.2s; }
+.header .logout-button-dashboard:hover { background-color: #c0392b; text-decoration: none; }
+
+/* --- NOVO: Componentes do Conteúdo do Dashboard v1.2 --- */
+
+/* Contêiner de Seção */
+.dashboard-section {
+    background-color: var(--cor-surface);
+    padding: 30px;
+    border-radius: var(--borda-radius);
+    box-shadow: var(--sombra-padrao);
+    margin-bottom: 30px;
+}
+
+/* Cabeçalho de Seção (títulos como "Sobre Nós") */
+.section-header {
+    margin-bottom: 25px;
+    border-bottom: 2px solid var(--cor-primaria);
+    padding-bottom: 10px;
+}
+
+.section-header h2 {
     margin: 0;
+    color: var(--cor-primaria);
+    font-size: 1.5em;
 }
 
-.header .welcome-message p {
-    margin: 2px 0 0;
-    font-size: 0.9em;
-    opacity: 0.8;
+/* Cards de Informação (Missão, Visão, Valores) */
+.info-card-about, .info-card {
+    background-color: var(--cor-fundo);
+    padding: 25px;
+    border-radius: var(--borda-radius);
+    border-left: 5px solid var(--cor-secundaria);
+    margin-bottom: 30px;
 }
 
-.header .user-profile-header {
+.info-card h3 {
+    margin-top: 0;
+    color: var(--cor-primaria);
+}
+
+.info-card ul { list-style: none; padding: 0; }
+.info-card ul li { margin-bottom: 8px; position: relative; padding-left: 20px; }
+.info-card ul li::before { content: '✓'; color: var(--cor-secundaria); position: absolute; left: 0; font-weight: bold; }
+
+.mission-vision-values {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+.mission-vision-values .info-card {
+    margin-bottom: 0; /* Remove a margem pois o grid já tem 'gap' */
+}
+
+
+/* Cards de Módulo (Acesso Rápido) */
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.module-card {
+    background-color: var(--cor-surface);
+    border-radius: var(--borda-radius);
+    border: 1px solid var(--cor-borda);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    color: inherit;
+    display: flex; /* Alterado para flex para melhor alinhamento */
+    flex-direction: column;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.module-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+.module-card .card-icon {
+    padding: 15px 20px;
     display: flex;
     align-items: center;
     gap: 15px;
+    border-bottom: 1px solid var(--cor-borda);
 }
 
-.header .user-profile-header img {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--cor-secundaria);
+.module-card .card-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--cor-primaria);
+    flex-shrink: 0;
 }
 
-.header .user-profile-header span {
-    font-weight: 500;
+.module-card .card-icon h3 {
+    margin: 0;
+    color: var(--cor-texto-principal);
+    font-size: 1.1em;
 }
 
-.header .logout-button-dashboard {
-    background-color: var(--cor-erro);
+.module-card .card-content {
+    padding: 20px;
+    flex-grow: 1; /* Faz o conteúdo crescer para preencher o card */
+}
+
+.module-card .card-content p {
+    margin: 0;
+    color: var(--cor-texto-secundario);
+    font-size: 0.95em;
+}
+
+/* Rodapé */
+.main-footer {
+    background-color: var(--cor-primaria);
     color: var(--cor-texto-inverso);
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-size: 0.9em;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    text-align: center;
+    padding: 30px 20px;
+    border-radius: var(--borda-radius);
 }
 
-.header .logout-button-dashboard:hover {
-    background-color: #c0392b; /* Um tom mais escuro do vermelho */
-    text-decoration: none;
+.main-footer p { margin: 5px 0; font-size: 0.9em; }
+.main-footer a { color: var(--cor-secundaria); }
+.main-footer a:hover { color: var(--cor-texto-inverso); }
+
+/* Container de Vídeo */
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    background: #000;
+    border-radius: var(--borda-radius);
+    margin-top: 30px;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 80%; height: 80%;
 }
