@@ -1,6 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.7
-    Descrição: Adiciona media queries e estilos para o menu off-canvas em telas pequenas.
+    Versão: 1.7.1
+    Descrição: Adiciona correção de padding para o conteúdo principal no modo mobile.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -91,8 +91,8 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     border-right: 1px solid var(--cor-borda);
     position: relative;
     overflow: hidden;
-    display: flex; /* Adicionado para garantir alinhamento do wrapper */
-    flex-direction: column; /* Adicionado para garantir alinhamento do wrapper */
+    display: flex;
+    flex-direction: column;
 }
 .sidebar-content-wrapper {
     height: 100%;
@@ -142,7 +142,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 
 /* --- Overlay do Menu Mobile --- */
 .menu-overlay {
-    display: none; /* Escondido por padrão */
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -184,7 +184,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; border-radius: var(--borda-radius); margin-top: 30px; }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-/* --- NOVO: Estilos para Telas Pequenas (Mobile) --- */
+/* --- Estilos para Telas Pequenas (Mobile) --- */
 @media (max-width: 768px) {
     .layout-container {
         /* Desfaz o grid de 2 colunas */
@@ -224,4 +224,14 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     .header .welcome-message {
         display: none; /* Esconde a mensagem de boas vindas para economizar espaço */
     }
+
+    /* --- INÍCIO DA ALTERAÇÃO --- */
+    /* Reduz o padding do conteúdo principal e das seções em telas pequenas */
+    .main-content {
+        padding: 15px;
+    }
+    .dashboard-section {
+        padding: 20px;
+    }
+    /* --- FIM DA ALTERAÇÃO --- */
 }
