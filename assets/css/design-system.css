@@ -83,7 +83,9 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     height: 24px;
 }
 /* ALTERAÇÃO: Regra ultra-específica para as linhas do SVG */
-#sidebar-toggle svg path{
+#sidebar-toggle svg path,
+#sidebar-toggle svg line,
+#sidebar-toggle svg rect {
     stroke: var(--cor-texto-inverso);
 }
 
