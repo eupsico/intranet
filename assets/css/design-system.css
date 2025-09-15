@@ -1,6 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.7.1
-    Descrição: Adiciona correção de padding para o conteúdo principal no modo mobile.
+    Versão: 1.7.2
+    Descrição: Adiciona correções de overflow e de header para o layout mobile.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -186,6 +186,11 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 
 /* --- Estilos para Telas Pequenas (Mobile) --- */
 @media (max-width: 768px) {
+    /* Adiciona overflow para evitar barra de rolagem horizontal */
+    body, html {
+        overflow-x: hidden;
+    }
+
     .layout-container {
         /* Desfaz o grid de 2 colunas */
         grid-template-columns: 1fr; 
@@ -225,7 +230,11 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
         display: none; /* Esconde a mensagem de boas vindas para economizar espaço */
     }
 
-    /* --- INÍCIO DA ALTERAÇÃO --- */
+    /* Esconde o email do usuário para evitar quebra de layout */
+    .header .user-profile-header span {
+        display: none;
+    }
+
     /* Reduz o padding do conteúdo principal e das seções em telas pequenas */
     .main-content {
         padding: 15px;
@@ -233,5 +242,4 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     .dashboard-section {
         padding: 20px;
     }
-    /* --- FIM DA ALTERAÇÃO --- */
 }

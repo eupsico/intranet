@@ -1,6 +1,6 @@
 // Arquivo: assets/js/app.js
 // Versão: 1.4
-// Descrição: Adiciona lógica responsiva ao botão de toggle para desktop e mobile.
+// Descrição: Adiciona lógica responsiva ao botão de toggle e corrige viewBox dos SVGs.
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
@@ -120,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setupSidebarToggle();
     }
     
-    // --- ALTERAÇÃO: Função agora controla tanto o modo retrátil (desktop) quanto o menu gaveta (mobile) ---
     function setupSidebarToggle() {
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
