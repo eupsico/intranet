@@ -1,7 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.4
-    Descrição: Implementa a correção definitiva do bug de overflow e adiciona
-               todos os estilos para o menu retrátil e o novo layout do header.
+    Versão: 1.4.1
+    Descrição: Implementa a correção definitiva do bug de overflow com position: absolute.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -20,8 +19,9 @@
     --fonte-principal: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --sombra-padrao: 0 4px 12px rgba(0, 0, 0, 0.08);
     --borda-radius: 8px;
-    --sidebar-width-expanded: 250px; /* NOVO: Variável para largura da sidebar */
-    --sidebar-width-collapsed: 80px; /* NOVO: Variável para largura da sidebar */
+    --sidebar-width-expanded: 250px;
+    --sidebar-width-collapsed: 80px;
+    --sidebar-footer-height: 85px; /* NOVO: Altura fixa para o rodapé da sidebar */
 }
 
 /* --- Reset Básico e Estilos Globais --- */
@@ -40,7 +40,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     grid-template-areas:
         "sidebar header"
         "sidebar main";
-    transition: grid-template-columns 0.3s ease; /* NOVO: Animação da transição */
+    transition: grid-template-columns 0.3s ease;
 }
 
 /* --- Header --- */
@@ -53,17 +53,8 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     align-items: center;
     padding: 0 30px;
 }
-
-/* NOVO: Estilos para a parte inicial do Header (logo + welcome) */
-.header-start {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-.header-logo {
-    height: 40px; /* Define uma altura fixa para o logo branco */
-    width: auto;
-}
+.header-start { display: flex; align-items: center; gap: 20px; }
+.header-logo { height: 40px; width: auto; }
 .header .welcome-message h1 { font-size: 1.5em; margin: 0; }
 .header .welcome-message p { margin: 2px 0 0; font-size: 0.9em; opacity: 0.8; }
 .header .user-profile-header { display: flex; align-items: center; gap: 15px; }
@@ -77,17 +68,18 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     grid-area: sidebar;
     background-color: var(--cor-surface);
     border-right: 1px solid var(--cor-borda);
-    display: flex;
-    flex-direction: column;
-    /* ALTERAÇÃO: Padding removido daqui para corrigir o bug de overflow */
+    position: relative; /* ALTERAÇÃO: Essencial para o posicionamento absoluto do footer */
+    /* display: flex e flex-direction removidos */
 }
 
 .sidebar-menu {
     list-style: none;
     margin: 0;
-    padding: 20px; /* Padding adicionado aqui */
+    padding: 20px;
     overflow-y: auto;
-    flex-grow: 1;
+    /* ALTERAÇÃO: Altura calculada para deixar espaço para o footer */
+    height: calc(100% - var(--sidebar-footer-height));
+    /* flex-grow removido */
 }
 .sidebar-menu li { margin-bottom: 5px; }
 .sidebar-menu a {
@@ -100,16 +92,23 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     font-weight: 500;
     font-size: 0.95em;
     transition: background-color 0.2s ease, color 0.2s ease;
-    white-space: nowrap; /* Impede que o texto quebre linha */
-    overflow: hidden; /* Esconde o texto que vazar */
+    white-space: nowrap;
+    overflow: hidden;
 }
 .sidebar-menu a:hover { background-color: var(--cor-fundo); color: var(--cor-primaria); text-decoration: none; }
 .sidebar-menu a svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--cor-primaria); }
-.sidebar-menu a span { transition: opacity 0.2s ease, width 0.2s ease; } /* NOVO: Animação para o texto sumir */
+.sidebar-menu a span { transition: opacity 0.2s ease, width 0.2s ease; }
 
 
-/* NOVO: Rodapé da Sidebar e Botão de Controle */
+/* Rodapé da Sidebar e Botão de Controle */
 .sidebar-footer {
+    /* ALTERAÇÃO: Posicionamento absoluto para fixar na base */
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--sidebar-footer-height);
+    background-color: var(--cor-surface); /* Fundo para não ser transparente */
     padding: 20px;
     border-top: 1px solid var(--cor-borda);
 }
@@ -133,25 +132,25 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 #sidebar-toggle:hover { background-color: var(--cor-borda); color: var(--cor-texto-principal); }
 #sidebar-toggle svg { transition: transform 0.3s ease; }
 
-/* --- NOVO: Estilos do Menu Retrátil (quando a classe .sidebar-collapsed é aplicada) --- */
+/* Estilos do Menu Retrátil */
 .layout-container.sidebar-collapsed {
     grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
 .layout-container.sidebar-collapsed .sidebar-menu a {
-    justify-content: center; /* Centraliza o ícone quando o texto some */
+    justify-content: center;
     padding: 12px;
 }
 .layout-container.sidebar-collapsed .sidebar-menu a span,
 .layout-container.sidebar-collapsed #sidebar-toggle span {
     opacity: 0;
     width: 0;
-    overflow: hidden; /* Garante que o texto suma completamente */
+    overflow: hidden;
 }
 .layout-container.sidebar-collapsed #sidebar-toggle {
     justify-content: center;
 }
 .layout-container.sidebar-collapsed #sidebar-toggle svg {
-    transform: rotate(180deg); /* Gira o ícone para indicar "expandir" */
+    transform: rotate(180deg);
 }
 
 /* --- Conteúdo Principal --- */
