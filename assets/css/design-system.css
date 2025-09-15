@@ -1,11 +1,10 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.0
-    Descrição: Arquivo central para o novo design system unificado da Intranet EuPsico.
-               Esta versão inicial define as variáveis globais (cores, fontes) e 
-               aplica um reset básico para garantir consistência.
+    Versão: 1.1
+    Descrição: Adiciona os estilos para o layout global (esqueleto) da aplicação,
+               posicionando o header, sidebar e a área de conteúdo principal.
 */
 
-/* --- :root - Definição das Variáveis Globais --- */
+/* --- :root - Definição das Variáveis Globais (da v1.0) --- */
 :root {
     /* Paleta de Cores (Baseada em intranet-geral.css) */
     --cor-primaria: #04396d;       /* Azul escuro principal para headers e títulos */
@@ -32,7 +31,7 @@
     --borda-radius: 8px;
 }
 
-/* --- Reset Básico e Estilos Globais do Body --- */
+/* --- Reset Básico e Estilos Globais do Body (da v1.0) --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -60,4 +59,87 @@ a {
 a:hover {
     text-decoration: underline;
     filter: brightness(0.9);
+}
+
+/* --- NOVO: Layout Principal (O Esqueleto) v1.1 --- 
+*/
+
+.layout-container {
+    display: grid;
+    height: 100vh;
+    /* Define a largura da sidebar e o restante para o conteúdo */
+    grid-template-columns: 250px 1fr; 
+    /* Define a altura do header e o restante para o conteúdo */
+    grid-template-rows: 70px 1fr;
+    grid-template-areas:
+        "sidebar header"
+        "sidebar main";
+}
+
+.sidebar {
+    grid-area: sidebar;
+    background-color: var(--cor-surface);
+    border-right: 1px solid var(--cor-borda);
+    padding: 20px;
+}
+
+.header {
+    grid-area: header;
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+}
+
+.main-content {
+    grid-area: main;
+    overflow-y: auto; /* Permite scroll apenas no conteúdo principal */
+    padding: 30px;
+}
+
+/* Estilos para o conteúdo DENTRO do Header */
+.header .welcome-message h1 {
+    font-size: 1.5em;
+    margin: 0;
+}
+
+.header .welcome-message p {
+    margin: 2px 0 0;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.header .user-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header .user-profile-header img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--cor-secundaria);
+}
+
+.header .user-profile-header span {
+    font-weight: 500;
+}
+
+.header .logout-button-dashboard {
+    background-color: var(--cor-erro);
+    color: var(--cor-texto-inverso);
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.header .logout-button-dashboard:hover {
+    background-color: #c0392b; /* Um tom mais escuro do vermelho */
+    text-decoration: none;
 }
