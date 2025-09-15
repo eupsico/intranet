@@ -1,85 +1,49 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.3.1
-    Descrição: Corrige o bug de overflow no menu da sidebar (ícones cortados).
+    Versão: 1.4
+    Descrição: Implementa a correção definitiva do bug de overflow e adiciona
+               todos os estilos para o menu retrátil e o novo layout do header.
 */
 
-/* --- :root - Definição das Variáveis Globais (da v1.0) --- */
+/* --- :root - Definição das Variáveis Globais --- */
 :root {
-    /* Paleta de Cores (Baseada em intranet-geral.css) */
-    --cor-primaria: #04396d;       /* Azul escuro principal para headers e títulos */
-    --cor-secundaria: #40b0df;     /* Azul claro para detalhes, links e destaques */
-    --cor-sucesso: #28a745;        /* Verde para ações de sucesso */
-    --cor-alerta: #ffc107;         /* Amarelo para avisos */
-    --cor-erro: #dc3545;           /* Vermelho para erros e botões de sair */
-    
-    /* Tons Neutros */
-    --cor-fundo: #f4f7f9;          /* Cinza claro para o fundo da página */
-    --cor-surface: #ffffff;       /* Branco para a superfície de cards e seções */
-    --cor-borda: #e0e0e0;          /* Cinza para bordas suaves */
-    
-    /* Cores de Texto */
-    --cor-texto-principal: #333333;/* Preto suave para textos principais */
-    --cor-texto-secundario: #666666;/* Cinza para textos de apoio e descrições */
-    --cor-texto-inverso: #ffffff;  /* Branco para textos sobre fundos escuros */
-
-    /* Tipografia */
+    --cor-primaria: #04396d;
+    --cor-secundaria: #40b0df;
+    --cor-sucesso: #28a745;
+    --cor-alerta: #ffc107;
+    --cor-erro: #dc3545;
+    --cor-fundo: #f4f7f9;
+    --cor-surface: #ffffff;
+    --cor-borda: #e0e0e0;
+    --cor-texto-principal: #333333;
+    --cor-texto-secundario: #666666;
+    --cor-texto-inverso: #ffffff;
     --fonte-principal: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-
-    /* Outras Variáveis */
     --sombra-padrao: 0 4px 12px rgba(0, 0, 0, 0.08);
     --borda-radius: 8px;
+    --sidebar-width-expanded: 250px; /* NOVO: Variável para largura da sidebar */
+    --sidebar-width-collapsed: 80px; /* NOVO: Variável para largura da sidebar */
 }
 
-/* --- Reset Básico e Estilos Globais do Body (da v1.0) --- */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+/* --- Reset Básico e Estilos Globais --- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { font-family: var(--fonte-principal); background-color: var(--cor-fundo); color: var(--cor-texto-principal); line-height: 1.6; }
+a { color: var(--cor-secundaria); text-decoration: none; transition: color 0.2s ease-in-out; }
+a:hover { text-decoration: underline; filter: brightness(0.9); }
 
-html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-    font-family: var(--fonte-principal);
-    background-color: var(--cor-fundo);
-    color: var(--cor-texto-principal);
-    line-height: 1.6;
-}
-
-a {
-    color: var(--cor-secundaria);
-    text-decoration: none;
-    transition: color 0.2s ease-in-out;
-}
-
-a:hover {
-    text-decoration: underline;
-    filter: brightness(0.9);
-}
-
-/* --- Layout Principal (O Esqueleto) (da v1.1) --- */
+/* --- Layout Principal --- */
 .layout-container {
     display: grid;
     height: 100vh;
-    grid-template-columns: 250px 1fr; 
+    grid-template-columns: var(--sidebar-width-expanded) 1fr; 
     grid-template-rows: 70px 1fr;
     grid-template-areas:
         "sidebar header"
         "sidebar main";
+    transition: grid-template-columns 0.3s ease; /* NOVO: Animação da transição */
 }
 
-.sidebar {
-    grid-area: sidebar;
-    background-color: var(--cor-surface);
-    border-right: 1px solid var(--cor-borda);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-}
-
+/* --- Header --- */
 .header {
     grid-area: header;
     background-color: var(--cor-primaria);
@@ -90,13 +54,16 @@ a:hover {
     padding: 0 30px;
 }
 
-.main-content {
-    grid-area: main;
-    overflow-y: auto;
-    padding: 30px;
+/* NOVO: Estilos para a parte inicial do Header (logo + welcome) */
+.header-start {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
-
-/* Estilos para o conteúdo DENTRO do Header (da v1.1) */
+.header-logo {
+    height: 40px; /* Define uma altura fixa para o logo branco */
+    width: auto;
+}
 .header .welcome-message h1 { font-size: 1.5em; margin: 0; }
 .header .welcome-message p { margin: 2px 0 0; font-size: 0.9em; opacity: 0.8; }
 .header .user-profile-header { display: flex; align-items: center; gap: 15px; }
@@ -105,7 +72,94 @@ a:hover {
 .header .logout-button-dashboard { background-color: var(--cor-erro); color: var(--cor-texto-inverso); padding: 8px 15px; border-radius: 5px; font-size: 0.9em; font-weight: 500; transition: background-color 0.2s; }
 .header .logout-button-dashboard:hover { background-color: #c0392b; text-decoration: none; }
 
-/* --- Componentes do Conteúdo do Dashboard (da v1.2) --- */
+/* --- Sidebar --- */
+.sidebar {
+    grid-area: sidebar;
+    background-color: var(--cor-surface);
+    border-right: 1px solid var(--cor-borda);
+    display: flex;
+    flex-direction: column;
+    /* ALTERAÇÃO: Padding removido daqui para corrigir o bug de overflow */
+}
+
+.sidebar-menu {
+    list-style: none;
+    margin: 0;
+    padding: 20px; /* Padding adicionado aqui */
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.sidebar-menu li { margin-bottom: 5px; }
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    color: var(--cor-texto-secundario);
+    font-weight: 500;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap; /* Impede que o texto quebre linha */
+    overflow: hidden; /* Esconde o texto que vazar */
+}
+.sidebar-menu a:hover { background-color: var(--cor-fundo); color: var(--cor-primaria); text-decoration: none; }
+.sidebar-menu a svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--cor-primaria); }
+.sidebar-menu a span { transition: opacity 0.2s ease, width 0.2s ease; } /* NOVO: Animação para o texto sumir */
+
+
+/* NOVO: Rodapé da Sidebar e Botão de Controle */
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--cor-borda);
+}
+#sidebar-toggle {
+    width: 100%;
+    background-color: var(--cor-fundo);
+    border: 1px solid var(--cor-borda);
+    color: var(--cor-texto-secundario);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: var(--fonte-principal);
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+#sidebar-toggle:hover { background-color: var(--cor-borda); color: var(--cor-texto-principal); }
+#sidebar-toggle svg { transition: transform 0.3s ease; }
+
+/* --- NOVO: Estilos do Menu Retrátil (quando a classe .sidebar-collapsed é aplicada) --- */
+.layout-container.sidebar-collapsed {
+    grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+.layout-container.sidebar-collapsed .sidebar-menu a {
+    justify-content: center; /* Centraliza o ícone quando o texto some */
+    padding: 12px;
+}
+.layout-container.sidebar-collapsed .sidebar-menu a span,
+.layout-container.sidebar-collapsed #sidebar-toggle span {
+    opacity: 0;
+    width: 0;
+    overflow: hidden; /* Garante que o texto suma completamente */
+}
+.layout-container.sidebar-collapsed #sidebar-toggle {
+    justify-content: center;
+}
+.layout-container.sidebar-collapsed #sidebar-toggle svg {
+    transform: rotate(180deg); /* Gira o ícone para indicar "expandir" */
+}
+
+/* --- Conteúdo Principal --- */
+.main-content {
+    grid-area: main;
+    overflow-y: auto;
+    padding: 30px;
+}
 .dashboard-section { background-color: var(--cor-surface); padding: 30px; border-radius: var(--borda-radius); box-shadow: var(--sombra-padrao); margin-bottom: 30px; }
 .section-header { margin-bottom: 25px; border-bottom: 2px solid var(--cor-primaria); padding-bottom: 10px; }
 .section-header h2 { margin: 0; color: var(--cor-primaria); font-size: 1.5em; }
@@ -130,60 +184,3 @@ a:hover {
 .main-footer a:hover { color: var(--cor-texto-inverso); }
 .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; border-radius: var(--borda-radius); margin-top: 30px; }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-
-
-/* --- Estilos da Sidebar e Menu de Navegação (da v1.3) --- */
-
-/* Cabeçalho da Sidebar (Logo) */
-.sidebar-header {
-    padding-bottom: 15px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--cor-borda);
-    text-align: center;
-}
-
-.sidebar-logo {
-    max-width: 130px;
-    height: auto;
-}
-
-/* Lista do Menu */
-.sidebar-menu {
-    list-style: none; /* Remove as bolinhas da lista */
-    margin: 0;
-    padding: 0;
-    overflow-y: auto; /* Adiciona scroll se o menu for muito grande */
-    flex-grow: 1; /* Faz o menu ocupar o espaço disponível */
-    min-height: 0; /* <<< CORREÇÃO ADICIONADA AQUI (v1.3.1) */
-}
-
-.sidebar-menu li {
-    margin-bottom: 5px;
-}
-
-/* Links do Menu */
-.sidebar-menu a {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 12px 15px;
-    border-radius: 6px;
-    color: var(--cor-texto-secundario);
-    font-weight: 500;
-    font-size: 0.95em;
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.sidebar-menu a:hover {
-    background-color: var(--cor-fundo);
-    color: var(--cor-primaria);
-    text-decoration: none; /* Remove sublinhado no hover */
-}
-
-/* Ícone dentro do link do menu */
-.sidebar-menu a svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    color: var(--cor-primaria); /* Ícone sempre na cor primária */
-}
