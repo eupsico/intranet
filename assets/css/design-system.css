@@ -1,6 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.7.4
-    Descrição: Adiciona regra explícita para forçar a cor do ícone de menu no header.
+    Versão: 1.7.5
+    Descrição: Adiciona regra explícita para forçar a cor das linhas do ícone de menu.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -81,7 +81,10 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 #sidebar-toggle svg {
     width: 24px;
     height: 24px;
-    stroke: var(--cor-texto-inverso); /* ALTERAÇÃO: Cor aplicada diretamente ao stroke */
+}
+/* ALTERAÇÃO: Regra ultra-específica para as linhas do SVG */
+#sidebar-toggle svg line {
+    stroke: var(--cor-texto-inverso);
 }
 
 
