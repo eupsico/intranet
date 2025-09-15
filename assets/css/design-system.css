@@ -1,7 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.6
-    Descrição: Correção definitiva do bug de overflow da sidebar
-               utilizando um container interno com posicionamento absoluto.
+    Versão: 1.7
+    Descrição: Adiciona media queries e estilos para o menu off-canvas em telas pequenas.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -35,6 +34,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .layout-container {
     display: grid;
     height: 100vh;
+    overflow: hidden; /* Previne barras de rolagem indesejadas no container principal */
     grid-template-columns: var(--sidebar-width-expanded) 1fr; 
     grid-template-rows: 70px 1fr;
     grid-template-areas:
@@ -89,22 +89,17 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     grid-area: sidebar;
     background-color: var(--cor-surface);
     border-right: 1px solid var(--cor-borda);
-    position: relative; /* ALTERAÇÃO: Âncora para o wrapper */
-    overflow: hidden; /* ALTERAÇÃO: Garante que nada vaze */
-    /* Padding removido daqui */
+    position: relative;
+    overflow: hidden;
+    display: flex; /* Adicionado para garantir alinhamento do wrapper */
+    flex-direction: column; /* Adicionado para garantir alinhamento do wrapper */
 }
-
-/* ALTERAÇÃO: Regra para o novo container de conteúdo */
 .sidebar-content-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    height: 100%;
+    width: 100%;
     overflow-y: auto;
     padding: 15px;
 }
-
 .sidebar-menu {
     list-style: none;
     margin: 0;
@@ -128,8 +123,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .sidebar-menu a svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--cor-primaria); }
 .sidebar-menu a span { transition: opacity 0.2s ease, width 0.2s ease; }
 
-
-/* Estilos do Menu Retrátil */
+/* Estilos do Menu Retrátil (Desktop) */
 .layout-container.sidebar-collapsed {
     grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
@@ -145,6 +139,19 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     width: 0;
     overflow: hidden;
 }
+
+/* --- Overlay do Menu Mobile --- */
+.menu-overlay {
+    display: none; /* Escondido por padrão */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
 
 /* --- Conteúdo Principal --- */
 .main-content {
@@ -176,3 +183,45 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .main-footer a:hover { color: var(--cor-texto-inverso); }
 .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; border-radius: var(--borda-radius); margin-top: 30px; }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+/* --- NOVO: Estilos para Telas Pequenas (Mobile) --- */
+@media (max-width: 768px) {
+    .layout-container {
+        /* Desfaz o grid de 2 colunas */
+        grid-template-columns: 1fr; 
+        grid-template-rows: 60px 1fr; /* Header um pouco menor */
+        grid-template-areas:
+            "header"
+            "main";
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: var(--sidebar-width-expanded);
+        z-index: 1000;
+        transform: translateX(-100%); /* Esconde o menu para a esquerda */
+        transition: transform 0.3s ease-in-out;
+        box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    }
+    
+    /* Classe que o JS vai adicionar para mostrar o menu */
+    .sidebar.is-visible {
+        transform: translateX(0);
+    }
+    
+    /* Mostra o overlay quando o menu está visível */
+    .layout-container.mobile-menu-open .menu-overlay {
+        display: block;
+    }
+
+    /* Ajustes no header para telas pequenas */
+    .header {
+        padding: 0 15px;
+    }
+    .header .welcome-message {
+        display: none; /* Esconde a mensagem de boas vindas para economizar espaço */
+    }
+}
