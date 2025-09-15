@@ -1,4 +1,4 @@
-// assets/js/painel-financeiro.js
+
 // Versão: 2.2
 // Descrição: Refatorado para ser um módulo especialista, sem controle de autenticação próprio.
 
