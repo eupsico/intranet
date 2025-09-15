@@ -1,0 +1,63 @@
+/* Arquivo: assets/css/design-system.css
+    Versão: 1.0
+    Descrição: Arquivo central para o novo design system unificado da Intranet EuPsico.
+               Esta versão inicial define as variáveis globais (cores, fontes) e 
+               aplica um reset básico para garantir consistência.
+*/
+
+/* --- :root - Definição das Variáveis Globais --- */
+:root {
+    /* Paleta de Cores (Baseada em intranet-geral.css) */
+    --cor-primaria: #04396d;       /* Azul escuro principal para headers e títulos */
+    --cor-secundaria: #40b0df;     /* Azul claro para detalhes, links e destaques */
+    --cor-sucesso: #28a745;        /* Verde para ações de sucesso */
+    --cor-alerta: #ffc107;         /* Amarelo para avisos */
+    --cor-erro: #dc3545;           /* Vermelho para erros e botões de sair */
+    
+    /* Tons Neutros */
+    --cor-fundo: #f4f7f9;          /* Cinza claro para o fundo da página */
+    --cor-surface: #ffffff;       /* Branco para a superfície de cards e seções */
+    --cor-borda: #e0e0e0;          /* Cinza para bordas suaves */
+    
+    /* Cores de Texto */
+    --cor-texto-principal: #333333;/* Preto suave para textos principais */
+    --cor-texto-secundario: #666666;/* Cinza para textos de apoio e descrições */
+    --cor-texto-inverso: #ffffff;  /* Branco para textos sobre fundos escuros */
+
+    /* Tipografia */
+    --fonte-principal: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* Outras Variáveis */
+    --sombra-padrao: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --borda-radius: 8px;
+}
+
+/* --- Reset Básico e Estilos Globais do Body --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--fonte-principal);
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto-principal);
+    line-height: 1.6;
+}
+
+a {
+    color: var(--cor-secundaria);
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+    text-decoration: underline;
+    filter: brightness(0.9);
+}
