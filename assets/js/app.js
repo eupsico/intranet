@@ -1,3 +1,7 @@
+// Arquivo: assets/js/app.js
+// Versão: 1.1
+// Descrição: Adiciona a função renderSidebarMenu para popular a navegação lateral.
+
 // --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
         apiKey: "AIzaSyDJqPJjDDIGo7uRewh3pw1SQZOpMgQJs5M",
@@ -58,18 +62,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --- ALTERAÇÃO: Função renderLogin atualizada para a versão sem estilos inline ---
     function renderLogin(message = "Por favor, faça login para continuar.") {
         dashboardView.style.display = 'none';
         loginView.style.display = 'block';
         
-        // --- CORREÇÃO 1: Estilo do Login para o formato de card ---
         loginView.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f9;">
-                <div class="content-box" style="width: 100%; max-width: 450px; text-align: center; padding: 40px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px;">
-                    <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" style="max-width: 120px; margin-bottom: 20px;">
-                    <h2 style="font-size: 1.8em; color: #333; margin-bottom: 10px;">Intranet EuPsico</h2>
-                    <p style="color: #555; margin-bottom: 30px;">${message}</p>
-                    <button id="login-button" class="action-button" style="width: 100%; padding: 12px; font-size: 1em; background-color: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer;">Login com Google</button>
+            <div class="login-container">
+                <div class="login-card">
+                    <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                    <h2>Intranet EuPsico</h2>
+                    <p>${message}</p>
+                    <button id="login-button" class="login-button">Login com Google</button>
                 </div>
             </div>
         `;
@@ -113,14 +117,55 @@ document.addEventListener('DOMContentLoaded', function() {
             auth.signOut();
         });}
 
-        renderModuleCards(userData);
+        // --- ALTERAÇÃO: Lógica de permissão agora é compartilhada ---
+        const cardsParaMostrar = getVisibleModules(userData);
+        renderModuleCards(cardsParaMostrar);
+        renderSidebarMenu(cardsParaMostrar); // Chamada da nova função
     }
 
-    function renderModuleCards(userData) {
+    // --- NOVO: Função para gerar o menu da sidebar ---
+    function renderSidebarMenu(modules) {
+        const menu = document.getElementById('sidebar-menu');
+        if (!menu) return;
+        menu.innerHTML = ''; // Limpa o menu antes de preencher
+
+        modules.forEach(config => {
+            const menuItem = document.createElement('li');
+            menuItem.innerHTML = `
+                <a href="${config.url}">
+                    ${config.icon || ''}
+                    <span>${config.titulo}</span>
+                </a>
+            `;
+            menu.appendChild(menuItem);
+        });
+    }
+
+    function renderModuleCards(modules) {
         const navLinks = document.getElementById('nav-links');
         if (!navLinks) return;
         navLinks.innerHTML = '';
         
+        modules.forEach(config => {
+            const card = document.createElement('a');
+            card.href = config.url;
+            card.className = 'module-card';
+            
+            card.innerHTML = `
+                <div class="card-icon">
+                    ${config.icon || ''}
+                    <h3>${config.titulo}</h3>
+                </div>
+                <div class="card-content">
+                    <p>${config.descricao}</p>
+                </div>
+            `;
+            navLinks.appendChild(card);
+        });
+    }
+
+    // --- ALTERAÇÃO: Lógica de permissão movida para uma função separada para ser reutilizável ---
+    function getVisibleModules(userData) {
         const icons = {
             intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
             administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
@@ -133,130 +178,40 @@ document.addEventListener('DOMContentLoaded', function() {
             servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
             supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
         };
-
         const areas = {
-            portal_voluntario: { 
-                titulo: 'Portal do Voluntário', 
-                descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', 
-                url: './modulos/voluntario/page/portal-voluntario.html',
-                roles: ['todos'],
-                icon: icons.intranet 
-            },
-            administrativo: { 
-                titulo: 'Administrativo', 
-                descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', 
-                url: './modulos/administrativo/page/administrativo-painel.html', 
-                roles: ['admin', 'gestor', 'assistente'], 
-                icon: icons.administrativo 
-            },
-            captacao: { 
-                titulo: 'Captação', 
-                descricao: 'Somente os voluntários da captação tem acesso para acessar as ferramentas e informações para captação.', 
-                url: '#', 
-                roles: ['admin', 'captacao'], 
-                icon: icons.captacao 
-            },
-            financeiro: { 
-                titulo: 'Financeiro', 
-                descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', 
-                url: './modulos/financeiro/page/painel.html', 
-                roles: ['admin', 'financeiro'], 
-                icon: icons.financeiro 
-            },
-            grupos: { 
-                titulo: 'Grupos', 
-                descricao: 'Somente os voluntários de grupos tem acesso às informações e materiais para grupos.', 
-                url: '#', 
-                roles: ['admin', 'grupos'], 
-                icon: icons.grupos 
-            },
-            marketing: { 
-                titulo: 'Marketing', 
-                descricao: 'Somente os voluntários do marketing tem acesso aos materiais de marketing e campanhas.', 
-                url: '#', 
-                roles: ['admin', 'marketing'], 
-                icon: icons.marketing 
-            },
-            plantao: { 
-                titulo: 'Plantão', 
-                descricao: 'Somente os voluntários do plantão tem acesso às escalas, contatos e procedimentos.', 
-                url: '#', 
-                roles: ['admin', 'plantao'], 
-                icon: icons.plantao 
-            },
-            rh: { 
-                titulo: 'Recursos Humanos', 
-                descricao: 'Somente os voluntários do RH tem acesso às informações sobre vagas e comunicados.', 
-                url: '#', 
-                roles: ['admin', 'rh'], 
-                icon: icons.rh 
-            },
-            servico_social: { 
-                titulo: 'Serviço Social', 
-                descricao: 'Somente os voluntários do Serviço Social tem acesso aos documentos e orientações.', 
-                url: '#', 
-                roles: ['admin', 'servico_social'], 
-                icon: icons.servico_social 
-            },
-            supervisores: { 
-                titulo: 'Painel do Supervisor', 
-                descricao: 'Acesse seu perfil, agendamentos e fichas de acompanhamentos.', 
-                url: './pages/supervisores-painel.html', 
-                roles: ['admin', 'supervisor'], 
-                icon: icons.rh 
-            },
-            supervisao: { 
-                titulo: 'Intranet Supervisão', 
-                descricao: 'Acesse perfis de supervisores ou preencha e visualize suas fichas de acompanhamento.', 
-                url: './pages/supervisao-painel.html', 
-                roles: ['admin', 'atendimento','supervisor', 'psicologo', 'psicopedagoga', 'musicoterapeuta'],
-                icon: icons.supervisao // Adicionado ícone que estava faltando
-            },
+            portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
+            administrativo: { titulo: 'Administrativo', descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', url: './modulos/administrativo/page/administrativo-painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
+            captacao: { titulo: 'Captação', descricao: 'Somente os voluntários da captação tem acesso para acessar as ferramentas e informações para captação.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
+            financeiro: { titulo: 'Financeiro', descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', url: './modulos/financeiro/page/painel.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
+            grupos: { titulo: 'Grupos', descricao: 'Somente os voluntários de grupos tem acesso às informações e materiais para grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
+            marketing: { titulo: 'Marketing', descricao: 'Somente os voluntários do marketing tem acesso aos materiais de marketing e campanhas.', url: '#', roles: ['admin', 'marketing'], icon: icons.marketing },
+            plantao: { titulo: 'Plantão', descricao: 'Somente os voluntários do plantão tem acesso às escalas, contatos e procedimentos.', url: '#', roles: ['admin', 'plantao'], icon: icons.plantao },
+            rh: { titulo: 'Recursos Humanos', descricao: 'Somente os voluntários do RH tem acesso às informações sobre vagas e comunicados.', url: '#', roles: ['admin', 'rh'], icon: icons.rh },
+            servico_social: { titulo: 'Serviço Social', descricao: 'Somente os voluntários do Serviço Social tem acesso aos documentos e orientações.', url: '#', roles: ['admin', 'servico_social'], icon: icons.servico_social },
+            supervisores: { titulo: 'Painel do Supervisor', descricao: 'Acesse seu perfil, agendamentos e fichas de acompanhamentos.', url: './pages/supervisores-painel.html', roles: ['admin', 'supervisor'], icon: icons.rh },
+            supervisao: { titulo: 'Intranet Supervisão', descricao: 'Acesse perfis de supervisores ou preencha e visualize suas fichas de acompanhamento.', url: './pages/supervisao-painel.html', roles: ['admin', 'atendimento','supervisor', 'psicologo', 'psicopedagoga', 'musicoterapeuta'], icon: icons.supervisao },
         };
-
         const userFuncoes = (userData.funcoes || []).map(f => f.toLowerCase());
-        let cardsParaMostrar = [];
-
+        let modulesToShow = [];
         for (const key in areas) {
             const area = areas[key];
             const rolesLowerCase = (area.roles || []).map(r => r.toLowerCase());
-            let temPermissao = false;
-            
+            let hasPermission = false;
             if (userFuncoes.includes('admin') || rolesLowerCase.includes('todos')) {
-                temPermissao = true;
+                hasPermission = true;
             } else if (rolesLowerCase.some(role => userFuncoes.includes(role))) {
-                temPermissao = true;
+                hasPermission = true;
             }
-
-            if (temPermissao) {
-                cardsParaMostrar.push(area);
+            if (hasPermission) {
+                modulesToShow.push(area);
             }
         }
-        
-        cardsParaMostrar.sort((a, b) => {
+        modulesToShow.sort((a, b) => {
             if (a.titulo === 'Portal do Voluntário') return -1;
             if (b.titulo === 'Portal do Voluntário') return 1;
             return a.titulo.localeCompare(b.titulo);
         });
-        
-        cardsParaMostrar.forEach(config => {
-            const card = document.createElement('a');
-            card.href = config.url;
-            card.className = 'module-card';
-            
-            // --- CORREÇÃO 2: Fallback para o ícone ---
-            // Garante que, se um ícone for 'undefined', nada quebre.
-            card.innerHTML = `
-                <div class="card-icon">
-                    ${config.icon || ''}
-                    <h3>${config.titulo}</h3>
-                </div>
-                <div class="card-content">
-                    <p>${config.descricao}</p>
-                </div>
-            `;
-            navLinks.appendChild(card);
-        });
+        return modulesToShow;
     }
 
     handleAuth();
