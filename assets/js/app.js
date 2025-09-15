@@ -1,8 +1,8 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.5
-// Descrição: Remove a configuração duplicada do Firebase e passa a importá-la.
+// Versão: 1.6
+// Descrição: Transforma o app.js em um "maestro" que carrega o script
+//            da página correta após a autenticação.
 
-// --- IMPORTAÇÃO DA CONFIGURAÇÃO CENTRAL DO FIREBASE ---
 import { auth, db } from './firebase-init.js';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const userDoc = await db.collection("usuarios").doc(user.uid).get();
                     if (userDoc.exists && userDoc.data().funcoes?.length > 0) {
                         const userData = userDoc.data();
-                        renderDashboard(user, userData);
+                        await renderDashboard(user, userData); // Tornou-se assíncrona
                         setupInactivityListeners();
                     } else {
                         renderAccessDenied();
@@ -83,10 +83,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('denied-logout').addEventListener('click', () => auth.signOut());
     }
 
-    function renderDashboard(user, userData) {
+    async function renderDashboard(user, userData) {
         loginView.style.display = 'none';
         dashboardView.style.display = 'block';
         
+        // Renderiza os componentes GLOBAIS do layout
         const welcomeTitle = document.getElementById('welcome-title');
         const userPhoto = document.getElementById('user-photo-header');
         const userEmail = document.getElementById('user-email-header');
@@ -95,19 +96,36 @@ document.addEventListener('DOMContentLoaded', function() {
         if (welcomeTitle) {
             const firstName = userData.nome ? userData.nome.split(' ')[0] : '';
             welcomeTitle.textContent = `Bem-vindo(a), ${firstName}!`;
+        } else if (userEmail) { // Fallback para o header do financeiro
+             userEmail.textContent = user.email;
         }
+        
         if (userPhoto) { userPhoto.src = user.photoURL || 'https://i.ibb.co/61Ym24n/default-user.png'; }
-        if (userEmail) { userEmail.textContent = user.email; }
         if (logoutButton) { logoutButton.addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });}
 
         const cardsParaMostrar = getVisibleModules(userData);
-        renderModuleCards(cardsParaMostrar);
-        renderSidebarMenu(cardsParaMostrar);
-        
-        setupSidebarToggle();
+        renderSidebarMenu(cardsParaMostrar); // Monta o menu global em todas as páginas
+        setupSidebarToggle(); // Ativa o botão do menu em todas as páginas
+
+        // --- ALTERAÇÃO PRINCIPAL: LÓGICA DO "MAESTRO" ---
+        // Verifica em qual página estamos e carrega o conteúdo específico.
+        if (document.getElementById('finance-tabs')) {
+            // Estamos na página do Financeiro
+            try {
+                const financeModule = await import('../../modulos/financeiro/js/painel-financeiro.js');
+                financeModule.initFinancePanel(user, db, userData);
+            } catch (error) {
+                console.error("Erro ao carregar o módulo financeiro:", error);
+                document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel financeiro.</h2>";
+            }
+        } else {
+            // Estamos na página principal (index.html)
+            renderModuleCards(cardsParaMostrar);
+        }
     }
     
     function setupSidebarToggle() {
+        // ... (código existente sem alterações)
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
@@ -144,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderSidebarMenu(modules) {
+        // ... (código existente sem alterações)
         const menu = document.getElementById('sidebar-menu');
         if (!menu) return;
         menu.innerHTML = '';
@@ -155,8 +174,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderModuleCards(modules) {
+        // ... (código existente sem alterações)
         const navLinks = document.getElementById('nav-links');
-        if (!navLinks) return;
+        if (!navLinks) return; // Se não estiver na página principal, simplesmente não faz nada.
         navLinks.innerHTML = '';
         modules.forEach(config => {
             const card = document.createElement('a');
@@ -168,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getVisibleModules(userData) {
+        // ... (código existente sem alterações)
         const icons = {
             intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
             administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
