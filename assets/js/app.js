@@ -1,7 +1,6 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.6
-// Descrição: Transforma o app.js em um "maestro" que carrega o script
-//            da página correta após a autenticação.
+// Versão: 1.6.1
+// Descrição: Corrige erros de sintaxe nos SVGs e link de imagem que quebravam a execução.
 
 import { auth, db } from './firebase-init.js';
 
@@ -34,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const userDoc = await db.collection("usuarios").doc(user.uid).get();
                     if (userDoc.exists && userDoc.data().funcoes?.length > 0) {
                         const userData = userDoc.data();
-                        await renderDashboard(user, userData); // Tornou-se assíncrona
+                        await renderDashboard(user, userData);
                         setupInactivityListeners();
                     } else {
                         renderAccessDenied();
@@ -51,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderLogin(message = "Por favor, faça login para continuar.") {
+        if (!loginView || !dashboardView) return;
         dashboardView.style.display = 'none';
         loginView.style.display = 'block';
         loginView.innerHTML = `
@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderAccessDenied() {
+        if (!loginView || !dashboardView) return;
         dashboardView.style.display = 'none';
         loginView.style.display = 'block';
         loginView.innerHTML = `
@@ -84,10 +85,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function renderDashboard(user, userData) {
+        if (!loginView || !dashboardView) return;
         loginView.style.display = 'none';
         dashboardView.style.display = 'block';
         
-        // Renderiza os componentes GLOBAIS do layout
         const welcomeTitle = document.getElementById('welcome-title');
         const userPhoto = document.getElementById('user-photo-header');
         const userEmail = document.getElementById('user-email-header');
@@ -96,21 +97,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (welcomeTitle) {
             const firstName = userData.nome ? userData.nome.split(' ')[0] : '';
             welcomeTitle.textContent = `Bem-vindo(a), ${firstName}!`;
-        } else if (userEmail) { // Fallback para o header do financeiro
+        } else if (userEmail) {
              userEmail.textContent = user.email;
         }
         
-        if (userPhoto) { userPhoto.src = user.photoURL || 'https://i.ibb.co/61Ym24n/default-user.png'; }
+        // CORREÇÃO: Link da imagem de perfil padrão atualizado
+        if (userPhoto) { userPhoto.src = user.photoURL || 'https://www.eupsico.org.br/wp-content/uploads/2024/02/user-1.png'; }
         if (logoutButton) { logoutButton.addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });}
 
         const cardsParaMostrar = getVisibleModules(userData);
-        renderSidebarMenu(cardsParaMostrar); // Monta o menu global em todas as páginas
-        setupSidebarToggle(); // Ativa o botão do menu em todas as páginas
+        renderSidebarMenu(cardsParaMostrar);
+        setupSidebarToggle();
 
-        // --- ALTERAÇÃO PRINCIPAL: LÓGICA DO "MAESTRO" ---
-        // Verifica em qual página estamos e carrega o conteúdo específico.
         if (document.getElementById('finance-tabs')) {
-            // Estamos na página do Financeiro
             try {
                 const financeModule = await import('../../modulos/financeiro/js/painel-financeiro.js');
                 financeModule.initFinancePanel(user, db, userData);
@@ -119,26 +118,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel financeiro.</h2>";
             }
         } else {
-            // Estamos na página principal (index.html)
             renderModuleCards(cardsParaMostrar);
         }
     }
     
     function setupSidebarToggle() {
-        // ... (código existente sem alterações)
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
         const overlay = document.getElementById('menu-overlay');
 
         if (!layoutContainer || !toggleButton || !sidebar || !overlay) {
-            console.error("Elementos do layout responsivo não encontrados!");
             return;
         }
 
         const handleToggle = () => {
             const isMobile = window.innerWidth <= 768;
-
             if (isMobile) {
                 sidebar.classList.toggle('is-visible');
                 layoutContainer.classList.toggle('mobile-menu-open');
@@ -162,21 +157,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderSidebarMenu(modules) {
-        // ... (código existente sem alterações)
         const menu = document.getElementById('sidebar-menu');
         if (!menu) return;
         menu.innerHTML = '';
         modules.forEach(config => {
             const menuItem = document.createElement('li');
-            menuItem.innerHTML = `<a href="${config.url}">${config.icon || ''}<span>${config.titulo}</span></a>`;
+            const link = document.createElement('a');
+            link.href = config.url;
+            link.innerHTML = `${config.icon || ''}<span>${config.titulo}</span>`;
+            menuItem.appendChild(link);
             menu.appendChild(menuItem);
         });
     }
 
     function renderModuleCards(modules) {
-        // ... (código existente sem alterações)
         const navLinks = document.getElementById('nav-links');
-        if (!navLinks) return; // Se não estiver na página principal, simplesmente não faz nada.
+        if (!navLinks) return;
         navLinks.innerHTML = '';
         modules.forEach(config => {
             const card = document.createElement('a');
@@ -188,18 +184,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getVisibleModules(userData) {
-        // ... (código existente sem alterações)
+        // CORREÇÃO: Ícones SVG revisados para sintaxe correta
         const icons = {
-            intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
-            administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
-            captacao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
-            financeiro: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
-            grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v--2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-            marketing: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
-            plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`,
-            rh: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
-            servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-            supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-1 -1 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+            intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
+            administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
+            captacao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
+            financeiro: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+            grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+            marketing: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
+            plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`,
+            rh: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
+            servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+            supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
         };
         const areas = {
             portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
