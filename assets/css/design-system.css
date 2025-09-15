@@ -1,7 +1,7 @@
 /* Arquivo: assets/css/design-system.css
     Versão: 1.6
-    Descrição: Utiliza o div .sidebar-content-wrapper para a correção
-               definitiva do bug de overflow.
+    Descrição: Correção definitiva do bug de overflow da sidebar
+               utilizando um container interno com posicionamento absoluto.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -83,19 +83,24 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     height: 24px;
 }
 
+
 /* --- Sidebar --- */
 .sidebar {
     grid-area: sidebar;
     background-color: var(--cor-surface);
     border-right: 1px solid var(--cor-borda);
-    overflow: hidden; /* Garante que nada vaze */
-    /* ALTERAÇÃO: padding e overflow-y removidos daqui */
+    position: relative; /* ALTERAÇÃO: Âncora para o wrapper */
+    overflow: hidden; /* ALTERAÇÃO: Garante que nada vaze */
+    /* Padding removido daqui */
 }
 
-/* NOVO: Container interno para controlar padding e rolagem */
+/* ALTERAÇÃO: Regra para o novo container de conteúdo */
 .sidebar-content-wrapper {
-    height: 100%;
-    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow-y: auto;
     padding: 15px;
 }
@@ -104,7 +109,6 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     list-style: none;
     margin: 0;
     padding: 0;
-    /* height e overflow foram permanentemente removidos daqui */
 }
 .sidebar-menu li { margin-bottom: 5px; }
 .sidebar-menu a {
@@ -129,7 +133,6 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .layout-container.sidebar-collapsed {
     grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
-/* ALTERAÇÃO: Padding do estado recolhido agora é aplicado no wrapper */
 .layout-container.sidebar-collapsed .sidebar-content-wrapper {
     padding: 15px 10px;
 }
