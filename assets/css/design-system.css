@@ -1,7 +1,7 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.5
-    Descrição: Remove estilos do footer da sidebar e adiciona os estilos
-               para o novo botão de toggle no header principal.
+    Versão: 1.5.1
+    Descrição: Implementa a correção definitiva do bug de overflow,
+               tornando a própria sidebar o container de rolagem.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -22,7 +22,6 @@
     --borda-radius: 8px;
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
-    /* Variável --sidebar-footer-height removida */
 }
 
 /* --- Reset Básico e Estilos Globais --- */
@@ -54,7 +53,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     align-items: center;
     padding: 0 30px;
 }
-.header-start { display: flex; align-items: center; gap: 15px; } /* Gap ajustado */
+.header-start { display: flex; align-items: center; gap: 15px; }
 .header-logo { height: 40px; width: auto; }
 .header .welcome-message h1 { font-size: 1.5em; margin: 0; }
 .header .welcome-message p { margin: 2px 0 0; font-size: 0.9em; opacity: 0.8; }
@@ -63,15 +62,13 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .header .user-profile-header span { font-weight: 500; }
 .header .logout-button-dashboard { background-color: var(--cor-erro); color: var(--cor-texto-inverso); padding: 8px 15px; border-radius: 5px; font-size: 0.9em; font-weight: 500; transition: background-color 0.2s; }
 .header .logout-button-dashboard:hover { background-color: #c0392b; text-decoration: none; }
-
-/* NOVO: Estilo para o botão de toggle DENTRO do header */
 #sidebar-toggle {
     background: transparent;
     border: none;
     color: var(--cor-texto-inverso);
     cursor: pointer;
     padding: 8px;
-    margin-right: 5px; /* Espaçamento entre o botão e o logo */
+    margin-right: 5px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -93,14 +90,15 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     background-color: var(--cor-surface);
     border-right: 1px solid var(--cor-borda);
     position: relative;
+    padding: 15px; /* ALTERAÇÃO: Padding aplicado aqui */
+    overflow-y: auto; /* ALTERAÇÃO: Container principal da sidebar agora é rolável */
 }
 
 .sidebar-menu {
     list-style: none;
     margin: 0;
-    padding: 15px; /* Padding ajustado */
-    overflow-y: auto;
-    height: 100%; /* ALTERAÇÃO: Ocupa toda a altura disponível */
+    padding: 0; /* ALTERAÇÃO: Padding removido */
+    /* ALTERAÇÃO: height e overflow removidos */
 }
 .sidebar-menu li { margin-bottom: 5px; }
 .sidebar-menu a {
@@ -121,12 +119,13 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .sidebar-menu a span { transition: opacity 0.2s ease, width 0.2s ease; }
 
 
-/* REMOVIDO: Todo o bloco de .sidebar-footer e o estilo antigo de #sidebar-toggle foram apagados */
-
-
 /* Estilos do Menu Retrátil */
 .layout-container.sidebar-collapsed {
     grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+/* ALTERAÇÃO: O padding do sidebar colapsado também precisa ser ajustado */
+.layout-container.sidebar-collapsed .sidebar {
+    padding: 15px 10px;
 }
 .layout-container.sidebar-collapsed .sidebar-menu a {
     justify-content: center;
@@ -137,7 +136,6 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     width: 0;
     overflow: hidden;
 }
-/* A rotação do ícone foi removida pois não se aplica ao ícone de hambúrguer */
 
 /* --- Conteúdo Principal --- */
 .main-content {
@@ -157,7 +155,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .mission-vision-values .info-card { margin-bottom: 0; }
 .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
 .module-card { background-color: var(--cor-surface); border-radius: var(--borda-radius); border: 1px solid var(--cor-borda); box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: inherit; display: flex; flex-direction: column; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
-.module-card:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+.module-card:hover { transform: translateY(--5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
 .module-card .card-icon { padding: 15px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--cor-borda); }
 .module-card .card-icon svg { width: 24px; height: 24px; color: var(--cor-primaria); flex-shrink: 0; }
 .module-card .card-icon h3 { margin: 0; color: var(--cor-texto-principal); font-size: 1.1em; }
