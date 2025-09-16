@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pageTitleContainer) {
                 pageTitleContainer.innerHTML = `
                     <h1>Painel Financeiro</h1>
-        
+                    <p>Gestão de pagamentos, cobranças, relatórios e fluxo de caixa.</p>
                 `;
             }
 
