@@ -1,6 +1,6 @@
 // Arquivo: assets/js/painel-financeiro.js
-// Versão: 2.4
-// Descrição: Refatorado para construir o menu na sidebar principal e remove a view 'gestao_profissionais'.
+// Versão: 2.5
+// Descrição: Altera o método de carregamento de views para buscar arquivos HTML externos.
 
 export function initFinancePanel(user, db, userData) {
     
@@ -36,9 +36,8 @@ export function initFinancePanel(user, db, userData) {
 
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
-    const viewTemplates = document.getElementById('financial-views');
+    // A constante viewTemplates foi removida, pois não é mais necessária.
 
-    // ALTERAÇÃO: 'gestao_profissionais' removida.
     const views = [
         { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
         { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'] },
@@ -52,12 +51,10 @@ export function initFinancePanel(user, db, userData) {
         { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'] }
     ];
 
-    // ALTERAÇÃO: Função agora constrói o menu na sidebar
     function buildFinanceSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = ''; // Limpa o menu global que o app.js pode ter criado
+        sidebarMenu.innerHTML = ''; 
 
-        // Adiciona um link para voltar à intranet
         const backLink = document.createElement('li');
         backLink.innerHTML = `
             <a href="../../../index.html" class="back-link">
@@ -71,7 +68,6 @@ export function initFinancePanel(user, db, userData) {
         separator.className = 'menu-separator';
         sidebarMenu.appendChild(separator);
 
-        // Constrói os links do menu do financeiro
         views.forEach(view => {
             const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
             if (hasPermission) {
@@ -79,7 +75,6 @@ export function initFinancePanel(user, db, userData) {
                 const link = document.createElement('a');
                 link.href = `#${view.id}`;
                 link.dataset.view = view.id;
-                // Ícones podem ser adicionados aqui no futuro, se necessário
                 link.innerHTML = `<span>${view.name}</span>`;
                 menuItem.appendChild(link);
                 sidebarMenu.appendChild(menuItem);
@@ -87,8 +82,8 @@ export function initFinancePanel(user, db, userData) {
         });
     }
 
+    // ALTERAÇÃO: A função loadView agora usa fetch para buscar arquivos HTML
     async function loadView(viewName) {
-        // Marca o link ativo na sidebar
         const menuLinks = sidebarMenu.querySelectorAll('a[data-view]');
         menuLinks.forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewName);
@@ -97,12 +92,14 @@ export function initFinancePanel(user, db, userData) {
         try {
             contentArea.innerHTML = '<div class="loading-spinner"></div>';
             
-            const template = viewTemplates.querySelector(`[data-view-id="${viewName}"]`);
-            if (!template) {
-                throw new Error(`Template não encontrado para a view: ${viewName}`);
+            // Busca o arquivo HTML da view correspondente na pasta 'page'
+            const response = await fetch(`./${viewName}.html`); // Caminho relativo à página atual
+            if (!response.ok) {
+                throw new Error(`Arquivo da view não encontrado: ${viewName}.html`);
             }
-            contentArea.innerHTML = template.innerHTML;
+            contentArea.innerHTML = await response.text();
 
+            // Carrega dinamicamente o JS específico da view, se existir
             const oldScript = document.getElementById('dynamic-view-script');
             if (oldScript) oldScript.remove();
             
@@ -140,11 +137,8 @@ export function initFinancePanel(user, db, userData) {
         }
     }
 
-    // Usamos um listener para reagir à mudança de hash
     window.addEventListener('hashchange', () => {
         const viewName = window.location.hash.substring(1);
-        if (viewName) {
-            loadView(viewName);
-        }
+        if (viewName) loadView(viewName);
     });
 }
