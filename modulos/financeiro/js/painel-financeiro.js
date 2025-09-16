@@ -103,7 +103,7 @@ export function initFinancePanel(user, db, userData) {
             const oldScript = document.getElementById('dynamic-view-script');
             if (oldScript) oldScript.remove();
             
-            const scriptPath = `../js/views/${viewName}.js`;
+            const scriptPath = `../js/${viewName}.js`;
             try {
                 const viewModule = await import(scriptPath);
                 if (viewModule && typeof viewModule.init === 'function') {
