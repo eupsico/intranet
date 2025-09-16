@@ -142,7 +142,10 @@ export function init(db) {
                 // Esconde todos os painéis de conteúdo
                 viewContent.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
                 // Mostra o painel de conteúdo correto
-                viewContent.querySelector(`#${tabNameToOpen}`).style.display = 'block';
+                const contentToDisplay = viewContent.querySelector(`#${tabNameToOpen}`);
+                if (contentToDisplay) {
+                    contentToDisplay.style.display = 'block';
+                }
                 
                 // Inicializa a lógica da aba se for a primeira vez
                 if (tabNameToOpen === 'ValoresSessao') initValoresSessao();
