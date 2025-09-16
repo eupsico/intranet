@@ -1,0 +1,63 @@
+/* Arquivo: /modulos/financeiro/css/painel-financeiro.css
+   Versão: 1.0
+   Descrição: Estilos específicos para o módulo financeiro.
+              Iniciando com o sistema de abas da tela de Configurações.
+*/
+
+/* --- Sistema de Abas (Tabs) --- */
+.tabs-container {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 2px solid var(--cor-borda);
+    margin-bottom: 0; /* Remove a margem para conectar com o conteúdo */
+}
+
+.tab-link {
+    padding: 12px 25px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    font-family: var(--fonte-principal);
+    font-size: 1em;
+    color: var(--cor-texto-secundario);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px; /* Alinha com a borda do container */
+    transition: all 0.2s ease;
+    font-weight: 500;
+    border-radius: var(--borda-radius) var(--borda-radius) 0 0; /* Bordas arredondadas no topo */
+}
+
+.tab-link:hover {
+    background-color: var(--cor-fundo);
+    color: var(--cor-primaria);
+}
+
+/* Estilo que destaca a aba ativa */
+.tab-link.active {
+    color: var(--cor-texto-inverso);
+    background-color: var(--cor-primaria);
+    border-bottom-color: var(--cor-secundaria);
+    font-weight: 600;
+}
+
+/* Container do conteúdo da aba */
+.tab-content {
+    background-color: var(--cor-surface);
+    padding: 30px;
+    border: 1px solid var(--cor-borda);
+    border-top: none; /* A borda superior é feita pelo .tabs-container */
+    border-radius: 0 0 var(--borda-radius) var(--borda-radius);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* Ajustes gerais de título e parágrafo dentro do conteúdo da aba */
+.tab-content h2 {
+    font-size: 1.5em;
+    color: var(--cor-primaria);
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+.tab-content p {
+    margin-bottom: 25px;
+    color: var(--cor-texto-secundario);
+}
