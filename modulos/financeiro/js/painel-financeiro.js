@@ -1,6 +1,6 @@
 // Arquivo: assets/js/painel-financeiro.js
-// Versão: 2.7
-// Descrição: Adiciona a nova view 'configuracoes' ao menu do financeiro.
+// Versão: 2.7.1
+// Descrição: Corrige o atributo viewBox do ícone de "Voltar".
 
 export function initFinancePanel(user, db, userData) {
     
@@ -37,10 +37,9 @@ export function initFinancePanel(user, db, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // ALTERAÇÃO: Adicionada a nova view 'configuracoes'
     const views = [
         { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
-        { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'] }, // NOVO ITEM
+        { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'] },
         { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'] },
         { id: 'cobranca_mensal', name: 'Cobrança Mensal', roles: ['admin', 'financeiro'] },
         { id: 'controle_pagamentos', name: 'Controle de Pagamentos', roles: ['admin', 'financeiro'] },
@@ -49,16 +48,17 @@ export function initFinancePanel(user, db, userData) {
         { id: 'lancamentos', name: 'Lançamentos', roles: ['admin', 'financeiro'] },
         { id: 'repasse', name: 'Repasse Profissionais', roles: ['admin', 'financeiro'] },
         { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'] },
-        ];
+    ];
 
     function buildFinanceSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = ''; 
 
         const backLink = document.createElement('li');
+        // CORREÇÃO: viewBox ajustado para "0 0 24 24"
         backLink.innerHTML = `
             <a href="../../../index.html" class="back-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 <span>Voltar à Intranet</span>
             </a>
         `;
