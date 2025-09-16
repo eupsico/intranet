@@ -1,7 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.8.2
-    Descrição: Adiciona estilos para os componentes do dashboard financeiro
-               (cards de resumo, controles e seções de tabela).
+    Versão: 1.8.3
+    Descrição: Adiciona estilos para o novo layout do header com título de página dinâmico.
 */
 
 /* --- :root - Definição das Variáveis Globais --- */
@@ -54,13 +53,36 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     align-items: center;
     padding: 0 30px;
 }
-.header-start { display: flex; align-items: center; gap: 15px; }
-.header-logo { height: 40px; width: auto; }
-.header .welcome-message h1 { font-size: 1.5em; margin: 0; }
-.header .welcome-message p { margin: 2px 0 0; font-size: 0.9em; opacity: 0.8; }
-.header .user-profile-header { display: flex; align-items: center; gap: 15px; }
+.header-start { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    /* Garante que este lado possa crescer e ocupar espaço */
+    flex-grow: 1;
+    overflow: hidden;
+}
+.header-logo { height: 40px; width: auto; flex-shrink: 0; }
+.user-profile-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px;
+    flex-shrink: 0; /* Impede que o perfil do usuário seja espremido */
+}
+
+/* ALTERAÇÃO: Estilos para o novo container de título da página */
+#page-title-container {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#page-title-container h1 { font-size: 1.5em; margin: 0; line-height: 1.2; }
+#page-title-container p { margin: 0; font-size: 0.9em; opacity: 0.8; }
+/* Remove a div de boas vindas antiga */
+.header .welcome-message { display: none; }
+
 .header .user-profile-header img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--cor-secundaria); }
-.header .user-profile-header span { font-weight: 500; }
+/* ALTERAÇÃO: Renomeado para #user-greeting */
+.header .user-profile-header #user-greeting { font-weight: 500; }
 .header .logout-button-dashboard { background-color: var(--cor-erro); color: var(--cor-texto-inverso); padding: 8px 15px; border-radius: 5px; font-size: 0.9em; font-weight: 500; transition: background-color 0.2s; }
 .header .logout-button-dashboard:hover { background-color: #c0392b; text-decoration: none; }
 #sidebar-toggle {
@@ -280,8 +302,6 @@ table tbody tr:nth-of-type(even) {
 table tbody tr:hover {
     background-color: #e9ecef;
 }
-
-/* --- ALTERAÇÃO: Estilos para Componentes do Financeiro --- */
 .controls-section {
     background-color: var(--cor-fundo);
     padding: 20px;
@@ -386,11 +406,12 @@ table tbody tr:hover {
     .header {
         padding: 0 15px;
     }
-    .header .welcome-message {
+    .header .welcome-message,
+    #page-title-container p { /* Esconde subtítulo no mobile */
         display: none;
     }
 
-    .header .user-profile-header span {
+    .header .user-profile-header #user-greeting { /* Renomeado */
         display: none;
     }
 
