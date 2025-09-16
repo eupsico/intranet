@@ -1,6 +1,6 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.7
-// Descrição: Corrige a lógica de renderização do header e o detector de página do financeiro.
+// Versão: 1.8
+// Descrição: Adiciona lógica para renderizar o cabeçalho dinâmico com título da página e saudação.
 
 import { auth, db } from './firebase-init.js';
 
@@ -68,31 +68,50 @@ document.addEventListener('DOMContentLoaded', function() {
         loginView.innerHTML = `<div class="content-box" style="max-width: 800px; margin: 50px auto; text-align: center;"><h2>Acesso Negado</h2><p>Você está autenticado, mas seu usuário não tem permissões definidas. Contate o administrador.</p><button id="denied-logout">Sair</button></div>`;
         document.getElementById('denied-logout').addEventListener('click', () => auth.signOut());
     }
+    
+    // NOVO: Função para obter a saudação correta
+    function getGreeting() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return 'Bom dia';
+        if (hour >= 12 && hour < 18) return 'Boa tarde';
+        return 'Boa noite';
+    }
 
-    // Função principal que orquestra a renderização
     async function renderLayoutAndContent(user, userData) {
         if (!loginView || !dashboardView) return;
         loginView.style.display = 'none';
         dashboardView.style.display = 'block';
         
-        // --- 1. RENDERIZAÇÃO GLOBAL (acontece em todas as páginas) ---
+        // --- 1. RENDERIZAÇÃO GLOBAL ---
         const userPhoto = document.getElementById('user-photo-header');
-        const userEmail = document.getElementById('user-email-header');
+        const userGreeting = document.getElementById('user-greeting'); // Alterado de userEmail para userGreeting
         const logoutButton = document.getElementById('logout-button-dashboard');
         
-        // CORREÇÃO: Lógica do e-mail movida para ser global
-        if (userEmail) { userEmail.textContent = user.email; }
+        // ALTERAÇÃO: Lógica de saudação dinâmica
+        if (userGreeting) { 
+            const firstName = userData.nome ? userData.nome.split(' ')[0] : '';
+            userGreeting.textContent = `${getGreeting()}, ${firstName}!`;
+        }
         if (userPhoto) { userPhoto.src = user.photoURL || 'https://www.eupsico.org.br/wp-content/uploads/2024/02/user-1.png'; }
         if (logoutButton) { logoutButton.addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });}
 
         const modules = getVisibleModules(userData);
-        setupSidebarToggle(); // Ativa o botão do menu em todas as páginas
+        setupSidebarToggle();
 
-        // --- 2. RENDERIZAÇÃO ESPEĆIFICA (lógica do "maestro") ---
-        // CORREÇÃO: Detector de página agora usa a URL
+        // --- 2. RENDERIZAÇÃO ESPEĆIFICA ---
         if (window.location.pathname.includes('painel-financeiro.html')) {
             // Se estamos na página do Financeiro:
-            // O app.js NÃO monta o menu, ele apenas chama o especialista
+            renderSidebarMenu(modules);
+            
+            // ALTERAÇÃO: Preenche o título da página no header
+            const pageTitleContainer = document.getElementById('page-title-container');
+            if (pageTitleContainer) {
+                pageTitleContainer.innerHTML = `
+                    <h1>Painel Financeiro</h1>
+                    <p>Gestão de pagamentos, cobranças, relatórios e fluxo de caixa.</p>
+                `;
+            }
+
             try {
                 const financeModule = await import('../../modulos/financeiro/js/painel-financeiro.js');
                 financeModule.initFinancePanel(user, db, userData);
@@ -102,11 +121,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             // Se estamos na página principal (index.html):
-            // O app.js monta o menu e os cards
-            const welcomeTitle = document.getElementById('welcome-title');
-            if (welcomeTitle) {
-                 const firstName = userData.nome ? userData.nome.split(' ')[0] : '';
-                 welcomeTitle.textContent = `Bem-vindo(a), ${firstName}!`;
+            const pageTitleContainer = document.getElementById('page-title-container');
+            if(pageTitleContainer) {
+                // A página principal não precisa de título no header, então limpamos
+                pageTitleContainer.innerHTML = '';
             }
             renderSidebarMenu(modules);
             renderModuleCards(modules);
@@ -114,15 +132,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function setupSidebarToggle() {
+        // ... (código da função sem alterações)
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
         const overlay = document.getElementById('menu-overlay');
-
-        if (!layoutContainer || !toggleButton || !sidebar || !overlay) {
-            return;
-        }
-
+        if (!layoutContainer || !toggleButton || !sidebar || !overlay) { return; }
         const handleToggle = () => {
             const isMobile = window.innerWidth <= 768;
             if (isMobile) {
@@ -134,20 +149,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
             }
         };
-        
         if (window.innerWidth > 768) {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed) {
-                layoutContainer.classList.add('sidebar-collapsed');
-            }
+            if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
             toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
         }
-
         toggleButton.addEventListener('click', handleToggle);
         overlay.addEventListener('click', handleToggle);
     }
 
     function renderSidebarMenu(modules) {
+        // ... (código da função sem alterações)
         const menu = document.getElementById('sidebar-menu');
         if (!menu) return;
         menu.innerHTML = '';
@@ -162,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderModuleCards(modules) {
+        // ... (código da função sem alterações)
         const navLinks = document.getElementById('nav-links');
         if (!navLinks) return;
         navLinks.innerHTML = '';
@@ -175,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getVisibleModules(userData) {
+        // ... (código da função sem alterações)
         const icons = {
             intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
             administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
