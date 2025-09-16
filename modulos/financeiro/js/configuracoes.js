@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/configuracoes.js
-// Versão: 1.1
-// Descrição: Corrige a lógica de eventos para manter o estado da aba ativa.
+// Versão: 1.2
+// Descrição: Corrige a lógica de eventos para garantir a troca de abas.
 
 export function init(db) {
     if (!db) {
@@ -11,36 +11,11 @@ export function init(db) {
     const viewContent = document.querySelector('[data-view-id="configuracoes"]');
     if (!viewContent) return;
 
-    const tabButtons = viewContent.querySelectorAll('.tab-link');
-    const tabContents = viewContent.querySelectorAll('.tab-content');
-
+    const tabContainer = viewContent.querySelector('.tabs-container');
     const inicializado = {
         mensagens: false,
         valores: false
     };
-
-    // Função que controla a troca de abas
-    function switchTab(targetButton) {
-        const tabName = targetButton.dataset.tab;
-
-        // Esconde todos os conteúdos
-        tabContents.forEach(content => {
-            content.style.display = 'none';
-        });
-
-        // Remove 'active' de todos os botões
-        tabButtons.forEach(button => {
-            button.classList.remove('active');
-        });
-
-        // Mostra o conteúdo e ativa o botão correspondente
-        viewContent.querySelector(`#${tabName}`).style.display = 'block';
-        targetButton.classList.add('active');
-
-        // Inicializa a lógica da aba na primeira vez que ela é aberta
-        if (tabName === 'ValoresSessao') initValoresSessao();
-        else if (tabName === 'ModelosMensagem') initModelosMensagem();
-    }
 
     function initValoresSessao() {
         if (inicializado.valores) return;
@@ -151,15 +126,34 @@ export function init(db) {
         inicializado.mensagens = true;
     }
 
-    // --- Ponto de Partida do Módulo de Configurações ---
-    
-    // Adiciona o listener de clique a cada botão de aba
-    tabButtons.forEach(button => {
-        button.addEventListener('click', (e) => switchTab(e.currentTarget));
-    });
+    // --- Ponto de Partida e Controle de Abas ---
+    if (tabContainer) {
+        tabContainer.addEventListener('click', (e) => {
+            // Verifica se o clique foi em um botão de aba
+            if (e.target.classList.contains('tab-link')) {
+                const clickedButton = e.target;
+                const tabNameToOpen = clickedButton.dataset.tab;
 
-    // Abre a primeira aba por padrão ao inicializar
-    if (tabButtons.length > 0) {
-        switchTab(tabButtons[0]);
+                // Remove a classe 'active' de todos os botões
+                tabContainer.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+                // Adiciona 'active' apenas ao botão clicado
+                clickedButton.classList.add('active');
+
+                // Esconde todos os painéis de conteúdo
+                viewContent.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                // Mostra o painel de conteúdo correto
+                viewContent.querySelector(`#${tabNameToOpen}`).style.display = 'block';
+                
+                // Inicializa a lógica da aba se for a primeira vez
+                if (tabNameToOpen === 'ValoresSessao') initValoresSessao();
+                else if (tabNameToOpen === 'ModelosMensagem') initModelosMensagem();
+            }
+        });
+
+        // Inicializa a primeira aba por padrão
+        const primeiraAba = tabContainer.querySelector('.tab-link');
+        if (primeiraAba) {
+            primeiraAba.click();
+        }
     }
 }
