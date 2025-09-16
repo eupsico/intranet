@@ -40,7 +40,7 @@ export function initFinancePanel(user, db, userData) {
     // ALTERAÇÃO: Adicionada a nova view 'configuracoes'
     const views = [
         { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
-        { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'] } // NOVO ITEM
+        { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'] }, // NOVO ITEM
         { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'] },
         { id: 'cobranca_mensal', name: 'Cobrança Mensal', roles: ['admin', 'financeiro'] },
         { id: 'controle_pagamentos', name: 'Controle de Pagamentos', roles: ['admin', 'financeiro'] },
