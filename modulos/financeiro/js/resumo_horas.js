@@ -1,5 +1,9 @@
-// assets/js/resumo_horas.js (Versão 2 - Com Filtros)
-(function() {
+// modulos/financeiro/js/resumo_horas.js
+// Versão: 2.1
+// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+
+// A lógica agora está dentro de uma função exportada 'init'
+export function init(db) {
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
         return;
@@ -7,13 +11,11 @@
 
     const appContent = document.getElementById('resumo-horas-content');
 
-    async function init() {
+    async function fetchDataAndRender() {
         if (!appContent) return;
         appContent.innerHTML = '<div class="loading-spinner"></div>';
 
         try {
-            // ALTERAÇÃO 1: A busca agora filtra por 'fazAtendimento'.
-            // Isso requer o índice composto (fazAtendimento, nome) que já criamos.
             const usuariosQuery = db.collection('usuarios')
                 .where("fazAtendimento", "==", true)
                 .orderBy('nome');
@@ -32,7 +34,6 @@
             let resumoCalculado = [];
             
             usuarios.forEach(prof => {
-                // ALTERAÇÃO 2: Adicionado filtro para pular profissionais na 'primeiraFase'.
                 if (!prof.username || prof.inativo || prof.primeiraFase === true) {
                     return;
                 }
@@ -98,9 +99,9 @@
 
         } catch (error) {
             console.error("Erro ao carregar dados para o resumo de horas:", error);
-            appContent.innerHTML = `<p style="color:red; text-align:center;">Erro ao carregar dados do Firestore. Verifique o console para mais detalhes.</p>`;
+            appContent.innerHTML = `<p style="color:red; text-align:center;">Erro ao carregar dados. Verifique o console.</p>`;
         }
     }
 
-    init();
-})();
+    fetchDataAndRender();
+}
