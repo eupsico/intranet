@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/configuracoes.js
-// Versão: 1.0
-// Descrição: Controla as abas e a lógica da tela de Configurações do Financeiro.
+// Versão: 1.1
+// Descrição: Corrige a lógica de eventos para manter o estado da aba ativa.
 
 export function init(db) {
     if (!db) {
@@ -8,21 +8,38 @@ export function init(db) {
         return;
     }
 
-    const tabContainer = document.querySelector('.tabs-container');
+    const viewContent = document.querySelector('[data-view-id="configuracoes"]');
+    if (!viewContent) return;
+
+    const tabButtons = viewContent.querySelectorAll('.tab-link');
+    const tabContents = viewContent.querySelectorAll('.tab-content');
+
     const inicializado = {
         mensagens: false,
         valores: false
     };
 
-    function openTab(evt, tabName) {
-        document.querySelectorAll(".tab-content").forEach(tc => tc.style.display = "none");
-        document.querySelectorAll(".tab-link").forEach(tl => tl.classList.remove("active"));
-        
-        const tabElement = document.getElementById(tabName);
-        if (tabElement) tabElement.style.display = "block";
-        
-        const buttonElement = evt.currentTarget;
-        if (buttonElement) buttonElement.classList.add("active");
+    // Função que controla a troca de abas
+    function switchTab(targetButton) {
+        const tabName = targetButton.dataset.tab;
+
+        // Esconde todos os conteúdos
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+        });
+
+        // Remove 'active' de todos os botões
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+
+        // Mostra o conteúdo e ativa o botão correspondente
+        viewContent.querySelector(`#${tabName}`).style.display = 'block';
+        targetButton.classList.add('active');
+
+        // Inicializa a lógica da aba na primeira vez que ela é aberta
+        if (tabName === 'ValoresSessao') initValoresSessao();
+        else if (tabName === 'ModelosMensagem') initModelosMensagem();
     }
 
     function initValoresSessao() {
@@ -97,7 +114,7 @@ export function init(db) {
                     const data = doc.data();
                     if (data.Mensagens) {
                        inputAcordo.value = data.Mensagens.acordo || '';
-                        inputCobranca.value = data.Mensagens.cobranca || '';
+                       inputCobranca.value = data.Mensagens.cobranca || '';
                        inputContrato.value = data.Mensagens.contrato || '';
                     }
                 }
@@ -106,7 +123,10 @@ export function init(db) {
 
         if (saveBtn) {
             saveBtn.addEventListener('click', async () => {
-                if (!modoEdicao) { setMensagensState(true); return; }
+                if (!modoEdicao) { 
+                    setMensagensState(true); 
+                    return; 
+                }
                 saveBtn.disabled = true;
                 const novasMensagens = { 
                     'Mensagens.acordo': inputAcordo.value, 
@@ -125,26 +145,21 @@ export function init(db) {
                 }
             });
         }
+
         carregarMensagens();
         setMensagensState(false);
         inicializado.mensagens = true;
     }
 
     // --- Ponto de Partida do Módulo de Configurações ---
-    if (tabContainer) {
-        tabContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('tab-link')) {
-                const tabName = e.target.dataset.tab;
-                openTab(e, tabName);
-                if (tabName === 'ValoresSessao') initValoresSessao();
-                else if (tabName === 'ModelosMensagem') initModelosMensagem();
-            }
-        });
-    }
+    
+    // Adiciona o listener de clique a cada botão de aba
+    tabButtons.forEach(button => {
+        button.addEventListener('click', (e) => switchTab(e.currentTarget));
+    });
 
-    // Abre a primeira aba por padrão
-    const primeiraAba = document.querySelector('.tab-link');
-    if (primeiraAba) {
-        primeiraAba.click();
+    // Abre a primeira aba por padrão ao inicializar
+    if (tabButtons.length > 0) {
+        switchTab(tabButtons[0]);
     }
 }
