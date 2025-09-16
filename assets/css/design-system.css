@@ -1,5 +1,5 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.8.7
+    Versão: 1.8.8
     Descrição: Centraliza e corrige os estilos do sistema de abas.
 */
 
@@ -152,7 +152,7 @@ table tbody tr:hover { background-color: #e9ecef; }
 .tab-link.active {
     color: var(--cor-texto-inverso);
     background-color: var(--cor-primaria);
-    border-bottom-color: var(--cor-secundaria) !important; /* !important para garantir a sobreposição */
+    border-bottom-color: var(--cor-secundaria); /* Alterado para !important na versão anterior, agora removido para testar */
     font-weight: 600;
 }
 .tab-content {
@@ -163,6 +163,11 @@ table tbody tr:hover { background-color: #e9ecef; }
     border-radius: 0 0 var(--borda-radius) var(--borda-radius);
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
+.tab-content h2,
+.tab-content p {
+    display: none; /* ALTERAÇÃO: Remove o título e parágrafo de dentro das abas */
+}
+
 
 /* --- Estilos de Formulário --- */
 .form-group {
