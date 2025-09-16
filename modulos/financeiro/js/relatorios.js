@@ -1,11 +1,18 @@
-// assets/js/relatorios.js
-(function() {
-    if (!db) { return; }
+// Arquivo: /modulos/financeiro/js/views/relatorios.js
+// Versão: 1.1
+// Descrição: Refatorado para ser um módulo, com código completo e lógica de busca de dados corrigida.
+
+export function init(db) {
+    if (!db) { 
+        console.error("Instância do Firestore (db) não encontrada.");
+        return; 
+    }
 
     const appContent = document.getElementById('relatorios-content');
     const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     let DB = { profissionais: [], cobranca: {}, repasses: {}, grades: {} };
 
+    // Funções auxiliares
     const sanitizeKey = (key) => !key ? '' : key.replace(/\.|\$|\[|\]|#|\//g, '_');
     const downloadFile = (content, fileName, mimeType) => {
         const blob = new Blob(["\uFEFF" + content], { type: mimeType });
@@ -17,9 +24,20 @@
         link.click();
         document.body.removeChild(link);
     };
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+    const formatCurrency = (value) => {
+        return `R$ ${value.toFixed(2).replace('.', ',')}`;
+    };
     
     async function fetchData() {
         try {
+            appContent.innerHTML = '<div class="loading-spinner"></div>';
             const [usuariosSnap, configSnap] = await Promise.all([
                 db.collection('usuarios').get(),
                 db.collection('financeiro').doc('configuracoes').get()
@@ -232,4 +250,4 @@
     }
 
     fetchData();
-})();
+}
