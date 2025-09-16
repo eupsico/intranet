@@ -1,4 +1,8 @@
-(function() {
+// Arquivo: /modulos/financeiro/js/views/dashboard.js
+// Versão: 1.0
+// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+
+export function init(db) {
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
         return;
@@ -21,51 +25,38 @@
         for (let y = currentYear - 3; y <= currentYear + 1; y++) {
             yearsHtml += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
         }
-        appContent.innerHTML = `
-            <h1>Dashboard Financeiro</h1>
-            <div class="controls-section">
-                <div><label><strong>Período:</strong></label> <select id="dashboard-mes-selector"></select> <select id="dashboard-ano-selector">${yearsHtml}</select></div>
-                <div>
-                    <button id="update-dashboard-btn" class="action-button btn-update">Atualizar</button>
-                    <button id="export-pdf-btn" class="action-button btn-pdf">Exportar PDF</button>
-                </div>
-            </div>
-            <div class="summary-cards">
-                <div class="card receitas"><h3>Receitas Pagas (Mês)</h3><p id="total-receitas">R$ 0,00</p></div>
-                <div class="card despesas"><h3>Despesas Pagas (Mês)</h3><p id="total-despesas">R$ 0,00</p></div>
-                <div class="card atrasadas"><h3>Despesas Atrasadas</h3><p id="total-atrasadas">R$ 0,00</p></div>
-                <div class="card saldo"><h3>Saldo do Mês</h3><p id="saldo-total">R$ 0,00</p></div>
-            </div>
-            <div class="table-section"><h2>Contas a Pagar em Atraso</h2><table id="atraso-table"><thead><tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody></tbody></table></div>
-            <div class="table-section"><h2>Contas a Pagar (Mês Selecionado)</h2><table id="contas-a-pagar-table"><thead><tr><th>Vencimento</th><th>Pagamento</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
-            <div class="table-section"><h2>Entradas (Mês Selecionado)</h2><table id="entradas-table"><thead><tr><th>Vencimento</th><th>Pagamento</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody></tbody></table></div>
-            <div class="chart-section-wrapper"><h2>Análise Gráfica</h2>
-                <div class="chart-section">
-                    <div class="chart-section-title"><h3>Evolução Financeira (Últimos 12 Meses)</h3></div>
-                    <canvas id="evolucaoMensalChart"></canvas>
-                </div>
-                <div class="charts-grid">
-                    <div class="chart-section"><h3>Despesas por Categoria (Mês)</h3><canvas id="despesasCategoriaChart"></canvas></div>
-                    <div class="chart-section"><h3>Receitas por Categoria (Mês)</h3><canvas id="receitasCategoriaChart"></canvas></div>
-                </div>
-            </div>`;
+        
+        // Esta função agora apenas adiciona os seletores, já que o resto do HTML já está na página.
+        const mesSelector = document.getElementById('dashboard-mes-selector');
+        const anoSelector = document.getElementById('dashboard-ano-selector');
+
+        if(mesSelector) {
+            const d = new Date();
+            const currentMonth = d.getMonth();
+            mesSelector.innerHTML = meses.map((m, i) => `<option value="${i}" ${i === currentMonth ? 'selected' : ''}>${m}</option>`).join('');
+        }
+        if(anoSelector) {
+            anoSelector.innerHTML = yearsHtml;
+        }
     }
     
     function setupControls() {
-        const mesSelector = document.getElementById('dashboard-mes-selector');
-        if (!mesSelector) return; // Garante que os elementos existem
-        const d = new Date();
-        const currentMonth = d.getMonth();
-        mesSelector.innerHTML = meses.map((m, i) => `<option value="${i}" ${i === currentMonth ? 'selected' : ''}>${m}</option>`).join('');
-        
-        document.getElementById('update-dashboard-btn').addEventListener('click', updateDashboard);
-        document.getElementById('export-pdf-btn').addEventListener('click', generatePDFReport);
-        document.getElementById('contas-a-pagar-table').addEventListener('click', handleSavePayment);
+        const updateBtn = document.getElementById('update-dashboard-btn');
+        const exportBtn = document.getElementById('export-pdf-btn');
+        const table = document.getElementById('contas-a-pagar-table');
+
+        if(updateBtn) updateBtn.addEventListener('click', updateDashboard);
+        if(exportBtn) exportBtn.addEventListener('click', generatePDFReport);
+        if(table) table.addEventListener('click', handleSavePayment);
     }
 
     function updateDashboard() {
-        const mes = parseInt(document.getElementById('dashboard-mes-selector').value);
-        const ano = parseInt(document.getElementById('dashboard-ano-selector').value);
+        const mesElement = document.getElementById('dashboard-mes-selector');
+        const anoElement = document.getElementById('dashboard-ano-selector');
+        if(!mesElement || !anoElement) return;
+
+        const mes = parseInt(mesElement.value);
+        const ano = parseInt(anoElement.value);
         const hoje = new Date().toISOString().split('T')[0];
 
         const lancamentosPagosNoMes = allLancamentos.filter(l => l.dataPagamento && new Date(l.dataPagamento).getUTCMonth() === mes && new Date(l.dataPagamento).getUTCFullYear() === ano);
@@ -85,8 +76,10 @@
     }
     
     function renderMonthlyTables(mes, ano) {
-        const despesasTbody = document.getElementById('contas-a-pagar-table').querySelector('tbody');
-        const receitasTbody = document.getElementById('entradas-table').querySelector('tbody');
+        const despesasTbody = document.getElementById('contas-a-pagar-table')?.querySelector('tbody');
+        const receitasTbody = document.getElementById('entradas-table')?.querySelector('tbody');
+        if(!despesasTbody || !receitasTbody) return;
+
         const lancamentosDoPeriodo = allLancamentos.filter(l => {
             const dataRef = new Date(l.dataVencimento);
             return dataRef.getUTCMonth() === mes && dataRef.getUTCFullYear() === ano;
@@ -99,7 +92,8 @@
     }
 
     function updateAtrasoTable(contasAtrasadas) {
-        const tbody = document.getElementById('atraso-table').querySelector('tbody');
+        const tbody = document.getElementById('atraso-table')?.querySelector('tbody');
+        if(!tbody) return;
         contasAtrasadas.sort((a,b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
         tbody.innerHTML = contasAtrasadas.length === 0 ? '<tr><td colspan="4">Nenhuma conta em atraso.</td></tr>' : contasAtrasadas.map(l => `<tr><td>${formatDate(l.dataVencimento)}</td><td>${l.descricao}</td><td>${l.categoria}</td><td>${formatCurrency(l.valor)}</td></tr>`).join('');
     }
@@ -149,17 +143,17 @@
             receitasData.push(lancamentosPagos.filter(l => l.tipo === 'receita').reduce((sum, l) => sum + l.valor, 0));
             despesasData.push(lancamentosPagos.filter(l => l.tipo === 'despesa').reduce((sum, l) => sum + l.valor, 0));
         }
-        return new Chart(ctx, { type: 'line', data: { labels, datasets: [ { label: 'Receitas', data: receitasData, borderColor: 'rgba(40, 167, 69, 1)', fill: true, tension: 0.2 }, { label: 'Despesas', data: despesasData, borderColor: 'rgba(220, 53, 69, 1)', fill: true, tension: 0.2 } ]}});
+        return new Chart(ctx, { type: 'line', data: { labels, datasets: [ { label: 'Receitas', data: receitasData, borderColor: 'rgba(40, 167, 69, 1)', backgroundColor: 'rgba(40, 167, 69, 0.1)', fill: true, tension: 0.2 }, { label: 'Despesas', data: despesasData, borderColor: 'rgba(220, 53, 69, 1)', backgroundColor: 'rgba(220, 53, 69, 0.1)', fill: true, tension: 0.2 } ]}});
     }
 
     function createDespesasCategoriaChart(ctx, lancamentos) {
         const data = lancamentos.filter(l => l.tipo === 'despesa').reduce((acc, l) => { acc[l.categoria] = (acc[l.categoria] || 0) + l.valor; return acc; }, {});
-        return new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1'] }] }, options: { responsive: true, maintainAspectRatio: false }});
+        return new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#6610f2'] }] }, options: { responsive: true, maintainAspectRatio: false }});
     }
     
     function createReceitasCategoriaChart(ctx, lancamentos) {
         const data = lancamentos.filter(l => l.tipo === 'receita').reduce((acc, l) => { acc[l.categoria] = (acc[l.categoria] || 0) + l.valor; return acc; }, {});
-        return new Chart(ctx, { type: 'pie', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#28a745', '#20c997', '#90EE90'] }] }, options: { responsive: true, maintainAspectRatio: false }});
+        return new Chart(ctx, { type: 'pie', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#28a745', '#20c997', '#90EE90', '#198754'] }] }, options: { responsive: true, maintainAspectRatio: false }});
     }
 
     function generatePDFReport() {
@@ -180,9 +174,8 @@
     }
 
     // Listener de dados em tempo real do Firestore
-    db.collection('fluxoCaixa').orderBy('dataVencimento', 'desc').onSnapshot(snapshot => {
+    const unsubscribe = db.collection('fluxoCaixa').orderBy('dataVencimento', 'desc').onSnapshot(snapshot => {
         allLancamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Só atualiza se os controles do dashboard já existirem na tela
         if (document.getElementById('dashboard-mes-selector')) {
             updateDashboard();
         }
@@ -191,7 +184,7 @@
         appContent.innerHTML = `<p style="color:red;">Erro de conexão com o banco de dados.</p>`;
     });
 
-    // Inicia a renderização da página
+    // Inicia a renderização e configuração
     renderLayout();
     setupControls();
-})();
+}
