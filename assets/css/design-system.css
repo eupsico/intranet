@@ -1,9 +1,9 @@
 /* Arquivo: assets/css/design-system.css
-    Versão: 1.8.6
-    Descrição: Adiciona estilos aprimorados para o sistema de abas da tela de Configurações.
+    Versão: 1.8.7
+    Descrição: Centraliza e corrige os estilos do sistema de abas.
 */
 
-/* --- :root - Definição das Variáveis Globais --- */
+/* --- :root e Reset ... (sem alterações) ... --- */
 :root {
     --cor-primaria: #04396d;
     --cor-secundaria: #40b0df;
@@ -22,37 +22,17 @@
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
 }
-
-/* --- Reset Básico e Estilos Globais --- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body { font-family: var(--fonte-principal); background-color: var(--cor-fundo); color: var(--cor-texto-principal); line-height: 1.6; }
 a { color: var(--cor-secundaria); text-decoration: none; transition: color 0.2s ease-in-out; }
 a:hover { text-decoration: underline; filter: brightness(0.9); }
 
-/* --- Layout Principal --- */
-.layout-container {
-    display: grid;
-    height: 100vh;
-    overflow: hidden;
-    grid-template-columns: var(--sidebar-width-expanded) 1fr; 
-    grid-template-rows: 70px 1fr;
-    grid-template-areas:
-        "sidebar header"
-        "sidebar main";
-    transition: grid-template-columns 0.3s ease;
-}
+/* --- Layout Principal ... (sem alterações) ... --- */
+.layout-container { display: grid; height: 100vh; overflow: hidden; grid-template-columns: var(--sidebar-width-expanded) 1fr; grid-template-rows: 70px 1fr; grid-template-areas: "sidebar header" "sidebar main"; transition: grid-template-columns 0.3s ease; }
 
-/* --- Header --- */
-.header {
-    grid-area: header;
-    background-color: var(--cor-primaria);
-    color: var(--cor-texto-inverso);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 30px;
-}
+/* --- Header ... (sem alterações) ... --- */
+.header { grid-area: header; background-color: var(--cor-primaria); color: var(--cor-texto-inverso); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
 .header-start { display: flex; align-items: center; gap: 15px; flex-grow: 1; overflow: hidden; }
 .header-logo { height: 40px; width: auto; flex-shrink: 0; }
 .user-profile-header { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
@@ -69,8 +49,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 #sidebar-toggle svg { width: 24px; height: 24px; }
 #sidebar-toggle svg path, #sidebar-toggle svg line, #sidebar-toggle svg rect { stroke: var(--cor-texto-inverso); }
 
-
-/* --- Sidebar --- */
+/* --- Sidebar ... (sem alterações) ... --- */
 .sidebar { grid-area: sidebar; background-color: var(--cor-surface); border-right: 1px solid var(--cor-borda); position: relative; overflow: hidden; display: flex; flex-direction: column; }
 .sidebar-content-wrapper { height: 100%; width: 100%; overflow-y: auto; padding: 15px; }
 .sidebar-menu { list-style: none; margin: 0; padding: 0; }
@@ -82,17 +61,16 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .sidebar-menu .back-link { font-weight: 600; color: var(--cor-primaria); }
 .sidebar-menu .menu-separator { height: 1px; background-color: var(--cor-borda); margin: 10px 0; }
 
-
-/* Estilos do Menu Retrátil (Desktop) */
+/* Estilos do Menu Retrátil ... (sem alterações) ... --- */
 .layout-container.sidebar-collapsed { grid-template-columns: var(--sidebar-width-collapsed) 1fr; }
 .layout-container.sidebar-collapsed .sidebar-content-wrapper { padding: 15px 10px; }
 .layout-container.sidebar-collapsed .sidebar-menu a { justify-content: center; padding: 12px; }
 .layout-container.sidebar-collapsed .sidebar-menu a span, .layout-container.sidebar-collapsed .sidebar-menu a.back-link span { opacity: 0; width: 0; overflow: hidden; }
 
-/* --- Overlay do Menu Mobile --- */
+/* --- Overlay do Menu Mobile ... (sem alterações) ... --- */
 .menu-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
 
-/* --- Componentes Gerais de Conteúdo --- */
+/* --- Componentes Gerais de Conteúdo ... (sem alterações) ... --- */
 .main-content { grid-area: main; overflow-y: auto; padding: 30px; }
 .page-header-container { margin-bottom: 30px; }
 .page-header-container h1 { font-size: 2em; color: var(--cor-primaria); margin-bottom: 5px; }
@@ -150,10 +128,10 @@ table tbody tr:hover { background-color: #e9ecef; }
     display: flex;
     flex-wrap: wrap;
     border-bottom: 2px solid var(--cor-borda);
-    margin-bottom: 0; /* ALTERAÇÃO: Removida margem para colar no conteúdo */
+    margin-bottom: 0;
 }
 .tab-link {
-    padding: 12px 25px; /* Aumentado o padding para melhor toque */
+    padding: 12px 25px;
     cursor: pointer;
     border: none;
     background-color: transparent;
@@ -164,18 +142,18 @@ table tbody tr:hover { background-color: #e9ecef; }
     margin-bottom: -2px;
     transition: all 0.2s ease;
     font-weight: 500;
+    border-radius: var(--borda-radius) var(--borda-radius) 0 0;
 }
 .tab-link:hover {
     background-color: var(--cor-fundo);
     color: var(--cor-primaria);
 }
-/* ALTERAÇÃO: Estilo da aba ativa com cor de fundo */
+/* ALTERAÇÃO: Regra de estilo para a aba ativa corrigida e aprimorada */
 .tab-link.active {
     color: var(--cor-texto-inverso);
     background-color: var(--cor-primaria);
-    border-bottom-color: var(--cor-secundaria);
+    border-bottom-color: var(--cor-secundaria) !important; /* !important para garantir a sobreposição */
     font-weight: 600;
-    border-radius: var(--borda-radius) var(--borda-radius) 0 0;
 }
 .tab-content {
     background-color: var(--cor-surface);
@@ -183,10 +161,8 @@ table tbody tr:hover { background-color: #e9ecef; }
     border: 1px solid var(--cor-borda);
     border-top: none;
     border-radius: 0 0 var(--borda-radius) var(--borda-radius);
-    /* Adiciona uma sombra para destacar o conteúdo */
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
-
 
 /* --- Estilos de Formulário --- */
 .form-group {
@@ -315,7 +291,7 @@ table tbody tr:hover { background-color: #e9ecef; }
         margin-bottom: 0;
     }
     .tab-link {
-        flex-grow: 1; /* Faz as abas ocuparem o espaço igualmente */
+        flex-grow: 1;
         text-align: center;
         padding: 12px 10px;
     }
