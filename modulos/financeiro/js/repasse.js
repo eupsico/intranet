@@ -1,4 +1,8 @@
-(function() {
+// Arquivo: /modulos/financeiro/js/views/repasse.js
+// Versão: 2.0
+// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+
+export function init(db, user, userData) {
     if (!db) { return; }
 
     const loadingDiv = document.getElementById('repasse-loading');
@@ -73,8 +77,6 @@
         const mesSelector = document.getElementById('filtro-mes');
         const anoSelector = document.getElementById('filtro-ano');
         
-        // --- LINHA CORRIGIDA AQUI ---
-        // Adicionamos 'p.recebeDireto === true' ao filtro
         const ativos = DB.profissionais.filter(p => p.nome && !p.primeiraFase && !p.inativo && p.recebeDireto === true).sort((a, b) => a.nome.localeCompare(b.nome));
         
         profSelector.innerHTML = ['<option value="todos">Todos os Profissionais</option>', ...ativos.map(p => `<option value="${p.nome}">${p.nome}</option>`)].join('');
@@ -220,11 +222,7 @@
                 csvContent += `"Total Recebido (Comprovantes)";"${totalRecebido.toFixed(2).replace('.',',')}"\n`;
                 csvContent += `"Total Devido (Mês/Histórico)";"${totalDevido.toFixed(2).replace('.',',')}"\n`;
                 csvContent += `"Saldo (Crédito/Débito)";"${saldo.toFixed(2).replace('.',',')}"\n`;
-                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `resumo_${prof}_${mes}.csv`;
-                link.click();
+                downloadFile(csvContent, `resumo_${prof}_${mes}.csv`, 'text/csv;charset=utf-8;');
             }
         } else {
             if (format === 'pdf') {
@@ -239,11 +237,7 @@
             } else if (format === 'csv') {
                 let csvContent = "Profissional;Data Pagamento;Mes Referencia;Valor Pago;Link Comprovante\n";
                 currentlyDisplayedData.forEach(c => { csvContent += `"${c.profissional}";"${formatDate(c.dataPagamento)}";"${c.mesReferencia}/${c.anoReferencia}";"${(c.valor || 0).toFixed(2).replace('.',',')}";"${c.comprovanteUrl}"\n`; });
-                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `relatorio_comprovantes_${mes}_${ano}.csv`;
-                link.click();
+                downloadFile(csvContent, `relatorio_comprovantes_${mes}_${ano}.csv`, 'text/csv;charset=utf-8;');
             }
         }
     }
@@ -256,4 +250,4 @@
     });
 
     fetchData();
-})();
+}

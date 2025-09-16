@@ -1,7 +1,10 @@
-(function() {
+// Arquivo: /modulos/financeiro/js/views/acordos.js
+// Versão: 2.0
+// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+
+export function init(db, user, userData) {
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
-        appContent.innerHTML = `<p style="color:red;">Erro de conexão com o banco de dados.</p>`;
         return;
     }
 
@@ -138,6 +141,7 @@
                 calculateAndUpdate(accordion.querySelector('.accordion-content'));
             }
         });
+        attachEventListeners();
     };
 
     async function fetchData() {
@@ -169,124 +173,125 @@
         }
     }
     
-    taxaGeralInput.addEventListener('input', () => {
-        db.collection('financeiro').doc('configuracoes').set({ valores: { taxaAcordo: parseFloat(taxaGeralInput.value) || 0 } }, { merge: true });
-        appContent.querySelectorAll('.accordion-content').forEach(calculateAndUpdate);
-    });
-    
-    appContent.addEventListener('input', (e) => {
-        if (e.target.classList.contains('data-pagamento-efetivo')) return;
-        const content = e.target.closest('.accordion-content');
-        if (content) calculateAndUpdate(content);
-    });
-            
-    appContent.addEventListener('click', async (e) => {
-        const target = e.target;
-        const accordion = target.closest('.accordion');
-        if (!accordion) return;
-        const content = accordion.querySelector('.accordion-content');
+    function attachEventListeners() {
+        taxaGeralInput.addEventListener('input', () => {
+            db.collection('financeiro').doc('configuracoes').set({ valores: { taxaAcordo: parseFloat(taxaGeralInput.value) || 0 } }, { merge: true });
+            appContent.querySelectorAll('.accordion-content').forEach(calculateAndUpdate);
+        });
         
-        if (target.classList.contains('accordion-trigger')) {
-            const isActive = target.classList.toggle('active');
-            content.classList.toggle('active');
-            if(isActive) {
-                // Força o recálculo para obter o scrollHeight correto
-                calculateAndUpdate(content);
-                content.style.maxHeight = content.scrollHeight + 'px';
-            } else {
-                content.style.maxHeight = null;
-            }
-        }
-
-        if(target.classList.contains('save-btn')) {
-            target.disabled = true;
-            target.textContent = 'Salvando...';
-            const nome = accordion.dataset.nome;
-            const nomeKey = sanitizeKey(nome);
-            const pagamentos = [];
-            content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
-                pagamentos.push({
-                    item: row.cells[0].textContent,
-                    valor: parseFloat(row.cells[2].textContent.replace('R$ ', '')),
-                    dataVencimento: row.querySelector('.data-vencimento').value,
-                    dataPagamento: row.querySelector('.data-pagamento-efetivo').value
-                });
-            });
-            const acordoData = {
-                prof: nome,
-                dataAcordo: content.querySelector('.acordo-data').value,
-                dataEntrada: content.querySelector('.acordo-data-entrada').value,
-                divida: parseFloat(content.querySelector('.acordo-divida').value) || 0,
-                entrada: parseFloat(content.querySelector('.acordo-entrada').value) || 0,
-                taxa: parseFloat(taxaGeralInput.value) || 0,
-                valorFinal: parseFloat(content.querySelector('.acordo-valor-final').value) || 0,
-                parcelas: parseInt(content.querySelector('.acordo-parcelas').value) || 0,
-                pagamentos: pagamentos,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            try {
-                await db.collection('acordos').doc(nomeKey).set(acordoData);
-                window.showToast(`Acordo para ${nome} salvo com sucesso!`, 'success');
-                const index = DB.acordos.findIndex(a => a.prof === nome);
-                if (index > -1) { DB.acordos[index] = acordoData; } else { DB.acordos.push(acordoData); }
-            } catch (err) {
-                window.showToast('Erro ao salvar acordo.', 'error');
-                console.error('Erro ao salvar acordo:', err);
-            } finally {
-                target.disabled = false;
-                target.textContent = 'Salvar Acordo';
-            }
-        }
-        
-        if(target.classList.contains('whatsapp-btn')) { 
-            const nome = accordion.dataset.nome;
-            const profInfo = DB.profissionais.find(p => p.nome === nome);
-            const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
-            if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
-
-            const divida = parseFloat(content.querySelector('.acordo-divida').value) || 0;
-            const entrada = parseFloat(content.querySelector('.acordo-entrada').value) || 0;
-            const taxa = parseFloat(taxaGeralInput.value) || 0;
-            const valorFinal = parseFloat(content.querySelector('.acordo-valor-final').value) || 0;
-            const parcelas = parseInt(content.querySelector('.acordo-parcelas').value) || 0;
-            let listaParcelasTexto = '';
-            content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
-                const [item, , valor, dataVenc] = Array.from(row.cells).map(cell => cell.textContent || cell.querySelector('input')?.value);
-                const [ano, mes, dia] = dataVenc.split('-');
-                listaParcelasTexto += `${item}: ${valor} (Venc. ${dia}/${mes}/${ano})\n`;
-            });
+        appContent.addEventListener('input', (e) => {
+            if (e.target.classList.contains('data-pagamento-efetivo')) return;
+            const content = e.target.closest('.accordion-content');
+            if (content) calculateAndUpdate(content);
+        });
+                
+        appContent.addEventListener('click', async (e) => {
+            const target = e.target;
+            const accordion = target.closest('.accordion');
+            if (!accordion) return;
+            const content = accordion.querySelector('.accordion-content');
             
-            const template = DB.Mensagens.contrato || '{{greeting}}, {{nomeProfissional}}!\n\nSegue um resumo do seu acordo com a EuPsico.\n\n- Valor da Dívida: R$ {{divida}}\n- Entrada: R$ {{entrada}}\n- Taxa Aplicada: {{taxa}}%\n- Valor Final: R$ {{valorFinal}}\n- Nº de Parcelas: {{parcelas}}\n\nAs parcelas serão:\n{{listaParcelas}}';
-            const mensagemFinal = template.replace('{{greeting}}', getGreeting()).replace(/{{nomeProfissional}}/g, nome).replace('{{divida}}', divida.toFixed(2).replace('.',',')).replace('{{entrada}}', entrada.toFixed(2).replace('.',',')).replace('{{taxa}}', taxa).replace('{{valorFinal}}', valorFinal.toFixed(2).replace('.',',')).replace('{{parcelas}}', parcelas).replace('{{listaParcelas}}', listaParcelasTexto.trim());
-            
-            window.open(`https://wa.me/55${contato}?text=${encodeURIComponent(mensagemFinal)}`, '_blank');
-        }
-
-        if(target.classList.contains('whatsapp-parcela-btn')) {
-            const nome = accordion.dataset.nome;
-            const profInfo = DB.profissionais.find(p => p.nome === nome);
-            const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
-            if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
-
-            const item = target.dataset.item;
-            const valor = parseFloat(target.dataset.valor);
-            const vencimento = target.dataset.vencimento;
-            const [ano, mes, dia] = vencimento.split('-');
-            const valorTotalDivida = parseFloat(content.querySelector('.acordo-divida').value) || 0;
-            let valorTotalPago = 0;
-            content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
-                if (row.querySelector('.data-pagamento-efetivo').value) { 
-                    valorTotalPago += parseFloat(row.cells[2].textContent.replace('R$ ', ''));
+            if (target.classList.contains('accordion-trigger')) {
+                const isActive = target.classList.toggle('active');
+                content.classList.toggle('active');
+                if(isActive) {
+                    calculateAndUpdate(content);
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                } else {
+                    content.style.maxHeight = null;
                 }
-            });
-            const valorRestante = valorTotalDivida - valorTotalPago;
+            }
 
-            const template = DB.Mensagens.acordo || '{{greeting}}, {{nome}}!\n\nLembrete do acordo.\n\n- Item: {{item}}\n- Vencimento: {{vencimento}}\n- Valor: R$ {{valor}}';
-            const mensagemParcela = template.replace('{{greeting}}', getGreeting()).replace(/{{nome}}/g, nome).replace('{{item}}', item).replace('{{vencimento}}', `${dia}/${mes}/${ano}`).replace('{{valor}}', valor.toFixed(2).replace('.',',')).replace('{{valorRestante}}', valorRestante.toFixed(2).replace('.',','));
+            if(target.classList.contains('save-btn')) {
+                target.disabled = true;
+                target.textContent = 'Salvando...';
+                const nome = accordion.dataset.nome;
+                const nomeKey = sanitizeKey(nome);
+                const pagamentos = [];
+                content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
+                    pagamentos.push({
+                        item: row.cells[0].textContent,
+                        valor: parseFloat(row.cells[2].textContent.replace('R$ ', '')),
+                        dataVencimento: row.querySelector('.data-vencimento').value,
+                        dataPagamento: row.querySelector('.data-pagamento-efetivo').value
+                    });
+                });
+                const acordoData = {
+                    prof: nome,
+                    dataAcordo: content.querySelector('.acordo-data').value,
+                    dataEntrada: content.querySelector('.acordo-data-entrada').value,
+                    divida: parseFloat(content.querySelector('.acordo-divida').value) || 0,
+                    entrada: parseFloat(content.querySelector('.acordo-entrada').value) || 0,
+                    taxa: parseFloat(taxaGeralInput.value) || 0,
+                    valorFinal: parseFloat(content.querySelector('.acordo-valor-final').value) || 0,
+                    parcelas: parseInt(content.querySelector('.acordo-parcelas').value) || 0,
+                    pagamentos: pagamentos,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                try {
+                    await db.collection('acordos').doc(nomeKey).set(acordoData);
+                    window.showToast(`Acordo para ${nome} salvo com sucesso!`, 'success');
+                    const index = DB.acordos.findIndex(a => a.prof === nome);
+                    if (index > -1) { DB.acordos[index] = acordoData; } else { DB.acordos.push(acordoData); }
+                } catch (err) {
+                    window.showToast('Erro ao salvar acordo.', 'error');
+                    console.error('Erro ao salvar acordo:', err);
+                } finally {
+                    target.disabled = false;
+                    target.textContent = 'Salvar Acordo';
+                }
+            }
             
-            window.open(`https://wa.me/55${contato}?text=${encodeURIComponent(mensagemParcela)}`, '_blank');
-        }
-    });
+            if(target.classList.contains('whatsapp-btn')) { 
+                const nome = accordion.dataset.nome;
+                const profInfo = DB.profissionais.find(p => p.nome === nome);
+                const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
+                if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
+
+                const divida = parseFloat(content.querySelector('.acordo-divida').value) || 0;
+                const entrada = parseFloat(content.querySelector('.acordo-entrada').value) || 0;
+                const taxa = parseFloat(taxaGeralInput.value) || 0;
+                const valorFinal = parseFloat(content.querySelector('.acordo-valor-final').value) || 0;
+                const parcelas = parseInt(content.querySelector('.acordo-parcelas').value) || 0;
+                let listaParcelasTexto = '';
+                content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
+                    const [item, , valor, dataVenc] = Array.from(row.cells).map(cell => cell.textContent || cell.querySelector('input')?.value);
+                    const [ano, mes, dia] = dataVenc.split('-');
+                    listaParcelasTexto += `${item}: ${valor} (Venc. ${dia}/${mes}/${ano})\n`;
+                });
+                
+                const template = DB.Mensagens.contrato || '{{greeting}}, {{nomeProfissional}}!\n\nSegue um resumo do seu acordo com a EuPsico.\n\n- Valor da Dívida: R$ {{divida}}\n- Entrada: R$ {{entrada}}\n- Taxa Aplicada: {{taxa}}%\n- Valor Final: R$ {{valorFinal}}\n- Nº de Parcelas: {{parcelas}}\n\nAs parcelas serão:\n{{listaParcelas}}';
+                const mensagemFinal = template.replace('{{greeting}}', getGreeting()).replace(/{{nomeProfissional}}/g, nome).replace('{{divida}}', divida.toFixed(2).replace('.',',')).replace('{{entrada}}', entrada.toFixed(2).replace('.',',')).replace('{{taxa}}', taxa).replace('{{valorFinal}}', valorFinal.toFixed(2).replace('.',',')).replace('{{parcelas}}', parcelas).replace('{{listaParcelas}}', listaParcelasTexto.trim());
+                
+                window.open(`https://wa.me/55${contato}?text=${encodeURIComponent(mensagemFinal)}`, '_blank');
+            }
+
+            if(target.classList.contains('whatsapp-parcela-btn')) {
+                const nome = accordion.dataset.nome;
+                const profInfo = DB.profissionais.find(p => p.nome === nome);
+                const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
+                if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
+
+                const item = target.dataset.item;
+                const valor = parseFloat(target.dataset.valor);
+                const vencimento = target.dataset.vencimento;
+                const [ano, mes, dia] = vencimento.split('-');
+                const valorTotalDivida = parseFloat(content.querySelector('.acordo-divida').value) || 0;
+                let valorTotalPago = 0;
+                content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
+                    if (row.querySelector('.data-pagamento-efetivo').value) { 
+                        valorTotalPago += parseFloat(row.cells[2].textContent.replace('R$ ', ''));
+                    }
+                });
+                const valorRestante = valorTotalDivida - valorTotalPago;
+
+                const template = DB.Mensagens.acordo || '{{greeting}}, {{nome}}!\n\nLembrete do acordo.\n\n- Item: {{item}}\n- Vencimento: {{vencimento}}\n- Valor: R$ {{valor}}';
+                const mensagemParcela = template.replace('{{greeting}}', getGreeting()).replace(/{{nome}}/g, nome).replace('{{item}}', item).replace('{{vencimento}}', `${dia}/${mes}/${ano}`).replace('{{valor}}', valor.toFixed(2).replace('.',',')).replace('{{valorRestante}}', valorRestante.toFixed(2).replace('.',','));
+                
+                window.open(`https://wa.me/55${contato}?text=${encodeURIComponent(mensagemParcela)}`, '_blank');
+            }
+        });
+    }
 
     fetchData();
-})();
+}

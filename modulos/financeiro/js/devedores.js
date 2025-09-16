@@ -1,5 +1,8 @@
-// assets/js/devedores.js
-(function() {
+// Arquivo: /modulos/financeiro/js/views/devedores.js
+// Versão: 2.0
+// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+
+export function init(db) {
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
         return;
@@ -13,7 +16,6 @@
         return key.replace(/\.|\$|\[|\]|#|\//g, '_');
     }
 
-    // Calcula a dívida total de um profissional no ano corrente
     function getDividaTotal(profissional, DB) {
         const dividaInfo = { valor: 0, meses: [] };
         if (!profissional || !profissional.nome) return dividaInfo;
@@ -25,7 +27,7 @@
         for (let i = 0; i <= mesAtualIndex; i++) {
             const mes = meses[i];
             const dividaDoMes = DB.cobranca?.[anoAtual]?.[nomeKey]?.[mes] || 0;
-            const pagamentoDoMes = DB.repasses?.[anoAtual]?.[mes]?.[nomeKey]; // Verifica se a chave existe
+            const pagamentoDoMes = DB.repasses?.[anoAtual]?.[mes]?.[nomeKey];
 
             if (dividaDoMes > 0 && !pagamentoDoMes) {
                 dividaInfo.valor += dividaDoMes;
@@ -35,14 +37,12 @@
         return dividaInfo;
     }
 
-    // Renderiza a tabela de devedores
     function renderDevedores(DB) {
         let devedoresHtml = `<div class="table-wrapper"><table id="devedores-table"><thead><tr><th>Profissional</th><th>Meses Pendentes</th><th>Valor Total Devido (R$)</th></tr></thead><tbody>`;
         let totalGeralDevido = 0;
         const listaDevedores = [];
 
         (DB.profissionais || []).forEach(prof => {
-            // Pula profissionais inativos ou em primeira fase
             if (prof.inativo || prof.primeiraFase) return;
             
             const dividaInfo = getDividaTotal(prof, DB);
@@ -52,7 +52,6 @@
             }
         });
 
-        // Ordena por quem deve mais
         listaDevedores.sort((a, b) => b.valor - a.valor);
 
         listaDevedores.forEach(devedor => {
@@ -63,7 +62,6 @@
         appContent.innerHTML = devedoresHtml;
     }
 
-    // Busca todos os dados necessários do Firestore
     async function fetchData() {
         try {
             const [usuariosSnapshot, configSnapshot] = await Promise.all([
@@ -86,4 +84,4 @@
     }
 
     fetchData();
-})();
+}

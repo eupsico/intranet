@@ -1,5 +1,8 @@
-// assets/js/controle_pagamentos.js (Versão 1 - Refatorado para UID)
-(function() {
+// Arquivo: /modulos/financeiro/js/views/controle_pagamentos.js
+// Versão: 2.0
+// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+
+export function init(db, user, userData) {
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
         return;
@@ -9,7 +12,6 @@
     let DB = { profissionais: [], cobranca: {}, repasses: {} };
     const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     
-    // Função de sanitizar continua útil para o fallback para a chave antiga
     function sanitizeKey(key) {
         if (!key) return '';
         return key.replace(/\.|\$|\[|\]|#|\//g, '_');
@@ -26,7 +28,6 @@
 
             DB.profissionais = usuariosSnapshot.docs.map(doc => doc.data());
             const configData = configSnapshot.exists ? configSnapshot.data() : {};
-            
             DB.cobranca = configData.cobranca || {};
             DB.repasses = configData.repasses || {};
             
@@ -58,7 +59,6 @@
         profissionaisFiltrados.sort((a,b) => a.nome.localeCompare(b.nome));
         
         profissionaisFiltrados.forEach(prof => {
-            // ALTERAÇÃO: Usa o UID como chave principal e o nome antigo como fallback
             const profId = prof.uid;
             const nomeKey_antigo = sanitizeKey(prof.nome);
 
@@ -67,14 +67,12 @@
                 valorDevido = DB.cobranca[ano]?.[nomeKey_antigo]?.[mes] || 0;
             }
 
-            // O repasse (pagamento) também será lido com fallback e salvo com UID
             let repasseSalvo = DB.repasses[ano]?.[mes]?.[profId];
             if(repasseSalvo === undefined) {
                 repasseSalvo = DB.repasses[ano]?.[mes]?.[nomeKey_antigo] || '';
             }
             
             if (valorDevido > 0) {
-                // ALTERAÇÃO: Armazena o UID na linha da tabela
                 tableHtml += `<tr data-prof-id="${profId}">
                     <td>${prof.nome}</td>
                     <td>${vencimento}</td>
@@ -86,24 +84,32 @@
         });
         
         appContent.innerHTML = selectorHtml + tableHtml + `</tbody></table></div>`;
+        attachEventListeners();
     }
-
-    appContent.addEventListener('change', function(e) {
-        if (e.target.id === 'repasse-mes-selector' || e.target.id === 'repasse-ano-selector') {
-            const ano = document.getElementById('repasse-ano-selector').value;
-            const mesIndex = document.getElementById('repasse-mes-selector').value;
-            renderPagamentos(parseInt(ano), parseInt(mesIndex));
-        }
-    });
     
-    appContent.addEventListener('click', async function(e) {
+    function attachEventListeners() {
+        const mesSelector = document.getElementById('repasse-mes-selector');
+        if(mesSelector) mesSelector.addEventListener('change', handlePeriodChange);
+        const anoSelector = document.getElementById('repasse-ano-selector');
+        if(anoSelector) anoSelector.addEventListener('change', handlePeriodChange);
+        
+        const table = appContent.querySelector('table');
+        if(table) table.addEventListener('click', handleSaveClick);
+    }
+    
+    function handlePeriodChange() {
+        const ano = document.getElementById('repasse-ano-selector').value;
+        const mesIndex = document.getElementById('repasse-mes-selector').value;
+        renderPagamentos(parseInt(ano), parseInt(mesIndex));
+    }
+    
+    async function handleSaveClick(e) {
         const target = e.target;
         if (target.classList.contains('save-repasse-btn')) {
             target.disabled = true;
             target.textContent = '...';
 
             const row = target.closest('tr');
-            // ALTERAÇÃO: Pega o UID da linha da tabela
             const profId = row.dataset.profId; 
             const dataPg = row.querySelector('.repasse-data-pg').value;
             const ano = document.getElementById('repasse-ano-selector').value;
@@ -124,7 +130,6 @@
             }
             
             try {
-                // ALTERAÇÃO: Salva o registro de repasse usando o UID
                 const repassePath = `repasses.${ano}.${mes}.${profId}`;
                 const repasseUpdate = {};
                 if (dataPg) {
@@ -158,10 +163,9 @@
                 setTimeout(() => {
                     target.disabled = false;
                     target.textContent = 'Salvar';
-                    target.style.backgroundColor = ''; // Volta à cor original
+                    target.style.backgroundColor = '';
                 }, 2000);
                 
-                // Atualiza o DB local para não precisar recarregar
                 if (!DB.repasses[ano]) DB.repasses[ano] = {};
                 if (!DB.repasses[ano][mes]) DB.repasses[ano][mes] = {};
                 if (dataPg) DB.repasses[ano][mes][profId] = dataPg; else delete DB.repasses[ano][mes][profId];
@@ -173,7 +177,7 @@
                 console.error(err);
             }
         }
-    });
+    }
     
     fetchData();
-})();
+}

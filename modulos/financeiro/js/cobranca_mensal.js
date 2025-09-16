@@ -1,5 +1,8 @@
-// assets/js/cobranca_mensal.js (Versão 5 - Botão Salvar Corrigido)
-(function() {
+// Arquivo: /modulos/financeiro/js/views/cobranca_mensal.js
+// Versão: 2.0
+// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+
+export function init(db, user, userData) {
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
         return;
@@ -97,41 +100,80 @@
             </tr>`;
         });
         appContent.innerHTML = selectorHtml + tableHtml + `</tbody></table></div>`;
+        
+        // Attach event listeners after rendering
+        attachEventListeners();
     }
 
-    appContent.addEventListener('click', async (e) => {
-        const target = e.target;
-        if (target.id === 'save-month-btn') {
-            e.preventDefault();
-            if (!confirm("Tem certeza que deseja salvar todos os valores calculados para o mês atual? Isso irá sobrescrever quaisquer valores editados manualmente para este mês.")) {
-                return;
-            }
-            target.disabled = true;
-            target.textContent = 'Salvando...';
-            const ano = new Date().getFullYear();
-            const mes = meses[new Date().getMonth()];
-            const updates = {};
-            cacheResumoCalculado.forEach(resumo => {
-                const profId = resumo.uid;
-                if(profId){
-                    const path = `cobranca.${ano}.${profId}.${mes}`;
-                    updates[path] = resumo.totalDivida;
-                }
-            });
-            try {
-                await db.collection('financeiro').doc('configuracoes').update(updates);
-                window.showToast('Todos os lançamentos do mês foram salvos com sucesso!', 'success');
-                await fetchData();
-            } catch (err) {
-                console.error("Erro ao salvar lançamentos do mês:", err);
-                window.showToast("Ocorreu um erro ao salvar os lançamentos.", 'error');
-                target.disabled = false;
-                target.textContent = 'Salvar Lançamentos Calculados para este Mês';
-            }
+    function attachEventListeners() {
+        const saveMonthBtn = document.getElementById('save-month-btn');
+        if(saveMonthBtn) {
+            saveMonthBtn.addEventListener('click', handleSaveMonth);
         }
-        if (target.classList.contains('row-edit-btn')) { e.preventDefault(); const row = target.closest('tr'); const valorOriginal = parseFloat(row.dataset.valorOriginal); const valorCell = row.cells[2]; const acoesCell = row.cells[3]; valorCell.innerHTML = `<input type="number" class="edit-valor-input" step="0.01" value="${valorOriginal.toFixed(2)}">`; acoesCell.innerHTML = `<button class="action-button save-btn row-save-btn">Salvar</button><button class="action-button cancel-btn row-cancel-btn">Cancelar</button>`; }
-        if (target.classList.contains('row-cancel-btn')) { e.preventDefault(); const ano = parseInt(document.getElementById('cobranca-ano-selector').value); const mesIndex = parseInt(document.getElementById('cobranca-mes-selector').value); renderCobranca(ano, mesIndex); }
-        if (target.classList.contains('row-save-btn')) {
+
+        const table = document.getElementById('cobranca-table');
+        if(table) {
+            table.addEventListener('click', handleTableClick);
+        }
+
+        const mesSelector = document.getElementById('cobranca-mes-selector');
+        const anoSelector = document.getElementById('cobranca-ano-selector');
+        if(mesSelector) mesSelector.addEventListener('change', handlePeriodChange);
+        if(anoSelector) anoSelector.addEventListener('change', handlePeriodChange);
+    }
+    
+    function handlePeriodChange() {
+        const ano = parseInt(document.getElementById('cobranca-ano-selector').value);
+        const mesIndex = parseInt(document.getElementById('cobranca-mes-selector').value);
+        renderCobranca(ano, mesIndex);
+    }
+
+    async function handleSaveMonth(e) {
+        const target = e.target;
+        if (!confirm("Tem certeza que deseja salvar todos os valores calculados para o mês atual? Isso irá sobrescrever quaisquer valores editados manualmente para este mês.")) {
+            return;
+        }
+        target.disabled = true;
+        target.textContent = 'Salvando...';
+        const ano = new Date().getFullYear();
+        const mes = meses[new Date().getMonth()];
+        const updates = {};
+        cacheResumoCalculado.forEach(resumo => {
+            const profId = resumo.uid;
+            if(profId){
+                const path = `cobranca.${ano}.${profId}.${mes}`;
+                updates[path] = resumo.totalDivida;
+            }
+        });
+        try {
+            await db.collection('financeiro').doc('configuracoes').update(updates);
+            window.showToast('Todos os lançamentos do mês foram salvos com sucesso!', 'success');
+            await fetchData();
+        } catch (err) {
+            console.error("Erro ao salvar lançamentos do mês:", err);
+            window.showToast("Ocorreu um erro ao salvar os lançamentos.", 'error');
+            target.disabled = false;
+            target.textContent = 'Salvar Lançamentos Calculados para este Mês';
+        }
+    }
+
+    async function handleTableClick(e) {
+        const target = e.target;
+        const ano = parseInt(document.getElementById('cobranca-ano-selector').value);
+        const mesIndex = parseInt(document.getElementById('cobranca-mes-selector').value);
+
+        if (target.classList.contains('row-edit-btn')) {
+            e.preventDefault(); 
+            const row = target.closest('tr'); 
+            const valorOriginal = parseFloat(row.dataset.valorOriginal); 
+            const valorCell = row.cells[2]; 
+            const acoesCell = row.cells[3]; 
+            valorCell.innerHTML = `<input type="number" class="edit-valor-input" step="0.01" value="${valorOriginal.toFixed(2)}">`; 
+            acoesCell.innerHTML = `<button class="action-button save-btn row-save-btn">Salvar</button><button class="action-button cancel-btn row-cancel-btn">Cancelar</button>`; 
+        } else if (target.classList.contains('row-cancel-btn')) {
+            e.preventDefault();
+            renderCobranca(ano, mesIndex); 
+        } else if (target.classList.contains('row-save-btn')) {
             e.preventDefault();
             target.disabled = true;
             target.textContent = 'Salvando...';
@@ -139,8 +181,6 @@
             const profId = row.dataset.profId;
             const input = row.querySelector('.edit-valor-input');
             const novoValor = parseFloat(input.value);
-            const ano = parseInt(document.getElementById('cobranca-ano-selector').value);
-            const mesIndex = parseInt(document.getElementById('cobranca-mes-selector').value);
             const mes = meses[mesIndex];
             if (isNaN(novoValor) || !profId) { window.showToast('Valor inválido ou ID do profissional não encontrado.', 'error'); renderCobranca(ano, mesIndex); return; }
             const path = `cobranca.${ano}.${profId}.${mes}`;
@@ -156,16 +196,18 @@
             } finally {
                 renderCobranca(ano, mesIndex);
             }
+        } else if (target.classList.contains('whatsapp-btn')) {
+            e.preventDefault(); 
+            const nome = target.dataset.nome; 
+            const profInfo = DB.profissionais.find(p => p.nome === nome); 
+            const contato = profInfo ? (profInfo.contato || '').replace(/\D/g, '') : ''; 
+            if(!contato) { alert(`Contato para ${nome} não encontrado.`); return; } 
+            const template = DB.Mensagens.cobranca || 'Olá, {nomeProfissional}! Lembrete do repasse de R$ {valor} referente ao mês de {mes}.'; 
+            const mes = meses[document.getElementById('cobranca-mes-selector').value]; 
+            let message = template.replace('{nomeProfissional}', nome).replace('{valor}', target.dataset.valor).replace('{mes}', `${mes.charAt(0).toUpperCase() + mes.slice(1)}/${ano}`); 
+            window.open(`https://wa.me/55${contato}?text=${encodeURIComponent(message)}`, '_blank'); 
         }
-        if (target.classList.contains('whatsapp-btn')) { e.preventDefault(); const nome = target.dataset.nome; const profInfo = DB.profissionais.find(p => p.nome === nome); const contato = profInfo ? (profInfo.contato || '').replace(/\D/g, '') : ''; if(!contato) { alert(`Contato para ${nome} não encontrado.`); return; } const template = DB.Mensagens.cobranca || 'Olá, {nomeProfissional}! Lembrete do repasse de R$ {valor} referente ao mês de {mes}.'; const ano = document.getElementById('cobranca-ano-selector').value; const mes = meses[document.getElementById('cobranca-mes-selector').value]; let message = template.replace('{nomeProfissional}', nome).replace('{valor}', target.dataset.valor).replace('{mes}', `${mes.charAt(0).toUpperCase() + mes.slice(1)}/${ano}`); window.open(`https://wa.me/55${contato}?text=${encodeURIComponent(message)}`, '_blank'); }
-    });
-    appContent.addEventListener('change', function(e) {
-        if (e.target.id === 'cobranca-mes-selector' || e.target.id === 'cobranca-ano-selector') {
-            const ano = parseInt(document.getElementById('cobranca-ano-selector').value);
-            const mesIndex = parseInt(document.getElementById('cobranca-mes-selector').value);
-            renderCobranca(ano, mesIndex);
-        }
-    });
+    }
 
     fetchData();
-})();
+}
