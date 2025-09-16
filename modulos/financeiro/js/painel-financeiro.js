@@ -1,6 +1,6 @@
 // Arquivo: assets/js/painel-financeiro.js
-// Versão: 2.5
-// Descrição: Altera o método de carregamento de views para buscar arquivos HTML externos.
+// Versão: 2.7
+// Descrição: Adiciona a nova view 'configuracoes' ao menu do financeiro.
 
 export function initFinancePanel(user, db, userData) {
     
@@ -36,20 +36,20 @@ export function initFinancePanel(user, db, userData) {
 
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
-    // A constante viewTemplates foi removida, pois não é mais necessária.
 
+    // ALTERAÇÃO: Adicionada a nova view 'configuracoes'
     const views = [
         { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
+        { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'] } // NOVO ITEM
         { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'] },
         { id: 'cobranca_mensal', name: 'Cobrança Mensal', roles: ['admin', 'financeiro'] },
         { id: 'controle_pagamentos', name: 'Controle de Pagamentos', roles: ['admin', 'financeiro'] },
         { id: 'devedores', name: 'Devedores', roles: ['admin', 'financeiro'] },
         { id: 'acordos', name: 'Acordos', roles: ['admin', 'financeiro'] },
         { id: 'lancamentos', name: 'Lançamentos', roles: ['admin', 'financeiro'] },
-        { id: 'envio_comprovantes', name: 'Envio de Comprovantes', roles: ['admin', 'financeiro', 'atendimento'] },
         { id: 'repasse', name: 'Repasse Profissionais', roles: ['admin', 'financeiro'] },
-        { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'] }
-    ];
+        { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'] },
+        ];
 
     function buildFinanceSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
@@ -58,7 +58,7 @@ export function initFinancePanel(user, db, userData) {
         const backLink = document.createElement('li');
         backLink.innerHTML = `
             <a href="../../../index.html" class="back-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 <span>Voltar à Intranet</span>
             </a>
         `;
@@ -82,7 +82,6 @@ export function initFinancePanel(user, db, userData) {
         });
     }
 
-    // ALTERAÇÃO: A função loadView agora usa fetch para buscar arquivos HTML
     async function loadView(viewName) {
         const menuLinks = sidebarMenu.querySelectorAll('a[data-view]');
         menuLinks.forEach(link => {
@@ -92,14 +91,12 @@ export function initFinancePanel(user, db, userData) {
         try {
             contentArea.innerHTML = '<div class="loading-spinner"></div>';
             
-            // Busca o arquivo HTML da view correspondente na pasta 'page'
-            const response = await fetch(`./${viewName}.html`); // Caminho relativo à página atual
+            const response = await fetch(`./${viewName}.html`);
             if (!response.ok) {
                 throw new Error(`Arquivo da view não encontrado: ${viewName}.html`);
             }
             contentArea.innerHTML = await response.text();
 
-            // Carrega dinamicamente o JS específico da view, se existir
             const oldScript = document.getElementById('dynamic-view-script');
             if (oldScript) oldScript.remove();
             
@@ -118,7 +115,6 @@ export function initFinancePanel(user, db, userData) {
         }
     }
 
-    // --- Ponto de Partida do Módulo Financeiro ---
     const userRoles = userData.funcoes || [];
     buildFinanceSidebarMenu(userRoles);
 
