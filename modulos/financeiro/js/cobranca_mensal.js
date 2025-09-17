@@ -1,6 +1,6 @@
-// Arquivo: /modulos/financeiro/js/views/cobranca_mensal.js
-// Versão: 2.0
-// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+// Arquivo: /modulos/financeiro/js/cobranca_mensal.js
+// Versão: 2.1
+// Descrição: Adiciona novo layout para filtro e corrige bug de sobreposição de botões.
 
 export function init(db, user, userData) {
     if (!db) {
@@ -50,15 +50,20 @@ export function init(db, user, userData) {
         const isCurrentMonthView = (ano === currentYear && mesIndex === currentMonthIndex);
         let years = [];
         for (let i = currentYear - 1; i <= currentYear + 5; i++) { years.push(i); }
-        let topButtonHtml = isCurrentMonthView ? `<button class="action-button save-btn" id="save-month-btn">Salvar Lançamentos Calculados para este Mês</button>` : '';
-        let selectorHtml = `<div class="header-actions">
-            <div class="period-selector">
-                <label>Selecionar Período:</label>
-                <select id="cobranca-mes-selector">${meses.map((m, i) => `<option value="${i}" ${i === mesIndex ? 'selected' : ''}>${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('')}</select>
-                <select id="cobranca-ano-selector">${years.map(y => `<option value="${y}" ${y === ano ? 'selected' : ''}>${y}</option>`).join('')}</select>
+        
+        // ALTERAÇÃO: Novo layout para o seletor de período.
+        let selectorHtml = `
+            <div class="period-filter-box">
+                <h4>Selecionar Período:</h4>
+                <div class="selectors">
+                    <select id="cobranca-mes-selector">${meses.map((m, i) => `<option value="${i}" ${i === mesIndex ? 'selected' : ''}>${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('')}</select>
+                    <select id="cobranca-ano-selector">${years.map(y => `<option value="${y}" ${y === ano ? 'selected' : ''}>${y}</option>`).join('')}</select>
+                </div>
             </div>
-            ${topButtonHtml}
-        </div>`;
+        `;
+
+        let topButtonHtml = isCurrentMonthView ? `<div class="controls-section" style="padding-top:0;"><button class="action-button save-btn" id="save-month-btn">Salvar Lançamentos Calculados para este Mês</button></div>` : '';
+        
         let resumoDoMes = [];
         DB.profissionais.forEach(prof => {
             if (!prof.username || prof.inativo || prof.primeiraFase === true || prof.fazAtendimento !== true) { return; }
@@ -74,10 +79,11 @@ export function init(db, user, userData) {
         });
         resumoDoMes.sort((a,b) => a.nome.localeCompare(b.nome));
         cacheResumoCalculado = resumoDoMes;
-        let tableHtml = `<p>Lançamento de cobranças para o mês de: <strong>${mes.charAt(0).toUpperCase() + mes.slice(1)}/${ano}</strong></p>
-            <div class="table-wrapper"><table id="cobranca-table"><thead><tr>
+        
+        let tableHtml = `<div class="table-section"><table id="cobranca-table"><thead><tr>
             <th>Profissional</th><th>Valor Mês Passado (R$)</th><th>Valor do Mês (R$)</th><th>Ações</th><th>WhatsApp</th>
             </tr></thead><tbody>`;
+
         resumoDoMes.forEach(resumo => {
             const profId = resumo.uid;
             const nomeKey_antigo = sanitizeKey(resumo.nome);
@@ -99,9 +105,9 @@ export function init(db, user, userData) {
                 <td><a href="#" class="action-button whatsapp-btn" data-nome="${resumo.nome}" data-valor="${valorParaExibir.toFixed(2)}">Enviar</a></td>
             </tr>`;
         });
-        appContent.innerHTML = selectorHtml + tableHtml + `</tbody></table></div>`;
         
-        // Attach event listeners after rendering
+        appContent.innerHTML = selectorHtml + topButtonHtml + tableHtml + `</tbody></table></div>`;
+        
         attachEventListeners();
     }
 
@@ -169,7 +175,14 @@ export function init(db, user, userData) {
             const valorCell = row.cells[2]; 
             const acoesCell = row.cells[3]; 
             valorCell.innerHTML = `<input type="number" class="edit-valor-input" step="0.01" value="${valorOriginal.toFixed(2)}">`; 
-            acoesCell.innerHTML = `<button class="action-button save-btn row-save-btn">Salvar</button><button class="action-button cancel-btn row-cancel-btn">Cancelar</button>`; 
+            
+            // ALTERAÇÃO: Botões envolvidos em uma div para corrigir bug de sobreposição.
+            acoesCell.innerHTML = `
+                <div class="action-buttons-cell">
+                    <button class="action-button save-btn row-save-btn">Salvar</button>
+                    <button class="action-button cancel-btn row-cancel-btn">Cancelar</button>
+                </div>
+            `; 
         } else if (target.classList.contains('row-cancel-btn')) {
             e.preventDefault();
             renderCobranca(ano, mesIndex); 
