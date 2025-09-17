@@ -1,0 +1,26 @@
+/* Arquivo: /modulos/financeiro/css/resumo_horas.css
+   Versão: 1.0
+   Descrição: Estilos específicos para a tela de Resumo de Horas.
+*/
+
+/* Estilo padrão para parágrafos de descrição em todo o módulo financeiro.
+   Reutilizado da tela de configurações para manter a consistência. 
+*/
+.description-box {
+    background-color: var(--cor-fundo);
+    padding: 15px;
+    border-radius: var(--borda-radius);
+    margin-bottom: 30px;
+    border-left: 4px solid var(--cor-secundaria);
+    font-size: 0.95em;
+    color: var(--cor-texto-secundario);
+}
+
+/* Estilo padrão para cabeçalhos de tabela no módulo financeiro.
+   Define uma cor de fundo destacada para o thead.
+*/
+.table-section thead th {
+    background-color: var(--cor-fundo); /* Usa a cor de fundo padrão para destaque */
+    color: var(--cor-primaria);
+    font-weight: 600;
+}

@@ -1,8 +1,6 @@
-console.log("✔️ [DEBUG] Carregando resumo_horas.js");
-
 // Arquivo: /modulos/financeiro/js/resumo_horas.js
-// Versão: 2.2
-// Descrição: Adiciona a funcionalidade de filtro por profissional.
+// Versão: 2.3
+// Descrição: Refatoração de layout aplicada via CSS. Nenhuma alteração de lógica.
 
 export function init(db) {
     if (!db) {
@@ -10,8 +8,6 @@ export function init(db) {
         return;
     }
 
-    // ATENÇÃO: A busca pelo 'viewContent' pode falhar se o HTML não estiver pronto.
-    // O seletor correto deve ser feito a partir do 'contentArea' global.
     const contentArea = document.getElementById('content-area');
     if (!contentArea) return;
 
