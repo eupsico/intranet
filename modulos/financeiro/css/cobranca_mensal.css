@@ -1,6 +1,6 @@
 /* Arquivo: /modulos/financeiro/css/cobranca_mensal.css
-   Versão: 1.0
-   Descrição: Estilos específicos para a tela de Cobrança Mensal.
+   Versão: 1.1
+   Descrição: Ajusta o container do filtro para ser mais compacto e lado a lado.
 */
 
 /* Estilo padrão para parágrafos de descrição */
@@ -16,11 +16,13 @@
 
 /* Estilo padrão para cabeçalhos de tabela no módulo financeiro */
 .table-section thead th,
-#cobranca-table thead th { /* Adicionado seletor específico para esta tabela */
+#cobranca-table thead th {
     background-color: var(--cor-fundo);
     color: var(--cor-primaria);
     font-weight: 600;
 }
+
+/* --- ALTERAÇÕES NO FILTRO DE PERÍODO --- */
 
 /* Novo container para o filtro de período, tornando-o mais destacado */
 .period-filter-box {
@@ -28,7 +30,10 @@
     padding: 20px;
     border-radius: var(--borda-radius);
     margin-bottom: 20px;
-    max-width: 400px; /* Define uma largura máxima para o container */
+    border: 1px solid var(--cor-borda); /* Adiciona uma borda sutil */
+    
+    /* ALTERAÇÃO PRINCIPAL: Faz o container se ajustar ao conteúdo */
+    display: inline-block; 
 }
 
 .period-filter-box h4 {
@@ -36,15 +41,13 @@
     margin-bottom: 15px;
     color: var(--cor-texto-principal);
     font-weight: 600;
+    font-size: 1em; /* Tamanho de fonte ajustado */
 }
 
+/* Mantém os seletores lado a lado */
 .period-filter-box .selectors {
     display: flex;
-    gap: 15px; /* Espaço entre os seletores de mês e ano */
-}
-
-.period-filter-box .selectors select {
-    flex: 1; /* Faz com que ambos ocupem o espaço disponível */
+    gap: 15px; 
 }
 
 /* --- Correção do Bug dos Botões Sobrepostos --- */
@@ -53,8 +56,8 @@
 .action-buttons-cell {
     display: flex;
     align-items: center;
-    gap: 8px; /* Adiciona um espaço seguro entre os botões */
-    min-width: 170px; /* Garante que a célula tenha espaço suficiente */
+    gap: 8px; 
+    min-width: 170px;
 }
 
 /* Estilo para o botão de cancelar, para diferenciá-lo do "Salvar" */
@@ -63,5 +66,5 @@
 }
 
 .action-button.cancel-btn:hover {
-    background-color: #555; /* Escurece um pouco no hover */
+    background-color: #555;
 }
