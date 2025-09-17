@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/lancamentos.js
-// Versão: 2.2
-// Descrição: Implementa filtro de data manual à prova de fuso horário e adiciona logs de diagnóstico.
+// Versão: 2.3
+// Descrição: Corrige o seletor do modal para evitar erro 'null' e garante a robustez do filtro de data.
 
 export function init(db) {
     if (!db) {
@@ -14,17 +14,19 @@ export function init(db) {
     const fluxoCaixaRef = db.collection('fluxoCaixa');
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     
-    // Elementos do Formulário
+    // --- Seleção de Elementos ---
+
+    // Elementos do Formulário (dentro da view)
     const saveBtn = viewContent.querySelector('#save-lancamento-btn');
     const form = viewContent.querySelector('.lancamentos-form-grid');
     
-    // Elementos da Tabela e Filtros
+    // Elementos da Tabela (dentro da view)
     const tableBody = viewContent.querySelector('#lancamentos-table tbody');
     
-    // Elementos do Modal
-    const modal = viewContent.querySelector('#confirmation-modal');
-    const btnConfirmDelete = viewContent.querySelector('#btn-confirm-delete');
-    const btnCancelDelete = viewContent.querySelector('#btn-cancel-delete');
+    // ALTERAÇÃO: Elementos do Modal são buscados no documento inteiro, pois estão fora do .view-lancamentos
+    const modal = document.querySelector('#confirmation-modal');
+    const btnConfirmDelete = document.querySelector('#btn-confirm-delete');
+    const btnCancelDelete = document.querySelector('#btn-cancel-delete');
     let lancamentoIdParaExcluir = null;
 
     let allLancamentos = [];
@@ -87,26 +89,17 @@ export function init(db) {
     function renderTable() {
         if (!tableBody) return;
         tableBody.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
-
-        // Log de Diagnóstico: Mostra os filtros atuais antes de filtrar
-        console.log(`[DIAGNÓSTICO] Filtrando por: Mês ${currentFilter.mes} (${meses[currentFilter.mes]}), Ano ${currentFilter.ano}, Tipo ${currentFilter.tipo}`);
         
         const filtered = allLancamentos.filter(l => {
             if (!l.dataVencimento || typeof l.dataVencimento !== 'string' || !l.dataVencimento.includes('-')) {
-                // Log de Diagnóstico: Informa se um lançamento foi pulado por data inválida
-                console.warn('[DIAGNÓSTICO] Lançamento pulado por data de vencimento inválida:', l);
                 return false;
             }
 
-            // ALTERAÇÃO: Lógica de filtro manual, 100% à prova de fuso horário.
-            const parts = l.dataVencimento.split('-'); // Ex: "2025-09-17" -> ["2025", "09", "17"]
-            if (parts.length !== 3) {
-                 console.warn('[DIAGNÓSTICO] Lançamento pulado por formato de data inesperado:', l);
-                 return false;
-            }
+            const parts = l.dataVencimento.split('-');
+            if (parts.length !== 3) return false;
 
             const anoLancamento = parseInt(parts[0], 10);
-            const mesLancamento = parseInt(parts[1], 10) - 1; // Meses em JS são de 0 (Jan) a 11 (Dez)
+            const mesLancamento = parseInt(parts[1], 10) - 1;
 
             const matchPeriodo = mesLancamento === currentFilter.mes && anoLancamento === currentFilter.ano;
             const matchTipo = currentFilter.tipo === 'todos' || l.tipo === currentFilter.tipo;
@@ -114,9 +107,6 @@ export function init(db) {
             return matchPeriodo && matchTipo;
         });
         
-        // Log de Diagnóstico: Mostra quantos lançamentos passaram no filtro
-        console.log(`[DIAGNÓSTICO] ${allLancamentos.length} lançamentos no total. ${filtered.length} passaram no filtro.`);
-
         filtered.sort((a,b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
 
         if (filtered.length === 0) {
@@ -175,6 +165,12 @@ export function init(db) {
 
     // --- Lógica do Modal de Exclusão ---
     function setupModalEvents() {
+        // Verifica se os elementos do modal existem antes de adicionar listeners
+        if (!modal || !btnCancelDelete || !btnConfirmDelete) {
+            console.error("Elementos do modal de confirmação não foram encontrados. Verifique o HTML.");
+            return;
+        }
+
         viewContent.querySelector('#lancamentos-table').addEventListener('click', (e) => {
             if (e.target.classList.contains('delete-btn')) {
                 lancamentoIdParaExcluir = e.target.dataset.id;
