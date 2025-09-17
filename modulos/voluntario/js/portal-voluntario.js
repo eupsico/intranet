@@ -2,7 +2,7 @@
 // Versão: 2.0
 // Descrição: Refatorado para ser o controlador principal do portal do voluntário.
 
-import { auth, db, storage } from '../../../assets/js/firebase-init.js';
+import { auth, db } from '../../../assets/js/firebase-init.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(async (user) => {
