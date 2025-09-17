@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/lancamentos.js
-// Versão: 2.0
-// Descrição: Refatorado para módulo, com estrutura de abas, busca de dados e correção do modal.
+// Versão: 2.1
+// Descrição: Corrige bug no filtro de data que ignorava lançamentos devido ao fuso horário.
 
 export function init(db) {
     if (!db) {
@@ -90,8 +90,12 @@ export function init(db) {
         
         const filtered = allLancamentos.filter(l => {
             if (!l.dataVencimento) return false;
-            const vencimento = new Date(l.dataVencimento + 'T00:00:00'); // Garante que a data seja lida corretamente
-            const matchPeriodo = vencimento.getMonth() === currentFilter.mes && vencimento.getFullYear() === currentFilter.ano;
+
+            // ALTERAÇÃO: Corrigida a forma de ler a data para evitar problemas com fuso horário.
+            // new Date('YYYY-MM-DD') cria a data em UTC. Usamos getUTCMonth() e getUTCFullYear() para comparar corretamente.
+            const vencimento = new Date(l.dataVencimento);
+            const matchPeriodo = vencimento.getUTCMonth() === currentFilter.mes && vencimento.getUTCFullYear() === currentFilter.ano;
+            
             const matchTipo = currentFilter.tipo === 'todos' || l.tipo === currentFilter.tipo;
             return matchPeriodo && matchTipo;
         });
@@ -104,7 +108,7 @@ export function init(db) {
         }
 
         tableBody.innerHTML = filtered.map(l => {
-            const tipoClass = l.tipo === 'receita' ? 'text-success' : 'text-danger'; // Usando classes mais semânticas
+            const tipoClass = l.tipo === 'receita' ? 'text-success' : 'text-danger';
             return `
                 <tr>
                     <td>${formatDate(l.dataVencimento)}</td>
@@ -154,21 +158,18 @@ export function init(db) {
 
     // --- Lógica do Modal de Exclusão ---
     function setupModalEvents() {
-        // Listener na tabela para abrir o modal
         viewContent.querySelector('#lancamentos-table').addEventListener('click', (e) => {
             if (e.target.classList.contains('delete-btn')) {
                 lancamentoIdParaExcluir = e.target.dataset.id;
-                modal.classList.add('is-visible'); // Usa classe para controlar visibilidade
+                modal.classList.add('is-visible');
             }
         });
 
-        // Listener para fechar o modal
         btnCancelDelete.addEventListener('click', () => {
             modal.classList.remove('is-visible');
             lancamentoIdParaExcluir = null;
         });
 
-        // Listener para confirmar a exclusão
         btnConfirmDelete.addEventListener('click', () => {
             if (lancamentoIdParaExcluir) {
                 fluxoCaixaRef.doc(lancamentoIdParaExcluir).delete()
@@ -181,7 +182,6 @@ export function init(db) {
             }
         });
         
-        // Clicar fora do modal também fecha
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                  modal.classList.remove('is-visible');
@@ -197,7 +197,6 @@ export function init(db) {
         setupForm();
         setupModalEvents();
 
-        // Listener em tempo real do Firestore para buscar dados
         fluxoCaixaRef.onSnapshot(snapshot => {
             allLancamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderTable();
