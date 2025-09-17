@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/acordos.js
-// Versão: 2.3
-// Descrição: Corrige bug de expansão do accordion para exibir todo o conteúdo dinâmico.
+// Versão: 2.4
+// Descrição: Adiciona botão e lógica para excluir acordos e corrige layout dos botões.
 
 export function init(db, user, userData) {
     if (!db) {
@@ -30,22 +30,18 @@ export function init(db, user, userData) {
         const nomeKey_antigo = sanitizeKey(profissional.nome);
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
-
         const mesFinal = hoje.getDate() > 10 ? hoje.getMonth() : hoje.getMonth() - 1;
 
         for (let i = 0; i <= mesFinal; i++) {
             const mes = meses[i];
-            
             let dividaDoMes = dbData.cobranca?.[anoAtual]?.[profId]?.[mes];
             if (dividaDoMes === undefined) {
                 dividaDoMes = dbData.cobranca?.[anoAtual]?.[nomeKey_antigo]?.[mes] || 0;
             }
-            
             let pagamentoDoMes = dbData.repasses?.[anoAtual]?.[mes]?.[profId];
             if (pagamentoDoMes === undefined) {
                 pagamentoDoMes = dbData.repasses?.[anoAtual]?.[mes]?.[nomeKey_antigo];
             }
-
             if (dividaDoMes > 0 && !pagamentoDoMes) {
                 dividaInfo.valor += dividaDoMes;
             }
@@ -67,10 +63,10 @@ export function init(db, user, userData) {
             const pagamentoSalvo = acordoSalvo.pagamentos?.find(p => p.item === 'Entrada');
             const dataVencimento = dataEntradaInput;
             const dataPagamento = pagamentoSalvo ? pagamentoSalvo.dataPagamento : '';
-            const nomeMes = meses[new Date(dataVencimento + 'T00:00:00').getMonth()];
+            const nomeMes = dataVencimento ? meses[new Date(dataVencimento + 'T00:00:00').getMonth()] : '';
             tbody.innerHTML += `<tr>
                 <td>Entrada</td>
-                <td>${nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1)}</td>
+                <td>${nomeMes ? nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) : ''}</td>
                 <td>R$ ${entrada.toFixed(2)}</td>
                 <td><input type="date" class="data-vencimento" value="${dataVencimento}" readonly></td>
                 <td><input type="date" class="data-pagamento-efetivo" value="${dataPagamento}"></td>
@@ -133,6 +129,12 @@ export function init(db, user, userData) {
             const accordion = document.createElement('div');
             accordion.className = 'accordion';
             accordion.dataset.nome = devedor.nome;
+
+            // ALTERAÇÃO: Botão de excluir adicionado condicionalmente
+            const deleteButtonHtml = acordoSalvo.prof 
+                ? `<button class="action-button delete-btn">Excluir Acordo</button>` 
+                : '';
+
             accordion.innerHTML = `
                 <button class="accordion-trigger">${devedor.nome}  (Dívida: R$ ${devedor.valor.toFixed(2)})</button>
                 <div class="accordion-content">
@@ -147,7 +149,8 @@ export function init(db, user, userData) {
                     <div class="results-area" style="display: none;">
                         <h4>Parcelamento:</h4>
                         <div class="table-section" style="padding:0; box-shadow:none;"><table class="parcelas-table"></table></div>
-                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                        <div class="accordion-actions">
+                            ${deleteButtonHtml}
                             <button class="action-button whatsapp-btn">Enviar Resumo (WhatsApp)</button>
                             <button class="action-button save-btn">Salvar Acordo</button>
                         </div>
@@ -197,17 +200,15 @@ export function init(db, user, userData) {
             appContent.querySelectorAll('.accordion-content.active').forEach(calculateAndUpdate);
         });
         
-        // ALTERAÇÃO: Lógica de recalcular altura adicionada aqui
         appContent.addEventListener('input', (e) => {
             if (e.target.classList.contains('data-pagamento-efetivo')) return;
             const content = e.target.closest('.accordion-content');
             if (content) {
                 calculateAndUpdate(content);
-                // Se o accordion já estiver ativo (aberto), recalcula sua altura
                 if (content.classList.contains('active')) {
                     setTimeout(() => {
                         content.style.maxHeight = content.scrollHeight + 'px';
-                    }, 50); // Delay para permitir a renderização do DOM
+                    }, 50);
                 }
             }
         });
@@ -227,7 +228,7 @@ export function init(db, user, userData) {
                     calculateAndUpdate(content);
                     setTimeout(() => {
                         content.style.maxHeight = content.scrollHeight + 'px';
-                    }, 50); // Aumentamos o delay para 50ms para maior confiabilidade
+                    }, 50);
                 } else {
                     content.style.maxHeight = null;
                 }
@@ -235,6 +236,27 @@ export function init(db, user, userData) {
             
             const accordionContext = target.closest('.accordion');
             if (!accordionContext) return;
+
+            // ALTERAÇÃO: Nova lógica para o botão de exclusão
+            if(target.classList.contains('delete-btn')) {
+                target.disabled = true;
+                const nome = accordionContext.dataset.nome;
+                const nomeKey = sanitizeKey(nome);
+
+                if (confirm(`Tem certeza que deseja excluir permanentemente o acordo de ${nome}? Esta ação não pode ser desfeita.`)) {
+                    try {
+                        await db.collection('acordos').doc(nomeKey).delete();
+                        window.showToast(`Acordo de ${nome} excluído com sucesso!`, 'success');
+                        fetchData(); // Recarrega todos os dados e a interface
+                    } catch (err) {
+                        console.error("Erro ao excluir acordo:", err);
+                        window.showToast(`Erro ao excluir o acordo de ${nome}.`, 'error');
+                        target.disabled = false;
+                    }
+                } else {
+                    target.disabled = false; // Reabilita o botão se o usuário cancelar
+                }
+            }
 
             if(target.classList.contains('save-btn')) {
                 target.disabled = true;
@@ -267,6 +289,8 @@ export function init(db, user, userData) {
                     window.showToast(`Acordo para ${nome} salvo com sucesso!`, 'success');
                     const index = DB.acordos.findIndex(a => a.prof === nome);
                     if (index > -1) { DB.acordos[index] = acordoData; } else { DB.acordos.push(acordoData); }
+                    // Recarrega a view para mostrar o botão de exclusão
+                    fetchData();
                 } catch (err) {
                     window.showToast('Erro ao salvar acordo.', 'error');
                     console.error('Erro ao salvar acordo:', err);

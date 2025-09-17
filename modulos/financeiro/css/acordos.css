@@ -1,6 +1,6 @@
 /* Arquivo: /modulos/financeiro/css/acordos.css
-   Versão: 1.1
-   Descrição: Corrige bug de expansão e aplica novo estilo ao cabeçalho do accordion.
+   Versão: 1.2
+   Descrição: Corrige layout dos botões de ação e adiciona estilo para o botão de exclusão.
 */
 
 .description-box {
@@ -21,7 +21,7 @@
 }
 
 .table-section thead th {
-    /* Este estilo agora é controlado pelo painel-financeiro.css para ser global */
+    /* Este estilo é controlado pelo painel-financeiro.css para ser global */
 }
 
 /* Estilos para o componente Accordion */
@@ -49,24 +49,22 @@
     background-color: var(--cor-fundo);
 }
 
-/* ALTERAÇÃO: Cor do cabeçalho do accordion ativo igual ao cabeçalho da tabela */
 .accordion-trigger.active {
     background-color: #e9ecef;
     color: var(--cor-texto-principal);
     font-weight: 600;
 }
 
-/* ALTERAÇÃO: Correção no padding para a animação funcionar corretamente */
 .accordion-content {
     background-color: #fafafa;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease-out, padding 0.3s ease;
-    padding: 0 20px; /* Padding horizontal fixo */
+    padding: 0 20px; 
 }
 
 .accordion-content.active {
-    padding: 20px; /* Padding vertical só quando ativo */
+    padding: 20px;
 }
 
 .accordion .form-grid {
@@ -74,4 +72,21 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
     margin-bottom: 20px;
+}
+
+/* ALTERAÇÃO: Novo container para os botões de ação */
+.accordion-actions {
+    display: flex;
+    flex-wrap: wrap; /* Permite que os botões quebrem a linha em telas menores */
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+/* ALTERAÇÃO: Estilo para o novo botão de exclusão */
+.action-button.delete-btn {
+    background-color: var(--cor-erro);
+}
+.action-button.delete-btn:hover {
+    filter: brightness(1.1);
 }
