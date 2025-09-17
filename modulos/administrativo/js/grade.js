@@ -1,13 +1,17 @@
-(function() {
+// Arquivo: /modulos/administrativo/js/grade.js
+// Versão: 2.0
+// Descrição: Lógica refatorada para a Grade de Horários, adaptada para o novo formato modular.
+
+export function init(db, user, userData) {
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
         return;
     }
-    const appContent = document.querySelector('#grade-horarios-view #app-content');
-    if (!appContent) return;
+    const gradeContent = document.getElementById('grade-content');
+    if (!gradeContent) return;
 
     let listaProfissionais = [];
-    const coresProfissionais = new Map(); // Mapa para armazenar as cores de cada profissional
+    const coresProfissionais = new Map();
 
     let dadosDasGrades = {};
     const horarios = ["07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
@@ -15,14 +19,8 @@
     const diasDaSemanaNomes = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
     const colunasPresencial = ['Leila Tardivo', 'Leonardo Abrahão', 'Karina Okajima Fukumitsu', 'Maria Júlia Kovacs', 'Christian Dunker', 'Maria Célia Malaquias (Grupo)'];
     
-    // --- FUNÇÕES PARA GERENCIAR CORES ---
+    // --- FUNÇÕES DE LÓGICA E RENDERIZAÇÃO (PRESERVADAS DO CÓDIGO ORIGINAL) ---
 
-    /**
-     * Gera uma cor hexadecimal a partir de uma string (ex: nome do profissional).
-     * Garante que a cor seja sempre a mesma para a mesma string.
-     * @param {string} str A string de entrada.
-     * @returns {string} Uma cor no formato #RRGGBB.
-     */
     function generateColorFromString(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -30,19 +28,13 @@
         }
         let color = '#';
         for (let i = 0; i < 3; i++) {
-            // Gera cores mais claras e agradáveis (tons pastel)
             let value = (hash >> (i * 8)) & 0xFF;
-            value = 100 + (value % 156); // Garante que o valor do RGB esteja entre 100 e 255
+            value = 100 + (value % 156);
             color += ('00' + value.toString(16)).substr(-2);
         }
         return color;
     }
 
-    /**
-     * Verifica se uma cor é escura, para decidir a cor do texto (preto ou branco).
-     * @param {string} hexColor A cor em hexadecimal.
-     * @returns {boolean} True se a cor for escura.
-     */
     function isColorDark(hexColor) {
         if (!hexColor) return false;
         const r = parseInt(hexColor.substr(1, 2), 16);
@@ -52,10 +44,6 @@
         return luminance < 0.5;
     }
 
-    /**
-     * Aplica a cor de fundo e do texto a um elemento <select>.
-     * @param {HTMLElement} selectElement O elemento <select> a ser estilizado.
-     */
     function aplicarCor(selectElement) {
         const nomeProfissional = selectElement.value;
         const cor = coresProfissionais.get(nomeProfissional);
@@ -63,8 +51,8 @@
             selectElement.style.backgroundColor = cor;
             selectElement.style.color = isColorDark(cor) ? 'white' : 'black';
         } else {
-            selectElement.style.backgroundColor = ''; // Reseta para a cor padrão
-            selectElement.style.color = '';       // Reseta para a cor padrão
+            selectElement.style.backgroundColor = '';
+            selectElement.style.color = '';
         }
     }
     
@@ -73,20 +61,24 @@
     }
 
     function renderGrade(tipo, dia) {
-        if (!appContent) return;
-        appContent.innerHTML = '';
+        if (!gradeContent) return;
+        gradeContent.innerHTML = ''; // Limpa o conteúdo (loading spinner, etc.)
+        
         const weekTabsNav = document.createElement('div');
-        weekTabsNav.className = 'tab-nav';
+        weekTabsNav.className = 'grade-day-tabs';
         diasDaSemanaNomes.forEach((nomeDia, index) => {
             const diaKey = diasDaSemana[index];
             weekTabsNav.innerHTML += `<button class="${dia === diaKey ? 'active' : ''}" data-day="${diaKey}">${nomeDia}</button>`;
         });
-        appContent.appendChild(weekTabsNav);
+        gradeContent.appendChild(weekTabsNav);
+
         const tableWrapper = document.createElement('div');
         tableWrapper.className = 'table-wrapper';
         const table = document.createElement('table');
+        table.className = 'grade-table';
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
+        
         let headers = ['Período', 'Horário'];
         headers = headers.concat(tipo === 'online' ? Array(6).fill('Online') : colunasPresencial);
         thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
@@ -96,10 +88,13 @@
             if (index < 5) row.className = 'periodo-manha';
             else if (index < 11) row.className = 'periodo-tarde';
             else row.className = 'periodo-noite';
-            if (index === 0) row.innerHTML += `<td class="period-cell" rowspan="5">Manhã</td>`;
-            if (index === 5) row.innerHTML += `<td class="period-cell" rowspan="6">Tarde</td>`;
-            if (index === 11) row.innerHTML += `<td class="period-cell" rowspan="5">Noite</td>`;
-            row.innerHTML += `<td class="hour-cell">${hora}</td>`;
+            
+            if (index === 0) row.insertCell().outerHTML = `<td class="period-cell" rowspan="5">Manhã</td>`;
+            if (index === 5) row.insertCell().outerHTML = `<td class="period-cell" rowspan="6">Tarde</td>`;
+            if (index === 11) row.insertCell().outerHTML = `<td class="period-cell" rowspan="5">Noite</td>`;
+            
+            row.insertCell().outerHTML = `<td class="hour-cell">${hora}</td>`;
+            
             for(let i=0; i < (tipo === 'online' ? 6 : colunasPresencial.length); i++) {
                 const cell = row.insertCell();
                 const dropdown = document.createElement('select');
@@ -114,39 +109,7 @@
         });
         table.append(thead, tbody);
         tableWrapper.appendChild(table);
-        appContent.appendChild(tableWrapper);
-    }
-
-    async function init() {
-        try {
-            const q = db.collection("usuarios").where("fazAtendimento", "==", true).orderBy("nome");
-            const querySnapshot = await q.get();
-            
-            listaProfissionais = querySnapshot.docs.map(doc => doc.data());
-
-            listaProfissionais.forEach(prof => {
-                const color = prof.cor || generateColorFromString(prof.username);
-                coresProfissionais.set(prof.username, color);
-            });
-
-            const gradesDocRef = db.collection('administrativo').doc('grades');
-            gradesDocRef.onSnapshot((doc) => {
-                dadosDasGrades = doc.exists ? doc.data() : {};
-                const mainTabsContainer = document.querySelector('#grade-horarios-view #main-tabs');
-                if (!mainTabsContainer) return;
-                const activeMainTabEl = mainTabsContainer.querySelector('button.active');
-                const activeDayTabEl = appContent.querySelector('.tab-nav button.active');
-                if (activeMainTabEl && activeDayTabEl) {
-                    const activeMainTab = activeMainTabEl.dataset.tab;
-                    const activeDayTab = activeDayTabEl.dataset.day;
-                    renderGrade(activeMainTab, activeDayTab);
-                }
-            });
-            renderGrade('online', 'segunda');
-        } catch (error) {
-            console.error("Erro ao inicializar:", error);
-            appContent.innerHTML = `<p style="color:red; text-align:center;">Erro ao carregar dados.</p>`;
-        }
+        gradeContent.appendChild(tableWrapper);
     }
 
     async function autoSaveChange(selectElement) {
@@ -156,11 +119,12 @@
         const hora = horaCell.textContent.replace(":", "-");
         const colIndex = selectElement.closest('td').cellIndex - (row.querySelector('.period-cell') ? 2 : 1);
         const newValue = selectElement.value;
-        const mainTabsContainer = document.querySelector('#grade-horarios-view #main-tabs');
+        const mainTabsContainer = document.querySelector('#grade-main-tabs');
         if (!mainTabsContainer) return;
         const activeMainTab = mainTabsContainer.querySelector('button.active').dataset.tab;
-        const activeDayTab = appContent.querySelector('.tab-nav button.active').dataset.day;
+        const activeDayTab = gradeContent.querySelector('.grade-day-tabs button.active').dataset.day;
         const fieldPath = `${activeMainTab}.${activeDayTab}.${hora}.col${colIndex}`;
+        
         selectElement.classList.add('is-saving');
         selectElement.classList.remove('is-saved', 'is-error');
         try {
@@ -177,45 +141,84 @@
         }
     }
     
-    const mainTabsContainer = document.querySelector('#grade-horarios-view #main-tabs');
-    if (mainTabsContainer) {
-        mainTabsContainer.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                mainTabsContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                renderGrade(e.target.dataset.tab, 'segunda');
+    function attachEventListeners() {
+        const mainTabsContainer = document.querySelector('#grade-main-tabs');
+        if (mainTabsContainer) {
+            mainTabsContainer.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    mainTabsContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderGrade(e.target.dataset.tab, 'segunda'); // Sempre volta para segunda ao trocar modalidade
+                }
+            });
+        }
+
+        gradeContent.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' && e.target.closest('.grade-day-tabs')) {
+                const activeMainTab = mainTabsContainer.querySelector('button.active').dataset.tab;
+                if(e.target.dataset.day){
+                    gradeContent.querySelectorAll('.grade-day-tabs button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderGrade(activeMainTab, e.target.dataset.day);
+                }
+            }
+        });
+        
+        gradeContent.addEventListener('change', (e) => {
+            if (e.target.tagName === 'SELECT') {
+                aplicarCor(e.target);
+                autoSaveChange(e.target);
+            }
+        });
+
+        gradeContent.addEventListener('keydown', (e) => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && e.target.tagName === 'SELECT') {
+                e.preventDefault();
+                if (e.target.value !== '') {
+                    e.target.value = '';
+                    e.target.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
         });
     }
 
-    appContent.addEventListener('click', (e) => {
-        if (e.target.tagName === 'BUTTON' && e.target.closest('.tab-nav')) {
-            if (!mainTabsContainer) return;
-            const activeMainTab = mainTabsContainer.querySelector('button.active').dataset.tab;
-            if(e.target.dataset.day){
-                 appContent.querySelectorAll('.tab-nav button').forEach(b => b.classList.remove('active'));
-                 e.target.classList.add('active');
-                 renderGrade(activeMainTab, e.target.dataset.day);
-            }
-        }
-    });
-    
-    appContent.addEventListener('change', (e) => {
-        if (e.target.tagName === 'SELECT') {
-            aplicarCor(e.target);
-            autoSaveChange(e.target);
-        }
-    });
+    async function start() {
+        try {
+            const q = db.collection("usuarios").where("fazAtendimento", "==", true).orderBy("nome");
+            const querySnapshot = await q.get();
+            listaProfissionais = querySnapshot.docs.map(doc => doc.data());
 
-    appContent.addEventListener('keydown', (e) => {
-        if ((e.key === 'Delete' || e.key === 'Backspace') && e.target.tagName === 'SELECT') {
-            e.preventDefault();
-            if (e.target.value !== '') {
-                e.target.value = '';
-                e.target.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+            listaProfissionais.forEach(prof => {
+                const color = prof.cor || generateColorFromString(prof.username);
+                coresProfissionais.set(prof.username, color);
+            });
+
+            const gradesDocRef = db.collection('administrativo').doc('grades');
+            gradesDocRef.onSnapshot((doc) => {
+                dadosDasGrades = doc.exists ? doc.data() : {};
+                
+                const mainTabsContainer = document.querySelector('#grade-main-tabs');
+                if (!mainTabsContainer) return;
+
+                const activeMainTabEl = mainTabsContainer.querySelector('button.active');
+                const activeDayTabEl = gradeContent.querySelector('.grade-day-tabs button.active');
+
+                // Atualiza a view atual sem piscar a tela, se já estiver renderizada
+                if (activeMainTabEl && activeDayTabEl) {
+                    const activeMainTab = activeMainTabEl.dataset.tab;
+                    const activeDayTab = activeDayTabEl.dataset.day;
+                    renderGrade(activeMainTab, activeDayTab);
+                }
+            });
+
+            attachEventListeners();
+            renderGrade('online', 'segunda'); // Renderização inicial
+
+        } catch (error) {
+            console.error("Erro ao inicializar a grade:", error);
+            gradeContent.innerHTML = `<p style="color:red; text-align:center;">Erro ao carregar dados.</p>`;
         }
-    });
-    
-    init();
-})();
+    }
+
+    start();
+}

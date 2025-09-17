@@ -1,101 +1,107 @@
-#grade-horarios-view .loading-spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #007bff;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 50px auto;
-}
+/* Arquivo: /modulos/administrativo/css/grade.css
+   Versão: 2.0
+   Descrição: Estilos refatorados para a Grade de Horários, integrados ao design system.
+*/
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-#grade-horarios-view .tab-nav {
+/* Abas secundárias (dias da semana) */
+.grade-day-tabs {
     display: flex;
-    border-bottom: 2px solid #ccc;
-    margin-bottom: 15px;
+    border-bottom: 2px solid var(--cor-borda);
+    margin-bottom: 20px;
     overflow-x: auto;
     white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
 }
 
-#grade-horarios-view .tab-nav button {
+.grade-day-tabs button {
     background-color: transparent;
     border: none;
-    padding: 10px 15px;
+    padding: 12px 18px;
     cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-    color: #555;
-    border-bottom: 4px solid transparent;
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--cor-texto-secundario);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
     flex-shrink: 0;
 }
 
-#grade-horarios-view .tab-nav button.active {
-    color: #004a7f;
-    border-bottom-color: #004a7f;
+.grade-day-tabs button:hover {
+    background-color: var(--cor-fundo);
 }
 
-#grade-horarios-view .table-wrapper {
+.grade-day-tabs button.active {
+    color: var(--cor-primaria);
+    font-weight: 600;
+    border-bottom-color: var(--cor-primaria);
+}
+
+/* Container da tabela para permitir rolagem horizontal em telas pequenas */
+.table-wrapper {
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
-#grade-horarios-view table {
+.grade-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9em;
-    min-width: 800px;
+    min-width: 900px; /* Largura mínima para evitar quebra excessiva */
 }
 
-#grade-horarios-view th, #grade-horarios-view td {
-    border: 1px solid #ddd;
+.grade-table th, 
+.grade-table td {
+    border: 1px solid var(--cor-borda);
     padding: 5px;
     text-align: center;
+    vertical-align: middle;
 }
 
-#grade-horarios-view thead th {
-    background-color: #004a7f;
-    color: white;
-    padding: 10px 5px;
+.grade-table thead th {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    padding: 12px 5px;
     position: sticky;
     top: 0;
     z-index: 1;
 }
 
-#grade-horarios-view td.period-cell {
-    font-weight: bold;
-    background-color: #f2f2f2;
+/* Células de cabeçalho da linha (Período e Horário) */
+.grade-table .period-cell,
+.grade-table .hour-cell {
+    font-weight: 600;
+    background-color: var(--cor-fundo);
+    width: 90px;
 }
 
-#grade-horarios-view td.hour-cell {
-    font-weight: bold;
-    width: 80px;
-    background-color: #f2f2f2;
-}
+/* Cores para os períodos do dia */
+.grade-table .periodo-manha { background-color: #e3f2fd; }
+.grade-table .periodo-tarde { background-color: #fffde7; }
+.grade-table .periodo-noite { background-color: #f3e5f5; }
 
-#grade-horarios-view .periodo-manha { background-color: #e3f2fd; }
-#grade-horarios-view .periodo-tarde { background-color: #fffde7; }
-#grade-horarios-view .periodo-noite { background-color: #f3e5f5; }
-
-#grade-horarios-view tbody select {
+/* Estilo dos seletores (dropdowns) dentro da tabela */
+.grade-table tbody select {
     width: 100%;
     border: 2px solid transparent;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-    -webkit-appearance: none;
-    -moz-appearance: none;
+    border-radius: var(--borda-radius);
+    font-weight: 500;
+    transition: all 0.3s ease;
     appearance: none;
-    background-color: #fff;
-    padding: 4px;
+    background-color: var(--cor-surface);
+    padding: 6px;
     cursor: pointer;
+    font-size: 0.95em;
+    text-align: center;
 }
 
-#grade-horarios-view tbody select.is-saving { border-color: #fd7e14; }
-#grade-horarios-view tbody select.is-saved { border-color: #28a745; }
-#grade-horarios-view tbody select.is-error { border-color: #dc3545; }
+/* Estilos de status para o salvamento automático */
+.grade-table tbody select.is-saving { 
+    border-color: var(--cor-alerta);
+    background-color: #fff3cd;
+}
+.grade-table tbody select.is-saved { 
+    border-color: var(--cor-sucesso); 
+    background-color: #d4edda;
+}
+.grade-table tbody select.is-error { 
+    border-color: var(--cor-erro); 
+    background-color: #f8d7da;
+}
