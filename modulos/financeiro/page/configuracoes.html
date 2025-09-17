@@ -5,8 +5,8 @@
     </div>
 
     <div id="ModelosMensagem" class="tab-content">
-        <h2>Modelos de Mensagem</h2>
-        <p>Edite os textos padrão para cobranças, acordos e contratos. Use as variáveis para personalizar as mensagens.</p>
+        <p class="description-box">Edite os textos padrão para cobranças, acordos e contratos. Use as variáveis para personalizar as mensagens.</p>
+        
         <div class="variables-info">
             <strong>Variáveis Disponíveis:</strong>
             <code>{greeting}</code>, <code>{nome}</code>, <code>{nomeProfissional}</code>, <code>{item}</code>, <code>{vencimento}</code>, <code>{valor}</code>, <code>{link}</code>, <code>{valorTotalPago}</code>, <code>{valorTotalAPagar}</code>, <code>{saldoRestante}</code>, <code>{valorRestante}</code>, <code>{valor da divida}</code>, <code>{Entrada}</code>, <code>{Taxa Aplicada}</code>, <code>{Valor Final}</code>, <code>{N de Parcelas}</code>, <code>{listaParcelas}</code>
@@ -29,20 +29,23 @@
     </div>
     
     <div id="ValoresSessao" class="tab-content" style="display: none;">
-        <h2>Valores por Sessão</h2>
-        <p>Altere os valores padrão para sessões online, presenciais e a taxa de acordo.</p>
-        <div class="form-group">
-            <label for="valor-online">Valor Sessão Online (R$)</label>
-            <input type="number" id="valor-online" placeholder="Ex: 18">
+        <p class="description-box">Altere os valores padrão para sessões online, presenciais e a taxa de acordo.</p>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="valor-online">Valor Sessão Online (R$)</label>
+                <input type="number" id="valor-online" placeholder="Ex: 18">
+            </div>
+            <div class="form-group">
+                <label for="valor-presencial">Valor Sessão Presencial (R$)</label>
+                <input type="number" id="valor-presencial" placeholder="Ex: 30">
+            </div>
+            <div class="form-group">
+                <label for="taxa-acordo">Taxa de Acordo (%)</label>
+                <input type="number" id="taxa-acordo" placeholder="Ex: 0">
+            </div>
         </div>
-        <div class="form-group">
-            <label for="valor-presencial">Valor Sessão Presencial (R$)</label>
-            <input type="number" id="valor-presencial" placeholder="Ex: 30">
-        </div>
-        <div class="form-group">
-            <label for="taxa-acordo">Taxa de Acordo (%)</label>
-            <input type="number" id="taxa-acordo" placeholder="Ex: 0">
-        </div>
+
         <div class="button-bar">
             <button id="salvar-valores-btn" class="action-button">Salvar Alterações</button>
         </div>

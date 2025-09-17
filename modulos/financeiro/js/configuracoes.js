@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/configuracoes.js
-// Versão: 1.2
-// Descrição: Corrige a lógica de eventos para garantir a troca de abas.
+// Versão: 1.3
+// Descrição: Nenhuma alteração de lógica. Apenas refatoração de layout no HTML/CSS.
 
 export function init(db) {
     if (!db) {
@@ -129,31 +129,24 @@ export function init(db) {
     // --- Ponto de Partida e Controle de Abas ---
     if (tabContainer) {
         tabContainer.addEventListener('click', (e) => {
-            // Verifica se o clique foi em um botão de aba
             if (e.target.classList.contains('tab-link')) {
                 const clickedButton = e.target;
                 const tabNameToOpen = clickedButton.dataset.tab;
 
-                // Remove a classe 'active' de todos os botões
                 tabContainer.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
-                // Adiciona 'active' apenas ao botão clicado
                 clickedButton.classList.add('active');
 
-                // Esconde todos os painéis de conteúdo
                 viewContent.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
-                // Mostra o painel de conteúdo correto
                 const contentToDisplay = viewContent.querySelector(`#${tabNameToOpen}`);
                 if (contentToDisplay) {
                     contentToDisplay.style.display = 'block';
                 }
                 
-                // Inicializa a lógica da aba se for a primeira vez
                 if (tabNameToOpen === 'ValoresSessao') initValoresSessao();
                 else if (tabNameToOpen === 'ModelosMensagem') initModelosMensagem();
             }
         });
 
-        // Inicializa a primeira aba por padrão
         const primeiraAba = tabContainer.querySelector('.tab-link');
         if (primeiraAba) {
             primeiraAba.click();
