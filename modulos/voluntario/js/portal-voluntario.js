@@ -1,7 +1,8 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.0
-// Descrição: Refatorado para ser o controlador principal do portal do voluntário.
+// Versão: 2.1
+// Descrição: Remove a importação e a passagem do parâmetro 'storage', que não é mais necessário.
 
+// ALTERAÇÃO: A importação do 'storage' foi removida daqui.
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,10 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (userDoc.exists) {
                 initPortal(user, userDoc.data());
             } else {
-                window.location.href = '../../../index.html'; // Redireciona se não encontrar dados
+                console.warn("Usuário autenticado, mas sem dados no Firestore. Redirecionando...");
+                window.location.href = '../../../index.html';
             }
         } else {
-            window.location.href = '../../../index.html'; // Redireciona se não estiver logado
+            window.location.href = '../../../index.html';
         }
     });
 });
@@ -23,7 +25,6 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // Lista de todas as "páginas" (views) do portal
     const views = [
         { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
@@ -36,7 +37,6 @@ function initPortal(user, userData) {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = '';
         
-        // Link para voltar à intranet principal
         sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
@@ -59,41 +59,48 @@ function initPortal(user, userData) {
     }
 
     async function loadView(viewId) {
-        // Ativa o link correto no menu
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // Carrega o HTML da view
             const response = await fetch(`./${viewId}.html`);
-            if (!response.ok) throw new Error(`View not found: ${viewId}`);
+            if (!response.ok) throw new Error(`View HTML not found: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
 
-            // Carrega e inicializa o JavaScript da view
-            const viewModule = await import(`../js/${viewId}.js`);
-            if (viewModule && typeof viewModule.init === 'function') {
-                viewModule.init(db, user, userData, storage); // Passa 'storage' para o comprovante
+            // Tenta carregar o módulo JS, mas não quebra se ele não existir (para páginas estáticas)
+            try {
+                const viewModule = await import(`../js/${viewId}.js`);
+                if (viewModule && typeof viewModule.init === 'function') {
+                    // ALTERAÇÃO: A passagem do parâmetro 'storage' foi removida.
+                    viewModule.init(db, user, userData);
+                }
+            } catch (jsError) {
+                // É normal não encontrar JS para páginas estáticas como 'gestao' e 'solicitacoes'
+                console.log(`Nenhum módulo JS encontrado para a view '${viewId}'. Carregando como página estática.`);
             }
-        } catch (error) {
-            console.error(`Erro ao carregar a view ${viewId}:`, error);
+
+        } catch (htmlError) {
+            console.error(`Erro ao carregar a view ${viewId}:`, htmlError);
             contentArea.innerHTML = `<p style="color:red;">Erro ao carregar esta seção.</p>`;
         }
     }
     
-    // --- Funções de Layout (Header, Sidebar Toggle) ---
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
         const userGreeting = document.getElementById('user-greeting');
         const logoutButton = document.getElementById('logout-button-dashboard');
 
         if(userPhoto) {
-            userPhoto.src = user.photoURL || '';
+            userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
             userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
         }
         if(userGreeting && userData.nome) {
-            userGreeting.textContent = `Olá, ${userData.nome.split(' ')[0]}!`;
+            const firstName = userData.nome.split(' ')[0];
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+            userGreeting.textContent = `${greeting}, ${firstName}!`;
         }
         if(logoutButton) {
             logoutButton.addEventListener('click', (e) => {
@@ -102,29 +109,31 @@ function initPortal(user, userData) {
             });
         }
         
-        // Lógica do sidebar toggle
         const toggleButton = document.getElementById('sidebar-toggle');
         const layoutContainer = document.querySelector('.layout-container');
         if (toggleButton && layoutContainer) {
             toggleButton.addEventListener('click', () => {
-                layoutContainer.classList.toggle('sidebar-collapsed');
+                const isCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
             });
+
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                 layoutContainer.classList.add('sidebar-collapsed');
+            }
         }
     }
 
-    // --- Inicialização ---
     function start() {
         setupLayout();
         buildSidebarMenu();
 
-        // Roteamento baseado em Hash
         const handleHashChange = () => {
-            const viewId = window.location.hash.substring(1) || views[0].id; // Padrão para dashboard
+            const viewId = window.location.hash.substring(1) || views[0].id;
             loadView(viewId);
         };
 
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Carrega a view inicial
+        handleHashChange();
     }
 
     start();
