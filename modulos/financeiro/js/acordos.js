@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/acordos.js
-// Versão: 2.2 (DEBUG)
-// Descrição: Adiciona logs de depuração para investigar o problema de exibição do resumo do acordo.
+// Versão: 2.3
+// Descrição: Corrige bug de expansão do accordion para exibir todo o conteúdo dinâmico.
 
 export function init(db, user, userData) {
     if (!db) {
@@ -99,10 +99,7 @@ export function init(db, user, userData) {
         }
     };
             
-    // ADICIONADOS MARCADORES DE DEBUG NESTA FUNÇÃO
     const calculateAndUpdate = (content) => {
-        console.log("--- [DEBUG] Iniciando calculateAndUpdate ---");
-
         const nome = content.closest('.accordion').dataset.nome;
         const acordoSalvo = DB.acordos.find(a => a.prof === nome) || {};
         const divida = parseFloat(content.querySelector('.acordo-divida').value) || 0;
@@ -114,22 +111,14 @@ export function init(db, user, userData) {
         const parcelas = parseInt(content.querySelector('.acordo-parcelas').value) || 0;
         const resultsArea = content.querySelector('.results-area');
 
-        // Logs para verificar os valores lidos
-        console.log(`[DEBUG] Valor 'entrada': ${entrada} (tipo: ${typeof entrada})`);
-        console.log(`[DEBUG] Valor 'parcelas': ${parcelas} (tipo: ${typeof parcelas})`);
-
         const condition = parcelas > 0 || entrada > 0;
-        console.log(`[DEBUG] Condição (parcelas > 0 || entrada > 0) é: ${condition}`);
         
         if (condition) {
-            console.log("[DEBUG] CONDIÇÃO VERDADEIRA: Exibindo a área de resultados.");
             resultsArea.style.display = 'block';
             generateContract(content, acordoSalvo);
         } else {
-            console.log("[DEBUG] CONDIÇÃO FALSA: Escondendo a área de resultados.");
             resultsArea.style.display = 'none';
         }
-        console.log("--- [DEBUG] Finalizando calculateAndUpdate ---");
     };
             
     const renderAccordions = (devedores) => {
@@ -205,39 +194,55 @@ export function init(db, user, userData) {
     function attachEventListeners() {
         taxaGeralInput.addEventListener('input', () => {
             db.collection('financeiro').doc('configuracoes').set({ valores: { taxaAcordo: parseFloat(taxaGeralInput.value) || 0 } }, { merge: true });
-            appContent.querySelectorAll('.accordion-content').forEach(calculateAndUpdate);
+            appContent.querySelectorAll('.accordion-content.active').forEach(calculateAndUpdate);
         });
         
+        // ALTERAÇÃO: Lógica de recalcular altura adicionada aqui
         appContent.addEventListener('input', (e) => {
             if (e.target.classList.contains('data-pagamento-efetivo')) return;
             const content = e.target.closest('.accordion-content');
-            if (content) calculateAndUpdate(content);
+            if (content) {
+                calculateAndUpdate(content);
+                // Se o accordion já estiver ativo (aberto), recalcula sua altura
+                if (content.classList.contains('active')) {
+                    setTimeout(() => {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }, 50); // Delay para permitir a renderização do DOM
+                }
+            }
         });
                 
         appContent.addEventListener('click', async (e) => {
             const target = e.target;
-            const accordion = target.closest('.accordion');
-            if (!accordion) return;
-            const content = accordion.querySelector('.accordion-content');
             
             if (target.classList.contains('accordion-trigger')) {
+                const accordion = target.closest('.accordion');
+                if (!accordion) return;
+                
+                const content = accordion.querySelector('.accordion-content');
                 const isActive = target.classList.toggle('active');
                 content.classList.toggle('active');
+
                 if(isActive) {
                     calculateAndUpdate(content);
-                    content.style.maxHeight = content.scrollHeight + 'px';
+                    setTimeout(() => {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }, 50); // Aumentamos o delay para 50ms para maior confiabilidade
                 } else {
                     content.style.maxHeight = null;
                 }
             }
+            
+            const accordionContext = target.closest('.accordion');
+            if (!accordionContext) return;
 
             if(target.classList.contains('save-btn')) {
                 target.disabled = true;
                 target.textContent = 'Salvando...';
-                const nome = accordion.dataset.nome;
+                const nome = accordionContext.dataset.nome;
                 const nomeKey = sanitizeKey(nome);
                 const pagamentos = [];
-                content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
+                accordionContext.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
                     pagamentos.push({
                         item: row.cells[0].textContent,
                         valor: parseFloat(row.cells[2].textContent.replace('R$ ', '')),
@@ -247,13 +252,13 @@ export function init(db, user, userData) {
                 });
                 const acordoData = {
                     prof: nome,
-                    dataAcordo: content.querySelector('.acordo-data').value,
-                    dataEntrada: content.querySelector('.acordo-data-entrada').value,
-                    divida: parseFloat(content.querySelector('.acordo-divida').value) || 0,
-                    entrada: parseFloat(content.querySelector('.acordo-entrada').value) || 0,
+                    dataAcordo: accordionContext.querySelector('.acordo-data').value,
+                    dataEntrada: accordionContext.querySelector('.acordo-data-entrada').value,
+                    divida: parseFloat(accordionContext.querySelector('.acordo-divida').value) || 0,
+                    entrada: parseFloat(accordionContext.querySelector('.acordo-entrada').value) || 0,
                     taxa: parseFloat(taxaGeralInput.value) || 0,
-                    valorFinal: parseFloat(content.querySelector('.acordo-valor-final').value) || 0,
-                    parcelas: parseInt(content.querySelector('.acordo-parcelas').value) || 0,
+                    valorFinal: parseFloat(accordionContext.querySelector('.acordo-valor-final').value) || 0,
+                    parcelas: parseInt(accordionContext.querySelector('.acordo-parcelas').value) || 0,
                     pagamentos: pagamentos,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -272,11 +277,12 @@ export function init(db, user, userData) {
             }
             
             if(target.classList.contains('whatsapp-btn')) { 
-                const nome = accordion.dataset.nome;
+                const nome = accordionContext.dataset.nome;
                 const profInfo = DB.profissionais.find(p => p.nome === nome);
                 const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
                 if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
 
+                const content = accordionContext.querySelector('.accordion-content');
                 const divida = parseFloat(content.querySelector('.acordo-divida').value) || 0;
                 const entrada = parseFloat(content.querySelector('.acordo-entrada').value) || 0;
                 const taxa = parseFloat(taxaGeralInput.value) || 0;
@@ -296,11 +302,12 @@ export function init(db, user, userData) {
             }
 
             if(target.classList.contains('whatsapp-parcela-btn')) {
-                const nome = accordion.dataset.nome;
+                const nome = accordionContext.dataset.nome;
                 const profInfo = DB.profissionais.find(p => p.nome === nome);
                 const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
                 if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
-
+                
+                const content = accordionContext.querySelector('.accordion-content');
                 const item = target.dataset.item;
                 const valor = parseFloat(target.dataset.valor);
                 const vencimento = target.dataset.vencimento;
