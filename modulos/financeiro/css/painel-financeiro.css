@@ -1,9 +1,27 @@
 /* Arquivo: financeiro/css/painel-financeiro.css
-   Versão: 1.0.0
-   Descrição: Estilos específicos para o Módulo Financeiro.
+   Versão: 1.1.0
+   Descrição: Adiciona estilos globais para títulos de página e cabeçalhos de tabela.
 */
 
-/* --- Modificadores de Componentes Globais --- */
+/* --- Estilos Globais do Módulo --- */
+
+/* ALTERAÇÃO: Estilo para todos os títulos de página (H1) */
+.view-container > h1 {
+    color: #1d70b7;
+    margin-bottom: 20px; /* Adiciona um espaço abaixo do título */
+    border-bottom: 2px solid var(--cor-borda);
+    padding-bottom: 15px;
+}
+
+/* ALTERAÇÃO: Novo estilo padrão para cabeçalhos de tabela, em um tom mais escuro */
+.table-section thead th {
+    background-color: #e9ecef; /* Tom de cinza mais escuro e neutro */
+    color: var(--cor-texto-principal); /* Cor do texto principal para bom contraste */
+    font-weight: 600;
+}
+
+
+/* --- Modificadores de Componentes Específicos --- */
 
 /* Cards de Resumo */
 .summary-cards .card.receitas,
@@ -33,174 +51,3 @@
 .action-button.btn-update {
     background-color: var(--cor-secundaria);
 }
-
-/* --- Estilos Específicos do Módulo Financeiro --- */
-
-/* Página: Configurações 
-.variables-info {
-    background-color: var(--cor-fundo);
-    padding: 15px;
-    border-radius: var(--borda-radius);
-    margin-bottom: 30px;
-    font-size: 0.9em;
-    line-height: 1.7;
-    border: 1px solid var(--cor-borda);
-}
-.variables-info code {
-    background-color: var(--cor-borda);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-}
-
- Página: Dashboard (Gráficos) 
-.chart-section-wrapper {
-    background-color: var(--cor-surface);
-    padding: 30px;
-    border-radius: var(--borda-radius);
-    box-shadow: var(--sombra-padrao);
-}
-.chart-section-wrapper h2 {
-    font-size: 1.5em;
-    color: var(--cor-primaria);
-    margin: 0 0 20px 0;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--cor-borda);
-}
-.charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px;
-    margin-top: 25px;
-}
-.chart-section {
-    padding: 20px;
-    border: 1px solid var(--cor-borda);
-    border-radius: var(--borda-radius);
-}
-.chart-section h3 {
-    text-align: center;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    color: var(--cor-texto-secundario);
-}
-
- Página: Envio de Comprovantes 
-.instructions {
-    background-color: var(--cor-surface);
-    padding: 25px;
-    border-radius: var(--borda-radius);
-    margin-bottom: 30px;
-    border-left: 5px solid var(--cor-secundaria);
-}
-.instructions h4 { margin-top: 15px; }
-.instructions ul { margin-top: 10px; padding-left: 20px; }
-.form-section, .confirmation-section, .final-message-section {
-    background-color: var(--cor-surface);
-    padding: 30px;
-    border-radius: var(--borda-radius);
-    box-shadow: var(--sombra-padrao);
-}
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-.button-container {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-}
-.confirmation-summary p { margin-bottom: 10px; }
-.alert-warning {
-    background-color: #fff3cd;
-    color: #856404;
-    padding: 15px;
-    border-radius: var(--borda-radius);
-    border: 1px solid #ffeeba;
-    margin: 20px 0;
-}
-.action-button.edit-button { background-color: var(--cor-alerta); }
-.action-button.new-button { background-color: var(--cor-sucesso); }
-
- Página: Lançamentos 
-.filters {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: var(--cor-fundo);
-    border-radius: var(--borda-radius);
-}
-.filter-btn {
-    padding: 8px 15px;
-    border: 1px solid var(--cor-borda);
-    background-color: var(--cor-surface);
-    cursor: pointer;
-    border-radius: var(--borda-radius);
-    transition: background-color 0.2s, color 0.2s;
-}
-.filter-btn.active {
-    background-color: var(--cor-primaria);
-    color: var(--cor-texto-inverso);
-    border-color: var(--cor-primaria);
-}
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-.modal-overlay.is-visible {
-    visibility: visible;
-    opacity: 1;
-}
-.modal-content {
-    background: var(--cor-surface);
-    padding: 30px;
-    border-radius: var(--borda-radius);
-    width: 90%;
-    max-width: 500px;
-    box-shadow: var(--sombra-padrao);
-    text-align: center;
-}
-.modal-buttons { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
-.btn-confirm-delete { background-color: var(--cor-erro); color: var(--cor-texto-inverso); border: none; padding: 10px 20px; border-radius: var(--borda-radius); cursor: pointer; }
-.btn-cancel-delete { background-color: var(--cor-borda); color: var(--cor-texto-principal); border: none; padding: 10px 20px; border-radius: var(--borda-radius); cursor: pointer; }
-
-/* Página: Resumo de Horas 
-.description-box {
-    background-color: var(--cor-fundo);
-    padding: 20px;
-    border-radius: var(--borda-radius);
-    margin-bottom: 30px;
-    border: 1px solid var(--cor-borda);
-}
-
-/* Página: Acordos 
-.tax-selector {
-    background-color: var(--cor-fundo);
-    padding: 15px;
-    border-radius: var(--borda-radius);
-    margin-bottom: 20px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-}
-.tax-selector label { font-weight: 600; }
-
-@media (max-width: 768px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-}*/

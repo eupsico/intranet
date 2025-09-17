@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/acordos.js
-// Versão: 2.1
-// Descrição: Corrige busca de dívidas para usar UID e implementa regra de negócio para o mês corrente.
+// Versão: 2.2
+// Descrição: Corrige o bug de expansão do accordion.
 
 export function init(db, user, userData) {
     if (!db) {
@@ -22,7 +22,6 @@ export function init(db, user, userData) {
         return 'Boa noite';
     };
 
-    // ALTERAÇÃO: Lógica de busca de dívida corrigida e regra do mês corrente implementada
     const getDividaTotal = (profissional, dbData) => {
         const dividaInfo = { valor: 0, meses: [] };
         if (!profissional || !profissional.uid) return dividaInfo;
@@ -32,22 +31,17 @@ export function init(db, user, userData) {
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
 
-        // Regra de negócio: só considera o mês atual se já passou do dia 10
         const mesFinal = hoje.getDate() > 10 ? hoje.getMonth() : hoje.getMonth() - 1;
 
         for (let i = 0; i <= mesFinal; i++) {
             const mes = meses[i];
             
-            // Tenta buscar pelo UID primeiro (método novo)
             let dividaDoMes = dbData.cobranca?.[anoAtual]?.[profId]?.[mes];
-            // Se não encontrar, tenta pelo nome (método antigo)
             if (dividaDoMes === undefined) {
                 dividaDoMes = dbData.cobranca?.[anoAtual]?.[nomeKey_antigo]?.[mes] || 0;
             }
             
-            // Tenta buscar o pagamento pelo UID primeiro
             let pagamentoDoMes = dbData.repasses?.[anoAtual]?.[mes]?.[profId];
-            // Se não encontrar, tenta pelo nome
             if (pagamentoDoMes === undefined) {
                 pagamentoDoMes = dbData.repasses?.[anoAtual]?.[mes]?.[nomeKey_antigo];
             }
@@ -208,28 +202,37 @@ export function init(db, user, userData) {
                 
         appContent.addEventListener('click', async (e) => {
             const target = e.target;
-            const accordion = target.closest('.accordion');
-            if (!accordion) return;
-            const content = accordion.querySelector('.accordion-content');
-            
+
+            // ALTERAÇÃO: Lógica de clique no trigger do accordion corrigida para garantir a expansão
             if (target.classList.contains('accordion-trigger')) {
+                const accordion = target.closest('.accordion');
+                if (!accordion) return;
+                
+                const content = accordion.querySelector('.accordion-content');
                 const isActive = target.classList.toggle('active');
                 content.classList.toggle('active');
+
                 if(isActive) {
                     calculateAndUpdate(content);
-                    content.style.maxHeight = content.scrollHeight + 'px';
+                    // O CSS controla a animação, mas JS define a altura máxima para o conteúdo dinâmico
+                    setTimeout(() => { // Usamos um timeout para garantir que o DOM foi atualizado
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }, 10);
                 } else {
                     content.style.maxHeight = null;
                 }
             }
+            
+            const accordionContext = target.closest('.accordion');
+            if (!accordionContext) return;
 
             if(target.classList.contains('save-btn')) {
                 target.disabled = true;
                 target.textContent = 'Salvando...';
-                const nome = accordion.dataset.nome;
+                const nome = accordionContext.dataset.nome;
                 const nomeKey = sanitizeKey(nome);
                 const pagamentos = [];
-                content.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
+                accordionContext.querySelectorAll('.parcelas-table tbody tr').forEach(row => {
                     pagamentos.push({
                         item: row.cells[0].textContent,
                         valor: parseFloat(row.cells[2].textContent.replace('R$ ', '')),
@@ -239,13 +242,13 @@ export function init(db, user, userData) {
                 });
                 const acordoData = {
                     prof: nome,
-                    dataAcordo: content.querySelector('.acordo-data').value,
-                    dataEntrada: content.querySelector('.acordo-data-entrada').value,
-                    divida: parseFloat(content.querySelector('.acordo-divida').value) || 0,
-                    entrada: parseFloat(content.querySelector('.acordo-entrada').value) || 0,
+                    dataAcordo: accordionContext.querySelector('.acordo-data').value,
+                    dataEntrada: accordionContext.querySelector('.acordo-data-entrada').value,
+                    divida: parseFloat(accordionContext.querySelector('.acordo-divida').value) || 0,
+                    entrada: parseFloat(accordionContext.querySelector('.acordo-entrada').value) || 0,
                     taxa: parseFloat(taxaGeralInput.value) || 0,
-                    valorFinal: parseFloat(content.querySelector('.acordo-valor-final').value) || 0,
-                    parcelas: parseInt(content.querySelector('.acordo-parcelas').value) || 0,
+                    valorFinal: parseFloat(accordionContext.querySelector('.acordo-valor-final').value) || 0,
+                    parcelas: parseInt(accordionContext.querySelector('.acordo-parcelas').value) || 0,
                     pagamentos: pagamentos,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -264,11 +267,12 @@ export function init(db, user, userData) {
             }
             
             if(target.classList.contains('whatsapp-btn')) { 
-                const nome = accordion.dataset.nome;
+                const nome = accordionContext.dataset.nome;
                 const profInfo = DB.profissionais.find(p => p.nome === nome);
                 const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
                 if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
 
+                const content = accordionContext.querySelector('.accordion-content');
                 const divida = parseFloat(content.querySelector('.acordo-divida').value) || 0;
                 const entrada = parseFloat(content.querySelector('.acordo-entrada').value) || 0;
                 const taxa = parseFloat(taxaGeralInput.value) || 0;
@@ -288,11 +292,12 @@ export function init(db, user, userData) {
             }
 
             if(target.classList.contains('whatsapp-parcela-btn')) {
-                const nome = accordion.dataset.nome;
+                const nome = accordionContext.dataset.nome;
                 const profInfo = DB.profissionais.find(p => p.nome === nome);
                 const contato = profInfo ? profInfo.contato.replace(/\D/g, '') : '';
                 if(!contato) { return alert(`Contato para ${nome} não encontrado.`); }
-
+                
+                const content = accordionContext.querySelector('.accordion-content');
                 const item = target.dataset.item;
                 const valor = parseFloat(target.dataset.valor);
                 const vencimento = target.dataset.vencimento;

@@ -1,6 +1,6 @@
 /* Arquivo: /modulos/financeiro/css/acordos.css
-   Versão: 1.0
-   Descrição: Estilos para a tela de Acordos.
+   Versão: 1.1
+   Descrição: Corrige bug de expansão e aplica novo estilo ao cabeçalho do accordion.
 */
 
 .description-box {
@@ -21,9 +21,7 @@
 }
 
 .table-section thead th {
-    background-color: var(--cor-fundo);
-    color: var(--cor-primaria);
-    font-weight: 600;
+    /* Este estilo agora é controlado pelo painel-financeiro.css para ser global */
 }
 
 /* Estilos para o componente Accordion */
@@ -32,11 +30,12 @@
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
     overflow: hidden;
+    background-color: var(--cor-surface);
 }
 
 .accordion-trigger {
     width: 100%;
-    background-color: var(--cor-surface);
+    background-color: transparent;
     border: none;
     padding: 15px 20px;
     text-align: left;
@@ -50,21 +49,24 @@
     background-color: var(--cor-fundo);
 }
 
+/* ALTERAÇÃO: Cor do cabeçalho do accordion ativo igual ao cabeçalho da tabela */
 .accordion-trigger.active {
-    background-color: var(--cor-fundo);
-    color: var(--cor-primaria);
+    background-color: #e9ecef;
+    color: var(--cor-texto-principal);
+    font-weight: 600;
 }
 
+/* ALTERAÇÃO: Correção no padding para a animação funcionar corretamente */
 .accordion-content {
-    padding: 20px;
     background-color: #fafafa;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+    transition: max-height 0.3s ease-out, padding 0.3s ease;
+    padding: 0 20px; /* Padding horizontal fixo */
 }
 
 .accordion-content.active {
-    padding: 20px;
+    padding: 20px; /* Padding vertical só quando ativo */
 }
 
 .accordion .form-grid {
