@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         const areas = {
             portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
-            administrativo: { titulo: 'Administrativo', descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', url: '/modulos/administrativo/page/administrativo-painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
+            administrativo: { titulo: 'Administrativo', descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', url: './modulos/administrativo/page/administrativo-painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
             captacao: { titulo: 'Captação', descricao: 'Somente os voluntários da captação tem acesso para acessar as ferramentas e informações para captação.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
             financeiro: { titulo: 'Financeiro', descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', url: './modulos/financeiro/page/painel-financeiro.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
             grupos: { titulo: 'Grupos', descricao: 'Somente os voluntários de grupos tem acesso às informações e materiais para grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
