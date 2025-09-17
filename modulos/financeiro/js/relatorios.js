@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/relatorios.js
-// Versão: 2.0
-// Descrição: Refatorado para estrutura de abas, design consistente e correção na busca de dados.
+// Versão: 2.1
+// Descrição: Corrige população do filtro de inadimplentes e a lógica/layout do relatório de horas.
 
 export function init(db) {
     if (!db) { 
@@ -33,25 +33,48 @@ export function init(db) {
     };
     const formatCurrency = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`;
     
-    async function fetchData() {
-        // Esta função poderia ser usada se os dados precisassem ser pré-carregados,
-        // mas cada relatório buscará os dados no momento da geração para garantir que estão atualizados.
-        // Por enquanto, vamos apenas renderizar o layout.
+    // ALTERAÇÃO: Busca os dados iniciais para popular os filtros
+    async function fetchDataAndRenderLayout() {
+        const [usuariosSnap] = await Promise.all([
+            db.collection('usuarios').get()
+        ]);
+        DB.profissionais = usuariosSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+        
         renderLayout();
     }
     
     function renderLayout() {
-        // Seletores de período e profissional são renderizados aqui para estarem prontos para uso.
         const currentYear = new Date().getFullYear();
         let years = [];
         for (let i = currentYear - 2; i <= currentYear + 5; i++) { years.push(i); }
         
-        // Renderiza seletores de ano
-        viewContent.querySelector('#backup-ano-selector').innerHTML = years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`).join('');
+        const profissionaisAtivos = DB.profissionais.filter(p => p.nome && !p.primeiraFase).sort((a, b) => a.nome.localeCompare(b.nome));
 
-        // Renderiza seletores de mês
+        // Popula seletores de ano
+        viewContent.querySelector('#backup-ano-selector').innerHTML = years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`).join('');
+        
+        // Popula seletores de mês
         viewContent.querySelector('#backup-mes-selector').innerHTML = meses.map((m, i) => `<option value="${i}">${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('');
         
+        // Popula seletor de inadimplentes
+        const debtorSelector = viewContent.querySelector('#debtor-professional-selector');
+        debtorSelector.innerHTML = `<option value="todos">Todos os Profissionais</option>`;
+        debtorSelector.innerHTML += profissionaisAtivos.map(p => `<option value="${p.uid}">${p.nome}</option>`).join('');
+
+        // ALTERAÇÃO: Adiciona HTML e popula os filtros para o Relatório de Horas
+        const hoursTab = viewContent.querySelector('#RelatorioHoras .report-controls');
+        const hoursFilterHtml = `
+            <div class="filter-box">
+                <label>Selecionar Período:</label>
+                <div class="selectors">
+                    <select id="hours-mes-selector">${meses.map((m, i) => `<option value="${i}" ${i === new Date().getMonth() ? 'selected' : ''}>${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('')}</select>
+                    <select id="hours-ano-selector">${years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`).join('')}</select>
+                </div>
+            </div>
+        `;
+        // Insere o filtro antes dos botões de ação
+        hoursTab.insertAdjacentHTML('afterbegin', hoursFilterHtml);
+
         attachEventListeners();
     }
 
@@ -77,35 +100,25 @@ export function init(db) {
         document.getElementById('btn-backup-pdf').addEventListener('click', generateMonthlyBackup);
     }
     
-    // --- Lógicas de Geração de Relatório ---
-
     async function getLatestData() {
-        // Função para buscar os dados mais recentes do DB sempre que um relatório for gerado
-        const [usuariosSnap, configSnap] = await Promise.all([
+        const [usuariosSnap, configSnap, gradesSnap] = await Promise.all([
             db.collection('usuarios').get(),
-            db.collection('financeiro').doc('configuracoes').get()
+            db.collection('financeiro').doc('configuracoes').get(),
+            db.collection('administrativo').doc('grades').get() // Busca a grade de horários
         ]);
         const configData = configSnap.exists ? configSnap.data() : {};
         return {
             profissionais: usuariosSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })),
             cobranca: configData.cobranca || {},
             repasses: configData.repasses || {},
-            grades: configData.grades || {}
+            grades: gradesSnap.exists ? gradesSnap.data() : {}
         };
     }
 
     async function generateDebtorsReport(format) {
         window.showToast('Gerando relatório de inadimplentes...', 'info');
         const DB = await getLatestData();
-        const profSelector = document.getElementById('debtor-professional-selector');
-        
-        // Popula o seletor de profissionais se ainda não foi populado
-        if (profSelector.options.length <= 1) {
-            const profissionaisAtivos = DB.profissionais.filter(p => p.nome && !p.primeiraFase).sort((a, b) => a.nome.localeCompare(b.nome));
-            profSelector.innerHTML += profissionaisAtivos.map(p => `<option value="${p.uid}">${p.nome}</option>`).join('');
-        }
-        
-        const selectedProfId = profSelector.value;
+        const selectedProfId = document.getElementById('debtor-professional-selector').value;
         const selectedProfessional = DB.profissionais.find(p => p.uid === selectedProfId);
 
         const debtors = [];
@@ -179,12 +192,15 @@ export function init(db) {
         const profissionaisAtivos = DB.profissionais.filter(p => p.nome && !p.primeiraFase && p.fazAtendimento === true);
         let hoursData = [];
 
+        // ALTERAÇÃO: Lógica de busca de horas corrigida para iterar corretamente na grade
         profissionaisAtivos.forEach(prof => {
             let horasOnline = 0, horasPresencial = 0;
-            for(const key in DB.grades) {
-                if(DB.grades[key] === prof.username) {
-                    if (key.startsWith('online.')) horasOnline++;
-                    else if (key.startsWith('presencial.')) horasPresencial++;
+            if (prof.username) {
+                for (const key in DB.grades) {
+                    if (DB.grades[key] === prof.username) {
+                        if (key.startsWith('online.')) horasOnline++;
+                        else if (key.startsWith('presencial.')) horasPresencial++;
+                    }
                 }
             }
             if (horasOnline > 0 || horasPresencial > 0) {
@@ -198,8 +214,9 @@ export function init(db) {
         }
         hoursData.sort((a, b) => b.total - a.total);
         
-        const dateStr = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-        const fileNameBase = `relatorio_horas_${dateStr}`;
+        const mesNome = meses[document.getElementById('hours-mes-selector').value];
+        const ano = document.getElementById('hours-ano-selector').value;
+        const fileNameBase = `relatorio_horas_${mesNome}_${ano}`;
 
         if (format === 'csv') {
             let csvContent = "Profissional;Horas Online;Horas Presencial;Total de Horas\n";
@@ -209,7 +226,7 @@ export function init(db) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             doc.setFontSize(18);
-            doc.text(`Relatório de Horas Trabalhadas (Grade Atual)`, 14, 22);
+            doc.text(`Relatório de Horas - ${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)}/${ano}`, 14, 22);
             const head = [['Profissional', 'Horas Online', 'Horas Presencial', 'Total']];
             const body = hoursData.map(d => [d.nome, d.online, d.presencial, d.total]);
             doc.autoTable({ head, body, startY: 35 });
@@ -267,5 +284,5 @@ export function init(db) {
     
     // --- Ponto de Partida ---
     setupTabs();
-    fetchData();
+    fetchDataAndRenderLayout();
 }
