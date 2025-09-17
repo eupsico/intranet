@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.8 (Corrigido)
+// Versão: 1.8 (Corrigido com caminho absoluto)
 // Descrição: Adiciona lógica para renderizar o cabeçalho dinâmico com título da página e saudação.
 
 import { auth, db } from './firebase-init.js';
@@ -117,26 +117,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel financeiro.</h2>";
             }
         } 
-        // ***** INÍCIO DA ALTERAÇÃO *****
         else if (window.location.pathname.includes('administrativo-painel.html')) {
             // Se estamos na página do Administrativo:
-            // O menu da sidebar é controlado pelo próprio script do módulo, então não chamamos renderSidebarMenu aqui.
             
-            // Tentamos carregar e inicializar o módulo do painel administrativo
             try {
-                const adminModule = await import('../../modulos/administrativo/js/administrativo-painel.js');
+                // ***** ALTERAÇÃO APLICADA AQUI *****
+                const adminModule = await import('/intranet/modulos/administrativo/js/administrativo-painel.js');
                 adminModule.init(user, db, userData);
             } catch (error) {
                 console.error("Erro ao carregar o módulo administrativo:", error);
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel administrativo.</h2>";
             }
         }
-        // ***** FIM DA ALTERAÇÃO *****
         else {
             // Se estamos na página principal (index.html):
             const pageTitleContainer = document.getElementById('page-title-container');
             if(pageTitleContainer) {
-                // A página principal não precisa de título no header, então limpamos
                 pageTitleContainer.innerHTML = '';
             }
             renderSidebarMenu(modules);
