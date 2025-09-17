@@ -1,0 +1,45 @@
+/* Arquivo: /modulos/voluntario/css/dashboard.css
+   Descrição: Estilos para o dashboard do voluntário.
+*/
+
+.info-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.info-card {
+    background-color: var(--cor-surface);
+    padding: 25px;
+    border-radius: var(--borda-radius);
+    box-shadow: var(--sombra-padrao);
+    border-left: 5px solid var(--cor-primaria);
+}
+
+.info-card h3 {
+    margin-top: 0;
+    color: var(--cor-primaria);
+    font-size: 1.2em;
+}
+
+.info-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+}
+
+.info-card ul li {
+    padding-left: 20px;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.info-card ul li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+    color: var(--cor-primaria);
+    font-size: 1.4em;
+    line-height: 1;
+}

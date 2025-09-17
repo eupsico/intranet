@@ -1,94 +1,131 @@
-(function() {
-    // Configuração do Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyDJqPJjDDIGo7uRewh3pw1SQZOpMgQJs5M",
-        authDomain: "eupsico-agendamentos-d2048.firebaseapp.com",
-        databaseURL: "https://eupsico-agendamentos-d2048-default-rtdb.firebaseio.com",
-        projectId: "eupsico-agendamentos-d2048",
-        storageBucket: "eupsico-agendamentos-d2048.firebasestorage.app",
-        messagingSenderId: "1041518416343",
-        appId: "1:1041518416343:web:0a11c03c205b802ed7bb92"
-    };
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+// Arquivo: /modulos/voluntario/js/portal-voluntario.js
+// Versão: 2.0
+// Descrição: Refatorado para ser o controlador principal do portal do voluntário.
 
-    const auth = firebase.auth();
+import { auth, db, storage } from '../../../assets/js/firebase-init.js';
 
-    // --- LÓGICA DO MODAL (será chamada após o carregamento do conteúdo) ---
-    function inicializarModalPipefy() {
-        const modal = document.getElementById("pipefyModal");
-        const btn = document.getElementById("openPipefyModalBtn");
-        const span = document.getElementById("closePipefyModalBtn");
-
-        if (modal && btn && span) {
-            btn.onclick = function() { modal.style.display = "block"; }
-            span.onclick = function() { modal.style.display = "none"; }
-            window.onclick = function(event) { 
-                if (event.target == modal) { 
-                    modal.style.display = "none"; 
-                } 
-            }
-        }
-    }
-
-    // --- NOVA FUNÇÃO PARA CARREGAR O CONTEÚDO DAS SEÇÕES ---
-    async function loadSectionContent() {
-        const sectionsToLoad = [
-            { id: 'gestao', filePath: './gestao.html' },
-            { id: 'solicitacoes', filePath: './solicitacoes.html' }
-            // Adicione aqui futuras seções que se tornarão modulares
-        ];
-
-        const fetchPromises = sectionsToLoad.map(section =>
-            fetch(section.filePath)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Não foi possível carregar ${section.filePath}`);
-                    }
-                    return response.text();
-                })
-                .then(html => ({ id: section.id, html: html }))
-        );
-
-        try {
-            const results = await Promise.all(fetchPromises);
-
-            results.forEach(result => {
-                const container = document.querySelector(`#${result.id} .section-content`);
-                if (container) {
-                    container.innerHTML = result.html;
-                }
-            });
-
-            // SOMENTE DEPOIS de carregar o conteúdo, ativamos o script do modal.
-            inicializarModalPipefy();
-
-        } catch (error) {
-            console.error("Erro ao carregar conteúdo das seções:", error);
-            sectionsToLoad.forEach(section => {
-                const container = document.querySelector(`#${section.id} .section-content`);
-                if (container) {
-                    container.innerHTML = `<p style="color: red;">Não foi possível carregar o conteúdo desta seção.</p>`;
-                }
-            });
-        }
-    }
-
-    // Função que verifica o status de autenticação do usuário
-    function checkAuth() {
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                console.log("Usuário autenticado, carregando conteúdo do portal...");
-                // Chama a nova função para carregar o conteúdo dinâmico
-                loadSectionContent();
+document.addEventListener('DOMContentLoaded', () => {
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            const userDoc = await db.collection("usuarios").doc(user.uid).get();
+            if (userDoc.exists) {
+                initPortal(user, userDoc.data());
             } else {
-                console.log("Usuário não autenticado, redirecionando para o login.");
-                window.location.href = '../index.html';
+                window.location.href = '../../../index.html'; // Redireciona se não encontrar dados
             }
+        } else {
+            window.location.href = '../../../index.html'; // Redireciona se não estiver logado
+        }
+    });
+});
+
+function initPortal(user, userData) {
+    const contentArea = document.getElementById('content-area');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+
+    // Lista de todas as "páginas" (views) do portal
+    const views = [
+        { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
+        { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
+        { id: 'recursos', name: 'Recursos do Voluntário', icon: '🛠️' },
+        { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
+        { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
+    ];
+
+    function buildSidebarMenu() {
+        if (!sidebarMenu) return;
+        sidebarMenu.innerHTML = '';
+        
+        // Link para voltar à intranet principal
+        sidebarMenu.innerHTML += `
+            <li>
+                <a href="../../../index.html" class="back-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <span>Voltar à Intranet</span>
+                </a>
+            </li>
+            <li class="menu-separator"></li>
+        `;
+        
+        views.forEach(view => {
+            sidebarMenu.innerHTML += `
+                <li>
+                    <a href="#${view.id}" data-view="${view.id}">
+                        <span class="icon">${view.icon}</span>
+                        <span>${view.name}</span>
+                    </a>
+                </li>`;
         });
     }
 
-    // Executa a verificação assim que o script é carregado
-    checkAuth();
-})();
+    async function loadView(viewId) {
+        // Ativa o link correto no menu
+        sidebarMenu.querySelectorAll('a').forEach(link => {
+            link.classList.toggle('active', link.dataset.view === viewId);
+        });
+
+        contentArea.innerHTML = '<div class="loading-spinner"></div>';
+        try {
+            // Carrega o HTML da view
+            const response = await fetch(`./${viewId}.html`);
+            if (!response.ok) throw new Error(`View not found: ${viewId}`);
+            contentArea.innerHTML = await response.text();
+
+            // Carrega e inicializa o JavaScript da view
+            const viewModule = await import(`../js/${viewId}.js`);
+            if (viewModule && typeof viewModule.init === 'function') {
+                viewModule.init(db, user, userData, storage); // Passa 'storage' para o comprovante
+            }
+        } catch (error) {
+            console.error(`Erro ao carregar a view ${viewId}:`, error);
+            contentArea.innerHTML = `<p style="color:red;">Erro ao carregar esta seção.</p>`;
+        }
+    }
+    
+    // --- Funções de Layout (Header, Sidebar Toggle) ---
+    function setupLayout() {
+        const userPhoto = document.getElementById('user-photo-header');
+        const userGreeting = document.getElementById('user-greeting');
+        const logoutButton = document.getElementById('logout-button-dashboard');
+
+        if(userPhoto) {
+            userPhoto.src = user.photoURL || '';
+            userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
+        }
+        if(userGreeting && userData.nome) {
+            userGreeting.textContent = `Olá, ${userData.nome.split(' ')[0]}!`;
+        }
+        if(logoutButton) {
+            logoutButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                auth.signOut();
+            });
+        }
+        
+        // Lógica do sidebar toggle
+        const toggleButton = document.getElementById('sidebar-toggle');
+        const layoutContainer = document.querySelector('.layout-container');
+        if (toggleButton && layoutContainer) {
+            toggleButton.addEventListener('click', () => {
+                layoutContainer.classList.toggle('sidebar-collapsed');
+            });
+        }
+    }
+
+    // --- Inicialização ---
+    function start() {
+        setupLayout();
+        buildSidebarMenu();
+
+        // Roteamento baseado em Hash
+        const handleHashChange = () => {
+            const viewId = window.location.hash.substring(1) || views[0].id; // Padrão para dashboard
+            loadView(viewId);
+        };
+
+        window.addEventListener('hashchange', handleHashChange);
+        handleHashChange(); // Carrega a view inicial
+    }
+
+    start();
+}
