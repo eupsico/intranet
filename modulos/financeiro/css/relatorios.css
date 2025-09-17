@@ -1,0 +1,46 @@
+/* Arquivo: /modulos/financeiro/css/relatorios.css
+   Versão: 2.0
+   Descrição: Refatora os estilos para usar o design system e a estrutura de abas.
+*/
+
+/* Garante que o container da view se ajuste bem ao conteúdo das abas */
+.view-relatorios .view-container {
+    padding: 0;
+}
+
+/* Container para os controles dentro de uma aba */
+.report-controls {
+    background-color: var(--cor-fundo);
+    padding: 20px;
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-end; /* Alinha os itens na base */
+}
+
+/* Caixa de filtro individual, seguindo o padrão do módulo */
+.filter-box {
+    background-color: transparent; /* Remove fundo duplicado */
+    padding: 0;
+    border: none;
+}
+
+.filter-box label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.filter-box .selectors {
+    display: flex;
+    gap: 15px;
+}
+
+/* Container para os botões de ação */
+.report-actions {
+    margin-left: auto; /* Empurra os botões para a direita */
+    display: flex;
+    gap: 10px;
+}
