@@ -1,6 +1,6 @@
-// Arquivo: /modulos/financeiro/js/views/acordos.js
-// Versão: 2.0
-// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+// Arquivo: /modulos/financeiro/js/acordos.js
+// Versão: 2.1
+// Descrição: Corrige busca de dívidas para usar UID e implementa regra de negócio para o mês corrente.
 
 export function init(db, user, userData) {
     if (!db) {
@@ -22,16 +22,36 @@ export function init(db, user, userData) {
         return 'Boa noite';
     };
 
+    // ALTERAÇÃO: Lógica de busca de dívida corrigida e regra do mês corrente implementada
     const getDividaTotal = (profissional, dbData) => {
         const dividaInfo = { valor: 0, meses: [] };
-        if (!profissional || !profissional.nome) return dividaInfo;
-        const nomeKey = sanitizeKey(profissional.nome);
-        const anoAtual = new Date().getFullYear();
-        const mesAtualIndex = new Date().getMonth();
-        for (let i = 0; i <= mesAtualIndex; i++) {
+        if (!profissional || !profissional.uid) return dividaInfo;
+        
+        const profId = profissional.uid;
+        const nomeKey_antigo = sanitizeKey(profissional.nome);
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+
+        // Regra de negócio: só considera o mês atual se já passou do dia 10
+        const mesFinal = hoje.getDate() > 10 ? hoje.getMonth() : hoje.getMonth() - 1;
+
+        for (let i = 0; i <= mesFinal; i++) {
             const mes = meses[i];
-            const dividaDoMes = dbData.cobranca?.[anoAtual]?.[nomeKey]?.[mes] || 0;
-            const pagamentoDoMes = dbData.repasses?.[anoAtual]?.[mes]?.[nomeKey];
+            
+            // Tenta buscar pelo UID primeiro (método novo)
+            let dividaDoMes = dbData.cobranca?.[anoAtual]?.[profId]?.[mes];
+            // Se não encontrar, tenta pelo nome (método antigo)
+            if (dividaDoMes === undefined) {
+                dividaDoMes = dbData.cobranca?.[anoAtual]?.[nomeKey_antigo]?.[mes] || 0;
+            }
+            
+            // Tenta buscar o pagamento pelo UID primeiro
+            let pagamentoDoMes = dbData.repasses?.[anoAtual]?.[mes]?.[profId];
+            // Se não encontrar, tenta pelo nome
+            if (pagamentoDoMes === undefined) {
+                pagamentoDoMes = dbData.repasses?.[anoAtual]?.[mes]?.[nomeKey_antigo];
+            }
+
             if (dividaDoMes > 0 && !pagamentoDoMes) {
                 dividaInfo.valor += dividaDoMes;
             }
@@ -129,7 +149,7 @@ export function init(db, user, userData) {
                     </div>
                     <div class="results-area" style="display: none;">
                         <h4>Parcelamento:</h4>
-                        <div class="table-wrapper"><table class="parcelas-table"></table></div>
+                        <div class="table-section" style="padding:0; box-shadow:none;"><table class="parcelas-table"></table></div>
                         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
                             <button class="action-button whatsapp-btn">Enviar Resumo (WhatsApp)</button>
                             <button class="action-button save-btn">Salvar Acordo</button>
@@ -145,6 +165,7 @@ export function init(db, user, userData) {
     };
 
     async function fetchData() {
+        appContent.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const [usuariosSnap, configSnap, acordosSnap] = await Promise.all([
                 db.collection('usuarios').get(),
@@ -162,7 +183,7 @@ export function init(db, user, userData) {
 
             taxaGeralInput.value = DB.valores.taxaAcordo || 0;
             const listaDevedores = DB.profissionais
-                .filter(prof => prof.nome && !prof.primeiraFase && !prof.inativo)
+                .filter(prof => prof.nome && !prof.primeiraFase && !prof.inativo && prof.fazAtendimento === true)
                 .map(prof => ({ nome: prof.nome, valor: getDividaTotal(prof, DB).valor }))
                 .filter(devedor => devedor.valor > 0)
                 .sort((a, b) => a.nome.localeCompare(b.nome));

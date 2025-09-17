@@ -1,6 +1,6 @@
-// Arquivo: /modulos/financeiro/js/views/controle_pagamentos.js
-// Versão: 2.0
-// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+// Arquivo: /modulos/financeiro/js/controle_pagamentos.js
+// Versão: 2.1
+// Descrição: Aplica novo design ao filtro de período e padroniza botões.
 
 export function init(db, user, userData) {
     if (!db) {
@@ -12,10 +12,7 @@ export function init(db, user, userData) {
     let DB = { profissionais: [], cobranca: {}, repasses: {} };
     const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     
-    function sanitizeKey(key) {
-        if (!key) return '';
-        return key.replace(/\.|\$|\[|\]|#|\//g, '_');
-    }
+    const sanitizeKey = (key) => !key ? '' : key.replace(/\.|\$|\[|\]|#|\//g, '_');
 
     async function fetchData() {
         if (!appContent) return;
@@ -44,13 +41,19 @@ export function init(db, user, userData) {
         const vencimento = new Date(ano, parseInt(mesIndex) + 1, 10).toLocaleDateString('pt-BR');
         const currentYear = new Date().getFullYear();
         let years = [];
-        for (let i = currentYear -1; i <= currentYear + 5; i++) { years.push(i); }
+        for (let i = currentYear - 1; i <= currentYear + 5; i++) { years.push(i); }
 
-        let selectorHtml = `<div class="period-selector"><label>Selecionar Período:</label>
-            <select id="repasse-mes-selector">${meses.map((m, i) => `<option value="${i}" ${i === mesIndex ? 'selected' : ''}>${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('')}</select>
-            <select id="repasse-ano-selector">${years.map(y => `<option value="${y}" ${y === ano ? 'selected' : ''}>${y}</option>`).join('')}</select>
-        </div>`;
-        let tableHtml = `<div class="table-wrapper"><table><thead><tr><th>Profissional</th><th>Data Vencimento</th><th>Valor a Pagar (R$)</th><th>Data Pagamento</th><th>Ação</th></tr></thead><tbody>`;
+        // ALTERAÇÃO: Aplicado o novo layout de filtro em caixa
+        let selectorHtml = `
+            <div class="filter-box">
+                <h4>Selecionar Período:</h4>
+                <div class="selectors">
+                    <select id="repasse-mes-selector">${meses.map((m, i) => `<option value="${i}" ${i === mesIndex ? 'selected' : ''}>${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('')}</select>
+                    <select id="repasse-ano-selector">${years.map(y => `<option value="${y}" ${y === ano ? 'selected' : ''}>${y}</option>`).join('')}</select>
+                </div>
+            </div>`;
+            
+        let tableHtml = `<div class="table-section"><table><thead><tr><th>Profissional</th><th>Data Vencimento</th><th>Valor a Pagar (R$)</th><th>Data Pagamento</th><th>Ação</th></tr></thead><tbody>`;
         
         const profissionaisFiltrados = (DB.profissionais || []).filter(
             prof => prof.nome && !prof.primeiraFase && !prof.inativo && prof.profissao !== "Assistente Social"
@@ -73,12 +76,13 @@ export function init(db, user, userData) {
             }
             
             if (valorDevido > 0) {
+                // ALTERAÇÃO: Adicionada a classe 'action-button' para padronizar o botão
                 tableHtml += `<tr data-prof-id="${profId}">
                     <td>${prof.nome}</td>
                     <td>${vencimento}</td>
                     <td>R$ ${valorDevido.toFixed(2).replace('.',',')}</td>
                     <td><input type="date" class="repasse-data-pg" value="${repasseSalvo || ''}"></td>
-                    <td><button class="save-row-btn save-repasse-btn">Salvar</button></td>
+                    <td><button class="action-button save-repasse-btn">Salvar</button></td>
                 </tr>`;
             }
         });
