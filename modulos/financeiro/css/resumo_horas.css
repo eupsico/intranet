@@ -1,11 +1,9 @@
 /* Arquivo: /modulos/financeiro/css/resumo_horas.css
-   Versão: 1.0
-   Descrição: Estilos específicos para a tela de Resumo de Horas.
+   Versão: 1.1
+   Descrição: Adiciona estilo para o container do filtro de profissional.
 */
 
-/* Estilo padrão para parágrafos de descrição em todo o módulo financeiro.
-   Reutilizado da tela de configurações para manter a consistência. 
-*/
+/* Estilo padrão para parágrafos de descrição */
 .description-box {
     background-color: var(--cor-fundo);
     padding: 15px;
@@ -16,11 +14,27 @@
     color: var(--cor-texto-secundario);
 }
 
-/* Estilo padrão para cabeçalhos de tabela no módulo financeiro.
-   Define uma cor de fundo destacada para o thead.
-*/
+/* Estilo padrão para cabeçalhos de tabela no módulo financeiro */
 .table-section thead th {
-    background-color: var(--cor-fundo); /* Usa a cor de fundo padrão para destaque */
+    background-color: var(--cor-fundo);
     color: var(--cor-primaria);
     font-weight: 600;
+}
+
+/* --- Container para o filtro --- */
+.filter-box {
+    background-color: var(--cor-fundo);
+    padding: 20px;
+    border-radius: var(--borda-radius);
+    margin-bottom: 20px;
+    border: 1px solid var(--cor-borda);
+    display: inline-block; /* Faz a caixa se ajustar ao conteúdo */
+}
+
+.filter-box label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 1em;
+    color: var(--cor-texto-principal);
 }
