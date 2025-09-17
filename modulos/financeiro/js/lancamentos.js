@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/lancamentos.js
-// Versão: 2.1
-// Descrição: Corrige bug no filtro de data que ignorava lançamentos devido ao fuso horário.
+// Versão: 2.2
+// Descrição: Implementa filtro de data manual à prova de fuso horário e adiciona logs de diagnóstico.
 
 export function init(db) {
     if (!db) {
@@ -87,19 +87,36 @@ export function init(db) {
     function renderTable() {
         if (!tableBody) return;
         tableBody.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
+
+        // Log de Diagnóstico: Mostra os filtros atuais antes de filtrar
+        console.log(`[DIAGNÓSTICO] Filtrando por: Mês ${currentFilter.mes} (${meses[currentFilter.mes]}), Ano ${currentFilter.ano}, Tipo ${currentFilter.tipo}`);
         
         const filtered = allLancamentos.filter(l => {
-            if (!l.dataVencimento) return false;
+            if (!l.dataVencimento || typeof l.dataVencimento !== 'string' || !l.dataVencimento.includes('-')) {
+                // Log de Diagnóstico: Informa se um lançamento foi pulado por data inválida
+                console.warn('[DIAGNÓSTICO] Lançamento pulado por data de vencimento inválida:', l);
+                return false;
+            }
 
-            // ALTERAÇÃO: Corrigida a forma de ler a data para evitar problemas com fuso horário.
-            // new Date('YYYY-MM-DD') cria a data em UTC. Usamos getUTCMonth() e getUTCFullYear() para comparar corretamente.
-            const vencimento = new Date(l.dataVencimento);
-            const matchPeriodo = vencimento.getUTCMonth() === currentFilter.mes && vencimento.getUTCFullYear() === currentFilter.ano;
-            
+            // ALTERAÇÃO: Lógica de filtro manual, 100% à prova de fuso horário.
+            const parts = l.dataVencimento.split('-'); // Ex: "2025-09-17" -> ["2025", "09", "17"]
+            if (parts.length !== 3) {
+                 console.warn('[DIAGNÓSTICO] Lançamento pulado por formato de data inesperado:', l);
+                 return false;
+            }
+
+            const anoLancamento = parseInt(parts[0], 10);
+            const mesLancamento = parseInt(parts[1], 10) - 1; // Meses em JS são de 0 (Jan) a 11 (Dez)
+
+            const matchPeriodo = mesLancamento === currentFilter.mes && anoLancamento === currentFilter.ano;
             const matchTipo = currentFilter.tipo === 'todos' || l.tipo === currentFilter.tipo;
+            
             return matchPeriodo && matchTipo;
         });
         
+        // Log de Diagnóstico: Mostra quantos lançamentos passaram no filtro
+        console.log(`[DIAGNÓSTICO] ${allLancamentos.length} lançamentos no total. ${filtered.length} passaram no filtro.`);
+
         filtered.sort((a,b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
 
         if (filtered.length === 0) {
