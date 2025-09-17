@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.8
+// Versão: 1.8 (Corrigido)
 // Descrição: Adiciona lógica para renderizar o cabeçalho dinâmico com título da página e saudação.
 
 import { auth, db } from './firebase-init.js';
@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('denied-logout').addEventListener('click', () => auth.signOut());
     }
     
-    // NOVO: Função para obter a saudação correta
     function getGreeting() {
         const hour = new Date().getHours();
         if (hour >= 5 && hour < 12) return 'Bom dia';
@@ -84,10 +83,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // --- 1. RENDERIZAÇÃO GLOBAL ---
         const userPhoto = document.getElementById('user-photo-header');
-        const userGreeting = document.getElementById('user-greeting'); // Alterado de userEmail para userGreeting
+        const userGreeting = document.getElementById('user-greeting');
         const logoutButton = document.getElementById('logout-button-dashboard');
         
-        // ALTERAÇÃO: Lógica de saudação dinâmica
         if (userGreeting) { 
             const firstName = userData.nome ? userData.nome.split(' ')[0] : '';
             userGreeting.textContent = `${getGreeting()}, ${firstName}!`;
@@ -98,12 +96,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const modules = getVisibleModules(userData);
         setupSidebarToggle();
 
-        // --- 2. RENDERIZAÇÃO ESPEĆIFICA ---
+        // --- 2. RENDERIZAÇÃO ESPECÍFICA ---
         if (window.location.pathname.includes('painel-financeiro.html')) {
             // Se estamos na página do Financeiro:
             renderSidebarMenu(modules);
             
-            // ALTERAÇÃO: Preenche o título da página no header
             const pageTitleContainer = document.getElementById('page-title-container');
             if (pageTitleContainer) {
                 pageTitleContainer.innerHTML = `
@@ -119,7 +116,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error("Erro ao carregar o módulo financeiro:", error);
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel financeiro.</h2>";
             }
-        } else {
+        } 
+        // ***** INÍCIO DA ALTERAÇÃO *****
+        else if (window.location.pathname.includes('administrativo-painel.html')) {
+            // Se estamos na página do Administrativo:
+            // O menu da sidebar é controlado pelo próprio script do módulo, então não chamamos renderSidebarMenu aqui.
+            
+            // Tentamos carregar e inicializar o módulo do painel administrativo
+            try {
+                const adminModule = await import('../../modulos/administrativo/js/administrativo-painel.js');
+                adminModule.init(user, db, userData);
+            } catch (error) {
+                console.error("Erro ao carregar o módulo administrativo:", error);
+                document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel administrativo.</h2>";
+            }
+        }
+        // ***** FIM DA ALTERAÇÃO *****
+        else {
             // Se estamos na página principal (index.html):
             const pageTitleContainer = document.getElementById('page-title-container');
             if(pageTitleContainer) {
@@ -132,7 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function setupSidebarToggle() {
-        // ... (código da função sem alterações)
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
@@ -159,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderSidebarMenu(modules) {
-        // ... (código da função sem alterações)
         const menu = document.getElementById('sidebar-menu');
         if (!menu) return;
         menu.innerHTML = '';
@@ -174,7 +185,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderModuleCards(modules) {
-        // ... (código da função sem alterações)
         const navLinks = document.getElementById('nav-links');
         if (!navLinks) return;
         navLinks.innerHTML = '';
@@ -188,10 +198,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getVisibleModules(userData) {
-        // ... (código da função sem alterações)
         const icons = {
             intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
-             administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
+            administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
             captacao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
             financeiro: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
             grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
