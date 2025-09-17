@@ -1,12 +1,13 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 1.0
-// Descrição: Controlador principal do Painel Administrativo.
+// Versão: 1.1 (DEBUG)
+// Descrição: Adiciona logs de diagnóstico para rastrear o fluxo de execução.
 
 export function init(user, db, userData) {
+    console.log('[DEBUG] 1. Função init() do administrativo-painel.js foi chamada.');
+
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
     
-    // Definição das views (páginas) disponíveis no painel
     const views = [
         {
             id: 'dashboard',
@@ -23,10 +24,13 @@ export function init(user, db, userData) {
     ];
 
     function buildSidebarMenu(userRoles = []) {
-        if (!sidebarMenu) return;
+        console.log('[DEBUG] 3. buildSidebarMenu() chamada.');
+        if (!sidebarMenu) {
+            console.error('[DEBUG] ERRO: Elemento #sidebar-menu não encontrado.');
+            return;
+        }
         sidebarMenu.innerHTML = ''; 
 
-        // Link para voltar à intranet principal
         sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
@@ -52,32 +56,46 @@ export function init(user, db, userData) {
     }
 
     async function loadView(viewId) {
+        console.log(`[DEBUG] 5. loadView() foi chamada com viewId: '${viewId}'`);
+        if (!viewId) {
+            console.error('[DEBUG] ERRO: loadView foi chamada com um viewId nulo ou indefinido. Abortando.');
+            contentArea.innerHTML = '<h2>Erro: Nenhuma view válida para carregar. Verifique as permissões.</h2>';
+            return;
+        }
+
         sidebarMenu.querySelectorAll('a[data-view]').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
         
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
+            console.log(`[DEBUG] 6. Tentando fazer fetch de ./${viewId}.html`);
             const response = await fetch(`./${viewId}.html`);
-            if (!response.ok) throw new Error(`Arquivo da view não encontrado: ${viewId}.html`);
+            if (!response.ok) throw new Error(`Arquivo da view não encontrado: ${viewId}.html (Status: ${response.status})`);
+            
+            console.log(`[DEBUG] 7. Fetch de ./${viewId}.html bem-sucedido. Inserindo HTML.`);
             contentArea.innerHTML = await response.text();
 
-            // Tenta carregar o módulo JS da view
             try {
+                console.log(`[DEBUG] 8. Tentando importar o módulo ../js/${viewId}.js`);
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
+                    console.log(`[DEBUG] 9. Módulo importado com sucesso. Chamando init() de ${viewId}.js.`);
                     viewModule.init(db, user, userData);
+                } else {
+                     console.log(`[DEBUG] Módulo ${viewId}.js importado, mas não possui uma função init().`);
                 }
             } catch (jsError) {
-                console.log(`Nenhum módulo JS para a view '${viewId}'. Carregando como página estática.`);
+                console.log(`[DEBUG] Nenhum módulo JS para a view '${viewId}'. Carregando como página estática.`);
             }
         } catch (error) {
-            console.error(`Erro ao carregar a view ${viewId}:`, error);
-            contentArea.innerHTML = `<h2>Erro ao carregar o módulo.</h2>`;
+            console.error(`[DEBUG] ERRO FATAL ao carregar a view ${viewId}:`, error);
+            contentArea.innerHTML = `<h2>Erro ao carregar o módulo. Verifique o console para mais detalhes.</h2>`;
         }
     }
 
     function setupPageHeader() {
+        // Esta função não precisa de log, é apenas visual.
         const pageTitleContainer = document.getElementById('page-title-container');
         if (pageTitleContainer) {
             pageTitleContainer.innerHTML = `
@@ -88,21 +106,23 @@ export function init(user, db, userData) {
     }
 
     function start() {
+        console.log('[DEBUG] 2. Função start() chamada.');
         const userRoles = userData.funcoes || [];
+        console.log('[DEBUG] Funções do usuário encontradas:', userRoles);
         setupPageHeader();
         buildSidebarMenu(userRoles);
 
-        // Lógica de Roteamento
         const handleHashChange = () => {
             const viewId = window.location.hash.substring(1);
             const firstValidView = views.find(v => v.roles.some(role => userRoles.includes(role)));
             const defaultViewId = firstValidView ? firstValidView.id : null;
             
+            console.log(`[DEBUG] 4. handleHashChange disparado. View Padrão: '${defaultViewId}'. View na URL: '${viewId}'`);
             loadView(viewId || defaultViewId);
         };
 
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Carrega a view inicial
+        handleHashChange();
     }
 
     start();
