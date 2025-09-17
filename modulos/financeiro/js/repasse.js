@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/repasse.js
-// Versão: 2.1
-// Descrição: Refatora layout, corrige busca de dados por UID e o comportamento do modal.
+// Versão: 2.2
+// Descrição: Adiciona funcionalidade de editar profissional e padroniza botões da tabela.
 
 export function init(db, user, userData) {
     if (!db) { return; }
@@ -53,7 +53,7 @@ export function init(db, user, userData) {
                 db.collection('comprovantes').get()
             ]);
 
-            DB.profissionais = usuariosSnap.docs.map(doc => doc.data());
+            DB.profissionais = usuariosSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
             DB.comprovantes = comprovantesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const configData = configSnap.exists ? configSnap.data() : {};
             DB.cobranca = configData.cobranca || {};
@@ -123,13 +123,8 @@ export function init(db, user, userData) {
         document.getElementById('export-pdf-btn').addEventListener('click', () => generateReport('pdf'));
         document.getElementById('export-csv-btn').addEventListener('click', () => generateReport('csv'));
         
-        // Listener de clique na tabela para o botão de excluir
-        document.getElementById('comprovantes-table').addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('btn-delete')) {
-                const comprovanteId = e.target.dataset.id;
-                deleteComprovante(comprovanteId);
-            }
-        });
+        // ALTERAÇÃO: Listener de clique centralizado para todas as ações da tabela
+        document.getElementById('comprovantes-table').addEventListener('click', handleTableClick);
     }
 
     function updateView() {
@@ -143,6 +138,7 @@ export function init(db, user, userData) {
         if (selectedProfId !== 'todos') {
             const prof = DB.profissionais.find(p => p.uid === selectedProfId);
             if (prof) {
+                // Filtra pelo nome do profissional, já que é assim que está salvo no comprovante
                 filteredData = filteredData.filter(c => c.profissional === prof.nome);
             }
         }
@@ -208,15 +204,79 @@ export function init(db, user, userData) {
             comprovantesTableBody.innerHTML = '<tr><td colspan="6">Nenhum comprovante para os filtros selecionados.</td></tr>';
         } else {
             comprovantesTableBody.innerHTML = comprovantes.map(c => `
-                <tr>
+                <tr data-comprovante-id="${c.id}">
                     <td>${c.profissional || 'N/A'}</td>
                     <td>${formatDate(c.dataPagamento)}</td>
                     <td>${(c.mesReferencia ? c.mesReferencia.charAt(0).toUpperCase() + c.mesReferencia.slice(1) : 'N/A')}/${c.anoReferencia || ''}</td>
                     <td>${formatCurrency(c.valor || 0)}</td>
                     <td><a href="${c.comprovanteUrl}" target="_blank" rel="noopener noreferrer" class="action-button">Ver</a></td>
-                    <td><button class="btn-delete" data-id="${c.id}">Excluir</button></td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="action-button btn-edit">Editar</button>
+                            <button class="action-button btn-delete">Excluir</button>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
+        }
+    }
+
+    // ALTERAÇÃO: Nova função para lidar com todos os cliques na tabela
+    async function handleTableClick(e) {
+        const target = e.target;
+        const row = target.closest('tr');
+        if (!row) return;
+
+        const comprovanteId = row.dataset.comprovanteId;
+
+        // Ação de Excluir
+        if (target.classList.contains('btn-delete')) {
+            deleteComprovante(comprovanteId);
+        }
+
+        // Ação de Editar
+        if (target.classList.contains('btn-edit')) {
+            const profissionalCell = row.cells[0];
+            const originalName = profissionalCell.textContent;
+            
+            const ativos = DB.profissionais.filter(p => p.nome && !p.inativo).sort((a, b) => a.nome.localeCompare(b.nome));
+            const selectOptions = ativos.map(p => `<option value="${p.uid}" ${p.nome === originalName ? 'selected' : ''}>${p.nome}</option>`).join('');
+
+            profissionalCell.innerHTML = `<select class="edit-prof-selector">${selectOptions}</select>`;
+            row.cells[5].innerHTML = `
+                <div class="table-actions">
+                    <button class="action-button btn-save-edit">Salvar</button>
+                    <button class="action-button btn-cancel-edit">Cancelar</button>
+                </div>
+            `;
+        }
+
+        // Ação de Cancelar Edição
+        if (target.classList.contains('btn-cancel-edit')) {
+            updateView(); // Simplesmente re-renderiza a tabela
+        }
+
+        // Ação de Salvar Edição
+        if (target.classList.contains('btn-save-edit')) {
+            const select = row.querySelector('.edit-prof-selector');
+            const newProfId = select.value;
+            const newProfName = select.options[select.selectedIndex].text;
+
+            target.disabled = true;
+            target.textContent = 'Salvando...';
+
+            try {
+                await db.collection('comprovantes').doc(comprovanteId).update({
+                    profissional: newProfName,
+                    profissionalId: newProfId // Adiciona/atualiza o UID para consistência futura
+                });
+                window.showToast("Profissional atualizado com sucesso!", "success");
+                fetchData(); // Recarrega todos os dados para garantir consistência
+            } catch (error) {
+                window.showToast("Erro ao atualizar o profissional.", "error");
+                console.error("Erro ao atualizar comprovante:", error);
+                updateView(); // Re-renderiza para o estado anterior em caso de erro
+            }
         }
     }
 

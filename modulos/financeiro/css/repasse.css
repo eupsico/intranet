@@ -1,6 +1,6 @@
 /* Arquivo: /modulos/financeiro/css/repasse.css
-   Versão: 2.0
-   Descrição: Refatora o layout para usar o design system e organiza os filtros.
+   Versão: 2.1
+   Descrição: Adiciona estilos para o botão de edição e padroniza o botão de exclusão.
 */
 
 /* Container principal para todos os filtros */
@@ -17,7 +17,7 @@
     padding: 20px;
     border-radius: var(--borda-radius);
     border: 1px solid var(--cor-borda);
-    flex-grow: 1; /* Permite que as caixas cresçam */
+    flex-grow: 1; 
 }
 
 .filter-box label {
@@ -32,7 +32,7 @@
 .export-buttons {
     display: flex;
     gap: 10px;
-    align-items: center; /* Alinha os botões verticalmente */
+    align-items: center; 
 }
 
 /* Padroniza os cards de resumo com o restante do módulo */
@@ -40,32 +40,30 @@
 .summary-cards .card.devido { border-left-color: var(--cor-erro); }
 .summary-cards .card.saldo { border-left-color: var(--cor-primaria); }
 
-/* Estiliza o botão de exclusão na tabela */
-.btn-delete {
+/* --- ALTERAÇÕES NOS BOTÕES DA TABELA --- */
+
+/* Container para alinhar os botões de ação na célula da tabela */
+.table-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Padroniza o botão de exclusão para seguir o design system */
+.action-button.btn-delete {
     background-color: var(--cor-erro);
-    color: var(--cor-texto-inverso);
-    border: none;
-    padding: 6px 12px;
+}
+
+/* Estilo para o novo botão de editar */
+.action-button.btn-edit {
+    background-color: var(--cor-alerta);
+}
+
+/* Estilo para o seletor de profissional no modo de edição */
+.edit-prof-selector {
+    padding: 8px;
+    border: 1px solid var(--cor-primaria);
     border-radius: var(--borda-radius);
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.2s;
+    width: 100%;
+    min-width: 200px;
 }
-
-.btn-delete:hover {
-    filter: brightness(1.1);
-}
-
-/* Mensagem de status (toast) */
-#status-message {
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 5px;
-    color: white;
-    display: none;
-    text-align: center;
-    font-weight: bold;
-}
-#status-message.success { background-color: var(--cor-sucesso); }
-#status-message.error { background-color: var(--cor-erro); }
-#status-message.info { background-color: var(--cor-secundaria); }
