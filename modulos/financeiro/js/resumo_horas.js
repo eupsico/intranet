@@ -1,3 +1,5 @@
+console.log("✔️ [DEBUG] Carregando resumo_horas.js");
+
 // Arquivo: /modulos/financeiro/js/resumo_horas.js
 // Versão: 2.2
 // Descrição: Adiciona a funcionalidade de filtro por profissional.
@@ -8,11 +10,18 @@ export function init(db) {
         return;
     }
 
-    const viewContent = document.querySelector('[data-view-id="resumo_horas"]');
-    if (!viewContent) return;
+    // ATENÇÃO: A busca pelo 'viewContent' pode falhar se o HTML não estiver pronto.
+    // O seletor correto deve ser feito a partir do 'contentArea' global.
+    const contentArea = document.getElementById('content-area');
+    if (!contentArea) return;
 
-    const appContent = viewContent.querySelector('#resumo-horas-content');
-    const professionalSelector = viewContent.querySelector('#resumo-horas-profissional-selector');
+    const appContent = contentArea.querySelector('#resumo-horas-content');
+    const professionalSelector = contentArea.querySelector('#resumo-horas-profissional-selector');
+
+    if (!appContent || !professionalSelector) {
+        console.warn("Elementos para 'resumo_horas' não encontrados no DOM após carregamento.");
+        return;
+    }
 
     let allProfessionals = [];
     let allGrades = {};
@@ -114,7 +123,6 @@ export function init(db) {
             const configData = configSnapshot.exists ? configSnapshot.data() : {};
             allValues = configData.valores || { online: 0, presencial: 0 };
             
-            // Popula o seletor de profissionais
             professionalSelector.innerHTML = '<option value="todos">Todos os Profissionais</option>';
             allProfessionals.forEach(prof => {
                 if (prof.nome && !prof.inativo) {
@@ -125,12 +133,10 @@ export function init(db) {
                 }
             });
 
-            // Adiciona o event listener para o filtro
             professionalSelector.addEventListener('change', (e) => {
                 renderTable(e.target.value);
             });
 
-            // Renderiza a tabela inicial
             renderTable();
 
         } catch (error) {

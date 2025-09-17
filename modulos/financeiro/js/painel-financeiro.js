@@ -1,3 +1,5 @@
+console.log("✔️ [DEBUG] Carregando painel-financeiro.js (v2.8)");
+
 // Arquivo: assets/js/painel-financeiro.js
 // Versão: 2.8
 // Descrição: Remove importação desnecessária de 'firebase-init.js' para corrigir erro 404.
@@ -85,6 +87,7 @@ export function initFinancePanel(user, db, userData) {
     }
 
     async function loadView(viewName) {
+        console.log(`[DEBUG] Tentando carregar a view: ${viewName}`);
         const menuLinks = sidebarMenu.querySelectorAll('a[data-view]');
         menuLinks.forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewName);
@@ -109,7 +112,7 @@ export function initFinancePanel(user, db, userData) {
                     viewModule.init(db, user, userData);
                 }
             } catch (e) {
-                console.log(`Nenhum script de inicialização para a view '${viewName}'.`);
+                console.log(`Nenhum script de inicialização para a view '${viewName}'.`, e);
             }
         } catch (error) {
             console.error(`Erro ao carregar a view ${viewName}:`, error);
