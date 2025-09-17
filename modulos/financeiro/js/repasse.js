@@ -1,31 +1,27 @@
-// Arquivo: /modulos/financeiro/js/views/repasse.js
-// Versão: 2.0
-// Descrição: Refatorado para ser um módulo com uma função de inicialização explícita.
+// Arquivo: /modulos/financeiro/js/repasse.js
+// Versão: 2.1
+// Descrição: Refatora layout, corrige busca de dados por UID e o comportamento do modal.
 
 export function init(db, user, userData) {
     if (!db) { return; }
 
-    const loadingDiv = document.getElementById('repasse-loading');
     const mainContentDiv = document.getElementById('repasse-main-content');
-    const comprovantesTableBody = document.getElementById('comprovantes-table').querySelector('tbody');
     
     let DB = { profissionais: [], comprovantes: [], cobranca: {} };
     let currentlyDisplayedData = [];
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-    function formatCurrency(value) { return (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-    function formatDate(dateStr) { return dateStr ? dateStr.split('-').reverse().join('/') : '---'; }
-    function sanitizeKey(key) { if (!key) return ''; return key.replace(/\.|\$|\[|\]|#|\//g, '_'); }
+    const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const formatDate = (dateStr) => dateStr ? dateStr.split('-').reverse().join('/') : '---';
+    const sanitizeKey = (key) => !key ? '' : key.replace(/\.|\$|\[|\]|#|\//g, '_');
     
     function showMessage(message, type = 'info') {
         const messageEl = document.getElementById('status-message');
         if (!messageEl) return;
         messageEl.textContent = message;
-        messageEl.className = type;
+        messageEl.className = `status-${type}`;
         messageEl.style.display = 'block';
-        setTimeout(() => {
-            messageEl.style.display = 'none';
-        }, 5000);
+        setTimeout(() => { messageEl.style.display = 'none'; }, 4000);
     }
 
     function showConfirmation(message, onConfirm) {
@@ -37,18 +33,19 @@ export function init(db, user, userData) {
         if (!modal || !messageEl || !btnYes || !btnNo) return;
         
         messageEl.textContent = message;
-        modal.style.display = 'flex';
+        modal.classList.add('is-visible');
 
         btnYes.onclick = () => {
-            modal.style.display = 'none';
+            modal.classList.remove('is-visible');
             onConfirm();
         };
         btnNo.onclick = () => {
-            modal.style.display = 'none';
+            modal.classList.remove('is-visible');
         };
     }
     
     async function fetchData() {
+        mainContentDiv.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const [usuariosSnap, configSnap, comprovantesSnap] = await Promise.all([
                 db.collection('usuarios').get(),
@@ -61,48 +58,93 @@ export function init(db, user, userData) {
             const configData = configSnap.exists ? configSnap.data() : {};
             DB.cobranca = configData.cobranca || {};
 
-            loadingDiv.style.display = 'none';
-            mainContentDiv.style.display = 'block';
-            
-            setupFilters();
+            renderInitialLayout();
             updateView();
         } catch (error) {
-            loadingDiv.innerHTML = '<p style="color:red;">Erro ao carregar dados.</p>';
+            mainContentDiv.innerHTML = '<p style="color:red;">Erro ao carregar dados.</p>';
             console.error(error);
         }
     }
 
-    function setupFilters() {
-        const profSelector = document.getElementById('filtro-profissional');
-        const mesSelector = document.getElementById('filtro-mes');
-        const anoSelector = document.getElementById('filtro-ano');
-        
-        const ativos = DB.profissionais.filter(p => p.nome && !p.primeiraFase && !p.inativo && p.recebeDireto === true).sort((a, b) => a.nome.localeCompare(b.nome));
-        
-        profSelector.innerHTML = ['<option value="todos">Todos os Profissionais</option>', ...ativos.map(p => `<option value="${p.nome}">${p.nome}</option>`)].join('');
-        mesSelector.innerHTML = ['<option value="todos">Todos os Meses</option>', ...meses.map((m, i) => `<option value="${m.toLowerCase()}">${m}</option>`)].join('');
-        
+    function renderInitialLayout() {
         const currentYear = new Date().getFullYear();
         let yearsHtml = '';
         for (let y = currentYear - 3; y <= currentYear + 1; y++) { yearsHtml += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`; }
-        anoSelector.innerHTML = yearsHtml;
+        
+        const ativos = DB.profissionais.filter(p => p.nome && !p.primeiraFase && !p.inativo && p.recebeDireto === true).sort((a, b) => a.nome.localeCompare(b.nome));
 
-        profSelector.addEventListener('change', updateView);
-        mesSelector.addEventListener('change', updateView);
-        anoSelector.addEventListener('change', updateView);
+        mainContentDiv.innerHTML = `
+            <div class="repasse-filters-container">
+                <div class="filter-box">
+                    <label for="filtro-profissional">Filtrar por Profissional</label>
+                    <select id="filtro-profissional">
+                        <option value="todos">Todos os Profissionais</option>
+                        ${ativos.map(p => `<option value="${p.uid}">${p.nome}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-box">
+                    <label for="filtro-mes">Filtrar por Mês de Referência</label>
+                    <select id="filtro-mes">
+                        <option value="todos">Todos os Meses</option>
+                        ${meses.map((m, i) => `<option value="${m.toLowerCase()}">${m}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-box">
+                    <label for="filtro-ano">Filtrar por Ano</label>
+                    <select id="filtro-ano">${yearsHtml}</select>
+                </div>
+                <div class="filter-box export-buttons">
+                    <button id="export-pdf-btn" class="action-button btn-pdf">Exportar PDF</button>
+                    <button id="export-csv-btn" class="action-button btn-excel">Exportar CSV</button>
+                </div>
+            </div>
+            <div id="summary-container" style="display: none;">
+                <div class="summary-cards">
+                    <div class="card recebido"><h3>Total Recebido (Comprovantes)</h3><p id="total-recebido">R$ 0,00</p></div>
+                    <div class="card devido"><h3 id="titulo-devido">Total Devido</h3><p id="total-devido">R$ 0,00</p></div>
+                    <div class="card saldo"><h3 id="titulo-saldo">Saldo (Repasse)</h3><p id="saldo-profissional">R$ 0,00</p></div>
+                </div>
+            </div>
+            <div class="table-section">
+                <h3>Comprovantes Enviados no Período</h3>
+                <table id="comprovantes-table">
+                    <thead><tr><th>Profissional</th><th>Data Pag.</th><th>Mês Ref.</th><th>Valor Pago</th><th>Link</th><th>Ações</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        `;
+        attachEventListeners();
+    }
+
+    function attachEventListeners() {
+        document.getElementById('filtro-profissional').addEventListener('change', updateView);
+        document.getElementById('filtro-mes').addEventListener('change', updateView);
+        document.getElementById('filtro-ano').addEventListener('change', updateView);
         document.getElementById('export-pdf-btn').addEventListener('click', () => generateReport('pdf'));
         document.getElementById('export-csv-btn').addEventListener('click', () => generateReport('csv'));
+        
+        // Listener de clique na tabela para o botão de excluir
+        document.getElementById('comprovantes-table').addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('btn-delete')) {
+                const comprovanteId = e.target.dataset.id;
+                deleteComprovante(comprovanteId);
+            }
+        });
     }
 
     function updateView() {
-        const selectedProf = document.getElementById('filtro-profissional').value;
+        const selectedProfId = document.getElementById('filtro-profissional').value;
         const selectedMes = document.getElementById('filtro-mes').value;
         const selectedAno = document.getElementById('filtro-ano').value;
         const summaryContainer = document.getElementById('summary-container');
         
         let filteredData = DB.comprovantes;
-        if (selectedProf !== 'todos') {
-            filteredData = filteredData.filter(c => c.profissional === selectedProf);
+        
+        if (selectedProfId !== 'todos') {
+            const prof = DB.profissionais.find(p => p.uid === selectedProfId);
+            if (prof) {
+                filteredData = filteredData.filter(c => c.profissional === prof.nome);
+            }
         }
         if (selectedMes !== 'todos') {
             filteredData = filteredData.filter(c => c.mesReferencia && c.mesReferencia.toLowerCase() === selectedMes);
@@ -114,27 +156,33 @@ export function init(db, user, userData) {
         currentlyDisplayedData = filteredData;
         renderTable(filteredData);
 
-        if (selectedProf !== 'todos') {
+        if (selectedProfId !== 'todos') {
             summaryContainer.style.display = 'block';
-            calculateSummary(selectedProf, filteredData);
+            calculateSummary(selectedProfId, filteredData);
         } else {
             summaryContainer.style.display = 'none';
         }
     }
     
-    function calculateSummary(professionalName, comprovantesFiltrados) {
+    function calculateSummary(professionalId, comprovantesFiltrados) {
+        const professional = DB.profissionais.find(p => p.uid === professionalId);
+        if (!professional) return;
+
         const selectedMes = document.getElementById('filtro-mes').value;
         const selectedAno = document.getElementById('filtro-ano').value;
         const totalRecebido = comprovantesFiltrados.reduce((sum, c) => sum + (c.valor || 0), 0);
-        const profKey = sanitizeKey(professionalName);
+        
+        const profId = professional.uid;
+        const profKey_antigo = sanitizeKey(professional.nome);
         let totalDevido = 0;
 
         if (selectedMes !== 'todos') {
-            totalDevido = (DB.cobranca[selectedAno]?.[profKey]?.[selectedMes]) || 0;
+            totalDevido = (DB.cobranca[selectedAno]?.[profId]?.[selectedMes]) || (DB.cobranca[selectedAno]?.[profKey_antigo]?.[selectedMes]) || 0;
         } else {
-            if (DB.cobranca[selectedAno] && DB.cobranca[selectedAno][profKey]) {
-                for (const mes in DB.cobranca[selectedAno][profKey]) {
-                    totalDevido += DB.cobranca[selectedAno][profKey][mes] || 0;
+            const cobrancasDoAno = DB.cobranca[selectedAno]?.[profId] || DB.cobranca[selectedAno]?.[profKey_antigo];
+            if (cobrancasDoAno) {
+                for (const mes in cobrancasDoAno) {
+                    totalDevido += cobrancasDoAno[mes] || 0;
                 }
             }
         }
@@ -149,6 +197,7 @@ export function init(db, user, userData) {
     }
 
     function renderTable(comprovantes) {
+        const comprovantesTableBody = document.getElementById('comprovantes-table').querySelector('tbody');
         comprovantes.sort((a,b) => {
             const dateA = a.dataPagamento ? new Date(a.dataPagamento) : new Date(a.timestamp?.toDate());
             const dateB = b.dataPagamento ? new Date(b.dataPagamento) : new Date(b.timestamp?.toDate());
@@ -164,7 +213,7 @@ export function init(db, user, userData) {
                     <td>${formatDate(c.dataPagamento)}</td>
                     <td>${(c.mesReferencia ? c.mesReferencia.charAt(0).toUpperCase() + c.mesReferencia.slice(1) : 'N/A')}/${c.anoReferencia || ''}</td>
                     <td>${formatCurrency(c.valor || 0)}</td>
-                    <td><a href="${c.comprovanteUrl}" target="_blank" rel="noopener noreferrer">Ver Link</a></td>
+                    <td><a href="${c.comprovanteUrl}" target="_blank" rel="noopener noreferrer" class="action-button">Ver</a></td>
                     <td><button class="btn-delete" data-id="${c.id}">Excluir</button></td>
                 </tr>
             `).join('');
@@ -192,20 +241,21 @@ export function init(db, user, userData) {
             showMessage('Não há dados para exportar.', 'info'); 
             return; 
         }
-        const prof = document.getElementById('filtro-profissional').value;
+        const profId = document.getElementById('filtro-profissional').value;
+        const profNome = profId !== 'todos' ? DB.profissionais.find(p => p.uid === profId).nome : 'Geral';
         const mes = document.getElementById('filtro-mes').value;
         const ano = document.getElementById('filtro-ano').value;
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        if (prof !== 'todos') {
+        if (profId !== 'todos') {
             const totalRecebido = parseFloat(document.getElementById('total-recebido').textContent.replace(/[^\d,-]/g, '').replace(',', '.'));
             const totalDevido = parseFloat(document.getElementById('total-devido').textContent.replace(/[^\d,-]/g, '').replace(',', '.'));
             const saldo = parseFloat(document.getElementById('saldo-profissional').textContent.replace(/[^\d,-]/g, '').replace(',', '.'));
 
             if (format === 'pdf') {
-                doc.setFontSize(18); doc.text(`Resumo Financeiro - ${prof}`, 14, 22);
+                doc.setFontSize(18); doc.text(`Resumo Financeiro - ${profNome}`, 14, 22);
                 doc.setFontSize(11); doc.text(`Período: ${mes}/${ano}`, 14, 28);
                 doc.autoTable({
                     head: [['Item', 'Valor']],
@@ -216,13 +266,13 @@ export function init(db, user, userData) {
                     ],
                     startY: 35
                 });
-                doc.save(`resumo_${prof}_${mes}.pdf`);
+                doc.save(`resumo_${profNome}_${mes}.pdf`);
             } else if (format === 'csv') {
                 let csvContent = "Item;Valor\n";
                 csvContent += `"Total Recebido (Comprovantes)";"${totalRecebido.toFixed(2).replace('.',',')}"\n`;
                 csvContent += `"Total Devido (Mês/Histórico)";"${totalDevido.toFixed(2).replace('.',',')}"\n`;
                 csvContent += `"Saldo (Crédito/Débito)";"${saldo.toFixed(2).replace('.',',')}"\n`;
-                downloadFile(csvContent, `resumo_${prof}_${mes}.csv`, 'text/csv;charset=utf-8;');
+                downloadFile(csvContent, `resumo_${profNome}_${mes}.csv`, 'text/csv;charset=utf-8;');
             }
         } else {
             if (format === 'pdf') {
@@ -241,13 +291,15 @@ export function init(db, user, userData) {
             }
         }
     }
-    
-    comprovantesTableBody.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('btn-delete')) {
-            const comprovanteId = e.target.dataset.id;
-            deleteComprovante(comprovanteId);
-        }
-    });
 
+    function downloadFile(content, fileName, mimeType) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([content], {type: mimeType}));
+        a.setAttribute('download', fileName);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    
     fetchData();
 }
