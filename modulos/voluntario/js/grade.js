@@ -1,6 +1,6 @@
 // Arquivo: /modulos/voluntario/js/grade.js
-// Versão: 3.2 (Diagnóstico)
-// Descrição: Adiciona logs no console para depurar o problema de dados vazios.
+// Versão: 3.3 (Final)
+// Descrição: Resolve o problema de dados vazios com uma comparação de nomes mais robusta.
 
 const generateColorFromString = (str) => {
     let hash = 0;
@@ -23,7 +23,6 @@ const isColorDark = (hexColor) => {
 };
 
 export async function init(db, user, userData) {
-    console.log('[GRADE] Módulo iniciado.'); // Log 1: Confirma que o script começou
     const mainContainer = document.querySelector('#grade');
     if (!mainContainer) return;
 
@@ -37,12 +36,21 @@ export async function init(db, user, userData) {
     const diasDaSemana = {segunda: 'Segunda-feira', terca: 'Terça-feira', quarta: 'Quarta-feira', quinta: 'Quinta-feira', sexta: 'Sexta-feira', sabado: 'Sábado'};
     const colunasPresencial = ['Leila Tardivo', 'Leonardo Abrahão', 'Karina Okajima Fukumitsu', 'Maria Júlia Kovacs', 'Christian Dunker', 'Maria Célia Malaquias (Grupo)'];
 
+    /**
+     * Normaliza uma string: remove espaços extras e converte para minúsculas.
+     * @param {string} str O nome a ser normalizado.
+     * @returns {string} O nome normalizado.
+     */
+    const normalizeName = (str) => (str || '').trim().toLowerCase();
+
     function calculateAndShowSummary() {
         if (!userData || !userData.username) {
             summaryDetails.innerHTML = '<p>Não foi possível identificar o usuário para exibir o resumo.</p>';
             return;
         }
-        const nomeProfissional = userData.username;
+        
+        // CORREÇÃO: Normaliza o nome do usuário logado para a comparação.
+        const nomeProfissionalNormalizado = normalizeName(userData.username);
         let horasOnline = 0, horasPresencial = 0;
         let agendamentosOnline = [], agendamentosPresencial = [];
         
@@ -51,8 +59,9 @@ export async function init(db, user, userData) {
                 Object.entries(diasDaSemana).forEach(([diaKey, diaNome]) => {
                     if (dadosDasGrades[tipo][diaKey]) {
                         Object.entries(dadosDasGrades[tipo][diaKey]).forEach(([hora, cols]) => {
-                            Object.values(cols).forEach(nome => {
-                                if (nome === nomeProfissional) {
+                            Object.values(cols).forEach(nomeDaGrade => {
+                                // CORREÇÃO: Compara os nomes normalizados.
+                                if (normalizeName(nomeDaGrade) === nomeProfissionalNormalizado) {
                                     const horaFormatada = hora.replace('-', ':');
                                     if (tipo === 'online') {
                                         horasOnline++;
@@ -87,17 +96,23 @@ export async function init(db, user, userData) {
     function createGradeTableHTML(tipo, dia) {
         const headers = ['Horário', ...(tipo === 'online' ? Array(6).fill('Online') : colunasPresencial)];
         const gradeData = dadosDasGrades?.[tipo]?.[dia] || {};
+        const nomeProfissionalNormalizado = normalizeName(userData.username);
+
         const bodyHtml = horarios.map(hora => {
             const horaFormatada = hora.replace(":", "-");
             const celulasProfissionais = headers.slice(1).map((_, colIndex) => {
-                const nomeProfissional = gradeData[horaFormatada]?.[`col${colIndex}`] || '';
-                const cor = coresProfissionais.get(nomeProfissional);
+                const nomeDaGrade = gradeData[horaFormatada]?.[`col${colIndex}`] || '';
+                const cor = coresProfissionais.get(nomeDaGrade); // Pega a cor pelo nome original
                 const estilo = cor ? `style="background-color: ${cor}; color: ${isColorDark(cor) ? 'white' : 'black'};"` : '';
-                const isCurrentUser = nomeProfissional && nomeProfissional === userData.username;
-                return `<td class="${nomeProfissional ? 'filled' : ''} ${isCurrentUser ? 'user-highlight' : ''}" ${estilo}>${nomeProfissional}</td>`;
+                
+                // CORREÇÃO: Compara os nomes normalizados para o destaque.
+                const isCurrentUser = nomeDaGrade && (normalizeName(nomeDaGrade) === nomeProfissionalNormalizado);
+                
+                return `<td class="${nomeDaGrade ? 'filled' : ''} ${isCurrentUser ? 'user-highlight' : ''}" ${estilo}>${nomeDaGrade}</td>`;
             }).join('');
             return `<tr><td class="hour-cell">${hora}</td>${celulasProfissionais}</tr>`;
         }).join('');
+
         return `
             <div class="table-wrapper-voluntario">
                 <table class="grade-table-voluntario">
@@ -157,19 +172,16 @@ export async function init(db, user, userData) {
             gradeContent.innerHTML = '<div class="loading-spinner"></div>';
             summaryDetails.innerHTML = '<div class="loading-spinner-small"></div>';
             
-            console.log('[GRADE] Dados do usuário logado (userData):', userData); // Log 2: Mostra os dados do usuário
-            
             const usuariosSnapshot = await db.collection("usuarios").where("fazAtendimento", "==", true).get();
             usuariosSnapshot.forEach(doc => {
                 const prof = doc.data();
+                // Usa o nome original (com maiúsculas/minúsculas) para o mapa de cores
                 coresProfissionais.set(prof.username, prof.cor || generateColorFromString(prof.username));
             });
             
             const gradesDocRef = db.collection('administrativo').doc('grades');
             gradesDocRef.onSnapshot((doc) => {
                 dadosDasGrades = doc.exists ? doc.data() : {};
-                
-                console.log('[GRADE] Dados recebidos da grade:', dadosDasGrades); // Log 3: Mostra os dados da grade
                 
                 if (!gradeContent.querySelector('.accordion')) {
                     renderFullAccordions();
