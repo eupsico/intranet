@@ -1,6 +1,7 @@
 // Arquivo: /modulos/voluntario/js/grade-view.js
-// Descrição: Módulo reutilizável para renderizar uma visualização
-// de grade (online ou presencial) sem o painel de resumo.
+// Versão: 2.0 (Final)
+// Descrição: Implementa o novo design das abas, formato de horas
+// e atributos data-label para ativar a responsividade mobile.
 
 // --- FUNÇÕES AUXILIARES GLOBAIS ---
 function generateColorFromString(str) {
@@ -40,24 +41,27 @@ export async function init(db, user, userData, tipoGrade) {
     const colunasPresencial = ['Leila Tardivo', 'Leonardo Abrahão', 'Karina Okajima Fukumitsu', 'Maria Júlia Kovacs', 'Christian Dunker', 'Maria Célia Malaquias (Grupo)'];
 
     function renderGrade(dia) {
-        let headers = ['Período', 'Horário'];
+        // ATUALIZAÇÃO: Muda o cabeçalho de 'Horário' para 'HORAS'
+        let headers = ['Período', 'HORAS'];
         headers = headers.concat(tipoGrade === 'online' ? Array(6).fill('Online') : colunasPresencial);
 
         const tableBodyHtml = horarios.map((hora, index) => {
             const horaFormatada = hora.replace(":", "-");
             let periodoCell = '';
-            if (index === 0) periodoCell = `<td class="period-cell" rowspan="5">Manhã</td>`;
-            if (index === 5) periodoCell = `<td class="period-cell" rowspan="6">Tarde</td>`;
-            if (index === 11) periodoCell = `<td class="period-cell" rowspan="5">Noite</td>`;
+            if (index === 0) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Manhã</td>`;
+            if (index === 5) periodoCell = `<td data-label="Período" class="period-cell" rowspan="6">Tarde</td>`;
+            if (index === 11) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Noite</td>`;
 
-            const celulasProfissionais = headers.slice(2).map((_, colIndex) => {
+            const celulasProfissionais = headers.slice(2).map((headerLabel, colIndex) => {
                 const path = `${tipoGrade}.${dia}.${horaFormatada}.col${colIndex}`;
                 const nomeDaGrade = dadosDasGrades[path] || '';
                 const cor = coresProfissionais.get(nomeDaGrade) || generateColorFromString(nomeDaGrade);
                 const textColor = isColorDark(cor) ? 'var(--cor-texto-inverso)' : 'var(--cor-texto-principal)';
                 const estilo = nomeDaGrade ? `background-color: ${cor}; color: ${textColor};` : '';
                 const isCurrentUser = nomeDaGrade && (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
-                return `<td><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
+                
+                // ATUALIZAÇÃO: Adiciona o atributo data-label para o CSS responsivo
+                return `<td data-label="${headerLabel}"><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
             }).join('');
             
             let rowClass = '';
@@ -65,11 +69,14 @@ export async function init(db, user, userData, tipoGrade) {
             else if (index < 11) rowClass = 'periodo-tarde';
             else rowClass = 'periodo-noite';
 
-            return `<tr class="${rowClass}">${periodoCell}<td class="hour-cell">${hora}</td>${celulasProfissionais}</tr>`;
+            // ATUALIZAÇÃO: Muda o formato da hora para '07h' e adiciona data-label
+            const horaSimples = hora.replace(':00', 'h');
+            return `<tr class="${rowClass}">${periodoCell}<td class="hour-cell" data-label="HORAS">${horaSimples}</td>${celulasProfissionais}</tr>`;
         }).join('');
 
+        // ATUALIZAÇÃO: Usa o novo wrapper para as abas de dias
         gradeContent.innerHTML = `
-            <div class="grade-day-tabs">
+            <div class="grade-day-tabs-wrapper">
                 ${Object.entries(diasDaSemana).map(([key, nome]) => `<button class="${dia === key ? 'active' : ''}" data-day="${key}">${nome}</button>`).join('')}
             </div>
             <div class="table-wrapper">
@@ -81,8 +88,9 @@ export async function init(db, user, userData, tipoGrade) {
     }
     
     function attachEventListeners() {
+        // ATUALIZAÇÃO: O listener agora procura pelo novo wrapper das abas
         gradeContent.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' && e.target.closest('.grade-day-tabs')) {
+            if (e.target.tagName === 'BUTTON' && e.target.closest('.grade-day-tabs-wrapper')) {
                 renderGrade(e.target.dataset.day);
             }
         });
@@ -103,7 +111,7 @@ export async function init(db, user, userData, tipoGrade) {
             const gradesDocRef = db.collection('administrativo').doc('grades');
             gradesDocRef.onSnapshot((doc) => {
                 dadosDasGrades = doc.exists ? doc.data() : {};
-                const activeDayTabEl = gradeContent.querySelector('.grade-day-tabs button.active');
+                const activeDayTabEl = gradeContent.querySelector('.grade-day-tabs-wrapper button.active');
                 const currentDia = activeDayTabEl ? activeDayTabEl.dataset.day : 'segunda';
                 renderGrade(currentDia);
             }, (error) => {
