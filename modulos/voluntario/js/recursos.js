@@ -1,6 +1,6 @@
 // Arquivo: /modulos/voluntario/js/recursos.js
-// Versão: 4.0
-// Descrição: Atualizado para carregar as novas abas de grade separadamente.
+// Versão: 4.1 (Correção Crítica de Importação de Módulo)
+// Descrição: Garante que o script correto (grade-view.js) seja carregado para as abas da grade.
 
 export function init(db, user, userData) {
     const view = document.querySelector('.view-container');
@@ -9,11 +9,12 @@ export function init(db, user, userData) {
     const tabContainer = view.querySelector('.tabs-container');
     const contentSections = view.querySelectorAll('.tab-content');
     
+    // Mantém um registro das abas que já foram inicializadas para não recarregar
     const loadedTabs = new Set();
 
     const loadTabModule = async (tabId) => {
         if (loadedTabs.has(tabId)) {
-            return;
+            return; // Se a aba já foi carregada, não faz nada
         }
 
         try {
@@ -27,22 +28,26 @@ export function init(db, user, userData) {
                 case 'disponibilidade':
                     module = await import('./disponibilidade.js');
                     break;
-                // NOVAS ABAS DE GRADE
+                
+                // *** INÍCIO DA CORREÇÃO ***
+                // Garante que o script 'grade-view.js' (do voluntário) seja importado
                 case 'grade-online':
-                    module = await import('./grade-view.js');
+                    module = await import('./grade-view.js'); 
                     initParams.push('online'); // Informa ao módulo para carregar a grade online
                     break;
                 case 'grade-presencial':
                     module = await import('./grade-view.js');
                     initParams.push('presencial'); // Informa ao módulo para carregar a grade presencial
                     break;
+                // *** FIM DA CORREÇÃO ***
+                    
                 default:
-                    return; 
+                    return; // Se não for uma aba com módulo, não faz nada
             }
 
             if (module && typeof module.init === 'function') {
                 await module.init(...initParams);
-                loadedTabs.add(tabId);
+                loadedTabs.add(tabId); // Marca a aba como carregada
             }
         } catch (error) {
             console.error(`Erro ao carregar o módulo da aba '${tabId}':`, error);
@@ -70,6 +75,7 @@ export function init(db, user, userData) {
         });
     }
 
+    // Carrega o conteúdo da primeira aba que já vem ativa
     const activeTab = tabContainer.querySelector('.tab-link.active');
     if (activeTab) {
         loadTabModule(activeTab.dataset.tab);
