@@ -1,6 +1,6 @@
 // Arquivo: /modulos/administrativo/js/grade.js
-// Versão: 2.1
-// Descrição: Adiciona atributos data-label para habilitar a responsividade mobile.
+// Versão: 2.2 (Correção de Carregamento Infinito)
+// Descrição: Altera a lógica para usar .get() para o primeiro render, e .onSnapshot para atualizações.
 
 export function init(db, user, userData) {
     if (!db) {
@@ -21,9 +21,7 @@ export function init(db, user, userData) {
     
     function generateColorFromString(str) {
         let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
+        for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
         let color = '#';
         for (let i = 0; i < 3; i++) {
             let value = (hash >> (i * 8)) & 0xFF;
@@ -96,9 +94,7 @@ export function init(db, user, userData) {
             const columns = tipo === 'online' ? Array(6).fill('Online') : colunasPresencial;
             columns.forEach((headerLabel, i) => {
                 const cell = row.insertCell();
-                // *** INÍCIO DA ALTERAÇÃO ***
-                cell.setAttribute('data-label', headerLabel); // Adiciona a "etiqueta" para o CSS responsivo
-                // *** FIM DA ALTERAÇÃO ***
+                cell.setAttribute('data-label', headerLabel);
 
                 const dropdown = document.createElement('select');
                 dropdown.innerHTML = createDropdownOptions();
@@ -121,15 +117,11 @@ export function init(db, user, userData) {
         if (!horaCell) return;
         const hora = horaCell.textContent.replace(":", "-");
         
-        // Ajuste no cálculo do índice da coluna para o modo responsivo
         const allCells = Array.from(row.querySelectorAll('td'));
         const thisCell = selectElement.closest('td');
         let colIndex = allCells.indexOf(thisCell);
-        if(row.querySelector('.period-cell')) {
-            colIndex = colIndex - 2; // Ajusta se a célula de período estiver presente
-        } else {
-            colIndex = colIndex - 1; // Ajusta se não estiver
-        }
+        if(row.querySelector('.period-cell')) { colIndex = colIndex - 2; } 
+        else { colIndex = colIndex - 1; }
 
         const newValue = selectElement.value;
         const mainTabsContainer = document.querySelector('#grade-main-tabs');
@@ -165,7 +157,6 @@ export function init(db, user, userData) {
                 }
             });
         }
-
         gradeContent.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON' && e.target.closest('.grade-day-tabs')) {
                 const activeMainTab = mainTabsContainer.querySelector('button.active').dataset.tab;
@@ -176,14 +167,12 @@ export function init(db, user, userData) {
                 }
             }
         });
-        
         gradeContent.addEventListener('change', (e) => {
             if (e.target.tagName === 'SELECT') {
                 aplicarCor(e.target);
                 autoSaveChange(e.target);
             }
         });
-
         gradeContent.addEventListener('keydown', (e) => {
             if ((e.key === 'Delete' || e.key === 'Backspace') && e.target.tagName === 'SELECT') {
                 e.preventDefault();
@@ -196,35 +185,41 @@ export function init(db, user, userData) {
     }
 
     async function start() {
+        gradeContent.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const q = db.collection("usuarios").where("fazAtendimento", "==", true).orderBy("nome");
             const querySnapshot = await q.get();
             listaProfissionais = querySnapshot.docs.map(doc => doc.data());
-
             listaProfissionais.forEach(prof => {
                 const color = prof.cor || generateColorFromString(prof.username);
                 coresProfissionais.set(prof.username, color);
             });
 
             const gradesDocRef = db.collection('administrativo').doc('grades');
+            
+            // --- INÍCIO DA ALTERAÇÃO ---
+            // 1. Carrega os dados uma vez com .get() para o render inicial
+            const doc = await gradesDocRef.get();
+            dadosDasGrades = doc.exists ? doc.data() : {};
+            
+            // 2. Renderiza a grade pela primeira vez
+            renderGrade('online', 'segunda'); 
+            attachEventListeners();
+            
+            // 3. Anexa o listener .onSnapshot para atualizações futuras
             gradesDocRef.onSnapshot((doc) => {
                 dadosDasGrades = doc.exists ? doc.data() : {};
-                
                 const mainTabsContainer = document.querySelector('#grade-main-tabs');
                 if (!mainTabsContainer) return;
-
                 const activeMainTabEl = mainTabsContainer.querySelector('button.active');
                 const activeDayTabEl = gradeContent.querySelector('.grade-day-tabs button.active');
-
                 if (activeMainTabEl && activeDayTabEl) {
                     const activeMainTab = activeMainTabEl.dataset.tab;
                     const activeDayTab = activeDayTabEl.dataset.day;
                     renderGrade(activeMainTab, activeDayTab);
                 }
             });
-
-            attachEventListeners();
-            renderGrade('online', 'segunda');
+            // --- FIM DA ALTERAÇÃO ---
 
         } catch (error) {
             console.error("Erro ao inicializar a grade:", error);
