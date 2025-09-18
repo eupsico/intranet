@@ -1,46 +1,48 @@
 // Arquivo: /modulos/voluntario/js/grade.js
-// Versão: 4.0 (Final)
-// Descrição: Recria a visualização da grade para espelhar o painel administrativo,
-// com resumo semanal automático e correção na lógica de correspondência de nomes.
-
-const generateColorFromString = (str) => {
-    let hash = 0;
-    if (!str || str.length === 0) return '#ffffff';
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    let color = '#';
-    for (let i = 0; i < 3; i++) {
-        let value = (hash >> (i * 8)) & 0xFF;
-        value = 120 + (value % 136); // Gera cores mais claras
-        color += ('00' + value.toString(16)).substr(-2);
-    }
-    return color;
-};
-
-const isColorDark = (hexColor) => {
-    if (!hexColor) return false;
-    const r = parseInt(hexColor.substr(1, 2), 16);
-    const g = parseInt(hexColor.substr(3, 2), 16);
-    const b = parseInt(hexColor.substr(5, 2), 16);
-    return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.6; // Ajustado para textos escuros em cores pastéis
-};
-
+// Versão: 5.0 (Final)
+// Descrição: Lógica recriada a partir do painel administrativo para garantir
+// consistência visual e funcional, com resumo semanal integrado.
 
 export async function init(db, user, userData) {
+    // --- ELEMENTOS E VARIÁVEIS GLOBAIS ---
     const mainContainer = document.querySelector('#grade');
     if (!mainContainer) return;
 
-    const gradeContent = mainContainer.querySelector('#grade-content-voluntario');
     const summaryDetails = mainContainer.querySelector('#summary-details-voluntario');
+    const gradeContent = mainContainer.querySelector('#grade-content-voluntario');
     
-    let dadosDasGrades = {};
     const coresProfissionais = new Map();
-    
+    let dadosDasGrades = {};
+
     const horarios = ["07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
     const diasDaSemana = {segunda: 'Segunda-feira', terca: 'Terça-feira', quarta: 'Quarta-feira', quinta: 'Quinta-feira', sexta: 'Sexta-feira', sabado: 'Sábado'};
     const colunasPresencial = ['Leila Tardivo', 'Leonardo Abrahão', 'Karina Okajima Fukumitsu', 'Maria Júlia Kovacs', 'Christian Dunker', 'Maria Célia Malaquias (Grupo)'];
 
+    // --- FUNÇÕES AUXILIARES ---
+    function generateColorFromString(str) {
+        if (!str || str.length === 0) return '#ffffff'; // Retorna branco para strings vazias
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            let value = (hash >> (i * 8)) & 0xFF;
+            value = 120 + (value % 136); // Gera cores mais claras e agradáveis
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return color;
+    }
+
+    function isColorDark(hexColor) {
+        if (!hexColor) return false;
+        const r = parseInt(hexColor.substr(1, 2), 16);
+        const g = parseInt(hexColor.substr(3, 2), 16);
+        const b = parseInt(hexColor.substr(5, 2), 16);
+        return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.6; // Limite ajustado para boa legibilidade
+    }
+
+    // --- RENDERIZAÇÃO E CÁLCULOS ---
     function calculateAndShowSummary() {
         if (!userData || !userData.username) {
             summaryDetails.innerHTML = '<p>Não foi possível identificar o usuário para exibir o resumo.</p>';
@@ -48,7 +50,7 @@ export async function init(db, user, userData) {
         }
         
         const userUsername = userData.username;
-        const userFullName = userData.name; // Pega também o nome completo
+        const userFullName = userData.name;
         let horasOnline = 0, horasPresencial = 0;
         let agendamentosOnline = [], agendamentosPresencial = [];
         
@@ -58,7 +60,6 @@ export async function init(db, user, userData) {
                     if (dadosDasGrades[tipo][diaKey]) {
                         Object.entries(dadosDasGrades[tipo][diaKey]).forEach(([hora, cols]) => {
                             Object.values(cols).forEach(nomeDaGrade => {
-                                // CORREÇÃO: Compara com username E com nome completo
                                 if (nomeDaGrade === userUsername || nomeDaGrade === userFullName) {
                                     const horaFormatada = hora.replace('-', ':');
                                     if (tipo === 'online') {
@@ -105,12 +106,10 @@ export async function init(db, user, userData) {
             const celulasProfissionais = headers.slice(2).map((_, colIndex) => {
                 const nomeDaGrade = dadosDasGrades?.[tipo]?.[dia]?.[horaFormatada]?.[`col${colIndex}`] || '';
                 const cor = coresProfissionais.get(nomeDaGrade) || generateColorFromString(nomeDaGrade);
-                const textColor = isColorDark(cor) ? 'white' : 'black';
+                const textColor = isColorDark(cor) ? 'var(--cor-texto-inverso)' : 'var(--cor-texto-principal)';
                 const estilo = nomeDaGrade ? `background-color: ${cor}; color: ${textColor};` : '';
-
-                const userUsername = userData.username;
-                const userFullName = userData.name;
-                const isCurrentUser = nomeDaGrade && (nomeDaGrade === userUsername || nomeDaGrade === userFullName);
+                
+                const isCurrentUser = nomeDaGrade && (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
                 
                 return `<td><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
             }).join('');
@@ -135,20 +134,19 @@ export async function init(db, user, userData) {
             </div>`;
     }
     
+    // --- EVENTOS E INICIALIZAÇÃO ---
     function attachEventListeners() {
-        const mainTabsContainer = mainContainer.querySelector('#grade-main-tabs-voluntario');
-        
         mainContainer.addEventListener('click', (e) => {
             const mainTabButton = e.target.closest('#grade-main-tabs-voluntario .tab-link');
             const dayTabButton = e.target.closest('.grade-day-tabs button');
 
             if (mainTabButton) {
-                mainTabsContainer.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
+                mainContainer.querySelectorAll('#grade-main-tabs-voluntario .tab-link').forEach(b => b.classList.remove('active'));
                 mainTabButton.classList.add('active');
                 renderGrade(mainTabButton.dataset.tab, 'segunda'); 
             }
             if (dayTabButton) {
-                const activeMainTab = mainTabsContainer.querySelector('.tab-link.active').dataset.tab;
+                const activeMainTab = mainContainer.querySelector('#grade-main-tabs-voluntario .tab-link.active').dataset.tab;
                 renderGrade(activeMainTab, dayTabButton.dataset.day);
             }
         });
@@ -162,17 +160,14 @@ export async function init(db, user, userData) {
             const usuariosSnapshot = await db.collection("usuarios").where("fazAtendimento", "==", true).get();
             usuariosSnapshot.forEach(doc => {
                 const prof = doc.data();
-                coresProfissionais.set(prof.username, prof.cor || generateColorFromString(prof.username));
-                // Garante que o nome completo também tenha uma cor, caso seja usado
-                if (prof.name && prof.name !== prof.username) {
-                    coresProfissionais.set(prof.name, prof.cor || generateColorFromString(prof.username));
-                }
+                const cor = prof.cor || generateColorFromString(prof.username);
+                if (prof.username) coresProfissionais.set(prof.username, cor);
+                if (prof.name) coresProfissionais.set(prof.name, cor); // Mapeia cor para ambos
             });
             
             const gradesDocRef = db.collection('administrativo').doc('grades');
             gradesDocRef.onSnapshot((doc) => {
                 dadosDasGrades = doc.exists ? doc.data() : {};
-                
                 calculateAndShowSummary();
                 
                 const activeMainTabEl = mainContainer.querySelector('#grade-main-tabs-voluntario .tab-link.active');
