@@ -1,0 +1,91 @@
+/* Arquivo: /modulos/voluntario/css/grade.css
+   Descrição: Estilos para a nova visualização da grade de horários.
+*/
+
+#grade-container {
+    margin-top: 20px;
+}
+
+.grade-table-wrapper {
+    overflow-x: auto; /* Permite rolagem horizontal em telas pequenas */
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+}
+
+.grade-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--cor-surface);
+    font-size: 0.9em;
+}
+
+.grade-table th,
+.grade-table td {
+    border: 1px solid var(--cor-borda);
+    padding: 8px;
+    text-align: center;
+    min-width: 120px; /* Largura mínima para as colunas de dias */
+}
+
+.grade-table thead th {
+    background-color: var(--cor-fundo);
+    color: var(--cor-primaria);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.grade-table .hora-cell {
+    font-weight: 600;
+    background-color: var(--cor-fundo);
+    min-width: 80px;
+}
+
+.grade-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.grade-table td {
+    vertical-align: top;
+}
+
+.terapeuta-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    margin: 2px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: white;
+    font-weight: 500;
+}
+
+.terapeuta-tag.status-disponivel {
+    background-color: var(--cor-sucesso);
+}
+
+.terapeuta-tag.status-ocupado {
+    background-color: var(--cor-erro);
+}
+
+.grade-legenda {
+    margin-top: 15px;
+    display: flex;
+    gap: 20px;
+    justify-content: flex-end;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legenda-item .cor {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
