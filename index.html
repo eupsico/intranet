@@ -8,19 +8,16 @@
     
     <link rel="stylesheet" href="./assets/css/design-system.css">
     <link rel="icon" type="image/png" href="./favicon.png">
-    
-    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    
     <div id="app">
-
         <div id="login-view"></div>
 
         <div id="dashboard-view" style="display:none;">
-            
             <div class="layout-container">
-                
                 <nav class="sidebar">
                     <div class="sidebar-content-wrapper">
                         <ul id="sidebar-menu" class="sidebar-menu">
@@ -35,15 +32,17 @@
                         <button id="sidebar-toggle" title="Alternar menu">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                         </button>
-                        <img src="./assets/img/logo-branca.png" alt="Logo EuPsico" class="header-logo">
-                        <div class="welcome-message">
-                            <h1 id="welcome-title">Bem-vindo(a) à Intranet EuPsico!</h1>
-                            <p>Aqui você encontra as principais ferramentas e informações do seu dia a dia.</p>
+                            <div id="page-title-container">
+                            <img src="./assets/img/logo-branca.png" alt="Logo EuPsico" class="header-logo">
+                            <div class="welcome-message">
+                                <h1 id="welcome-title">Bem-vindo(a) à Intranet EuPsico!</h1>
+                                <p>Aqui você encontra as principais ferramentas e informações do seu dia a dia.</p>
+                            </div>
                         </div>
                     </div>
                     <div class="user-profile-header">
                         <img id="user-photo-header" src="" alt="Foto do usuário">
-                        <span id="user-email-header">carregando...</span>
+                        <span id="user-greeting">carregando...</span>
                         <a href="#" id="logout-button-dashboard" class="logout-button-dashboard">Sair</a>
                     </div>
                 </header>
@@ -113,11 +112,7 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
+   
     <script type="module" src="./assets/js/firebase-init.js"></script>
     <script type="module" src="./assets/js/app.js"></script>
 </body>
