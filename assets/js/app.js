@@ -1,6 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.8.1 (Correções de Responsividade e Saudação)
-// Descrição: Ajusta título no header mobile e torna a saudação mais robusta.
+// Versão: 1.8.2 (Login Aprimorado e Menu Mobile com Auto-fechamento)
 
 import { auth, db } from './firebase-init.js';
 
@@ -49,11 +48,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // FUNÇÃO DE LOGIN ATUALIZADA
     function renderLogin(message = "Por favor, faça login para continuar.") {
         if (!loginView || !dashboardView) return;
         dashboardView.style.display = 'none';
         loginView.style.display = 'block';
-        loginView.innerHTML = `<div class="login-container"><div class="login-card"><img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo"><h2>Intranet EuPsico</h2><p>${message}</p><button id="login-button" class="login-button">Login com Google</button></div></div>`;
+        loginView.innerHTML = `
+            <div class="login-container">
+                <div class="login-card">
+                    <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                    <h2>Intranet EuPsico</h2>
+                    <p>${message}</p>
+                    <p class="login-email-info">Utilize seu e-mail @eupsico.org.br para acessar.</p>
+                    <button id="login-button" class="login-button">Login com Google</button>
+                </div>
+            </div>`;
         document.getElementById('login-button').addEventListener('click', () => {
             loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
             const provider = new firebase.auth.GoogleAuthProvider();
@@ -81,12 +90,10 @@ document.addEventListener('DOMContentLoaded', function() {
         loginView.style.display = 'none';
         dashboardView.style.display = 'block';
         
-        // --- 1. RENDERIZAÇÃO GLOBAL ---
         const userPhoto = document.getElementById('user-photo-header');
         const userGreeting = document.getElementById('user-greeting');
         const logoutButton = document.getElementById('logout-button-dashboard');
         
-        // LÓGICA DA SAUDAÇÃO CORRIGIDA E MAIS ROBUSTA
         if (userGreeting) { 
             try {
                 if (userData && userData.nome) {
@@ -106,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const modules = getVisibleModules(userData);
         setupSidebarToggle();
 
-        // --- 2. RENDERIZAÇÃO ESPECÍFICA ---
         if (window.location.pathname.includes('painel-financeiro.html')) {
             renderSidebarMenu(modules);
             const pageTitleContainer = document.getElementById('page-title-container');
@@ -148,7 +154,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
         const overlay = document.getElementById('menu-overlay');
-        if (!layoutContainer || !toggleButton || !sidebar || !overlay) { return; }
+        const sidebarMenu = document.getElementById('sidebar-menu');
+
+        if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
+
         const handleToggle = () => {
             const isMobile = window.innerWidth <= 768;
             if (isMobile) {
@@ -160,13 +169,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
             }
         };
+
         if (window.innerWidth > 768) {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
             toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
         }
+
         toggleButton.addEventListener('click', handleToggle);
         overlay.addEventListener('click', handleToggle);
+
+        sidebarMenu.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768) {
+                if (e.target.closest('a')) {
+                    handleToggle();
+                }
+            }
+        });
     }
 
     function renderSidebarMenu(modules) {

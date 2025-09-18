@@ -1,6 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.1
-// Descrição: Adiciona a lógica de menu responsivo e remove a importação de 'storage'.
+// Versão: 2.2 (Menu Mobile com Auto-fechamento)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
@@ -11,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (userDoc.exists) {
                 initPortal(user, userDoc.data());
             } else {
-                console.warn("Usuário autenticado, mas sem dados no Firestore. Redirecionando...");
                 window.location.href = '../../../index.html';
             }
         } else {
@@ -83,7 +81,6 @@ function initPortal(user, userData) {
         }
     }
     
-    // FUNÇÃO ATUALIZADA COM A LÓGICA CORRETA
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
         const userGreeting = document.getElementById('user-greeting');
@@ -106,12 +103,13 @@ function initPortal(user, userData) {
             });
         }
         
-        // LÓGICA DO MENU HAMBÚRGUER CORRIGIDA
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
         const overlay = document.getElementById('menu-overlay');
-        if (!layoutContainer || !toggleButton || !sidebar || !overlay) { return; }
+        const sidebarMenu = document.getElementById('sidebar-menu');
+
+        if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
 
         const handleToggle = () => {
             const isMobile = window.innerWidth <= 768;
@@ -133,6 +131,14 @@ function initPortal(user, userData) {
         
         toggleButton.addEventListener('click', handleToggle);
         overlay.addEventListener('click', handleToggle);
+
+        sidebarMenu.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768) {
+                if (e.target.closest('a')) {
+                    handleToggle();
+                }
+            }
+        });
     }
 
     function start() {
