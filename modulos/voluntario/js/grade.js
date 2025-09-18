@@ -1,7 +1,7 @@
 // Arquivo: /modulos/voluntario/js/grade.js
-// Versão: 5.0 (Final)
-// Descrição: Lógica recriada a partir do painel administrativo para garantir
-// consistência visual e funcional, com resumo semanal integrado.
+// Versão: 5.1 (Definitiva)
+// Descrição: Corrige a lógica de busca de dados para alinhar com a estrutura
+// "plana" do Firestore, resolvendo o problema da grade vazia.
 
 export async function init(db, user, userData) {
     // --- ELEMENTOS E VARIÁVEIS GLOBAIS ---
@@ -20,7 +20,7 @@ export async function init(db, user, userData) {
 
     // --- FUNÇÕES AUXILIARES ---
     function generateColorFromString(str) {
-        if (!str || str.length === 0) return '#ffffff'; // Retorna branco para strings vazias
+        if (!str || str.length === 0) return '#ffffff';
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
             hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -28,7 +28,7 @@ export async function init(db, user, userData) {
         let color = '#';
         for (let i = 0; i < 3; i++) {
             let value = (hash >> (i * 8)) & 0xFF;
-            value = 120 + (value % 136); // Gera cores mais claras e agradáveis
+            value = 120 + (value % 136);
             color += ('00' + value.toString(16)).substr(-2);
         }
         return color;
@@ -39,7 +39,7 @@ export async function init(db, user, userData) {
         const r = parseInt(hexColor.substr(1, 2), 16);
         const g = parseInt(hexColor.substr(3, 2), 16);
         const b = parseInt(hexColor.substr(5, 2), 16);
-        return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.6; // Limite ajustado para boa legibilidade
+        return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.6;
     }
 
     // --- RENDERIZAÇÃO E CÁLCULOS ---
@@ -54,28 +54,27 @@ export async function init(db, user, userData) {
         let horasOnline = 0, horasPresencial = 0;
         let agendamentosOnline = [], agendamentosPresencial = [];
         
-        ['online', 'presencial'].forEach(tipo => {
-            if (dadosDasGrades[tipo]) {
-                Object.entries(diasDaSemana).forEach(([diaKey, diaNome]) => {
-                    if (dadosDasGrades[tipo][diaKey]) {
-                        Object.entries(dadosDasGrades[tipo][diaKey]).forEach(([hora, cols]) => {
-                            Object.values(cols).forEach(nomeDaGrade => {
-                                if (nomeDaGrade === userUsername || nomeDaGrade === userFullName) {
-                                    const horaFormatada = hora.replace('-', ':');
-                                    if (tipo === 'online') {
-                                        horasOnline++;
-                                        agendamentosOnline.push(`<li>${diaNome} - ${horaFormatada}</li>`);
-                                    } else {
-                                        horasPresencial++;
-                                        agendamentosPresencial.push(`<li>${diaNome} - ${horaFormatada}</li>`);
-                                    }
-                                }
-                            });
-                        });
+        // CORREÇÃO: Itera sobre as chaves do objeto plano
+        for (const path in dadosDasGrades) {
+            const nomeDaGrade = dadosDasGrades[path];
+            if (nomeDaGrade === userUsername || nomeDaGrade === userFullName) {
+                const parts = path.split('.'); // ex: ['online', 'segunda', '08-00', 'col0']
+                if (parts.length === 4) {
+                    const tipo = parts[0];
+                    const diaKey = parts[1];
+                    const horaFormatada = parts[2].replace('-', ':');
+                    const diaNome = diasDaSemana[diaKey];
+                    
+                    if (tipo === 'online') {
+                        horasOnline++;
+                        agendamentosOnline.push(`<li>${diaNome} - ${horaFormatada}</li>`);
+                    } else if (tipo === 'presencial') {
+                        horasPresencial++;
+                        agendamentosPresencial.push(`<li>${diaNome} - ${horaFormatada}</li>`);
                     }
-                });
+                }
             }
-        });
+        }
 
         summaryDetails.innerHTML = `
             <div class="summary-card">
@@ -104,7 +103,10 @@ export async function init(db, user, userData) {
             if (index === 11) periodoCell = `<td class="period-cell" rowspan="5">Noite</td>`;
 
             const celulasProfissionais = headers.slice(2).map((_, colIndex) => {
-                const nomeDaGrade = dadosDasGrades?.[tipo]?.[dia]?.[horaFormatada]?.[`col${colIndex}`] || '';
+                // CORREÇÃO: Constrói a chave e busca no objeto plano
+                const path = `${tipo}.${dia}.${horaFormatada}.col${colIndex}`;
+                const nomeDaGrade = dadosDasGrades[path] || '';
+
                 const cor = coresProfissionais.get(nomeDaGrade) || generateColorFromString(nomeDaGrade);
                 const textColor = isColorDark(cor) ? 'var(--cor-texto-inverso)' : 'var(--cor-texto-principal)';
                 const estilo = nomeDaGrade ? `background-color: ${cor}; color: ${textColor};` : '';
@@ -162,7 +164,7 @@ export async function init(db, user, userData) {
                 const prof = doc.data();
                 const cor = prof.cor || generateColorFromString(prof.username);
                 if (prof.username) coresProfissionais.set(prof.username, cor);
-                if (prof.name) coresProfissionais.set(prof.name, cor); // Mapeia cor para ambos
+                if (prof.name) coresProfissionais.set(prof.name, cor);
             });
             
             const gradesDocRef = db.collection('administrativo').doc('grades');
