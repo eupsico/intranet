@@ -1,6 +1,6 @@
 /* Arquivo: /modulos/financeiro/css/lancamentos.css
    Versão: 1.0
-   Descrição: Estilos para a tela de Lançamentos, incluindo abas, formulário em colunas e modal.
+   Descrição: Estilos para a tela de Lançamentos, incluindo abas, formulário em colunas and modal.
 */
 
 /* Container geral da view */
@@ -111,4 +111,22 @@
 
 .btn-cancel-delete {
     background-color: var(--cor-texto-secundario);
+}
+
+/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
+@media (max-width: 768px) {
+    .lancamentos-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .lancamentos-filters > div {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .lancamentos-form-grid .form-group-button {
+        justify-content: stretch;
+    }
+    .lancamentos-form-grid .form-group-button .action-button {
+        width: 100%;
+    }
 }
