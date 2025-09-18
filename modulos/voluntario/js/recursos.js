@@ -1,6 +1,6 @@
 // Arquivo: /modulos/voluntario/js/recursos.js
-// Versão: 3.1
-// Descrição: Atualiza os caminhos de importação para refletir a nova estrutura de pastas sem a subpasta /tabs.
+// Versão: 4.0
+// Descrição: Atualizado para carregar as novas abas de grade separadamente.
 
 export function init(db, user, userData) {
     const view = document.querySelector('.view-container');
@@ -18,26 +18,30 @@ export function init(db, user, userData) {
 
         try {
             let module;
+            let initParams = [db, user, userData];
+
             switch (tabId) {
                 case 'mensagens':
-                    // Caminho atualizado
                     module = await import('./mensagens.js');
                     break;
                 case 'disponibilidade':
-                    // Caminho atualizado
                     module = await import('./disponibilidade.js');
                     break;
-                case 'grade':
-                     // Caminho atualizado
-                    module = await import('./grade.js');
+                // NOVAS ABAS DE GRADE
+                case 'grade-online':
+                    module = await import('./grade-view.js');
+                    initParams.push('online'); // Informa ao módulo para carregar a grade online
+                    break;
+                case 'grade-presencial':
+                    module = await import('./grade-view.js');
+                    initParams.push('presencial'); // Informa ao módulo para carregar a grade presencial
                     break;
                 default:
                     return; 
             }
 
             if (module && typeof module.init === 'function') {
-                // A função init agora pode ser assíncrona, então usamos await
-                await module.init(db, user, userData);
+                await module.init(...initParams);
                 loadedTabs.add(tabId);
             }
         } catch (error) {
