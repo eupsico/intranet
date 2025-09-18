@@ -1,36 +1,36 @@
 /* Arquivo: /modulos/voluntario/css/grade.css
-   Versão: 3.0
-   Descrição: Estilos aprimorados com painel de resumo e layout de acordeão.
+   Versão: 3.2
+   Descrição: Reforça os seletores de CSS para evitar conflitos de estilo.
 */
 
 /* --- Painel de Resumo --- */
-.summary-panel {
-    background-color: #eef2f7; /* Tom de azul claro */
+#grade .summary-panel {
+    background-color: #eef2f7;
     padding: 20px;
     border-radius: var(--borda-radius);
     margin-top: 25px;
     margin-bottom: 25px;
     border: 1px solid #dbe3ed;
 }
-.summary-panel h3 {
+#grade .summary-panel h3 {
     margin-top: 0;
     color: var(--cor-primaria);
     font-size: 1.3em;
 }
-#summary-details-voluntario {
+#grade #summary-details-voluntario {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 15px;
     margin-top: 15px;
 }
-.summary-card {
+#grade .summary-card {
     background-color: #fff;
     padding: 15px 20px;
     border-radius: var(--borda-radius);
     box-shadow: var(--sombra-suave);
     border-left: 4px solid var(--cor-secundaria);
 }
-.summary-card h4 {
+#grade .summary-card h4 {
     margin-top: 0;
     margin-bottom: 10px;
     color: var(--cor-primaria);
@@ -38,20 +38,20 @@
     padding-bottom: 8px;
     font-size: 1.1em;
 }
-.summary-card ul {
+#grade .summary-card ul {
     list-style: none;
     padding-left: 0;
     margin: 0;
     font-size: 0.95em;
     color: var(--cor-texto-secundario);
 }
-.summary-card ul li {
+#grade .summary-card ul li {
     padding: 4px 0;
 }
-.summary-card ul li strong {
+#grade .summary-card ul li strong {
     color: var(--cor-texto-principal);
 }
-.loading-spinner-small {
+#grade .loading-spinner-small {
     border: 4px solid #f3f3f3;
     border-top: 4px solid var(--cor-primaria);
     border-radius: 50%;
@@ -61,13 +61,13 @@
 }
 
 /* --- Layout da Grade em Acordeão --- */
-.grade-content-wrapper .accordion {
+#grade .grade-content-wrapper .accordion {
     margin-bottom: 10px;
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
     overflow: hidden;
 }
-.accordion-trigger {
+#grade .accordion-trigger {
     background-color: var(--cor-primaria);
     color: white;
     cursor: pointer;
@@ -81,20 +81,20 @@
     position: relative;
     transition: background-color 0.2s;
 }
-.accordion-trigger:hover {
-    background-color: #003a6a; /* Tom mais escuro de azul */
+#grade .accordion-trigger:hover {
+    background-color: #003a6a;
 }
-.accordion-trigger.day-trigger {
+#grade .accordion-trigger.day-trigger {
     background-color: #f8f9fa;
     color: var(--cor-texto-principal);
     font-size: 1.1em;
     font-weight: 500;
     border-bottom: 1px solid var(--cor-borda);
 }
-.accordion-trigger.day-trigger:hover {
+#grade .accordion-trigger.day-trigger:hover {
     background-color: #e9ecef;
 }
-.accordion-trigger::after {
+#grade .accordion-trigger::after {
     content: '+';
     font-size: 1.5em;
     color: white;
@@ -104,57 +104,56 @@
     transform: translateY(-50%);
     transition: transform 0.2s;
 }
-.accordion-trigger.day-trigger::after {
+#grade .accordion-trigger.day-trigger::after {
     color: var(--cor-primaria);
 }
-.accordion-trigger.active::after {
+#grade .accordion-trigger.active::after {
     transform: translateY(-50%) rotate(45deg);
 }
-.accordion-content {
+#grade .accordion-content {
     padding: 0;
     background-color: white;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out;
 }
-.accordion-content.main-content {
+#grade .accordion-content.main-content {
     background-color: white;
 }
-.accordion-content.active {
+#grade .accordion-content.active {
     padding: 15px;
 }
-.table-wrapper-voluntario {
+#grade .table-wrapper-voluntario {
     overflow-x: auto;
 }
 
 /* --- Tabela --- */
-.grade-table-voluntario {
+#grade .grade-table-voluntario {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9em;
     min-width: 900px;
 }
-.grade-table-voluntario th, 
-.grade-table-voluntario td {
+#grade .grade-table-voluntario th, 
+#grade .grade-table-voluntario td {
     border: 1px solid var(--cor-borda);
     padding: 8px 5px;
     text-align: center;
     vertical-align: middle;
     height: 40px;
 }
-.grade-table-voluntario thead th {
+#grade .grade-table-voluntario thead th {
     background-color: var(--cor-fundo);
     color: var(--cor-texto-principal);
     padding: 12px 5px;
 }
-.grade-table-voluntario .hour-cell {
+#grade .grade-table-voluntario .hour-cell {
     font-weight: 600;
 }
-.grade-table-voluntario td.filled {
+#grade .grade-table-voluntario td.filled {
     font-weight: 500;
     color: white;
 }
-/* Destaque para os horários do usuário logado */
-.grade-table-voluntario td.user-highlight {
+#grade .grade-table-voluntario td.user-highlight {
     box-shadow: inset 0 0 0 2px var(--cor-secundaria);
 }

@@ -1,9 +1,7 @@
 // Arquivo: /modulos/voluntario/js/grade.js
-// Versão: 3.1
-// Descrição: Corrige o erro "Assignment to constant variable" e atualiza o caminho do arquivo.
+// Versão: 3.2 (Diagnóstico)
+// Descrição: Adiciona logs no console para depurar o problema de dados vazios.
 
-// --- FUNÇÕES AUXILIARES ---
-// Declaradas uma única vez no escopo do módulo para evitar conflitos.
 const generateColorFromString = (str) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -24,8 +22,8 @@ const isColorDark = (hexColor) => {
     return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.5;
 };
 
-
 export async function init(db, user, userData) {
+    console.log('[GRADE] Módulo iniciado.'); // Log 1: Confirma que o script começou
     const mainContainer = document.querySelector('#grade');
     if (!mainContainer) return;
 
@@ -158,15 +156,21 @@ export async function init(db, user, userData) {
         try {
             gradeContent.innerHTML = '<div class="loading-spinner"></div>';
             summaryDetails.innerHTML = '<div class="loading-spinner-small"></div>';
+            
+            console.log('[GRADE] Dados do usuário logado (userData):', userData); // Log 2: Mostra os dados do usuário
+            
             const usuariosSnapshot = await db.collection("usuarios").where("fazAtendimento", "==", true).get();
             usuariosSnapshot.forEach(doc => {
                 const prof = doc.data();
                 coresProfissionais.set(prof.username, prof.cor || generateColorFromString(prof.username));
             });
+            
             const gradesDocRef = db.collection('administrativo').doc('grades');
             gradesDocRef.onSnapshot((doc) => {
-                console.log("Dados da grade atualizados em tempo real.");
                 dadosDasGrades = doc.exists ? doc.data() : {};
+                
+                console.log('[GRADE] Dados recebidos da grade:', dadosDasGrades); // Log 3: Mostra os dados da grade
+                
                 if (!gradeContent.querySelector('.accordion')) {
                     renderFullAccordions();
                 }
@@ -178,12 +182,12 @@ export async function init(db, user, userData) {
                     openDayContent.style.maxHeight = openDayContent.scrollHeight + 'px';
                 }
             }, (error) => {
-                console.error("Erro ao escutar atualizações da grade:", error);
+                console.error("[GRADE] Erro ao escutar atualizações da grade:", error);
                 gradeContent.innerHTML = `<p class="alert alert-error">Erro de conexão. Não foi possível carregar a grade em tempo real.</p>`;
             });
             attachEventListeners();
         } catch (error) {
-            console.error("Erro ao inicializar a grade do voluntário:", error);
+            console.error("[GRADE] Erro fatal ao inicializar:", error);
             gradeContent.innerHTML = `<p class="alert alert-error">Não foi possível carregar os dados da grade.</p>`;
         }
     }
