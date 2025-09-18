@@ -157,7 +157,7 @@
     background-color: #f0f0f0;
 }
 
-/* --- INÍCIO DA ALTERAÇÃO: ESTILOS PARA AS OPÇÕES DE DATA NO MODAL DE AGENDAMENTO --- */
+/* --- ESTILOS PARA AS OPÇÕES DE DATA NO MODAL DE AGENDAMENTO --- */
 .date-option {
     display: flex;
     align-items: center;
@@ -201,4 +201,22 @@
 .date-option.disabled label {
     cursor: not-allowed;
 }
-/* --- FIM DA ALTERAÇÃO --- */
+
+/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
+@media (max-width: 1400px) {
+    #supervisor-panel-page #supervisor-grid-container {
+        grid-template-columns: 1fr; /* Força uma coluna em telas de laptop menores */
+    }
+}
+
+@media (max-width: 768px) {
+    .supervisor-card {
+        flex-direction: column;
+    }
+    #supervisor-panel-page .supervisor-card-left {
+        width: 100%;
+    }
+    #supervisor-panel-page .supervisor-card-right {
+        width: 100%;
+    }
+}
