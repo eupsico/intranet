@@ -1,41 +1,37 @@
 /* Arquivo: /modulos/voluntario/css/grade.css
-   Versão: 3.2
-   Descrição: Reforça os seletores de CSS para evitar conflitos de estilo.
+   Versão: 4.0
+   Descrição: Estilos recriados para espelhar o painel administrativo e o resumo semanal.
 */
 
-/* --- Painel de Resumo --- */
+/* --- Painel de Resumo Semanal --- */
 #grade .summary-panel {
-    background-color: #eef2f7;
+    background-color: #f8f9fa; /* Fundo mais claro e neutro */
     padding: 20px;
     border-radius: var(--borda-radius);
-    margin-top: 25px;
     margin-bottom: 25px;
-    border: 1px solid #dbe3ed;
+    border: 1px solid var(--cor-borda);
 }
 #grade .summary-panel h3 {
     margin-top: 0;
-    color: var(--cor-primaria);
+    margin-bottom: 15px;
+    color: var(--cor-texto-principal);
     font-size: 1.3em;
 }
 #grade #summary-details-voluntario {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 15px;
-    margin-top: 15px;
 }
 #grade .summary-card {
     background-color: #fff;
     padding: 15px 20px;
     border-radius: var(--borda-radius);
     box-shadow: var(--sombra-suave);
-    border-left: 4px solid var(--cor-secundaria);
 }
 #grade .summary-card h4 {
     margin-top: 0;
     margin-bottom: 10px;
     color: var(--cor-primaria);
-    border-bottom: 1px solid var(--cor-borda);
-    padding-bottom: 8px;
     font-size: 1.1em;
 }
 #grade .summary-card ul {
@@ -48,9 +44,6 @@
 #grade .summary-card ul li {
     padding: 4px 0;
 }
-#grade .summary-card ul li strong {
-    color: var(--cor-texto-principal);
-}
 #grade .loading-spinner-small {
     border: 4px solid #f3f3f3;
     border-top: 4px solid var(--cor-primaria);
@@ -60,100 +53,79 @@
     animation: spin 1s linear infinite;
 }
 
-/* --- Layout da Grade em Acordeão --- */
-#grade .grade-content-wrapper .accordion {
-    margin-bottom: 10px;
-    border: 1px solid var(--cor-borda);
-    border-radius: var(--borda-radius);
-    overflow: hidden;
-}
-#grade .accordion-trigger {
-    background-color: var(--cor-primaria);
-    color: white;
-    cursor: pointer;
-    padding: 15px 20px;
-    width: 100%;
-    border: none;
-    text-align: left;
-    outline: none;
-    font-size: 1.2em;
-    font-weight: 600;
-    position: relative;
-    transition: background-color 0.2s;
-}
-#grade .accordion-trigger:hover {
-    background-color: #003a6a;
-}
-#grade .accordion-trigger.day-trigger {
-    background-color: #f8f9fa;
-    color: var(--cor-texto-principal);
-    font-size: 1.1em;
-    font-weight: 500;
-    border-bottom: 1px solid var(--cor-borda);
-}
-#grade .accordion-trigger.day-trigger:hover {
-    background-color: #e9ecef;
-}
-#grade .accordion-trigger::after {
-    content: '+';
-    font-size: 1.5em;
-    color: white;
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: transform 0.2s;
-}
-#grade .accordion-trigger.day-trigger::after {
-    color: var(--cor-primaria);
-}
-#grade .accordion-trigger.active::after {
-    transform: translateY(-50%) rotate(45deg);
-}
-#grade .accordion-content {
-    padding: 0;
-    background-color: white;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out;
-}
-#grade .accordion-content.main-content {
-    background-color: white;
-}
-#grade .accordion-content.active {
-    padding: 15px;
-}
-#grade .table-wrapper-voluntario {
+/* --- Abas dos Dias da Semana (Estilo do Admin) --- */
+#grade .grade-day-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--cor-borda);
+    margin-bottom: 20px;
     overflow-x: auto;
+    white-space: nowrap;
+}
+#grade .grade-day-tabs button {
+    background-color: transparent;
+    border: none;
+    padding: 12px 18px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--cor-texto-secundario);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+#grade .grade-day-tabs button:hover {
+    background-color: var(--cor-fundo);
+}
+#grade .grade-day-tabs button.active {
+    color: var(--cor-primaria);
+    font-weight: 600;
+    border-bottom-color: var(--cor-primaria);
 }
 
-/* --- Tabela --- */
-#grade .grade-table-voluntario {
+/* --- Tabela da Grade (Estilo do Admin) --- */
+#grade .table-wrapper {
+    overflow-x: auto;
+}
+#grade .grade-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9em;
     min-width: 900px;
 }
-#grade .grade-table-voluntario th, 
-#grade .grade-table-voluntario td {
+#grade .grade-table th, 
+#grade .grade-table td {
     border: 1px solid var(--cor-borda);
-    padding: 8px 5px;
+    padding: 5px;
     text-align: center;
     vertical-align: middle;
-    height: 40px;
+    height: 38px; /* Altura da célula */
 }
-#grade .grade-table-voluntario thead th {
-    background-color: var(--cor-fundo);
-    color: var(--cor-texto-principal);
+#grade .grade-table thead th {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
     padding: 12px 5px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
-#grade .grade-table-voluntario .hour-cell {
+#grade .grade-table .period-cell,
+#grade .grade-table .hour-cell {
     font-weight: 600;
+    background-color: var(--cor-fundo);
+    width: 90px;
 }
-#grade .grade-table-voluntario td.filled {
+#grade .grade-table .periodo-manha { background-color: #e3f2fd; }
+#grade .grade-table .periodo-tarde { background-color: #fffde7; }
+#grade .grade-table .periodo-noite { background-color: #f3e5f5; }
+
+/* Célula de profissional (visualização) */
+#grade .professional-cell {
+    padding: 6px;
     font-weight: 500;
-    color: white;
+    border-radius: var(--borda-radius);
+    color: var(--cor-texto-principal); /* Cor padrão do texto */
 }
-#grade .grade-table-voluntario td.user-highlight {
-    box-shadow: inset 0 0 0 2px var(--cor-secundaria);
+/* Destaque para os horários do usuário logado */
+#grade .professional-cell.user-highlight {
+    box-shadow: 0 0 0 2px var(--cor-secundaria) inset;
 }

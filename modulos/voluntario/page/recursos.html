@@ -21,7 +21,6 @@
                 <div class="output-area"><label>Mensagem Gerada (clique na caixa para copiar)</label><textarea readonly id="output-cobranca"></textarea></div>
             </div>
         </div>
-
         <div class="accordion">
             <button class="accordion-trigger">Apresentação Sessão Agendada</button>
             <div class="accordion-content">
@@ -37,7 +36,6 @@
                 <div class="output-area"><label>Mensagem Gerada (clique na caixa para copiar)</label><textarea readonly id="output-agendada"></textarea></div>
             </div>
         </div>
-
         <div class="accordion">
             <button class="accordion-trigger">Apresentação para Agendar Sessão</button>
             <div class="accordion-content">
@@ -51,7 +49,6 @@
                 <div class="output-area"><label>Mensagem Gerada (clique na caixa para copiar)</label><textarea readonly id="output-agendar"></textarea></div>
             </div>
         </div>
-        
         <div class="accordion">
             <button class="accordion-trigger">Primeira Cobrança</button>
             <div class="accordion-content">
@@ -73,13 +70,17 @@
 
     <div id="grade" class="tab-content" style="display: none;">
         <h2>Grade de Horários Oficial</h2>
-        <p class="description-box">Visualize abaixo a grade oficial montada pelo setor administrativo. As atualizações e seu resumo semanal são exibidos em tempo real.</p>
         
         <div id="summary-panel-voluntario" class="summary-panel">
             <h3>Meu Resumo Semanal</h3>
             <div id="summary-details-voluntario">
                 <div class="loading-spinner-small"></div>
             </div>
+        </div>
+
+        <div class="tabs-container" id="grade-main-tabs-voluntario">
+            <button class="tab-link active" data-tab="online">Grade Online</button>
+            <button class="tab-link" data-tab="presencial">Grade Presencial</button>
         </div>
 
         <div id="grade-content-voluntario" class="grade-content-wrapper">
