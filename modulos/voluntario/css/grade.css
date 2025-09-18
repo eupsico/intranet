@@ -1,28 +1,24 @@
 /* Arquivo: /modulos/voluntario/css/grade.css
-   Versão: 6.0 (Final com Responsividade)
-   Descrição: Adiciona design responsivo para celulares e implementa melhorias visuais.
+   Versão: 5.0 (Base Funcional Desktop)
+   Descrição: Estilos originais da grade de horários, focados na visualização em desktop.
 */
 
-/* --- Abas dos Dias da Semana (Novo Design) --- */
-/* Remove o container antigo */
-#grade .grade-day-tabs { display: none; } 
-
-/* Novo container para as abas */
+/* --- Abas dos Dias da Semana --- */
 .grade-day-tabs-wrapper {
     display: flex;
-    gap: 8px; /* Espaçamento entre as abas */
+    gap: 8px;
     margin-bottom: 20px;
     overflow-x: auto;
-    padding-bottom: 8px; /* Espaço para a barra de rolagem não ficar colada */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    padding-bottom: 8px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 .grade-day-tabs-wrapper::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
 }
 .grade-day-tabs-wrapper button {
-    background-color: #f0f0f0; /* Fundo cinza */
-    color: #333; /* Texto escuro */
+    background-color: #f0f0f0;
+    color: #333;
     border: none;
     padding: 10px 16px;
     border-radius: var(--borda-radius);
@@ -37,11 +33,11 @@
     background-color: #e0e0e0;
 }
 .grade-day-tabs-wrapper button.active {
-    background-color: #1d70b7; /* Cor solicitada */
+    background-color: #1d70b7;
     color: white;
 }
 
-/* --- Tabela da Grade (Ajustes Desktop) --- */
+/* --- Tabela da Grade (Apenas Desktop) --- */
 #grade .table-wrapper {
     overflow-x: auto;
 }
@@ -66,12 +62,12 @@
 #grade .grade-table .period-cell {
     font-weight: 600;
     background-color: var(--cor-fundo);
-    width: 80px; /* Largura reduzida */
+    width: 80px;
 }
 #grade .grade-table .hour-cell {
     font-weight: 600;
     background-color: var(--cor-fundo);
-    width: 70px; /* Largura reduzida */
+    width: 70px;
 }
 #grade .grade-table .periodo-manha { background-color: #e3f2fd; }
 #grade .grade-table .periodo-tarde { background-color: #fffde7; }
@@ -88,70 +84,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    white-space: nowrap; /* Evita quebra de linha */
-    text-align: center; /* Centraliza o nome */
+    white-space: nowrap;
+    text-align: center;
 }
 #grade .professional-cell.user-highlight {
     box-shadow: 0 0 0 2px var(--cor-secundaria) inset;
-}
-
-/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
-@media screen and (max-width: 768px) {
-    #grade .grade-table {
-        min-width: 100%;
-        border: 0;
-    }
-    #grade .grade-table thead {
-        display: none; /* Esconde o cabeçalho original */
-    }
-    #grade .grade-table tr {
-        display: block;
-        border: 1px solid var(--cor-borda);
-        border-radius: var(--borda-radius);
-        margin-bottom: 1em;
-        box-shadow: var(--sombra-suave);
-    }
-    #grade .grade-table td {
-        display: block;
-        text-align: right; /* Alinha o valor à direita */
-        border: none;
-        border-bottom: 1px solid #eee;
-        padding-left: 50%; /* Espaço para o "label" */
-        position: relative;
-    }
-    #grade .grade-table td:last-child {
-        border-bottom: 0;
-    }
-    #grade .grade-table td::before {
-        content: attr(data-label); /* Pega o texto do cabeçalho */
-        position: absolute;
-        left: 10px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left; /* Alinha o "label" à esquerda */
-        font-weight: 600;
-        color: var(--cor-primaria);
-    }
-    #grade .grade-table td.period-cell,
-    #grade .grade-table .periodo-manha,
-    #grade .grade-table .periodo-tarde,
-    #grade .grade-table .periodo-noite {
-        display: none; /* Esconde a coluna "Período" no celular */
-    }
-    #grade .grade-table .hour-cell {
-        font-size: 1.2em;
-        font-weight: 700;
-        background-color: var(--cor-fundo);
-        text-align: center;
-        padding-left: 0;
-    }
-    #grade .grade-table .hour-cell::before {
-        display: none;
-    }
-    #grade .professional-cell {
-        margin: 0;
-        padding: 8px;
-        min-height: auto;
-    }
 }
