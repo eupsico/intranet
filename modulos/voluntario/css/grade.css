@@ -1,6 +1,6 @@
 /* Arquivo: /modulos/voluntario/css/grade.css
-   Versão: 6.1 (Correção de Seletor de Responsividade)
-   Descrição: Remove a dependência do seletor #grade para funcionar corretamente na página de Recursos.
+   Versão: 6.2 (Final Corrigida)
+   Descrição: Ajusta seletores para garantir a aplicação correta dos estilos responsivos.
 */
 
 /* --- Abas dos Dias da Semana --- */
@@ -93,47 +93,47 @@
 
 /* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
 @media screen and (max-width: 768px) {
+    .table-wrapper {
+        overflow-x: hidden; /* Remove a barra de rolagem horizontal no modo lista */
+    }
     .grade-table {
         min-width: 100%;
         border: 0;
     }
     .grade-table thead {
-        display: none; /* Esconde o cabeçalho original */
+        display: none; /* Esconde o cabeçalho da tabela original */
     }
     .grade-table tr {
-        display: block;
+        display: block; /* Transforma cada linha em um "card" */
         border: 1px solid var(--cor-borda);
         border-radius: var(--borda-radius);
         margin-bottom: 1em;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     .grade-table td {
-        display: block;
-        text-align: right; /* Alinha o valor à direita */
+        display: block; /* Empilha as células verticalmente dentro do "card" */
+        text-align: right;
         border: none;
         border-bottom: 1px solid #eee;
-        padding-left: 50%; /* Espaço para o "label" */
+        padding-left: 50%;
         position: relative;
     }
     .grade-table td:last-child {
         border-bottom: 0;
     }
     .grade-table td::before {
-        content: attr(data-label); /* Pega o texto do cabeçalho */
+        content: attr(data-label); /* Usa a "etiqueta" do JS como título da célula */
         position: absolute;
         left: 10px;
         width: 45%;
         padding-right: 10px;
         white-space: nowrap;
-        text-align: left; /* Alinha o "label" à esquerda */
+        text-align: left;
         font-weight: 600;
         color: var(--cor-primaria);
     }
-    .grade-table td.period-cell,
-    .grade-table .periodo-manha,
-    .grade-table .periodo-tarde,
-    .grade-table .periodo-noite {
-        display: none; /* Esconde a coluna "Período" no celular */
+    .grade-table .period-cell {
+        display: none; /* Esconde a célula de "Período" (Manhã, Tarde, Noite) */
     }
     .grade-table .hour-cell {
         font-size: 1.2em;
@@ -143,11 +143,12 @@
         padding-left: 0;
     }
     .grade-table .hour-cell::before {
-        display: none;
+        display: none; /* A célula de hora não precisa do título "HORAS" */
     }
     .professional-cell {
         margin: 0;
         padding: 8px;
         min-height: auto;
+        justify-content: flex-end; /* Alinha o nome do profissional à direita */
     }
 }
