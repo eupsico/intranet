@@ -1,4 +1,4 @@
-// Arquivo: /modulos/voluntario/js/tabs/disponibilidade.js
+// Arquivo: /modulos/voluntario/js/disponibilidade.js
 // Descrição: Módulo para a aba "Minha Disponibilidade".
 
 export function init(db, user, userData) {

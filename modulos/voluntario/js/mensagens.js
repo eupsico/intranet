@@ -1,4 +1,4 @@
-// Arquivo: /modulos/voluntario/js/tabs/mensagens.js
+// Arquivo: /modulos/voluntario/js/mensagens.js
 // Descrição: Módulo para a aba "Modelos de Mensagem".
 
 export function init(db, user, userData) {

@@ -1,6 +1,29 @@
-// Arquivo: /modulos/voluntario/js/tabs/grade.js
-// Versão: 3.0
-// Descrição: Versão robusta com resumo automático para usuário logado e layout em acordeão.
+// Arquivo: /modulos/voluntario/js/grade.js
+// Versão: 3.1
+// Descrição: Corrige o erro "Assignment to constant variable" e atualiza o caminho do arquivo.
+
+// --- FUNÇÕES AUXILIARES ---
+// Declaradas uma única vez no escopo do módulo para evitar conflitos.
+const generateColorFromString = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    let color = '#';
+    for (let i = 0; i < 3; i++) {
+        let value = (hash >> (i * 8)) & 0xFF;
+        value = 100 + (value % 156);
+        color += ('00' + value.toString(16)).substr(-2);
+    }
+    return color;
+};
+
+const isColorDark = (hexColor) => {
+    if (!hexColor) return false;
+    const r = parseInt(hexColor.substr(1, 2), 16);
+    const g = parseInt(hexColor.substr(3, 2), 16);
+    const b = parseInt(hexColor.substr(5, 2), 16);
+    return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.5;
+};
+
 
 export async function init(db, user, userData) {
     const mainContainer = document.querySelector('#grade');
@@ -9,31 +32,22 @@ export async function init(db, user, userData) {
     const gradeContent = mainContainer.querySelector('#grade-content-voluntario');
     const summaryDetails = mainContainer.querySelector('#summary-details-voluntario');
     
-    // Cache de dados para evitar múltiplas buscas
     let dadosDasGrades = {};
     const coresProfissionais = new Map();
     
-    // Constantes para a construção da grade
     const horarios = ["07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
     const diasDaSemana = {segunda: 'Segunda-feira', terca: 'Terça-feira', quarta: 'Quarta-feira', quinta: 'Quinta-feira', sexta: 'Sexta-feira', sabado: 'Sábado'};
     const colunasPresencial = ['Leila Tardivo', 'Leonardo Abrahão', 'Karina Okajima Fukumitsu', 'Maria Júlia Kovacs', 'Christian Dunker', 'Maria Célia Malaquias (Grupo)'];
 
-    // --- FUNÇÕES AUXILIARES ---
-    const generateColorFromString = (str) => { /* ...código inalterado... */ };
-    const isColorDark = (hexColor) => { /* ...código inalterado... */ };
-
-    // --- LÓGICA DE CÁLCULO E RENDERIZAÇÃO ---
     function calculateAndShowSummary() {
         if (!userData || !userData.username) {
             summaryDetails.innerHTML = '<p>Não foi possível identificar o usuário para exibir o resumo.</p>';
             return;
         }
-
         const nomeProfissional = userData.username;
         let horasOnline = 0, horasPresencial = 0;
         let agendamentosOnline = [], agendamentosPresencial = [];
         
-        // Itera sobre as grades para encontrar os agendamentos do profissional
         ['online', 'presencial'].forEach(tipo => {
             if (dadosDasGrades[tipo]) {
                 Object.entries(diasDaSemana).forEach(([diaKey, diaNome]) => {
@@ -75,7 +89,6 @@ export async function init(db, user, userData) {
     function createGradeTableHTML(tipo, dia) {
         const headers = ['Horário', ...(tipo === 'online' ? Array(6).fill('Online') : colunasPresencial)];
         const gradeData = dadosDasGrades?.[tipo]?.[dia] || {};
-
         const bodyHtml = horarios.map(hora => {
             const horaFormatada = hora.replace(":", "-");
             const celulasProfissionais = headers.slice(1).map((_, colIndex) => {
@@ -87,7 +100,6 @@ export async function init(db, user, userData) {
             }).join('');
             return `<tr><td class="hour-cell">${hora}</td>${celulasProfissionais}</tr>`;
         }).join('');
-        
         return `
             <div class="table-wrapper-voluntario">
                 <table class="grade-table-voluntario">
@@ -113,16 +125,12 @@ export async function init(db, user, userData) {
         gradeContent.innerHTML = accordionsHtml;
     }
 
-    // --- INICIALIZAÇÃO E EVENTOS ---
     function attachEventListeners() {
         gradeContent.addEventListener('click', function(e) {
             const trigger = e.target.closest('.accordion-trigger');
             if (!trigger) return;
-
             const content = trigger.nextElementSibling;
             const isActive = trigger.classList.contains('active');
-            
-            // Fecha outros acordeões no mesmo nível
             const parentContainer = trigger.parentElement.parentElement;
             parentContainer.querySelectorAll(':scope > .accordion > .accordion-trigger').forEach(t => {
                 if (t !== trigger) {
@@ -130,11 +138,8 @@ export async function init(db, user, userData) {
                     t.nextElementSibling.style.maxHeight = null;
                 }
             });
-
-            // Abre ou fecha o acordeão clicado
             trigger.classList.toggle('active', !isActive);
             if (!isActive) {
-                // Se for um dia e estiver vazio, renderiza a tabela
                 if (trigger.classList.contains('day-trigger') && content.innerHTML.trim() === '') {
                     content.innerHTML = createGradeTableHTML(trigger.dataset.tipo, trigger.dataset.dia);
                 }
@@ -142,8 +147,6 @@ export async function init(db, user, userData) {
             } else {
                 content.style.maxHeight = null;
             }
-
-            // Ajusta a altura do acordeão pai, se houver
             const grandParentContent = parentContainer.closest('.accordion-content');
             if (grandParentContent) {
                 setTimeout(() => { grandParentContent.style.maxHeight = grandParentContent.scrollHeight + 'px'; }, 400);
@@ -153,29 +156,20 @@ export async function init(db, user, userData) {
 
     async function start() {
         try {
-            // Garante que os containers estejam prontos
             gradeContent.innerHTML = '<div class="loading-spinner"></div>';
             summaryDetails.innerHTML = '<div class="loading-spinner-small"></div>';
-
-            // Busca as cores dos profissionais primeiro
             const usuariosSnapshot = await db.collection("usuarios").where("fazAtendimento", "==", true).get();
             usuariosSnapshot.forEach(doc => {
                 const prof = doc.data();
                 coresProfissionais.set(prof.username, prof.cor || generateColorFromString(prof.username));
             });
-
-            // Inicia o listener em tempo real na grade
             const gradesDocRef = db.collection('administrativo').doc('grades');
             gradesDocRef.onSnapshot((doc) => {
                 console.log("Dados da grade atualizados em tempo real.");
                 dadosDasGrades = doc.exists ? doc.data() : {};
-                
-                // Se a grade ainda não foi renderizada, renderiza o acordeão principal
                 if (!gradeContent.querySelector('.accordion')) {
                     renderFullAccordions();
                 }
-
-                // Atualiza o resumo do usuário logado e qualquer tabela que já esteja aberta
                 calculateAndShowSummary();
                 const openDayContent = gradeContent.querySelector('.accordion-content.day-content.active');
                 if (openDayContent) {
@@ -187,34 +181,12 @@ export async function init(db, user, userData) {
                 console.error("Erro ao escutar atualizações da grade:", error);
                 gradeContent.innerHTML = `<p class="alert alert-error">Erro de conexão. Não foi possível carregar a grade em tempo real.</p>`;
             });
-
             attachEventListeners();
         } catch (error) {
             console.error("Erro ao inicializar a grade do voluntário:", error);
             gradeContent.innerHTML = `<p class="alert alert-error">Não foi possível carregar os dados da grade.</p>`;
         }
     }
-
-    // Funções auxiliares que estavam faltando
-    generateColorFromString = (str) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        let color = '#';
-        for (let i = 0; i < 3; i++) {
-            let value = (hash >> (i * 8)) & 0xFF;
-            value = 100 + (value % 156);
-            color += ('00' + value.toString(16)).substr(-2);
-        }
-        return color;
-    };
-    
-    isColorDark = (hexColor) => {
-        if (!hexColor) return false;
-        const r = parseInt(hexColor.substr(1, 2), 16);
-        const g = parseInt(hexColor.substr(3, 2), 16);
-        const b = parseInt(hexColor.substr(5, 2), 16);
-        return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.5;
-    };
 
     await start();
 }
