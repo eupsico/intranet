@@ -44,3 +44,23 @@
     display: flex;
     gap: 10px;
 }
+
+/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
+@media (max-width: 768px) {
+    .report-controls {
+        flex-direction: column;
+        align-items: stretch; /* Faz os itens ocuparem a largura total */
+    }
+
+    .report-actions {
+        margin-left: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-box .selectors {
+        flex-direction: column;
+    }
+}
