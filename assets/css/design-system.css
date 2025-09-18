@@ -1,6 +1,6 @@
 /* Arquivo: assets/css/design-system.css
-   Versão: 1.9.0
-   Descrição: Arquivo base com estilos globais para toda a intranet. Estilos de módulos foram separados.
+   Versão: 1.9.1
+   Descrição: Corrige o problema de quebra de texto em dispositivos móveis.
 */
 
 /* --- :root e Reset --- */
@@ -24,7 +24,15 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body { font-family: var(--fonte-principal); background-color: var(--cor-fundo); color: var(--cor-texto-principal); line-height: 1.6; }
+body { 
+    font-family: var(--fonte-principal); 
+    background-color: var(--cor-fundo); 
+    color: var(--cor-texto-principal); 
+    line-height: 1.6;
+    /* CORREÇÃO ADICIONADA */
+    word-wrap: break-word;
+    word-break: normal;
+}
 a { color: var(--cor-secundaria); text-decoration: none; transition: color 0.2s ease-in-out; }
 a:hover { text-decoration: underline; filter: brightness(0.9); }
 
@@ -71,7 +79,16 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .menu-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
 
 /* --- Componentes Gerais de Conteúdo --- */
-.main-content { grid-area: main; overflow-y: auto; padding: 30px; }
+.main-content { 
+    grid-area: main; 
+    overflow-y: auto; 
+    padding: 30px;
+    /* CORREÇÃO ADICIONADA */
+    word-break: normal;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+    hyphens: auto;
+}
 .page-header-container { margin-bottom: 30px; }
 .page-header-container h1 { font-size: 2em; color: var(--cor-primaria); margin-bottom: 5px; }
 .page-header-container p { font-size: 1.1em; color: var(--cor-texto-secundario); }
