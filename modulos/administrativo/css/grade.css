@@ -105,3 +105,56 @@
     border-color: var(--cor-erro); 
     background-color: #f8d7da;
 }
+
+/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
+@media screen and (max-width: 768px) {
+    .grade-table {
+        min-width: 100%;
+        border: 0;
+    }
+    .grade-table thead {
+        display: none; /* Esconde o cabeçalho original */
+    }
+    .grade-table tr {
+        display: block;
+        border: 1px solid var(--cor-borda);
+        border-radius: var(--borda-radius);
+        margin-bottom: 1em;
+        box-shadow: var(--sombra-suave);
+    }
+    .grade-table td {
+        display: block;
+        text-align: right; /* Alinha o valor à direita */
+        border: none;
+        border-bottom: 1px solid #eee;
+        padding-left: 50%; /* Espaço para o "label" */
+        position: relative;
+    }
+    .grade-table td:last-child {
+        border-bottom: 0;
+    }
+    .grade-table td::before {
+        content: attr(data-label); /* Pega o texto do cabeçalho */
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left; /* Alinha o "label" à esquerda */
+        font-weight: 600;
+        color: var(--cor-primaria);
+    }
+    .grade-table td.period-cell {
+        display: none; /* Esconde a coluna "Período" no celular */
+    }
+    .grade-table .hour-cell {
+        font-size: 1.2em;
+        font-weight: 700;
+        background-color: var(--cor-fundo);
+        text-align: center;
+        padding-left: 0;
+    }
+    .grade-table .hour-cell::before {
+        display: none;
+    }
+}
