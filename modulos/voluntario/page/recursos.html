@@ -73,11 +73,13 @@
 
     <div id="grade" class="tab-content" style="display: none;">
         <h2>Grade de Horários Oficial</h2>
-        <p class="description-box">Visualize abaixo a grade oficial montada pelo setor administrativo. As atualizações são exibidas em tempo real.</p>
+        <p class="description-box">Visualize abaixo a grade oficial montada pelo setor administrativo. As atualizações e seu resumo semanal são exibidos em tempo real.</p>
         
-        <div class="tabs-container" id="grade-main-tabs-voluntario">
-            <button class="tab-link active" data-tab="online">Grade Online</button>
-            <button class="tab-link" data-tab="presencial">Grade Presencial</button>
+        <div id="summary-panel-voluntario" class="summary-panel">
+            <h3>Meu Resumo Semanal</h3>
+            <div id="summary-details-voluntario">
+                <div class="loading-spinner-small"></div>
+            </div>
         </div>
 
         <div id="grade-content-voluntario" class="grade-content-wrapper">
