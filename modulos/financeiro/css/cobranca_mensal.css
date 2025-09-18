@@ -68,3 +68,13 @@
 .action-button.cancel-btn:hover {
     background-color: #555;
 }
+
+/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
+@media (max-width: 768px) {
+    .period-filter-box {
+        display: block; /* Ocupa a largura total no mobile */
+    }
+    .period-filter-box .selectors {
+        flex-direction: column; /* Empilha os seletores */
+    }
+}
