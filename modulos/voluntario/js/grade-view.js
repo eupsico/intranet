@@ -1,6 +1,6 @@
 // Arquivo: /modulos/voluntario/js/grade-view.js
-// Versão: 2.0 (Base Funcional Desktop)
-// Descrição: Lógica original para renderizar a grade de horários no portal do voluntário.
+// Versão: 2.1 (Otimização Mobile - Etapa 1: Atributos)
+// Descrição: Adiciona os atributos data-label para preparar a tabela para o CSS responsivo.
 
 // --- FUNÇÕES AUXILIARES GLOBAIS ---
 function generateColorFromString(str) {
@@ -46,11 +46,12 @@ export async function init(db, user, userData, tipoGrade) {
         const tableBodyHtml = horarios.map((hora, index) => {
             const horaFormatada = hora.replace(":", "-");
             let periodoCell = '';
-            if (index === 0) periodoCell = `<td class="period-cell" rowspan="5">Manhã</td>`;
-            if (index === 5) periodoCell = `<td class="period-cell" rowspan="6">Tarde</td>`;
-            if (index === 11) periodoCell = `<td class="period-cell" rowspan="5">Noite</td>`;
+            // ADICIONADO data-label
+            if (index === 0) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Manhã</td>`;
+            if (index === 5) periodoCell = `<td data-label="Período" class="period-cell" rowspan="6">Tarde</td>`;
+            if (index === 11) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Noite</td>`;
 
-            const celulasProfissionais = headers.slice(2).map((_, colIndex) => {
+            const celulasProfissionais = headers.slice(2).map((headerLabel, colIndex) => {
                 const path = `${tipoGrade}.${dia}.${horaFormatada}.col${colIndex}`;
                 const nomeDaGrade = dadosDasGrades[path] || '';
                 const cor = coresProfissionais.get(nomeDaGrade) || generateColorFromString(nomeDaGrade);
@@ -58,7 +59,8 @@ export async function init(db, user, userData, tipoGrade) {
                 const estilo = nomeDaGrade ? `background-color: ${cor}; color: ${textColor};` : '';
                 const isCurrentUser = nomeDaGrade && (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
                 
-                return `<td><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
+                // ADICIONADO data-label
+                return `<td data-label="${headerLabel}"><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
             }).join('');
             
             let rowClass = '';
@@ -67,7 +69,8 @@ export async function init(db, user, userData, tipoGrade) {
             else rowClass = 'periodo-noite';
 
             const horaSimples = hora.replace(':00', 'h');
-            return `<tr class="${rowClass}">${periodoCell}<td class="hour-cell">${horaSimples}</td>${celulasProfissionais}</tr>`;
+            // ADICIONADO data-label
+            return `<tr class="${rowClass}">${periodoCell}<td class="hour-cell" data-label="HORAS">${horaSimples}</td>${celulasProfissionais}</tr>`;
         }).join('');
 
         gradeContent.innerHTML = `
