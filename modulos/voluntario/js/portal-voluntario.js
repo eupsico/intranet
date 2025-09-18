@@ -1,8 +1,7 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
 // Versão: 2.1
-// Descrição: Remove a importação e a passagem do parâmetro 'storage', que não é mais necessário.
+// Descrição: Adiciona a lógica de menu responsivo e remove a importação de 'storage'.
 
-// ALTERAÇÃO: A importação do 'storage' foi removida daqui.
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -69,15 +68,12 @@ function initPortal(user, userData) {
             if (!response.ok) throw new Error(`View HTML not found: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
 
-            // Tenta carregar o módulo JS, mas não quebra se ele não existir (para páginas estáticas)
             try {
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
-                    // ALTERAÇÃO: A passagem do parâmetro 'storage' foi removida.
                     viewModule.init(db, user, userData);
                 }
             } catch (jsError) {
-                // É normal não encontrar JS para páginas estáticas como 'gestao' e 'solicitacoes'
                 console.log(`Nenhum módulo JS encontrado para a view '${viewId}'. Carregando como página estática.`);
             }
 
@@ -87,6 +83,7 @@ function initPortal(user, userData) {
         }
     }
     
+    // FUNÇÃO ATUALIZADA COM A LÓGICA CORRETA
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
         const userGreeting = document.getElementById('user-greeting');
@@ -109,18 +106,33 @@ function initPortal(user, userData) {
             });
         }
         
-        const toggleButton = document.getElementById('sidebar-toggle');
+        // LÓGICA DO MENU HAMBÚRGUER CORRIGIDA
         const layoutContainer = document.querySelector('.layout-container');
-        if (toggleButton && layoutContainer) {
-            toggleButton.addEventListener('click', () => {
-                const isCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
-            });
+        const sidebar = document.querySelector('.sidebar');
+        const toggleButton = document.getElementById('sidebar-toggle');
+        const overlay = document.getElementById('menu-overlay');
+        if (!layoutContainer || !toggleButton || !sidebar || !overlay) { return; }
 
-            if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                 layoutContainer.classList.add('sidebar-collapsed');
+        const handleToggle = () => {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                sidebar.classList.toggle('is-visible');
+                layoutContainer.classList.toggle('mobile-menu-open');
+            } else {
+                const currentlyCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
+                toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
             }
+        };
+        
+        if (window.innerWidth > 768) {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
+            toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
         }
+        
+        toggleButton.addEventListener('click', handleToggle);
+        overlay.addEventListener('click', handleToggle);
     }
 
     function start() {
