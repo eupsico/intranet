@@ -1,6 +1,6 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.8 (Corrigido)
-// Descrição: Adiciona lógica para renderizar o cabeçalho dinâmico com título da página e saudação.
+// Versão: 1.8.1 (Correções de Responsividade e Saudação)
+// Descrição: Ajusta título no header mobile e torna a saudação mais robusta.
 
 import { auth, db } from './firebase-init.js';
 
@@ -86,9 +86,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const userGreeting = document.getElementById('user-greeting');
         const logoutButton = document.getElementById('logout-button-dashboard');
         
+        // LÓGICA DA SAUDAÇÃO CORRIGIDA E MAIS ROBUSTA
         if (userGreeting) { 
-            const firstName = userData.nome ? userData.nome.split(' ')[0] : '';
-            userGreeting.textContent = `${getGreeting()}, ${firstName}!`;
+            try {
+                if (userData && userData.nome) {
+                    const firstName = userData.nome.split(' ')[0];
+                    userGreeting.textContent = `${getGreeting()}, ${firstName}!`;
+                } else {
+                    userGreeting.textContent = getGreeting();
+                }
+            } catch(e) {
+                console.warn("Não foi possível montar a saudação completa:", e);
+                userGreeting.textContent = "Olá!";
+            }
         }
         if (userPhoto) { userPhoto.src = user.photoURL || 'https://www.eupsico.org.br/wp-content/uploads/2024/02/user-1.png'; }
         if (logoutButton) { logoutButton.addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });}
@@ -98,17 +108,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // --- 2. RENDERIZAÇÃO ESPECÍFICA ---
         if (window.location.pathname.includes('painel-financeiro.html')) {
-            // Se estamos na página do Financeiro:
             renderSidebarMenu(modules);
-            
             const pageTitleContainer = document.getElementById('page-title-container');
             if (pageTitleContainer) {
                 pageTitleContainer.innerHTML = `
                     <h1>Painel Financeiro</h1>
-                    <p>Gestão de pagamentos, cobranças, relatórios e fluxo de caixa.</p>
+                    <p>Gestão de pagamentos, cobranças e relatórios.</p>
                 `;
             }
-
             try {
                 const financeModule = await import('../../modulos/financeiro/js/painel-financeiro.js');
                 financeModule.initFinancePanel(user, db, userData);
@@ -117,12 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel financeiro.</h2>";
             }
         } 
-        // ***** INÍCIO DA ALTERAÇÃO *****
         else if (window.location.pathname.includes('administrativo-painel.html')) {
-            // Se estamos na página do Administrativo:
-            // O menu da sidebar é controlado pelo próprio script do módulo, então não chamamos renderSidebarMenu aqui.
-            
-            // Tentamos carregar e inicializar o módulo do painel administrativo
             try {
                 const adminModule = await import('../../modulos/administrativo/js/administrativo-painel.js');
                 adminModule.init(user, db, userData);
@@ -131,13 +133,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel administrativo.</h2>";
             }
         }
-        // ***** FIM DA ALTERAÇÃO *****
         else {
-            // Se estamos na página principal (index.html):
             const pageTitleContainer = document.getElementById('page-title-container');
             if(pageTitleContainer) {
-                // A página principal não precisa de título no header, então limpamos
-                pageTitleContainer.innerHTML = '';
+                pageTitleContainer.innerHTML = '<h1>Intranet EuPsico</h1>';
             }
             renderSidebarMenu(modules);
             renderModuleCards(modules);
@@ -211,29 +210,17 @@ document.addEventListener('DOMContentLoaded', function() {
             supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
         };
         const areas = {
-            portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e informações importantes para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
-            administrativo: { 
-                titulo: 'Administrativo', 
-                descricao: 'Somente os voluntários do administrativo tem acesso para acessar os Processos, documentos e a organização da equipe.', 
-                url: './modulos/administrativo/page/administrativo-painel.html', 
-                roles: ['admin', 'gestor', 'assistente'], 
-                icon: icons.administrativo 
-            },
-            captacao: { titulo: 'Captação', descricao: 'Somente os voluntários da captação tem acesso para acessar as ferramentas e informações para captação.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
-            financeiro: { 
-                titulo: 'Financeiro', 
-                descricao: 'Somente os voluntários do financeiro tem acesso ao painel de controle financeiro e relatórios.', 
-                url: './modulos/financeiro/page/painel-financeiro.html', 
-                roles: ['admin', 'financeiro'], 
-                icon: icons.financeiro 
-            },
-            grupos: { titulo: 'Grupos', descricao: 'Somente os voluntários de grupos tem acesso às informações e materiais para grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
-            marketing: { titulo: 'Marketing', descricao: 'Somente os voluntários do marketing tem acesso aos materiais de marketing e campanhas.', url: '#', roles: ['admin', 'marketing'], icon: icons.marketing },
-            plantao: { titulo: 'Plantão', descricao: 'Somente os voluntários do plantão tem acesso às escalas, contatos e procedimentos.', url: '#', roles: ['admin', 'plantao'], icon: icons.plantao },
-            rh: { titulo: 'Recursos Humanos', descricao: 'Somente os voluntários do RH tem acesso às informações sobre vagas e comunicados.', url: '#', roles: ['admin', 'rh'], icon: icons.rh },
-            servico_social: { titulo: 'Serviço Social', descricao: 'Somente os voluntários do Serviço Social tem acesso aos documentos e orientações.', url: '#', roles: ['admin', 'servico_social'], icon: icons.servico_social },
+            portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e ferramentas para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
+            administrativo: { titulo: 'Administrativo', descricao: 'Acesso aos processos, documentos e organização da equipe.', url: './modulos/administrativo/page/administrativo-painel.html', roles: ['admin', 'gestor', 'assistente'], icon: icons.administrativo },
+            captacao: { titulo: 'Captação', descricao: 'Ferramentas e informações para a equipe de captação de recursos.', url: '#', roles: ['admin', 'captacao'], icon: icons.captacao },
+            financeiro: { titulo: 'Financeiro', descricao: 'Acesso ao painel de controle financeiro e relatórios.', url: './modulos/financeiro/page/painel-financeiro.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
+            grupos: { titulo: 'Grupos', descricao: 'Informações e materiais para a equipe de coordenação de grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
+            marketing: { titulo: 'Marketing', descricao: 'Acesso aos materiais de marketing e campanhas da EuPsico.', url: '#', roles: ['admin', 'marketing'], icon: icons.marketing },
+            plantao: { titulo: 'Plantão', descricao: 'Escalas, contatos e procedimentos para a equipe de plantão.', url: '#', roles: ['admin', 'plantao'], icon: icons.plantao },
+            rh: { titulo: 'Recursos Humanos', descricao: 'Informações sobre vagas, comunicados e gestão de voluntários.', url: '#', roles: ['admin', 'rh'], icon: icons.rh },
+            servico_social: { titulo: 'Serviço Social', descricao: 'Documentos, orientações e fichas para o serviço social.', url: '#', roles: ['admin', 'servico_social'], icon: icons.servico_social },
             supervisores: { titulo: 'Painel do Supervisor', descricao: 'Acesse seu perfil, agendamentos e fichas de acompanhamentos.', url: './pages/supervisores-painel.html', roles: ['admin', 'supervisor'], icon: icons.rh },
-            supervisao: { titulo: 'Intranet Supervisão', descricao: 'Acesse perfis de supervisores ou preencha e visualize suas fichas de acompanhamento.', url: './pages/supervisao-painel.html', roles: ['admin', 'atendimento','supervisor', 'psicologo', 'psicopedagoga', 'musicoterapeuta'], icon: icons.supervisao },
+            supervisao: { titulo: 'Intranet Supervisão', descricao: 'Agende sua supervisão ou preencha suas fichas de acompanhamento.', url: './pages/supervisao-painel.html', roles: ['admin', 'atendimento','supervisor', 'psicologo', 'psicopedagoga', 'musicoterapeuta'], icon: icons.supervisao },
         };
         const userFuncoes = (userData.funcoes || []).map(f => f.toLowerCase());
         let modulesToShow = [];
