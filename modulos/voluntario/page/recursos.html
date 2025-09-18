@@ -5,7 +5,8 @@
     <div class="tabs-container">
         <button class="tab-link active" data-tab="mensagens">Modelos de Mensagem</button>
         <button class="tab-link" data-tab="disponibilidade">Minha Disponibilidade</button>
-        <button class="tab-link" data-tab="grade">Grade de Horários</button>
+        <button class="tab-link" data-tab="grade-online">Grade Online</button>
+        <button class="tab-link" data-tab="grade-presencial">Grade Presencial</button>
     </div>
 
     <div id="mensagens" class="tab-content">
@@ -68,23 +69,11 @@
         </div>
     </div>
 
-    <div id="grade" class="tab-content" style="display: none;">
-        <h2>Grade de Horários Oficial</h2>
-        
-        <div id="summary-panel-voluntario" class="summary-panel">
-            <h3>Meu Resumo Semanal</h3>
-            <div id="summary-details-voluntario">
-                <div class="loading-spinner-small"></div>
-            </div>
-        </div>
-
-        <div class="tabs-container" id="grade-main-tabs-voluntario">
-            <button class="tab-link active" data-tab="online">Grade Online</button>
-            <button class="tab-link" data-tab="presencial">Grade Presencial</button>
-        </div>
-
-        <div id="grade-content-voluntario" class="grade-content-wrapper">
-            <div class="loading-spinner"></div>
-        </div>
+    <div id="grade-online" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <div id="grade-presencial" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
     </div>
 </div>
