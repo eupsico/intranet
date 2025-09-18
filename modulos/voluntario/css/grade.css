@@ -2,90 +2,90 @@
    Descrição: Estilos para a nova visualização da grade de horários.
 */
 
-#grade-container {
+/* Container geral do conteúdo da grade */
+.grade-content-wrapper {
     margin-top: 20px;
 }
 
-.grade-table-wrapper {
-    overflow-x: auto; /* Permite rolagem horizontal em telas pequenas */
+/* Abas secundárias (dias da semana) - Estilo importado do admin para consistência */
+.grade-day-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--cor-borda);
+    margin-bottom: 20px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.grade-day-tabs button {
+    background-color: transparent;
+    border: none;
+    padding: 12px 18px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--cor-texto-secundario);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.grade-day-tabs button:hover {
+    background-color: var(--cor-fundo);
+}
+
+.grade-day-tabs button.active {
+    color: var(--cor-primaria);
+    font-weight: 600;
+    border-bottom-color: var(--cor-primaria);
+}
+
+/* Container da tabela para rolagem horizontal */
+.table-wrapper-voluntario {
+    overflow-x: auto;
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
 }
 
-.grade-table {
+.grade-table-voluntario {
     width: 100%;
     border-collapse: collapse;
-    background-color: var(--cor-surface);
     font-size: 0.9em;
+    min-width: 900px;
 }
 
-.grade-table th,
-.grade-table td {
+.grade-table-voluntario th, 
+.grade-table-voluntario td {
     border: 1px solid var(--cor-borda);
-    padding: 8px;
+    padding: 8px 5px;
     text-align: center;
-    min-width: 120px; /* Largura mínima para as colunas de dias */
+    vertical-align: middle;
+    height: 40px;
 }
 
-.grade-table thead th {
-    background-color: var(--cor-fundo);
-    color: var(--cor-primaria);
-    font-weight: 600;
+.grade-table-voluntario thead th {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    padding: 12px 5px;
     position: sticky;
     top: 0;
     z-index: 1;
 }
 
-.grade-table .hora-cell {
+/* Células de cabeçalho da linha (Período e Horário) */
+.grade-table-voluntario .period-cell,
+.grade-table-voluntario .hour-cell {
     font-weight: 600;
     background-color: var(--cor-fundo);
-    min-width: 80px;
+    width: 90px;
 }
 
-.grade-table tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
+/* Cores para os períodos do dia */
+.grade-table-voluntario .periodo-manha { background-color: #e3f2fd; }
+.grade-table-voluntario .periodo-tarde { background-color: #fffde7; }
+.grade-table-voluntario .periodo-noite { background-color: #f3e5f5; }
 
-.grade-table td {
-    vertical-align: top;
-}
-
-.terapeuta-tag {
-    display: inline-block;
-    padding: 4px 8px;
-    margin: 2px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    color: white;
+/* Célula com nome de profissional */
+.grade-table-voluntario td.filled {
     font-weight: 500;
-}
-
-.terapeuta-tag.status-disponivel {
-    background-color: var(--cor-sucesso);
-}
-
-.terapeuta-tag.status-ocupado {
-    background-color: var(--cor-erro);
-}
-
-.grade-legenda {
-    margin-top: 15px;
-    display: flex;
-    gap: 20px;
-    justify-content: flex-end;
-    align-items: center;
-    font-size: 0.9em;
-}
-
-.legenda-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.legenda-item .cor {
-    width: 15px;
-    height: 15px;
-    border-radius: 3px;
-    border: 1px solid rgba(0,0,0,0.1);
+    color: white;
 }

@@ -72,10 +72,16 @@
     </div>
 
     <div id="grade" class="tab-content" style="display: none;">
-        <h2>Grade de Horários Geral</h2>
-        <p class="description-box">Visualize abaixo todos os horários disponíveis e ocupados dos profissionais. Esta é uma ferramenta de consulta para facilitar o encaminhamento e a organização.</p>
-        <div id="grade-container">
-             <div class="loading-spinner"></div>
+        <h2>Grade de Horários Oficial</h2>
+        <p class="description-box">Visualize abaixo a grade oficial montada pelo setor administrativo. As atualizações são exibidas em tempo real.</p>
+        
+        <div class="tabs-container" id="grade-main-tabs-voluntario">
+            <button class="tab-link active" data-tab="online">Grade Online</button>
+            <button class="tab-link" data-tab="presencial">Grade Presencial</button>
+        </div>
+
+        <div id="grade-content-voluntario" class="grade-content-wrapper">
+            <div class="loading-spinner"></div>
         </div>
     </div>
 </div>
