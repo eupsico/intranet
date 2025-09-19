@@ -1,118 +1,129 @@
-import { collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// A inicialização do Firebase foi removida, pois já é feita pelo portal-voluntario.html
+// O código agora roda imediatamente ao ser carregado.
 
-// Importa o controller de agendamento (que vamos criar a seguir)
-import { agendamentoController } from './agendamento.js';
+// Garante que estamos pegando as instâncias corretas de auth e db.
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-export function init(db, user, userData) {
-    const gridContainer = document.getElementById('supervisor-grid-container');
-    const detailsModal = document.getElementById('details-profile-modal');
-    
-    if (!gridContainer || !detailsModal) return;
+// Seleciona os elementos que foram carregados pelo HTML (ver-supervisores.html)
+const viewContentArea = document.getElementById('view-content-area');
+const dashboardContent = document.getElementById('supervisor-dashboard-content');
+const supervisorCardsGrid = document.getElementById('supervisor-cards-grid');
 
-    let fetchedSupervisors = [];
+if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
+    console.error("Erro crítico: Elementos essenciais do HTML para o painel do supervisor não foram encontrados.");
+} else {
+    // Função para voltar à tela de cards do painel do supervisor
+    window.showSupervisorDashboard = function() {
+        viewContentArea.style.display = 'none';
+        viewContentArea.innerHTML = '';
+        dashboardContent.style.display = 'block';
+    };
 
-    // Função para abrir o modal de detalhes
-    function openDetailsModal(supervisorUid) {
-        const supervisorData = fetchedSupervisors.find(s => s.uid === supervisorUid);
-        if (!supervisorData) return;
+    // Função para carregar uma nova "view" (sub-tela) dentro do container principal
+    async function loadSupervisorSubView(viewName) {
+        dashboardContent.style.display = 'none';
+        viewContentArea.style.display = 'block';
+        viewContentArea.innerHTML = '<div class="loading-spinner"></div>';
 
-        detailsModal.querySelector('#details-modal-title').textContent = `Perfil de ${supervisorData.nome}`;
-        
-        const toList = (data) => {
-            if (!data || data.length === 0) return '<ul><li>Não informado</li></ul>';
-            const items = Array.isArray(data) ? data : [data];
-            return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
+        // Mapeamento dos arquivos para cada sub-tela, com caminhos corrigidos
+        const fileMap = {
+            'meu_perfil': { html: 'page/view-meu-perfil.html', js: 'js/view-meu-perfil.js' },
+            'meus_supervisionados': { html: 'page/view-meus-supervisionados.html', js: 'js/view-meus-supervisionados.js' },
+            'meus_agendamentos': { html: 'page/view-meus-agendamentos.html', js: 'js/view-meus-agendamentos.js' }
         };
+        const files = fileMap[viewName];
 
-        let horariosHtml = '<ul><li>Nenhum horário informado</li></ul>';
-        if (supervisorData.diasHorarios && supervisorData.diasHorarios.length > 0) {
-            horariosHtml = '<ul>' + supervisorData.diasHorarios.map(h => `<li>${h.dia}: ${h.inicio} - ${h.fim}</li>`).join('') + '</ul>';
+        if (!files) {
+            console.error(`View "${viewName}" não encontrada.`);
+            viewContentArea.innerHTML = `<h2>Erro: Módulo não encontrado.</h2><button onclick="showSupervisorDashboard()">Voltar</button>`;
+            return;
         }
 
-        detailsModal.querySelector('#details-modal-body').innerHTML = `
-            <div class="profile-section"><h4>Formação</h4>${toList(supervisorData.formacao)}</div>
-            <div class="profile-section"><h4>Especialização</h4>${toList(supervisorData.especializacao)}</div>
-            <div class="profile-section"><h4>Áreas de Atuação</h4>${toList(supervisorData.atuacao)}</div>
-            <div class="profile-section"><h4>Informações de Supervisão</h4>${toList(supervisorData.supervisaoInfo)}</div>
-            <div class="profile-section"><h4>Dias e Horários</h4>${horariosHtml}</div>
-            <div style="text-align: center; margin-top: 30px;">
-                <button class="btn btn-primary" id="agendar-supervisao-btn" data-supervisor-uid="${supervisorUid}">Agendar Supervisão</button>
-            </div>
-        `;
-        detailsModal.style.display = 'flex';
-    }
-
-    // Gerencia os cliques dentro do modal de detalhes
-    detailsModal.addEventListener('click', (e) => {
-        if (e.target.classList.contains('close-modal-btn')) {
-            detailsModal.style.display = 'none';
-        }
-        if (e.target.id === 'agendar-supervisao-btn') {
-            const supervisorUid = e.target.dataset.supervisorUid;
-            const supervisorData = fetchedSupervisors.find(s => s.uid === supervisorUid);
-            if (supervisorData) {
-                detailsModal.style.display = 'none';
-                agendamentoController.open(db, user, userData, supervisorData);
-            }
-        }
-    });
-
-    // Gerencia o clique no card do supervisor
-    gridContainer.addEventListener('click', (e) => {
-        const card = e.target.closest('.supervisor-card');
-        if (card) {
-            openDetailsModal(card.dataset.uid);
-        }
-    });
-
-    // Função principal que carrega os perfis
-    async function loadProfiles() {
-        gridContainer.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const q = query(
-                collection(db, 'usuarios'),
-                where('funcoes', 'array-contains', 'supervisor'),
-                orderBy('nome')
-            );
-            const snapshot = await getDocs(q);
+            // 1. Carrega o HTML da sub-tela
+            const response = await fetch(files.html);
+            if (!response.ok) throw new Error(`Falha ao carregar ${files.html}`);
+            viewContentArea.innerHTML = await response.text();
 
-            if (snapshot.empty) {
-                gridContainer.innerHTML = '<p>Nenhum supervisor encontrado.</p>';
-                return;
+            // 2. Adiciona um listener no botão "voltar" da sub-tela, se ele existir
+            const backButton = document.getElementById('view-back-button');
+            if (backButton) {
+                backButton.addEventListener('click', window.showSupervisorDashboard);
             }
 
-            fetchedSupervisors = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+            // 3. Remove o script antigo (se houver) e carrega o novo JS da sub-tela
+            const existingScript = document.querySelector(`script[data-view-script="${viewName}"]`);
+            if (existingScript) existingScript.remove();
             
-            gridContainer.innerHTML = ''; // Limpa o spinner
-            fetchedSupervisors.forEach(supervisor => {
-                const card = document.createElement('div');
-                card.className = 'supervisor-card';
-                card.dataset.uid = supervisor.uid;
-
-                const fotoUrl = (supervisor.fotoUrl && supervisor.fotoUrl.startsWith('http'))
-                    ? supervisor.fotoUrl
-                    : '../../../assets/img/avatar-padrao.png';
-
-                card.innerHTML = `
-                    <div class="photo-container">
-                        <img src="${fotoUrl}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.src='../../../assets/img/avatar-padrao.png';">
-                    </div>
-                    <div class="supervisor-identity">
-                        <h2>${supervisor.nome || 'Nome Indisponível'}</h2>
-                        <div class="title-box">${supervisor.titulo || 'SUPERVISOR(A)'}</div>
-                    </div>
-                    <div class="supervisor-contact">
-                        <p><strong>CRP:</strong> ${supervisor.crp || 'N/A'}</p>
-                    </div>
-                `;
-                gridContainer.appendChild(card);
-            });
+            const script = document.createElement('script');
+            script.src = files.js;
+            script.dataset.viewScript = viewName;
+            document.body.appendChild(script);
 
         } catch (error) {
-            console.error("Erro ao carregar perfis:", error);
-            gridContainer.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao carregar os perfis.</p>';
+            console.error("Erro ao carregar sub-view do supervisor:", error);
+            viewContentArea.innerHTML = `<h2>Erro ao carregar.</h2><button onclick="showSupervisorDashboard()">Voltar</button>`;
         }
     }
 
-    loadProfiles();
+    // Renderiza os cards de navegação do painel do supervisor
+    function renderSupervisorCards() {
+        supervisorCardsGrid.innerHTML = '';
+        const modules = {
+            meu_perfil: {
+                titulo: 'Meu Perfil e Edição',
+                descricao: 'Visualize e edite suas informações de perfil.'
+            },
+            meus_supervisionados: {
+                titulo: 'Meus Supervisionados',
+                descricao: 'Visualize os acompanhamentos que você supervisiona.'
+            },
+            meus_agendamentos: { 
+                titulo: 'Meus Agendamentos', 
+                descricao: 'Visualize os profissionais que agendaram supervisão com você.' 
+            }
+        };
+
+        for (const key in modules) {
+            const module = modules[key];
+            const card = document.createElement('div');
+            card.className = 'module-card'; // Usar uma classe consistente
+            card.dataset.view = key;
+            card.innerHTML = `
+                <div class="card-content">
+                    <h3>${module.titulo}</h3>
+                    <p>${module.descricao}</p>
+                </div>`;
+            card.addEventListener('click', () => loadSupervisorSubView(key));
+            supervisorCardsGrid.appendChild(card);
+        }
+    }
+
+    // Ponto de entrada: verifica a autenticação do usuário
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            try {
+                const userDoc = await db.collection('usuarios').doc(user.uid).get();
+                if (userDoc.exists) {
+                    const funcoes = userDoc.data().funcoes || [];
+                    // Apenas permite o acesso se o usuário for supervisor ou admin
+                    if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
+                        renderSupervisorCards();
+                    } else {
+                        dashboardContent.innerHTML = '<h2>Acesso Negado</h2><p>Você não tem permissão para acessar esta área.</p>';
+                    }
+                } else {
+                    dashboardContent.innerHTML = '<h2>Usuário não encontrado.</h2>';
+                }
+            } catch (error) {
+                console.error("Erro ao buscar dados do usuário:", error);
+                dashboardContent.innerHTML = '<h2>Ocorreu um erro ao verificar suas permissões.</h2>';
+            }
+        } else {
+            // Se não houver usuário logado, redireciona para a página de login
+            // O caminho foi corrigido para sair da estrutura de módulos
+            window.location.href = '../../../index.html';
+        }
+    });
 }
