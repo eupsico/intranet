@@ -1,20 +1,16 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.7 (Solução Definitiva para Fotos)
+// Versão: 2.8 (Adicionados Módulos de Supervisão)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
-// NOVA FUNÇÃO: Atualiza a foto do usuário no Firestore se necessário
+// (A função updateUserPhotoOnLogin permanece a mesma)
 async function updateUserPhotoOnLogin(user, userData) {
     const firestorePhotoUrl = userData.fotoUrl || '';
     const googlePhotoUrl = user.photoURL || '';
-
-    // Se o usuário tem uma foto no Google e ela é diferente da que está salva, atualiza.
     if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
         try {
             const userDocRef = db.collection("usuarios").doc(user.uid);
             await userDocRef.update({ fotoUrl: googlePhotoUrl });
-            console.log(`Foto de ${userData.nome} atualizada no Firestore.`);
-            // Atualiza o objeto local para que a mudança reflita imediatamente
             userData.fotoUrl = googlePhotoUrl; 
         } catch (error) {
             console.error("Erro ao atualizar a foto do usuário:", error);
@@ -28,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const userDoc = await db.collection("usuarios").doc(user.uid).get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
-                // Chama a nova função para verificar e atualizar a foto no login
                 await updateUserPhotoOnLogin(user, userData);
                 initPortal(user, userData);
             } else {
@@ -44,15 +39,23 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
+    // Lista de views padrão
     const views = [
         { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
         { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
+        { id: 'supervisao', name: 'Supervisão', icon: '🎓' }, // <<-- ADICIONADO
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
         { id: 'recursos', name: 'Recursos do Voluntário', icon: '🛠️' },
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
     ];
+
+    // Adiciona o Painel do Supervisor condicionalmente
+    const funcoes = userData.funcoes || [];
+    if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
+        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: '⭐' }); // <<-- ADICIONADO
+    }
 
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
@@ -78,6 +81,7 @@ function initPortal(user, userData) {
     }
 
     async function loadView(viewId) {
+        // (Lógica de carregamento de view permanece a mesma)
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
@@ -87,10 +91,19 @@ function initPortal(user, userData) {
             if (!response.ok) throw new Error(`View HTML not found: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
             try {
-                const cssLink = document.createElement('link');
-                cssLink.rel = 'stylesheet';
-                cssLink.href = `../css/${viewId}.css`; 
-                document.head.appendChild(cssLink);
+                // Carrega o CSS da view
+                const cssFiles = ['supervisao-geral', viewId]; // Carrega o CSS geral e o específico
+                cssFiles.forEach(cssName => {
+                    const cssId = `css-${cssName}`;
+                    if (!document.getElementById(cssId)) {
+                        const link = document.createElement('link');
+                        link.id = cssId;
+                        link.rel = 'stylesheet';
+                        link.href = `../css/${cssName}.css`;
+                        document.head.appendChild(link);
+                    }
+                });
+
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
                     viewModule.init(db, user, userData);
@@ -104,30 +117,27 @@ function initPortal(user, userData) {
         }
     }
     
+    // (A função setupLayout permanece a mesma)
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
-        const userGreeting = document.getElementById('user-greeting');
-        const logoutButton = document.getElementById('logout-button-dashboard');
-
         if(userPhoto) {
             userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
             userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
         }
-        
+        const userGreeting = document.getElementById('user-greeting');
         if(userGreeting && userData.nome) {
             const firstName = userData.nome.split(' ')[0];
             const hour = new Date().getHours();
             const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
             userGreeting.textContent = `${greeting}, ${firstName}!`;
         }
-        
+        const logoutButton = document.getElementById('logout-button-dashboard');
         if(logoutButton) {
             logoutButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 auth.signOut();
             });
         }
-        
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
