@@ -2,7 +2,6 @@
 
 #perfil-container {
     display: grid;
-    /* Cria 2 colunas em telas maiores para melhor alinhamento */
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 20px 30px;
     background-color: var(--cor-surface);
@@ -24,7 +23,8 @@
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select { /* Adicionado 'select' para unificar o estilo */
     padding: 12px;
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
@@ -35,16 +35,17 @@
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus { /* Adicionado 'select' */
     outline: none;
     border-color: var(--cor-primaria);
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
 }
 
-/* Estilo para campos desabilitados */
 .form-group input[readonly],
-.form-group textarea[readonly] {
-    background-color: #e9ecef; /* Um cinza claro para indicar inatividade */
+.form-group textarea[readonly],
+.form-group select[disabled] { /* Adicionado 'select' */
+    background-color: #e9ecef;
     cursor: default;
     color: #6c757d;
 }
@@ -57,11 +58,10 @@
 #perfil-actions {
     margin-top: 30px;
     display: flex;
-    justify-content: flex-end; /* Alinha botões à direita */
-    gap: 10px; /* Espaçamento entre botões */
+    justify-content: flex-end;
+    gap: 10px;
 }
 
-/* Estilo para o botão secundário (Cancelar) */
 .btn.btn-secondary {
     background-color: #6c757d;
     color: white;
