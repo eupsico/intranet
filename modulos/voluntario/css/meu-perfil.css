@@ -1,31 +1,45 @@
 /* Arquivo: /modulos/voluntario/css/meu-perfil.css */
 
 #perfil-container {
-    display: grid;
-    /* Layout de 1 coluna por padrão (mobile) */
-    grid-template-columns: 1fr;
-    gap: 20px 30px;
     background-color: var(--cor-surface);
     padding: 30px;
     border-radius: var(--borda-radius);
     box-shadow: var(--sombra-suave);
 }
 
-/* Em telas maiores (desktops), o layout muda para 2 colunas */
-@media (min-width: 768px) {
-    #perfil-container {
-        grid-template-columns: 1fr 1fr;
-    }
+/* Base para todas as linhas do formulário */
+.form-row, .form-row-flex {
+    display: grid;
+    gap: 20px 30px;
+    margin-bottom: 20px;
 }
 
-/* Classe para fazer um campo ocupar a largura total em telas maiores */
-.form-group.full-width {
-    grid-column: 1 / -1;
+/* Linhas com colunas de tamanho igual */
+.form-row {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* Linhas com colunas flexíveis (para Nome e Telefone) */
+.form-row-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
+    flex-grow: 1; /* Padrão para ocupar espaço igualmente */
+}
+
+/* Modificadores de tamanho para .form-row-flex */
+.form-group.flex-grow-2 {
+    flex-grow: 2; /* Ocupa o dobro do espaço */
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1; /* Ocupa a linha inteira em .form-row */
+    width: 100%; /* Garante a largura total em .form-row-flex */
 }
 
 .form-group label {
@@ -61,6 +75,11 @@
     background-color: #e9ecef;
     cursor: default;
     color: #6c757d;
+}
+
+.form-group input[type="date"] {
+    -webkit-appearance: none;
+    min-height: calc(1.5em + 24px); /* Garante altura similar aos outros campos */
 }
 
 .form-group textarea {
