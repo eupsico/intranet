@@ -1,5 +1,6 @@
 // A inicialização do Firebase foi removida, pois já é feita pelo portal-voluntario.html
 // O código agora roda imediatamente ao ser carregado.
+console.log("Script ver-supervisores.js carregado.");
 
 // Garante que estamos pegando as instâncias corretas de auth e db.
 const auth = firebase.auth();
@@ -13,6 +14,7 @@ const supervisorCardsGrid = document.getElementById('supervisor-cards-grid');
 if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
     console.error("Erro crítico: Elementos essenciais do HTML para o painel do supervisor não foram encontrados.");
 } else {
+    console.log("Elementos do painel do supervisor encontrados com sucesso.");
     // Função para voltar à tela de cards do painel do supervisor
     window.showSupervisorDashboard = function() {
         viewContentArea.style.display = 'none';
@@ -57,7 +59,8 @@ if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
             if (existingScript) existingScript.remove();
             
             const script = document.createElement('script');
-            script.src = files.js;
+            // O caminho aqui precisa ser relativo à pasta raiz dos módulos (voluntario/)
+            script.src = `../${files.js}`; 
             script.dataset.viewScript = viewName;
             document.body.appendChild(script);
 
@@ -69,6 +72,7 @@ if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
 
     // Renderiza os cards de navegação do painel do supervisor
     function renderSupervisorCards() {
+        console.log("Iniciando a renderização dos cards do supervisor.");
         supervisorCardsGrid.innerHTML = '';
         const modules = {
             meu_perfil: {
@@ -88,7 +92,7 @@ if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
         for (const key in modules) {
             const module = modules[key];
             const card = document.createElement('div');
-            card.className = 'module-card'; // Usar uma classe consistente
+            card.className = 'module-card';
             card.dataset.view = key;
             card.innerHTML = `
                 <div class="card-content">
@@ -98,22 +102,28 @@ if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
             card.addEventListener('click', () => loadSupervisorSubView(key));
             supervisorCardsGrid.appendChild(card);
         }
+        console.log("Cards renderizados.");
     }
 
     // Ponto de entrada: verifica a autenticação do usuário
     auth.onAuthStateChanged(async user => {
         if (user) {
+            console.log("Usuário autenticado:", user.uid);
             try {
                 const userDoc = await db.collection('usuarios').doc(user.uid).get();
                 if (userDoc.exists) {
                     const funcoes = userDoc.data().funcoes || [];
+                    console.log("Funções do usuário:", funcoes);
                     // Apenas permite o acesso se o usuário for supervisor ou admin
                     if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
+                        console.log("Usuário é supervisor ou admin. Acesso permitido.");
                         renderSupervisorCards();
                     } else {
+                        console.warn("Acesso negado. Usuário não é supervisor ou admin.");
                         dashboardContent.innerHTML = '<h2>Acesso Negado</h2><p>Você não tem permissão para acessar esta área.</p>';
                     }
                 } else {
+                    console.error("Documento do usuário não encontrado no Firestore.");
                     dashboardContent.innerHTML = '<h2>Usuário não encontrado.</h2>';
                 }
             } catch (error) {
@@ -121,8 +131,8 @@ if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
                 dashboardContent.innerHTML = '<h2>Ocorreu um erro ao verificar suas permissões.</h2>';
             }
         } else {
+            console.log("Nenhum usuário logado. Redirecionando para o login.");
             // Se não houver usuário logado, redireciona para a página de login
-            // O caminho foi corrigido para sair da estrutura de módulos
             window.location.href = '../../../index.html';
         }
     });
