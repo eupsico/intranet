@@ -80,43 +80,41 @@ function initPortal(user, userData) {
         });
     }
 
-    async function loadView(viewId) {
-        // (Lógica de carregamento de view permanece a mesma)
+    async function loadView(viewId, param = null) {
         sidebarMenu.querySelectorAll('a').forEach(link => {
-            link.classList.toggle('active', link.dataset.view === viewId);
+            const linkViewId = link.getAttribute('data-view');
+            link.classList.toggle('active', linkViewId === viewId);
         });
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const response = await fetch(`./${viewId}.html`);
             if (!response.ok) throw new Error(`View HTML not found: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
+            
             try {
-                // Carrega o CSS da view
-                const cssFiles = ['supervisao-geral', viewId]; // Carrega o CSS geral e o específico
-                cssFiles.forEach(cssName => {
-                    const cssId = `css-${cssName}`;
-                    if (!document.getElementById(cssId)) {
-                        const link = document.createElement('link');
-                        link.id = cssId;
-                        link.rel = 'stylesheet';
-                        link.href = `../css/${cssName}.css`;
-                        document.head.appendChild(link);
-                    }
-                });
-
+                // Carrega CSS
+                const cssId = `css-${viewId}`;
+                if (!document.getElementById(cssId)) {
+                    const link = document.createElement('link');
+                    link.id = cssId;
+                    link.rel = 'stylesheet';
+                    link.href = `../css/${viewId}.css`;
+                    document.head.appendChild(link);
+                }
+                
+                // Carrega o Módulo JS e passa o parâmetro
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
-                    viewModule.init(db, user, userData);
+                    viewModule.init(db, user, userData, param); // Passa o parâmetro para a função init
                 }
             } catch (jsError) {
-                console.log(`Nenhum módulo JS encontrado para a view '${viewId}'.`);
+                console.log(`Nenhum módulo JS encontrado para a view '${viewId}'.`, jsError);
             }
         } catch (htmlError) {
             console.error(`Erro ao carregar a view ${viewId}:`, htmlError);
-            contentArea.innerHTML = `<p style="color:red;">Erro ao carregar esta seção.</p>`;
+            contentArea.innerHTML = `<p style="color:red;">Erro: A página '${viewId}' não foi encontrada.</p>`;
         }
-    }
-    
+    }    
     // (A função setupLayout permanece a mesma)
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
@@ -174,12 +172,19 @@ function initPortal(user, userData) {
     function start() {
         setupLayout();
         buildSidebarMenu();
-        const handleHashChange = () => {
-            const viewId = window.location.hash.substring(1) || views[0].id;
-            loadView(viewId);
+                const handleHashChange = () => {
+            const hash = window.location.hash.substring(1);
+            if (!hash) {
+                loadView(views[0].id);
+                return;
+            }
+            // Separa a view do parâmetro (ex: "ficha-supervisao/new")
+            const [viewId, param] = hash.split('/');
+            loadView(viewId, param);
         };
+
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange();
+        handleHashChange(); // Carrega a view inicial
     }
 
     start();
