@@ -1,148 +1,125 @@
-// O script é envolvido em uma função anônima para evitar poluir o escopo global.
-(function() {
-    // Verifica se as instâncias do Firebase (db, auth) estão disponíveis.
-    if (typeof db === 'undefined' || typeof auth === 'undefined') {
-        console.error("Firebase não foi inicializado. Este script deve ser carregado após a inicialização do Firebase.");
-        return;
-    }
+// A inicialização do Firebase já é feita pelo portal-voluntario.html
+console.log("Script ver-supervisores.js carregado.");
 
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-        console.error("Usuário não autenticado.");
-        return; // Sai se não houver usuário logado.
-    }
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-    // Seleciona os elementos da view que acabamos de carregar.
-    const listaContainer = document.getElementById('lista-supervisionados-container');
-    const filtroPacienteSelect = document.getElementById('filtro-paciente');
-    const filtroProfissionalSelect = document.getElementById('filtro-profissional');
-    const filtrosContainer = document.getElementById('filtros-supervisionados-container');
+const viewContentArea = document.getElementById('view-content-area');
+const dashboardContent = document.getElementById('supervisor-dashboard-content');
+const supervisorCardsGrid = document.getElementById('supervisor-cards-grid');
 
-    // Armazena todos os registros para evitar múltiplas chamadas ao banco de dados.
-    let todosOsRegistros = [];
+if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
+    console.error("Erro crítico: Elementos essenciais do HTML para o painel do supervisor não foram encontrados.");
+} else {
+    console.log("Elementos do painel do supervisor encontrados com sucesso.");
 
-    /**
-     * Renderiza a lista de supervisionados na tela.
-     * @param {Array} registros - A lista de registros de supervisão para exibir.
-     */
-    function renderizarLista(registros) {
-        listaContainer.innerHTML = '';
-        if (registros.length === 0) {
-            listaContainer.innerHTML = '<p class="text-center">Nenhum acompanhamento encontrado com os filtros atuais.</p>';
+    window.showSupervisorDashboard = function() {
+        viewContentArea.style.display = 'none';
+        viewContentArea.innerHTML = '';
+        dashboardContent.style.display = 'block';
+    };
+
+    async function loadSupervisorSubView(viewName) {
+        dashboardContent.style.display = 'none';
+        viewContentArea.style.display = 'block';
+        viewContentArea.innerHTML = '<div class="loading-spinner"></div>';
+
+        // ===== CORREÇÃO PRINCIPAL =====
+        // Mapeamento de arquivos ajustado para os caminhos e arquivos corretos.
+        const fileMap = {
+            'meus_supervisionados': { 
+                html: 'page/view-meus-supervisionados.html', 
+                js: 'js/view-meus-supervisionados.js' 
+            }
+        };
+        // ============================
+
+        const files = fileMap[viewName];
+
+        if (!files) {
+            console.error(`View "${viewName}" não encontrada no fileMap.`);
+            viewContentArea.innerHTML = `<h2>Erro: Módulo não encontrado.</h2><button onclick="showSupervisorDashboard()">Voltar</button>`;
             return;
         }
 
-        registros.forEach(registro => {
-            const dataFormatada = registro.supervisaoData ? new Date(registro.supervisaoData + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
-            const div = document.createElement('div');
-            // Adiciona classes do design system para um visual consistente.
-            div.className = 'registro-item card'; 
-            div.dataset.id = registro.id;
-            
-            // O evento de clique é adicionado diretamente aqui.
-            div.addEventListener('click', () => {
-                if (window.loadFormularioView) {
-                    window.loadFormularioView(registro.id);
-                } else {
-                    console.error("A função loadFormularioView não foi encontrada no escopo global.");
-                    alert("Erro: Não foi possível abrir o formulário de supervisão.");
-                }
-            });
-
-            div.innerHTML = `
-                <div class="card-body">
-                    <div class="info-group"><strong>Paciente:</strong><span>${registro.pacienteIniciais || 'N/A'}</span></div>
-                    <div class="info-group"><strong>Profissional:</strong><span>${registro.psicologoNome || 'N/A'}</span></div>
-                    <div class="info-group"><strong>Data da Supervisão:</strong><span>${dataFormatada}</span></div>
-                </div>`;
-            listaContainer.appendChild(div);
-        });
-    }
-
-    /**
-     * Popula o dropdown de filtro de pacientes com base nos registros carregados.
-     */
-    function popularFiltros() {
-        const profissionais = new Map();
-        const pacientes = new Map();
-
-        todosOsRegistros.forEach(reg => {
-            if (reg.psicologoUid && reg.psicologoNome) {
-                profissionais.set(reg.psicologoUid, reg.psicologoNome);
-            }
-            if (reg.pacienteIniciais) {
-                pacientes.set(reg.pacienteIniciais.toLowerCase(), reg.pacienteIniciais);
-            }
-        });
-
-        // Popula filtro de profissionais
-        filtroProfissionalSelect.innerHTML = '<option value="">Todos os Profissionais</option>';
-        profissionais.forEach((nome, uid) => {
-            const option = document.createElement('option');
-            option.value = uid;
-            option.textContent = nome;
-            filtroProfissionalSelect.appendChild(option);
-        });
-
-        // Popula filtro de pacientes
-        filtroPacienteSelect.innerHTML = '<option value="">Todos os Pacientes</option>';
-        pacientes.forEach((nome, chave) => {
-            const option = document.createElement('option');
-            option.value = chave;
-            option.textContent = nome;
-            filtroPacienteSelect.appendChild(option);
-        });
-    }
-
-    /**
-     * Filtra os registros com base nos valores selecionados nos dropdowns.
-     */
-    function aplicarFiltros() {
-        const termoPaciente = filtroPacienteSelect.value;
-        const uidProfissional = filtroProfissionalSelect.value;
-
-        const registrosFiltrados = todosOsRegistros.filter(reg => {
-            const matchPaciente = !termoPaciente || (reg.pacienteIniciais && reg.pacienteIniciais.toLowerCase() === termoPaciente);
-            const matchProfissional = !uidProfissional || reg.psicologoUid === uidProfissional;
-            return matchPaciente && matchProfissional;
-        });
-
-        renderizarLista(registrosFiltrados);
-    }
-
-    /**
-     * Carrega os dados dos supervisionados do Firestore.
-     */
-    async function carregarSupervisionados() {
-        listaContainer.innerHTML = '<div class="loading-spinner"></div>';
-
         try {
-            const snapshot = await db.collection('supervisao')
-                .where('supervisorUid', '==', currentUser.uid)
-                .orderBy('supervisaoData', 'desc')
-                .get();
+            // Carrega o HTML da sub-tela
+            const response = await fetch(files.html);
+            if (!response.ok) throw new Error(`Falha ao carregar o arquivo: ${files.html}`);
+            viewContentArea.innerHTML = await response.text();
 
-            if (snapshot.empty) {
-                if(filtrosContainer) filtrosContainer.style.display = 'none';
-                listaContainer.innerHTML = '<p class="text-center lead">Nenhum acompanhamento encontrado para sua supervisão.</p>';
-                return;
+            const backButton = document.getElementById('view-back-button');
+            if (backButton) {
+                backButton.addEventListener('click', window.showSupervisorDashboard);
             }
+
+            // Remove script antigo e carrega o novo
+            const existingScript = document.querySelector(`script[data-view-script="${viewName}"]`);
+            if (existingScript) existingScript.remove();
             
-            todosOsRegistros = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            popularFiltros();
-            renderizarLista(todosOsRegistros);
-
-            // Adiciona os listeners de evento *depois* de popular os filtros.
-            filtroProfissionalSelect.addEventListener('change', aplicarFiltros);
-            filtroPacienteSelect.addEventListener('change', aplicarFiltros);
+            const script = document.createElement('script');
+            script.src = `../${files.js}`; // Caminho relativo a partir da pasta 'page'
+            script.dataset.viewScript = viewName;
+            document.body.appendChild(script);
 
         } catch (error) {
-            console.error("Erro ao carregar supervisionados:", error);
-            listaContainer.innerHTML = `<p class="text-danger text-center">Ocorreu um erro ao carregar a lista.</p>`;
+            console.error("Erro ao carregar sub-view do supervisor:", error);
+            viewContentArea.innerHTML = `<h2>Erro ao carregar o módulo. Verifique o console para mais detalhes.</h2><button onclick="showSupervisorDashboard()">Voltar</button>`;
         }
     }
 
-    // Inicia o processo de carregamento dos dados.
-    carregarSupervisionados();
-})();
+    // Renderiza apenas os cards de navegação que existem
+    function renderSupervisorCards() {
+        console.log("Iniciando a renderização dos cards do supervisor.");
+        supervisorCardsGrid.innerHTML = '';
+
+        // ===== CORREÇÃO PRINCIPAL =====
+        // Apenas os módulos que têm páginas correspondentes estão listados aqui.
+        const modules = {
+            meus_supervisionados: {
+                titulo: 'Meus Supervisionados',
+                descricao: 'Visualize os acompanhamentos que você supervisiona.'
+            }
+        };
+        // ============================
+
+        for (const key in modules) {
+            const module = modules[key];
+            const card = document.createElement('div');
+            card.className = 'module-card';
+            card.dataset.view = key;
+            card.innerHTML = `
+                <div class="card-content">
+                    <h3>${module.titulo}</h3>
+                    <p>${module.descricao}</p>
+                </div>`;
+            card.addEventListener('click', () => loadSupervisorSubView(key));
+            supervisorCardsGrid.appendChild(card);
+        }
+        console.log("Cards renderizados.");
+    }
+
+    // Ponto de entrada: verifica a autenticação e permissões do usuário
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            try {
+                const userDoc = await db.collection('usuarios').doc(user.uid).get();
+                if (userDoc.exists) {
+                    const funcoes = userDoc.data().funcoes || [];
+                    if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
+                        renderSupervisorCards();
+                    } else {
+                        dashboardContent.innerHTML = '<h2>Acesso Negado</h2><p>Você não tem permissão para acessar esta área.</p>';
+                    }
+                } else {
+                    dashboardContent.innerHTML = '<h2>Usuário não encontrado.</h2>';
+                }
+            } catch (error) {
+                console.error("Erro ao buscar dados do usuário:", error);
+                dashboardContent.innerHTML = '<h2>Ocorreu um erro ao verificar suas permissões.</h2>';
+            }
+        } else {
+            window.location.href = '../../../index.html';
+        }
+    });
+}
