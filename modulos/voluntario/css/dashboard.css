@@ -69,7 +69,7 @@
 
 /* Estilo para o Resumo Financeiro */
 .financeiro-valor {
-    font-size: 1.5em;
+    font-size: 1.1em;
     font-weight: 700;
     color: var(--cor-sucesso); /* Cor de destaque para o valor */
     display: block;
