@@ -4,18 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Voluntário - EuPsico</title>
-    
-    <link rel="stylesheet" href="../../../assets/css/design-system.css">
-    <link rel="stylesheet" href="../css/portal-voluntario.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
-    <link rel="stylesheet" href="../css/recursos.css">
-    <link rel="stylesheet" href="../css/envio_comprovantes.css">
-    <link rel="stylesheet" href="../css/solicitacoes.css">
-    <link rel="stylesheet" href="../css/grade.css">
-    <link rel="stylesheet" href="../css/meu-perfil.css">
-    <link rel="stylesheet" href="../css/voluntarios.css">
+        <script>
+            // Obtém o nome da página atual (sem extensão)
+            const pageName = window.location.pathname.split("/").pop().replace(".html", "");
 
-    <link rel="stylesheet" href="../css/supervisao-geral.css">
+            // Lista de CSSs comuns que devem ser carregados sempre
+            const commonStyles = [
+                "../../../assets/css/design-system.css"
+            ];
+
+            // CSS específico da página
+            const pageSpecificCSS = `../css/${pageName}.css`;
+
+            // Função para adicionar um CSS ao <head>
+            function loadCSS(href) {
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = href;
+                document.head.appendChild(link);
+            }
+
+            // Carrega os estilos comuns
+            commonStyles.forEach(loadCSS);
+
+            // Tenta carregar o CSS específico da página
+            fetch(pageSpecificCSS)
+                .then(response => {
+                    if (response.ok) loadCSS(pageSpecificCSS);
+                    else console.warn("CSS da página não encontrado:", pageSpecificCSS);
+                })
+                .catch(() => console.warn("Erro ao carregar CSS:", pageSpecificCSS));
+        </script>
 
 </head>
 <body>
