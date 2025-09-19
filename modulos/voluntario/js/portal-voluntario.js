@@ -1,9 +1,8 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.8 (Adicionados Módulos de Supervisão)
+// Versão: 2.9 (Roteador aprimorado para parâmetros)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
-// (A função updateUserPhotoOnLogin permanece a mesma)
 async function updateUserPhotoOnLogin(user, userData) {
     const firestorePhotoUrl = userData.fotoUrl || '';
     const googlePhotoUrl = user.photoURL || '';
@@ -39,22 +38,20 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // Lista de views padrão
     const views = [
         { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
         { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
-        { id: 'supervisao', name: 'Supervisão', icon: '🎓' }, // <<-- ADICIONADO
+        { id: 'supervisao', name: 'Supervisão', icon: '🎓' },
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
         { id: 'recursos', name: 'Recursos do Voluntário', icon: '🛠️' },
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
     ];
 
-    // Adiciona o Painel do Supervisor condicionalmente
     const funcoes = userData.funcoes || [];
     if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
-        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: '⭐' }); // <<-- ADICIONADO
+        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: '⭐' });
     }
 
     function buildSidebarMenu() {
@@ -80,47 +77,57 @@ function initPortal(user, userData) {
         });
     }
 
+    // --- FUNÇÃO DE NAVEGAÇÃO ATUALIZADA ---
     async function loadView(viewId, param = null) {
         sidebarMenu.querySelectorAll('a').forEach(link => {
-            const linkViewId = link.getAttribute('data-view');
-            link.classList.toggle('active', linkViewId === viewId);
+            link.classList.toggle('active', link.dataset.view === viewId);
         });
+
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const response = await fetch(`./${viewId}.html`);
-            if (!response.ok) throw new Error(`View HTML not found: ${viewId}.html`);
+            if (!response.ok) throw new Error(`View HTML not found for viewId: ${viewId}`);
             contentArea.innerHTML = await response.text();
             
             try {
-                // Carrega CSS
-                const cssId = `css-${viewId}`;
-                if (!document.getElementById(cssId)) {
-                    const link = document.createElement('link');
-                    link.id = cssId;
-                    link.rel = 'stylesheet';
-                    link.href = `../css/${viewId}.css`;
-                    document.head.appendChild(link);
-                }
+                // Carrega CSSs necessários para a view
+                const cssFilesToLoad = ['supervisao-geral', viewId];
+                cssFilesToLoad.forEach(cssName => {
+                    const cssId = `css-${cssName}`;
+                    if (!document.getElementById(cssId)) {
+                        const link = document.createElement('link');
+                        link.id = cssId;
+                        link.rel = 'stylesheet';
+                        link.href = `../css/${cssName}.css`;
+                        document.head.appendChild(link);
+                    }
+                });
                 
                 // Carrega o Módulo JS e passa o parâmetro
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
-                    viewModule.init(db, user, userData, param); // Passa o parâmetro para a função init
+                    // Passa o parâmetro (ex: 'new' ou um ID) para a função init da view
+                    viewModule.init(db, user, userData, param);
                 }
             } catch (jsError) {
-                console.log(`Nenhum módulo JS encontrado para a view '${viewId}'.`, jsError);
+                // Silencia o erro para páginas que podem não ter JS
+                if (jsError.message.includes('Failed to fetch dynamically imported module')) {
+                    console.log(`Nenhum módulo JS encontrado ou necessário para a view '${viewId}'.`);
+                } else {
+                    console.error(`Erro no script da view '${viewId}':`, jsError);
+                }
             }
         } catch (htmlError) {
             console.error(`Erro ao carregar a view ${viewId}:`, htmlError);
-            contentArea.innerHTML = `<p style="color:red;">Erro: A página '${viewId}' não foi encontrada.</p>`;
+            contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada. Verifique se o arquivo existe na pasta 'page' e se o link no menu está correto.</p></div>`;
         }
-    }    
-    // (A função setupLayout permanece a mesma)
+    }
+    
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
         if(userPhoto) {
             userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
-            userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
+            userPhoto.onerror = () => { userPhoto.src = '../../../assets.img/avatar-padrao.png'; };
         }
         const userGreeting = document.getElementById('user-greeting');
         if(userGreeting && userData.nome) {
@@ -172,7 +179,9 @@ function initPortal(user, userData) {
     function start() {
         setupLayout();
         buildSidebarMenu();
-                const handleHashChange = () => {
+
+        // --- ROTEADOR ATUALIZADO ---
+        const handleHashChange = () => {
             const hash = window.location.hash.substring(1);
             if (!hash) {
                 loadView(views[0].id);
