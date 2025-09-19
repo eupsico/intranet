@@ -2,12 +2,25 @@
 
 #perfil-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    /* Layout de 1 coluna por padrão (mobile) */
+    grid-template-columns: 1fr;
     gap: 20px 30px;
     background-color: var(--cor-surface);
     padding: 30px;
     border-radius: var(--borda-radius);
     box-shadow: var(--sombra-suave);
+}
+
+/* Em telas maiores (desktops), o layout muda para 2 colunas */
+@media (min-width: 768px) {
+    #perfil-container {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Classe para fazer um campo ocupar a largura total em telas maiores */
+.form-group.full-width {
+    grid-column: 1 / -1;
 }
 
 .form-group {
@@ -24,7 +37,7 @@
 
 .form-group input,
 .form-group textarea,
-.form-group select { /* Adicionado 'select' para unificar o estilo */
+.form-group select {
     padding: 12px;
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
@@ -36,7 +49,7 @@
 
 .form-group input:focus,
 .form-group textarea:focus,
-.form-group select:focus { /* Adicionado 'select' */
+.form-group select:focus {
     outline: none;
     border-color: var(--cor-primaria);
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
@@ -44,7 +57,7 @@
 
 .form-group input[readonly],
 .form-group textarea[readonly],
-.form-group select[disabled] { /* Adicionado 'select' */
+.form-group select[disabled] {
     background-color: #e9ecef;
     cursor: default;
     color: #6c757d;
@@ -68,8 +81,4 @@
 }
 .btn.btn-secondary:hover {
     background-color: #5a6268;
-}
-
-.form-group.full-width {
-    grid-column: 1 / -1;
 }

@@ -9,26 +9,33 @@ export function init(db, user, userData) {
 
     function validarCPF(cpf) {
         cpf = cpf.replace(/[^\d]+/g,'');
-        if(cpf == '') return false;
-        if (cpf.length != 11 || /^(.)\1+$/.test(cpf)) return false;
+        if(cpf === '' || cpf.length !== 11 || /^(.)\1+$/.test(cpf)) return false;
         let add = 0;
         for (let i=0; i < 9; i ++) add += parseInt(cpf.charAt(i)) * (10 - i);
         let rev = 11 - (add % 11);
-        if (rev == 10 || rev == 11) rev = 0;
-        if (rev != parseInt(cpf.charAt(9))) return false;
+        if (rev === 10 || rev === 11) rev = 0;
+        if (rev !== parseInt(cpf.charAt(9))) return false;
         add = 0;
         for (let i = 0; i < 10; i ++) add += parseInt(cpf.charAt(i)) * (11 - i);
         rev = 11 - (add % 11);
-        if (rev == 10 || rev == 11) rev = 0;
-        if (rev != parseInt(cpf.charAt(10))) return false;
+        if (rev === 10 || rev === 11) rev = 0;
+        if (rev !== parseInt(cpf.charAt(10))) return false;
         return true;
+    }
+
+    // NOVA FUNÇÃO: Aplica a máscara de telefone
+    function formatarTelefone(value) {
+        if (!value) return "";
+        value = value.replace(/\D/g,'');
+        value = value.replace(/(\d{2})(\d)/,"($1) $2");
+        value = value.replace(/(\d)(\d{4})$/,"$1-$2");
+        return value;
     }
 
     function toggleFormState(enabled) {
         const inputs = container.querySelectorAll('input, textarea, select');
         inputs.forEach(input => {
             if (!input.classList.contains('always-readonly')) {
-                // Para selects, usamos 'disabled' em vez de 'readOnly'
                 if (input.tagName.toLowerCase() === 'select') {
                     input.disabled = !enabled;
                 } else {
@@ -62,17 +69,14 @@ export function init(db, user, userData) {
     }
     
     function renderForm(data) {
-        const conselhos = ['CRP', 'CRM', 'CRESS', 'OAB', 'Outro'];
-        const conselhoAtual = data.conselhoProfissional || '';
-
-       container.innerHTML = `
+        container.innerHTML = `
             <div class="form-group">
                 <label for="nome-completo">Nome Completo *</label>
                 <input type="text" id="nome-completo" value="${data.nome || ''}" readonly>
             </div>
             <div class="form-group">
                 <label for="telefone">Telefone *</label>
-                <input type="tel" id="telefone" value="${data.telefone || ''}" readonly>
+                <input type="tel" id="telefone" value="${formatarTelefone(data.telefone || '')}" maxlength="15" readonly>
             </div>
             <div class="form-group full-width">
                 <label for="endereco">Endereço</label>
@@ -80,10 +84,7 @@ export function init(db, user, userData) {
             </div>
             <div class="form-group">
                 <label for="conselho-profissional">Conselho Profissional</label>
-                <select id="conselho-profissional" disabled>
-                    <option value="">Nenhum</option>
-                    ${conselhos.map(c => `<option value="${c}" ${c === conselhoAtual ? 'selected' : ''}>${c}</option>`).join('')}
-                </select>
+                <select id="conselho-profissional" disabled></select>
             </div>
             <div class="form-group">
                 <label for="registro-profissional">Nº de Registro</label>
@@ -114,13 +115,25 @@ export function init(db, user, userData) {
                 <input type="text" id="data-inicio" value="${data.dataInicio || ''}" readonly>
             </div>
         `;
+
+        // CORREÇÃO: Popula a lista de conselhos de forma mais robusta
+        const conselhoSelect = document.getElementById('conselho-profissional');
+        const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'Outro'];
+        conselhoSelect.innerHTML = conselhos.map(c => `<option value="${c}">${c}</option>`).join('');
+        conselhoSelect.value = data.conselhoProfissional || 'Nenhum';
+
+        // Anexa o evento da máscara de telefone após o campo existir no DOM
+        document.getElementById('telefone').addEventListener('input', (e) => {
+            e.target.value = formatarTelefone(e.target.value);
+        });
     }
 
     async function salvarPerfil() {
         if (!userDocRef) return;
 
         const nome = document.getElementById('nome-completo').value;
-        const telefone = document.getElementById('telefone').value;
+        const telefoneInput = document.getElementById('telefone');
+        const telefone = telefoneInput.value.replace(/\D/g,''); // Salva apenas os números
         const cpf = document.getElementById('cpf').value;
 
         if (!nome || !telefone) {
