@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.9 (Roteador aprimorado para parâmetros)
+// Versão: 2.9 (Corrigido para apontar para o módulo correto do supervisor)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
@@ -51,7 +51,10 @@ function initPortal(user, userData) {
 
     const funcoes = userData.funcoes || [];
     if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
-        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: '⭐' });
+        // ===== AQUI ESTÁ A ALTERAÇÃO =====
+        // O 'id' foi alterado de 'painel-supervisor' para 'ver-supervisores'
+        // para carregar o arquivo correto que já criamos.
+        views.splice(4, 0, { id: 'ver-supervisores', name: 'Painel Supervisor', icon: '⭐' });
     }
 
     function buildSidebarMenu() {
@@ -77,7 +80,6 @@ function initPortal(user, userData) {
         });
     }
 
-    // --- FUNÇÃO DE NAVEGAÇÃO ATUALIZADA ---
     async function loadView(viewId, param = null) {
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
@@ -90,7 +92,6 @@ function initPortal(user, userData) {
             contentArea.innerHTML = await response.text();
             
             try {
-                // Carrega CSSs necessários para a view
                 const cssFilesToLoad = ['supervisao-geral', viewId];
                 cssFilesToLoad.forEach(cssName => {
                     const cssId = `css-${cssName}`;
@@ -103,14 +104,11 @@ function initPortal(user, userData) {
                     }
                 });
                 
-                // Carrega o Módulo JS e passa o parâmetro
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
-                    // Passa o parâmetro (ex: 'new' ou um ID) para a função init da view
                     viewModule.init(db, user, userData, param);
                 }
             } catch (jsError) {
-                // Silencia o erro para páginas que podem não ter JS
                 if (jsError.message.includes('Failed to fetch dynamically imported module')) {
                     console.log(`Nenhum módulo JS encontrado ou necessário para a view '${viewId}'.`);
                 } else {
@@ -127,7 +125,7 @@ function initPortal(user, userData) {
         const userPhoto = document.getElementById('user-photo-header');
         if(userPhoto) {
             userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
-            userPhoto.onerror = () => { userPhoto.src = '../../../assets.img/avatar-padrao.png'; };
+            userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
         }
         const userGreeting = document.getElementById('user-greeting');
         if(userGreeting && userData.nome) {
@@ -180,20 +178,18 @@ function initPortal(user, userData) {
         setupLayout();
         buildSidebarMenu();
 
-        // --- ROTEADOR ATUALIZADO ---
         const handleHashChange = () => {
             const hash = window.location.hash.substring(1);
             if (!hash) {
                 loadView(views[0].id);
                 return;
             }
-            // Separa a view do parâmetro (ex: "ficha-supervisao/new")
             const [viewId, param] = hash.split('/');
             loadView(viewId, param);
         };
 
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Carrega a view inicial
+        handleHashChange();
     }
 
     start();
