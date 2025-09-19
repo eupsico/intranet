@@ -1,18 +1,19 @@
-// A inicialização do Firebase já é feita pelo portal-voluntario.html
-console.log("Script ver-supervisores.js carregado.");
+// Arquivo: /modulos/voluntario/js/ver-supervisores.js
+// Versão: MODERNA - Com o card "Meu Perfil" reativado.
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+export function init(db, user) {
+    console.log("Módulo ver-supervisores.js inicializado (Estilo Moderno).");
 
-const viewContentArea = document.getElementById('view-content-area');
-const dashboardContent = document.getElementById('supervisor-dashboard-content');
-const supervisorCardsGrid = document.getElementById('supervisor-cards-grid');
+    const viewContentArea = document.getElementById('view-content-area');
+    const dashboardContent = document.getElementById('supervisor-dashboard-content');
+    const supervisorCardsGrid = document.getElementById('supervisor-cards-grid');
 
-if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
-    console.error("Erro crítico: Elementos essenciais do HTML para o painel do supervisor não foram encontrados.");
-} else {
-    console.log("Elementos do painel do supervisor encontrados com sucesso.");
+    if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
+        console.error("Erro crítico: Elementos essenciais do HTML para o painel do supervisor não foram encontrados.");
+        return;
+    }
 
+    // Função global para permitir que as sub-telas voltem para este painel
     window.showSupervisorDashboard = function() {
         viewContentArea.style.display = 'none';
         viewContentArea.innerHTML = '';
@@ -23,64 +24,55 @@ if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
         dashboardContent.style.display = 'none';
         viewContentArea.style.display = 'block';
         viewContentArea.innerHTML = '<div class="loading-spinner"></div>';
-
-        // ===== CORREÇÃO DEFINITIVA DO CAMINHO =====
-        // Caminhos relativos ao 'portal-voluntario.html' que está em 'page/'
+        
         const fileMap = {
-            'meu_perfil': { 
-                html: './view-meu-perfil.html', // O './' indica o diretório atual ('page/')
-                js: '../js/view-meu-perfil.js'  // O '../' sobe para 'voluntario/' e entra em 'js/'
-            },
-            'meus_supervisionados': { 
-                html: './view-meus-supervisionados.html', 
-                js: '../js/view-meus-supervisionados.js' 
-            },
-            'meus_agendamentos': { 
-                html: './view-meus-agendamentos.html', 
-                js: '../js/view-meus-agendamentos.js' 
-            }
+            'meu_perfil': { html: './view-meu-perfil.html' },
+            'meus_supervisionados': { html: './view-meus-supervisionados.html' },
+            'meus_agendamentos': { html: './view-meus-agendamentos.html' }
         };
-        // ===========================================
 
         const files = fileMap[viewName];
-
         if (!files) {
-            console.error(`View "${viewName}" não encontrada no fileMap.`);
-            viewContentArea.innerHTML = `<h2>Erro: Módulo não encontrado.</h2><p>O arquivo para este módulo ainda não foi criado.</p><button onclick="showSupervisorDashboard()">Voltar</button>`;
+            viewContentArea.innerHTML = `<h2>Erro: Módulo '${viewName}' não foi encontrado.</h2><p>Verifique se o arquivo .html correspondente existe na pasta 'page'.</p><button onclick="showSupervisorDashboard()">Voltar</button>`;
             return;
         }
 
         try {
             const response = await fetch(files.html);
-            if (!response.ok) throw new Error(`Falha ao carregar o arquivo: ${files.html}. Verifique se o arquivo existe no local correto.`);
-            viewContentArea.innerHTML = await response.text();
-
-            // O script da sub-tela é carregado dinamicamente pelo portal-voluntario.js
-            // A tag <script> dentro do HTML carregado fará o trabalho.
+            if (!response.ok) throw new Error(`Arquivo não encontrado: ${files.html}`);
+            contentArea.innerHTML = await response.text(); // Usa a contentArea global do portal
+            
+            // Tenta carregar o módulo JS correspondente
+            const viewModule = await import(`../js/${viewName}.js`);
+            if (viewModule && typeof viewModule.init === 'function') {
+                viewModule.init(db, user); // Passa o db e user para o módulo da sub-view
+            }
 
         } catch (error) {
-            console.error("Erro ao carregar sub-view do supervisor:", error);
+            console.error(`Erro ao carregar a sub-view '${viewName}':`, error);
             viewContentArea.innerHTML = `<h2>Erro ao carregar o módulo.</h2><p>${error.message}</p><button onclick="showSupervisorDashboard()">Voltar</button>`;
         }
     }
 
     function renderSupervisorCards() {
         supervisorCardsGrid.innerHTML = '';
-
-        // Reativamos todos os módulos para construí-los
+        
+        // ===== AQUI ESTÁ A ALTERAÇÃO =====
+        // O card 'meu_perfil' foi reativado.
         const modules = {
-            meu_perfil: {
-                titulo: 'Meu Perfil e Edição',
-                descricao: 'Visualize e edite suas informações de perfil.'
+            meu_perfil: { 
+                titulo: 'Meu Perfil e Edição', 
+                descricao: 'Visualize e edite suas informações de perfil.' 
             },
-            meus_supervisionados: {
-                titulo: 'Meus Supervisionados',
-                descricao: 'Visualize os acompanhamentos que você supervisiona.'
+            meus_supervisionados: { 
+                titulo: 'Meus Supervisionados', 
+                descricao: 'Visualize os acompanhamentos que você supervisiona.' 
             },
-            meus_agendamentos: { 
-                titulo: 'Meus Agendamentos', 
-                descricao: 'Visualize os profissionais que agendaram supervisão com você.' 
-            }
+            // O módulo de agendamentos continua desativado por enquanto.
+            // meus_agendamentos: { 
+            //     titulo: 'Meus Agendamentos', 
+            //     descricao: 'Visualize os profissionais que agendaram supervisão com você.' 
+            // }
         };
 
         for (const key in modules) {
@@ -89,22 +81,26 @@ if (!viewContentArea || !dashboardContent || !supervisorCardsGrid) {
             card.className = 'module-card';
             card.dataset.view = key;
             card.innerHTML = `<div class="card-content"><h3>${module.titulo}</h3><p>${module.descricao}</p></div>`;
-            card.addEventListener('click', () => loadSupervisorSubView(key));
+            card.addEventListener('click', () => {
+                 // Agora vamos usar o roteador principal para carregar a view
+                 window.location.hash = `#${key}`;
+            });
             supervisorCardsGrid.appendChild(card);
         }
     }
 
-    auth.onAuthStateChanged(async user => {
-        if (user) {
-            const userDoc = await db.collection('usuarios').doc(user.uid).get();
-            if (userDoc.exists) {
-                const funcoes = userDoc.data().funcoes || [];
-                if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
-                    renderSupervisorCards();
-                } else {
-                    dashboardContent.innerHTML = '<h2>Acesso Negado</h2>';
-                }
+    // Busca as permissões do usuário e renderiza os cards
+    db.collection('usuarios').doc(user.uid).get().then(userDoc => {
+        if (userDoc.exists) {
+            const funcoes = userDoc.data().funcoes || [];
+            if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
+                renderSupervisorCards();
+            } else {
+                dashboardContent.innerHTML = '<h2>Acesso Negado</h2><p>Você não tem permissão para acessar esta área.</p>';
             }
         }
+    }).catch(error => {
+        console.error("Erro ao verificar permissões:", error);
+        dashboardContent.innerHTML = '<h2>Ocorreu um erro ao verificar suas permissões.</h2>';
     });
 }
