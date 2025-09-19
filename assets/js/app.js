@@ -238,8 +238,6 @@ document.addEventListener('DOMContentLoaded', function() {
             plantao: { titulo: 'Plantão', descricao: 'Escalas, contatos e procedimentos para a equipe de plantão.', url: '#', roles: ['admin', 'plantao'], icon: icons.plantao },
             rh: { titulo: 'Recursos Humanos', descricao: 'Informações sobre vagas, comunicados e gestão de voluntários.', url: '#', roles: ['admin', 'rh'], icon: icons.rh },
             servico_social: { titulo: 'Serviço Social', descricao: 'Documentos, orientações e fichas para o serviço social.', url: '#', roles: ['admin', 'servico_social'], icon: icons.servico_social },
-            supervisores: { titulo: 'Painel do Supervisor', descricao: 'Acesse seu perfil, agendamentos e fichas de acompanhamentos.', url: './pages/supervisores-painel.html', roles: ['admin', 'supervisor'], icon: icons.rh },
-            supervisao: { titulo: 'Intranet Supervisão', descricao: 'Agende sua supervisão ou preencha suas fichas de acompanhamento.', url: './pages/supervisao-painel.html', roles: ['admin', 'atendimento','supervisor', 'psicologo', 'psicopedagoga', 'musicoterapeuta'], icon: icons.supervisao },
         };
         const userFuncoes = (userData.funcoes || []).map(f => f.toLowerCase());
         let modulesToShow = [];
