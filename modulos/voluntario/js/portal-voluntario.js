@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.4 (Adicionada a view 'Voluntários')
+// Versão: 2.5 (Puxando foto do perfil Google)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
@@ -25,7 +25,7 @@ function initPortal(user, userData) {
     const views = [
         { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
-        { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' }, // <<-- NOVA LINHA ADICIONADA
+        { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
         { id: 'recursos', name: 'Recursos do Voluntário', icon: '🛠️' },
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
@@ -33,9 +33,9 @@ function initPortal(user, userData) {
     ];
 
     function buildSidebarMenu() {
+        // (Esta função permanece inalterada)
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = '';
-        
         sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
@@ -45,7 +45,6 @@ function initPortal(user, userData) {
             </li>
             <li class="menu-separator"></li>
         `;
-        
         views.forEach(view => {
             sidebarMenu.innerHTML += `
                 <li>
@@ -58,31 +57,27 @@ function initPortal(user, userData) {
     }
 
     async function loadView(viewId) {
+        // (Esta função permanece inalterada)
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
-
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const response = await fetch(`./${viewId}.html`);
             if (!response.ok) throw new Error(`View HTML not found: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
-
             try {
-                // Carrega o CSS da nova página
                 const cssLink = document.createElement('link');
                 cssLink.rel = 'stylesheet';
                 cssLink.href = `../css/${viewId}.css`; 
                 document.head.appendChild(cssLink);
-                
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
                     viewModule.init(db, user, userData);
                 }
             } catch (jsError) {
-                console.log(`Nenhum módulo JS encontrado para a view '${viewId}'. Carregando como página estática.`);
+                console.log(`Nenhum módulo JS encontrado para a view '${viewId}'.`);
             }
-
         } catch (htmlError) {
             console.error(`Erro ao carregar a view ${viewId}:`, htmlError);
             contentArea.innerHTML = `<p style="color:red;">Erro ao carregar esta seção.</p>`;
@@ -95,15 +90,21 @@ function initPortal(user, userData) {
         const logoutButton = document.getElementById('logout-button-dashboard');
 
         if(userPhoto) {
-            userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
+            // --- ALTERAÇÃO APLICADA AQUI ---
+            // Prioriza a foto da conta Google (user.photoURL).
+            // Se não existir, usa a foto do banco de dados (userData.fotoUrl).
+            // Se nenhuma existir, usa o avatar padrão.
+            userPhoto.src = user.photoURL || (userData.fotoUrl ? `../../../${userData.fotoUrl}` : '../../../assets/img/avatar-padrao.png');
             userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
         }
+        
         if(userGreeting && userData.nome) {
             const firstName = userData.nome.split(' ')[0];
             const hour = new Date().getHours();
             const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
             userGreeting.textContent = `${greeting}, ${firstName}!`;
         }
+        
         if(logoutButton) {
             logoutButton.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -111,14 +112,13 @@ function initPortal(user, userData) {
             });
         }
         
+        // (O restante da função setupLayout continua igual)
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
         const overlay = document.getElementById('menu-overlay');
         const sidebarMenu = document.getElementById('sidebar-menu');
-
         if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
-
         const handleToggle = () => {
             const isMobile = window.innerWidth <= 768;
             if (isMobile) {
@@ -130,16 +130,13 @@ function initPortal(user, userData) {
                 toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
             }
         };
-        
         if (window.innerWidth > 768) {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
             toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
         }
-        
         toggleButton.addEventListener('click', handleToggle);
         overlay.addEventListener('click', handleToggle);
-
         sidebarMenu.addEventListener('click', (e) => {
             if (window.innerWidth <= 768) {
                 if (e.target.closest('a')) {
@@ -152,12 +149,10 @@ function initPortal(user, userData) {
     function start() {
         setupLayout();
         buildSidebarMenu();
-
         const handleHashChange = () => {
             const viewId = window.location.hash.substring(1) || views[0].id;
             loadView(viewId);
         };
-
         window.addEventListener('hashchange', handleHashChange);
         handleHashChange();
     }

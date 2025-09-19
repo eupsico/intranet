@@ -3,12 +3,8 @@ export function init(db, user, userData) {
 
     if (!gridContainer) return;
 
-    /**
-     * Busca os voluntários no Firestore e os exibe na tela.
-     */
     async function carregarVoluntarios() {
         try {
-            // Busca todos os documentos da coleção 'usuarios'
             const querySnapshot = await db.collection('usuarios').orderBy('nome', 'asc').get();
 
             if (querySnapshot.empty) {
@@ -19,11 +15,20 @@ export function init(db, user, userData) {
             let cardsHtml = '';
             querySnapshot.forEach(doc => {
                 const voluntario = doc.data();
+                let fotoUrl = '../../../assets/img/avatar-padrao.png'; // Começa com a padrão
 
-                // Define uma foto padrão caso o voluntário não tenha uma
-                const fotoUrl = voluntario.fotoUrl || '../../../assets/img/avatar-padrao.png';
+                if (voluntario.fotoUrl) {
+                    // --- ALTERAÇÃO APLICADA AQUI ---
+                    // Se o campo 'fotoUrl' já for uma URL completa (do Google), usa diretamente.
+                    if (voluntario.fotoUrl.startsWith('http')) {
+                        fotoUrl = voluntario.fotoUrl;
+                    } 
+                    // Se for um caminho relativo, constrói o caminho completo.
+                    else {
+                        fotoUrl = `../../../${voluntario.fotoUrl}`;
+                    }
+                }
 
-                // Formata as funções para exibição
                 const funcoes = Array.isArray(voluntario.funcoes) ? voluntario.funcoes.join(', ') : 'Não informado';
 
                 cardsHtml += `
@@ -55,6 +60,5 @@ export function init(db, user, userData) {
         }
     }
 
-    // --- INICIALIZAÇÃO ---
     carregarVoluntarios();
 }
