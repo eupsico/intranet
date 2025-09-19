@@ -15,18 +15,13 @@ export function init(db, user, userData) {
             let cardsHtml = '';
             querySnapshot.forEach(doc => {
                 const voluntario = doc.data();
-                let fotoUrlFinal = '../../../assets/img/avatar-padrao.png'; // Imagem padrão
-
-                if (voluntario.fotoUrl) {
-                    // --- ALTERAÇÃO APLICADA AQUI ---
-                    // Se o campo 'fotoUrl' já for uma URL completa (do Google), usa diretamente.
-                    if (voluntario.fotoUrl.startsWith('http')) {
-                        fotoUrlFinal = voluntario.fotoUrl;
-                    } 
-                    // Se for um caminho relativo, constrói o caminho completo.
-                    else {
-                        fotoUrlFinal = `../../../${voluntario.fotoUrl}`;
-                    }
+                
+                // --- ALTERAÇÃO APLICADA AQUI ---
+                let fotoUrlFinal = '../../../assets/img/avatar-padrao.png'; // Começa com o logo padrão
+                
+                // Usa a foto do banco de dados APENAS se for uma URL completa (do e-mail/Google).
+                if (voluntario.fotoUrl && voluntario.fotoUrl.startsWith('http')) {
+                    fotoUrlFinal = voluntario.fotoUrl;
                 }
 
                 const funcoes = Array.isArray(voluntario.funcoes) ? voluntario.funcoes.join(', ') : 'Não informado';
