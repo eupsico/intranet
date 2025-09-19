@@ -4,12 +4,37 @@ export function init(db, user, userData) {
 
     if (!summaryContainer || !infoCardContainer) return;
 
-    // Objeto para armazenar os dados da grade e evitar múltiplas leituras
     let dadosDasGrades = {};
+    let valoresConfig = {}; // Armazena a configuração de valores
     const diasDaSemana = {segunda: 'Segunda-feira', terca: 'Terça-feira', quarta: 'Quarta-feira', quinta: 'Quinta-feira', sexta: 'Sexta-feira', sabado: 'Sábado'};
 
     /**
-     * NOVO: Renderiza o painel "Meu Resumo Semanal" em tempo real.
+     * Busca as configurações de valores do financeiro no Firestore.
+     */
+    async function fetchValoresConfig() {
+        try {
+            const docRef = db.collection('financeiro').doc('configuracoes');
+            const doc = await docRef.get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.valores) {
+                    valoresConfig = data.valores;
+                } else {
+                    console.error("Documento 'configuracoes' não possui o campo 'valores'.");
+                    valoresConfig = { online: 0, presencial: 0 }; // Valores padrão em caso de erro
+                }
+            } else {
+                console.error("Documento 'financeiro/configuracoes' não encontrado!");
+                valoresConfig = { online: 0, presencial: 0 }; // Valores padrão em caso de erro
+            }
+        } catch (error) {
+            console.error("Erro ao buscar configurações de valores:", error);
+            valoresConfig = { online: 0, presencial: 0 }; // Valores padrão em caso de erro
+        }
+    }
+
+    /**
+     * Renderiza o painel "Meu Resumo Semanal" com as novas alterações.
      */
     function renderSummaryPanel() {
         if (!userData || !userData.username) {
@@ -20,7 +45,6 @@ export function init(db, user, userData) {
         const userUsername = userData.username;
         const userFullName = userData.name;
         let horasOnline = 0, horasPresencial = 0;
-        let agendamentosOnline = [], agendamentosPresencial = [];
         
         for (const path in dadosDasGrades) {
             const nomeDaGrade = dadosDasGrades[path];
@@ -28,61 +52,59 @@ export function init(db, user, userData) {
                 const parts = path.split('.');
                 if (parts.length === 4) {
                     const tipo = parts[0];
-                    const diaKey = parts[1];
-                    const horaFormatada = parts[2].replace('-', ':');
-                    const diaNome = diasDaSemana[diaKey];
-                    
-                    if (tipo === 'online') {
-                        horasOnline++;
-                        agendamentosOnline.push(`<li>${diaNome} - ${horaFormatada}</li>`);
-                    } else if (tipo === 'presencial') {
-                        horasPresencial++;
-                        agendamentosPresencial.push(`<li>${diaNome} - ${horaFormatada}</li>`);
-                    }
+                    if (tipo === 'online') horasOnline++;
+                    else if (tipo === 'presencial') horasPresencial++;
                 }
             }
         }
 
+        // Cálculos Financeiros
+        const valorOnline = valoresConfig.online || 0;
+        const valorPresencial = valoresConfig.presencial || 0;
+        const totalHoras = horasOnline + horasPresencial;
+        const valorTotalAPagar = (horasOnline * valorOnline) + (horasPresencial * valorPresencial);
+
+        // Formata o valor para moeda brasileira (BRL)
+        const valorFormatado = valorTotalAPagar.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        // Gera o HTML com os novos cards e design unificado
         summaryContainer.innerHTML = `
             <div class="summary-panel">
                 <h3>Meu Resumo Semanal</h3>
                 <div id="summary-details-container">
                     <div class="summary-card">
-                        <h4>Horas Totais</h4>
-                        <ul><li><strong>Total:</strong> ${horasOnline + horasPresencial} horas</li></ul>
+                        <h4>💰 Resumo Financeiro</h4>
+                        <ul>
+                            <li>
+                                <span class="financeiro-horas">Total de horas: <strong>${totalHoras}</strong></span>
+                                <span class="financeiro-valor">${valorFormatado}</span>
+                            </li>
+                        </ul>
                     </div>
+
                     <div class="summary-card">
-                        <h4>Agendamentos Online (${horasOnline})</h4>
-                        <ul>${agendamentosOnline.length > 0 ? agendamentosOnline.join('') : '<li>Nenhum horário online.</li>'}</ul>
+                        <h4>🖥️ Grade Online (${horasOnline})</h4>
+                        <ul><li>Total de <strong>${horasOnline}</strong> horas semanais.</li></ul>
                     </div>
+
                     <div class="summary-card">
-                        <h4>Agendamentos Presenciais (${horasPresencial})</h4>
-                        <ul>${agendamentosPresencial.length > 0 ? agendamentosPresencial.join('') : '<li>Nenhum horário presencial.</li>'}</ul>
+                        <h4>🏢 Grade Presencial (${horasPresencial})</h4>
+                        <ul><li>Total de <strong>${horasPresencial}</strong> horas semanais.</li></ul>
                     </div>
                 </div>
             </div>`;
     }
 
     /**
-     * Renderiza os cards de informações gerais (Avisos, etc.).
+     * Renderiza os cards de informações gerais (Apenas Avisos).
      */
-    async function renderInfoCard() {
-        // A lógica de Avisos Gerais permanece a mesma
+    function renderInfoCard() {
         const aniversariantesHtml = `<li>Nenhum aniversariante hoje.</li>`;
         const reuniaoHtml = `<li>Nenhuma reunião agendada.</li>`;
 
-        // ATENÇÃO: A lógica de "Seus Atendimentos" ainda é estática.
-        // Precisará ser implementada futuramente para buscar dados reais.
-        const atendimentosHtml = `
-            <li>Você tem <strong>X</strong> atendimentos agendados para esta semana.</li>
-            <li>Seu próximo horário vago é na <strong>Y</strong>.</li>`;
-
+        // O card "Seus Atendimentos" foi removido, conforme solicitado.
         infoCardContainer.innerHTML = `
             <div class="info-card-grid">
-                <div class="info-card">
-                    <h3>📅 Seus Atendimentos</h3>
-                    <ul>${atendimentosHtml}</ul>
-                </div>
                 <div class="info-card">
                     <h3>📢 Avisos Gerais</h3>
                     <ul>
@@ -98,7 +120,9 @@ export function init(db, user, userData) {
         summaryContainer.innerHTML = '<div class="loading-spinner"></div>';
         renderInfoCard(); // Renderiza os cards estáticos imediatamente
 
-        // Inicia o listener em tempo real para a grade, que alimenta o resumo
+        await fetchValoresConfig(); // Espera buscar os valores antes de continuar
+
+        // Inicia o listener em tempo real para a grade
         const gradesDocRef = db.collection('administrativo').doc('grades');
         gradesDocRef.onSnapshot((doc) => {
             dadosDasGrades = doc.exists ? doc.data() : {};
