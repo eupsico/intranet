@@ -1,10 +1,10 @@
-// Arquivo: eupsico/intranet/modulos/voluntario/js/view-meu-perfil.js
+// Arquivo: /modulos/voluntario/js/view-meu-perfil.js
 // Versão: MODERNA e COMPLETA - Com funcionalidade de edição.
 
 export function init(db, user) {
     const profileContainer = document.getElementById('supervisor-profile-container');
     
-    // O modal de edição e seus elementos estão no 'ver-supervisores.html'
+    // O modal de edição e seus elementos estão no 'ver-supervisores.html', mas são acessíveis globalmente pelo ID.
     const editModal = document.getElementById('edit-profile-modal');
     const form = document.getElementById('edit-profile-form');
     const horariosContainer = document.getElementById('horarios-editor-container');
@@ -15,13 +15,12 @@ export function init(db, user) {
         return;
     }
 
-    let supervisorData = null; // Armazena os dados do supervisor
+    let supervisorData = null; // Armazena os dados do supervisor localmente
 
     /**
      * Cria o card HTML com as informações do supervisor.
      */
     function createSupervisorCard(supervisor) {
-        // ... (código para criar o card, sem alterações)
         const card = document.createElement('div');
         card.className = 'supervisor-card';
         card.dataset.uid = supervisor.uid;
@@ -78,7 +77,6 @@ export function init(db, user) {
 
     const diasDaSemana = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"];
     
-    // Função para criar uma linha de horário no formulário
     const createHorarioRow = (horario = {}) => {
         const row = document.createElement('div');
         row.className = 'horario-row';
@@ -91,7 +89,6 @@ export function init(db, user) {
         return row;
     };
 
-    // Abre o modal e preenche com os dados do supervisor
     function openEditModal(data) {
         if (!data) return;
         form.elements['editing-uid'].value = data.uid;
@@ -101,10 +98,10 @@ export function init(db, user) {
         form.elements['edit-crp'].value = data.crp || '';
         form.elements['edit-email'].value = data.email || '';
         form.elements['edit-telefone'].value = data.telefone || '';
-        form.elements['edit-formacao'].value = Array.isArray(data.formacao) ? data.formacao.join('\n') : data.formacao || '';
-        form.elements['edit-especializacao'].value = Array.isArray(data.especializacao) ? data.especializacao.join('\n') : '';
-        form.elements['edit-atuacao'].value = Array.isArray(data.atuacao) ? data.atuacao.join('\n') : '';
-        form.elements['edit-supervisaoInfo'].value = Array.isArray(data.supervisaoInfo) ? data.supervisaoInfo.join('\n') : '';
+        form.elements['edit-formacao'].value = Array.isArray(data.formacao) ? data.formacao.join('\\n') : data.formacao || '';
+        form.elements['edit-especializacao'].value = Array.isArray(data.especializacao) ? data.especializacao.join('\\n') : '';
+        form.elements['edit-atuacao'].value = Array.isArray(data.atuacao) ? data.atuacao.join('\\n') : '';
+        form.elements['edit-supervisaoInfo'].value = Array.isArray(data.supervisaoInfo) ? data.supervisaoInfo.join('\\n') : '';
         
         horariosContainer.innerHTML = '';
         if (data.diasHorarios && Array.isArray(data.diasHorarios)) {
@@ -114,14 +111,12 @@ export function init(db, user) {
         editModal.style.display = 'flex';
     }
 
-    // Fecha o modal e limpa o formulário
     function closeEditModal() {
         editModal.style.display = 'none';
         form.reset();
         horariosContainer.innerHTML = '';
     }
 
-    // Salva as alterações no Firestore
     async function saveProfileChanges(e) {
         e.preventDefault();
         const uid = form.elements['editing-uid'].value;
@@ -142,34 +137,31 @@ export function init(db, user) {
             crp: form.elements['edit-crp'].value.trim(),
             email: form.elements['edit-email'].value.trim(),
             telefone: form.elements['edit-telefone'].value.trim(),
-            formacao: form.elements['edit-formacao'].value.split('\n').filter(Boolean),
-            especializacao: form.elements['edit-especializacao'].value.split('\n').filter(Boolean),
-            atuacao: form.elements['edit-atuacao'].value.split('\n').filter(Boolean),
-            supervisaoInfo: form.elements['edit-supervisaoInfo'].value.split('\n').filter(Boolean),
+            formacao: form.elements['edit-formacao'].value.split('\\n').filter(Boolean),
+            especializacao: form.elements['edit-especializacao'].value.split('\\n').filter(Boolean),
+            atuacao: form.elements['edit-atuacao'].value.split('\\n').filter(Boolean),
+            supervisaoInfo: form.elements['edit-supervisaoInfo'].value.split('\\n').filter(Boolean),
             diasHorarios: novosHorarios,
         };
 
         try {
             await db.collection('usuarios').doc(uid).update(dataToUpdate);
             closeEditModal();
-            loadProfile(); // Recarrega o perfil para mostrar as alterações
+            loadProfile();
         } catch (error) {
             console.error("Erro ao salvar o perfil:", error);
             alert("Ocorreu um erro ao salvar as alterações.");
         }
     }
 
-    // --- Adiciona os Event Listeners ---
-
-    // Listener para o botão "Editar Perfil" no card
+    // Adiciona os Event Listeners
     profileContainer.addEventListener('click', (e) => {
         const editButton = e.target.closest('.edit-supervisor-btn');
         if (editButton) {
-            openEditModal(supervisorData); // Abre o modal com os dados atuais
+            openEditModal(supervisorData);
         }
     });
 
-    // Listeners do modal
     addHorarioBtn.addEventListener('click', () => horariosContainer.appendChild(createHorarioRow()));
     horariosContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-horario-btn')) {
