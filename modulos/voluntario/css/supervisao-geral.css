@@ -1,0 +1,52 @@
+/* Arquivo: /modulos/voluntario/css/supervisao-geral.css */
+
+.view-header-band {
+    background-color: var(--cor-primaria-dark, #04396d);
+    color: white;
+    padding: 15px 25px;
+    border-radius: var(--borda-radius, 8px);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.view-header-band h1 {
+    margin: 0;
+    font-size: 1.6em;
+}
+
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.module-card {
+    background-color: var(--cor-surface, white);
+    border-radius: var(--borda-radius, 8px);
+    box-shadow: var(--sombra-suave, 0 2px 4px rgba(0,0,0,0.05));
+    padding: 25px;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--cor-borda, #e0e0e0);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.module-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--sombra-padrao, 0 6px 12px rgba(0,0,0,0.08));
+}
+
+.module-card .card-content h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.2em;
+    color: var(--cor-primaria, #1a73e8);
+}
+
+.module-card .card-content p {
+    margin: 0;
+    color: var(--cor-texto-secundario, #666);
+    font-size: 0.95em;
+    line-height: 1.4;
+}
