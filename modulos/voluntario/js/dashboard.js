@@ -21,15 +21,15 @@ export function init(db, user, userData) {
                     valoresConfig = data.valores;
                 } else {
                     console.error("Documento 'configuracoes' não possui o campo 'valores'.");
-                    valoresConfig = { online: 0, presencial: 0 }; // Valores padrão em caso de erro
+                    valoresConfig = { online: 0, presencial: 0 };
                 }
             } else {
                 console.error("Documento 'financeiro/configuracoes' não encontrado!");
-                valoresConfig = { online: 0, presencial: 0 }; // Valores padrão em caso de erro
+                valoresConfig = { online: 0, presencial: 0 };
             }
         } catch (error) {
             console.error("Erro ao buscar configurações de valores:", error);
-            valoresConfig = { online: 0, presencial: 0 }; // Valores padrão em caso de erro
+            valoresConfig = { online: 0, presencial: 0 };
         }
     }
 
@@ -45,7 +45,6 @@ export function init(db, user, userData) {
         const userUsername = userData.username;
         const userFullName = userData.name;
         let horasOnline = 0, horasPresencial = 0;
-        // NOVAS: Arrays para armazenar os detalhes dos horários
         let agendamentosOnline = [], agendamentosPresencial = [];
         
         for (const path in dadosDasGrades) {
@@ -61,23 +60,21 @@ export function init(db, user, userData) {
 
                     if (tipo === 'online') {
                         horasOnline++;
-                        agendamentosOnline.push(horarioCompleto); // Adiciona o detalhe do horário
+                        agendamentosOnline.push(horarioCompleto);
                     } else if (tipo === 'presencial') {
                         horasPresencial++;
-                        agendamentosPresencial.push(horarioCompleto); // Adiciona o detalhe do horário
+                        agendamentosPresencial.push(horarioCompleto);
                     }
                 }
             }
         }
 
-        // Cálculos Financeiros
         const valorOnline = valoresConfig.online || 0;
         const valorPresencial = valoresConfig.presencial || 0;
         const totalHoras = horasOnline + horasPresencial;
         const valorTotalAPagar = (horasOnline * valorOnline) + (horasPresencial * valorPresencial);
         const valorFormatado = valorTotalAPagar.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        // Gera o HTML com os novos cards e design unificado
         summaryContainer.innerHTML = `
             <div class="summary-panel">
                 <h3>Meu Resumo Semanal</h3>
@@ -87,16 +84,16 @@ export function init(db, user, userData) {
                         <ul>
                             <li>
                                 <span class="financeiro-horas">Total de horas: <strong>${totalHoras}</strong></span>
+                                <span class="financeiro-horas">Valor total a pagar:</span>
                                 <span class="financeiro-valor">${valorFormatado}</span>
+                                <small>O pagamento deve ser realizado até o dia 10.</small>
                             </li>
                         </ul>
                     </div>
-
                     <div class="summary-card">
                         <h4>🖥️ Grade Online (${horasOnline})</h4>
                         <ul>${agendamentosOnline.length > 0 ? agendamentosOnline.join('') : '<li>Nenhum horário online.</li>'}</ul>
                     </div>
-
                     <div class="summary-card">
                         <h4>🏢 Grade Presencial (${horasPresencial})</h4>
                         <ul>${agendamentosPresencial.length > 0 ? agendamentosPresencial.join('') : '<li>Nenhum horário presencial.</li>'}</ul>
@@ -123,7 +120,6 @@ export function init(db, user, userData) {
             </div>`;
     }
 
-    // --- INICIALIZAÇÃO ---
     async function start() {
         summaryContainer.innerHTML = '<div class="loading-spinner"></div>';
         renderInfoCard();
