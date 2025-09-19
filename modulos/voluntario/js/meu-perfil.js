@@ -7,64 +7,41 @@ export function init(db, user, userData) {
     let userDocRef;
     let originalData = {};
 
-    /**
-     * Função para validar CPF.
-     * Retorna true se o CPF for válido, false caso contrário.
-     */
     function validarCPF(cpf) {
         cpf = cpf.replace(/[^\d]+/g,'');
         if(cpf == '') return false;
-        // Elimina CPFs invalidos conhecidos
-        if (cpf.length != 11 ||
-            cpf == "00000000000" ||
-            cpf == "11111111111" ||
-            cpf == "22222222222" ||
-            cpf == "33333333333" ||
-            cpf == "44444444444" ||
-            cpf == "55555555555" ||
-            cpf == "66666666666" ||
-            cpf == "77777777777" ||
-            cpf == "88888888888" ||
-            cpf == "99999999999")
-                return false;
-        // Valida 1o digito
+        if (cpf.length != 11 || /^(.)\1+$/.test(cpf)) return false;
         let add = 0;
-        for (let i=0; i < 9; i ++)
-            add += parseInt(cpf.charAt(i)) * (10 - i);
+        for (let i=0; i < 9; i ++) add += parseInt(cpf.charAt(i)) * (10 - i);
         let rev = 11 - (add % 11);
-        if (rev == 10 || rev == 11)
-            rev = 0;
-        if (rev != parseInt(cpf.charAt(9)))
-            return false;
-        // Valida 2o digito
+        if (rev == 10 || rev == 11) rev = 0;
+        if (rev != parseInt(cpf.charAt(9))) return false;
         add = 0;
-        for (let i = 0; i < 10; i ++)
-            add += parseInt(cpf.charAt(i)) * (11 - i);
+        for (let i = 0; i < 10; i ++) add += parseInt(cpf.charAt(i)) * (11 - i);
         rev = 11 - (add % 11);
-        if (rev == 10 || rev == 11)
-            rev = 0;
-        if (rev != parseInt(cpf.charAt(10)))
-            return false;
+        if (rev == 10 || rev == 11) rev = 0;
+        if (rev != parseInt(cpf.charAt(10))) return false;
         return true;
     }
 
     function toggleFormState(enabled) {
-        const inputs = container.querySelectorAll('input, textarea');
+        const inputs = container.querySelectorAll('input, textarea, select');
         inputs.forEach(input => {
             if (!input.classList.contains('always-readonly')) {
-                input.readOnly = !enabled;
+                // Para selects, usamos 'disabled' em vez de 'readOnly'
+                if (input.tagName.toLowerCase() === 'select') {
+                    input.disabled = !enabled;
+                } else {
+                    input.readOnly = !enabled;
+                }
             }
         });
 
         actionsContainer.innerHTML = enabled
-            ? `
-                <button id="btn-cancelar-edicao" class="btn btn-secondary">Cancelar</button>
-                <button id="btn-salvar-perfil" class="btn btn-primary">Salvar Alterações</button>
-              `
-            : `
-                <button id="btn-editar-perfil" class="btn btn-primary">Editar Perfil</button>
-              `;
-
+            ? `<button id="btn-cancelar-edicao" class="btn btn-secondary">Cancelar</button>
+               <button id="btn-salvar-perfil" class="btn btn-primary">Salvar Alterações</button>`
+            : `<button id="btn-editar-perfil" class="btn btn-primary">Editar Perfil</button>`;
+        
         attachActionListeners();
     }
 
@@ -85,6 +62,9 @@ export function init(db, user, userData) {
     }
     
     function renderForm(data) {
+        const conselhos = ['CFP', 'CRM', 'CRESS', 'Outro'];
+        const conselhoAtual = data.conselhoProfissional || '';
+
         container.innerHTML = `
             <div class="form-group">
                 <label for="nome-completo">Nome Completo *</label>
@@ -97,6 +77,18 @@ export function init(db, user, userData) {
             <div class="form-group" style="grid-column: 1 / -1;">
                 <label for="endereco">Endereço</label>
                 <input type="text" id="endereco" value="${data.endereco || ''}" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="conselho-profissional">Conselho Profissional</label>
+                <select id="conselho-profissional" disabled>
+                    <option value="">Nenhum</option>
+                    ${conselhos.map(c => `<option value="${c}" ${c === conselhoAtual ? 'selected' : ''}>${c}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="registro-profissional">Nº de Registro</label>
+                <input type="text" id="registro-profissional" value="${data.registroProfissional || ''}" readonly>
             </div>
             <div class="form-group">
                 <label for="profissao">Profissão</label>
@@ -137,7 +129,6 @@ export function init(db, user, userData) {
             return;
         }
 
-        // Validação do CPF
         if (cpf && !validarCPF(cpf)) {
             alert("O CPF digitado é inválido. Por favor, verifique.");
             return;
@@ -148,6 +139,8 @@ export function init(db, user, userData) {
             nome: nome,
             telefone: telefone,
             endereco: document.getElementById('endereco').value,
+            conselhoProfissional: document.getElementById('conselho-profissional').value,
+            registroProfissional: document.getElementById('registro-profissional').value,
             profissao: document.getElementById('profissao').value,
             cpf: cpf,
             rg: document.getElementById('rg').value,
