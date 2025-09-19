@@ -2,7 +2,8 @@
 
 #perfil-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    /* Cria 2 colunas em telas maiores para melhor alinhamento */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 20px 30px;
     background-color: var(--cor-surface);
     padding: 30px;
@@ -22,8 +23,7 @@
     font-size: 0.95em;
 }
 
-.form-group input[type="text"],
-.form-group input[type="tel"],
+.form-group input,
 .form-group textarea {
     padding: 12px;
     border: 1px solid var(--cor-borda);
@@ -31,7 +31,7 @@
     background-color: var(--cor-background);
     color: var(--cor-texto-secundario);
     font-size: 1em;
-    transition: border-color 0.3s;
+    transition: all 0.3s;
 }
 
 .form-group input:focus,
@@ -41,9 +41,11 @@
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
 }
 
-.form-group input[readonly] {
-    background-color: var(--cor-borda);
-    cursor: not-allowed;
+/* Estilo para campos desabilitados */
+.form-group input[readonly],
+.form-group textarea[readonly] {
+    background-color: #e9ecef; /* Um cinza claro para indicar inatividade */
+    cursor: default;
     color: #6c757d;
 }
 
@@ -52,14 +54,18 @@
     resize: vertical;
 }
 
-/* Para agrupar CPF e RG */
-.dual-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
 #perfil-actions {
     margin-top: 30px;
-    text-align: right;
+    display: flex;
+    justify-content: flex-end; /* Alinha botões à direita */
+    gap: 10px; /* Espaçamento entre botões */
+}
+
+/* Estilo para o botão secundário (Cancelar) */
+.btn.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+.btn.btn-secondary:hover {
+    background-color: #5a6268;
 }

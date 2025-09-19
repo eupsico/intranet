@@ -1,133 +1,165 @@
 export function init(db, user, userData) {
     const container = document.getElementById('perfil-container');
-    const saveButton = document.getElementById('btn-salvar-perfil');
+    const actionsContainer = document.getElementById('perfil-actions');
     
-    if (!container || !saveButton) return;
+    if (!container || !actionsContainer) return;
 
-    let userDocRef; // Referência para o documento do usuário
+    let userDocRef;
+    let originalData = {}; // Guarda os dados originais para o cancelamento
 
     /**
-     * Carrega os dados do perfil do usuário do Firestore e monta o formulário.
+     * Alterna o estado dos campos do formulário (habilitado/desabilitado).
+     */
+    function toggleFormState(enabled) {
+        const inputs = container.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            // Não altera o estado de campos que devem ser sempre somente leitura
+            if (!input.classList.contains('always-readonly')) {
+                input.readOnly = !enabled;
+            }
+        });
+
+        // Atualiza os botões visíveis
+        actionsContainer.innerHTML = enabled
+            ? `
+                <button id="btn-cancelar-edicao" class="btn btn-secondary">Cancelar</button>
+                <button id="btn-salvar-perfil" class="btn btn-primary">Salvar Alterações</button>
+              `
+            : `
+                <button id="btn-editar-perfil" class="btn btn-primary">Editar Perfil</button>
+              `;
+
+        attachActionListeners();
+    }
+
+    /**
+     * Carrega os dados do perfil do usuário e monta o formulário.
      */
     async function carregarPerfil() {
         try {
             container.innerHTML = '<div class="loading-spinner"></div>';
             
-            // A variável 'user' do auth contém o UID
-            if (!user || !user.uid) {
-                throw new Error("UID do usuário não encontrado.");
-            }
+            if (!user || !user.uid) throw new Error("UID do usuário não encontrado.");
 
             userDocRef = db.collection('usuarios').doc(user.uid);
             const doc = await userDocRef.get();
 
-            if (!doc.exists) {
-                throw new Error("Dados do usuário não encontrados no Firestore.");
-            }
+            if (!doc.exists) throw new Error("Dados do usuário não encontrados no Firestore.");
 
-            const data = doc.data();
-            
-            // Monta o HTML do formulário com os dados preenchidos
-            container.innerHTML = `
-                <div class="form-group">
-                    <label for="nome-completo">Nome Completo *</label>
-                    <input type="text" id="nome-completo" value="${data.name || ''}">
-                </div>
-                <div class="form-group">
-                    <label for="telefone">Telefone *</label>
-                    <input type="tel" id="telefone" value="${data.telefone || ''}">
-                </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="endereco">Endereço</label>
-                    <input type="text" id="endereco" value="${data.endereco || ''}">
-                </div>
-
-                <div class="dual-group" style="grid-column: 1 / -1;">
-                    <div class="form-group">
-                        <label for="cpf">CPF (somente leitura)</label>
-                        <input type="text" id="cpf" value="${data.cpf || 'Não informado'}" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="rg">RG (somente leitura)</label>
-                        <input type="text" id="rg" value="${data.rg || 'Não informado'}" readonly>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="profissao">Profissão</label>
-                    <input type="text" id="profissao" value="${data.profissao || ''}">
-                </div>
-                <div class="form-group">
-                    <label for="funcao">Função na EuPsico (somente leitura)</label>
-                    <input type="text" id="funcao" value="${Array.isArray(data.funcoes) ? data.funcoes.join(', ') : 'Não informado'}" readonly>
-                </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="especializacoes">Especializações (separadas por vírgula)</label>
-                    <textarea id="especializacoes">${Array.isArray(data.especializacoes) ? data.especializacoes.join(', ') : ''}</textarea>
-                </div>
-                <div class="form-group">
-                    <label for="data-inicio">Data de Início na EuPsico (somente leitura)</label>
-                    <input type="text" id="data-inicio" value="${data.dataInicio || 'Não informada'}" readonly>
-                </div>
-            `;
+            originalData = doc.data();
+            renderForm(originalData);
+            toggleFormState(false); // Inicia com os campos desabilitados
 
         } catch (error) {
             console.error("Erro ao carregar perfil:", error);
-            container.innerHTML = `<p class="alert alert-error">Não foi possível carregar os dados do seu perfil. Tente novamente mais tarde.</p>`;
+            container.innerHTML = `<p class="alert alert-error">Não foi possível carregar os dados do seu perfil.</p>`;
         }
+    }
+    
+    /**
+     * Renderiza o HTML do formulário com os dados.
+     */
+    function renderForm(data) {
+        container.innerHTML = `
+            <div class="form-group">
+                <label for="nome-completo">Nome Completo *</label>
+                <input type="text" id="nome-completo" value="${data.nome || ''}" readonly>
+            </div>
+            <div class="form-group">
+                <label for="telefone">Telefone *</label>
+                <input type="tel" id="telefone" value="${data.telefone || ''}" readonly>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="endereco">Endereço</label>
+                <input type="text" id="endereco" value="${data.endereco || ''}" readonly>
+            </div>
+            <div class="form-group">
+                <label for="profissao">Profissão</label>
+                <input type="text" id="profissao" value="${data.profissao || ''}" readonly>
+            </div>
+             <div class="form-group">
+                <label for="funcao">Função na EuPsico</label>
+                <input type="text" id="funcao" class="always-readonly" value="${Array.isArray(data.funcoes) ? data.funcoes.join(', ') : 'Não informado'}" readonly>
+            </div>
+            <div class="form-group">
+                <label for="cpf">CPF</label>
+                <input type="text" id="cpf" class="always-readonly" value="${data.cpf || 'Não informado'}" readonly>
+            </div>
+            <div class="form-group">
+                <label for="rg">RG</label>
+                <input type="text" id="rg" class="always-readonly" value="${data.rg || 'Não informado'}" readonly>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="especializacoes">Especializações (separadas por vírgula)</label>
+                <textarea id="especializacoes" readonly>${Array.isArray(data.especializacoes) ? data.especializacoes.join(', ') : ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="data-inicio">Data de Início na EuPsico</label>
+                <input type="text" id="data-inicio" class="always-readonly" value="${data.dataInicio || 'Não informada'}" readonly>
+            </div>
+        `;
     }
 
     /**
      * Salva os dados atualizados do perfil no Firestore.
      */
     async function salvarPerfil() {
-        if (!userDocRef) {
-            alert("Erro: referência do usuário não encontrada.");
-            return;
-        }
+        if (!userDocRef) return;
 
-        // Coleta os valores dos campos editáveis
         const nome = document.getElementById('nome-completo').value;
         const telefone = document.getElementById('telefone').value;
-        const endereco = document.getElementById('endereco').value;
-        const profissao = document.getElementById('profissao').value;
-        const especializacoesRaw = document.getElementById('especializacoes').value;
-        
-        // Validação simples
         if (!nome || !telefone) {
-            alert("Por favor, preencha os campos obrigatórios (Nome Completo e Telefone).");
+            alert("Nome Completo e Telefone são obrigatórios.");
             return;
         }
 
-        // Converte a string de especializações em um array
-        const especializacoesArray = especializacoesRaw.split(',').map(s => s.trim()).filter(Boolean);
-
+        const especializacoesRaw = document.getElementById('especializacoes').value;
         const dadosParaAtualizar = {
-            name: nome,
+            nome: nome,
             telefone: telefone,
-            endereco: endereco,
-            profissao: profissao,
-            especializacoes: especializacoesArray
+            endereco: document.getElementById('endereco').value,
+            profissao: document.getElementById('profissao').value,
+            especializacoes: especializacoesRaw.split(',').map(s => s.trim()).filter(Boolean)
         };
+        
+        const saveButton = document.getElementById('btn-salvar-perfil');
+        saveButton.disabled = true;
+        saveButton.textContent = 'Salvando...';
 
         try {
-            saveButton.disabled = true;
-            saveButton.textContent = 'Salvando...';
-
             await userDocRef.update(dadosParaAtualizar);
-
+            originalData = {...originalData, ...dadosParaAtualizar}; // Atualiza os dados locais
             alert("Perfil atualizado com sucesso!");
-
         } catch (error) {
             console.error("Erro ao salvar o perfil:", error);
-            alert("Ocorreu um erro ao salvar seu perfil. Tente novamente.");
+            alert("Ocorreu um erro ao salvar seu perfil.");
         } finally {
-            saveButton.disabled = false;
-            saveButton.textContent = 'Salvar Alterações';
+            toggleFormState(false); // Volta ao estado de visualização
+        }
+    }
+
+    /**
+     * Adiciona os listeners aos botões de ação (Editar, Salvar, Cancelar).
+     */
+    function attachActionListeners() {
+        const editButton = document.getElementById('btn-editar-perfil');
+        const saveButton = document.getElementById('btn-salvar-perfil');
+        const cancelButton = document.getElementById('btn-cancelar-edicao');
+
+        if (editButton) {
+            editButton.addEventListener('click', () => toggleFormState(true));
+        }
+        if (saveButton) {
+            saveButton.addEventListener('click', salvarPerfil);
+        }
+        if (cancelButton) {
+            cancelButton.addEventListener('click', () => {
+                renderForm(originalData); // Restaura os dados originais
+                toggleFormState(false);
+            });
         }
     }
 
     // --- INICIALIZAÇÃO ---
     carregarPerfil();
-    saveButton.addEventListener('click', salvarPerfil);
 }
