@@ -22,6 +22,10 @@ export function init(db, user, userData) {
                 // Usa a foto do banco de dados APENAS se for uma URL completa (do e-mail/Google).
                 if (voluntario.fotoUrl && voluntario.fotoUrl.startsWith('http')) {
                     fotoUrlFinal = voluntario.fotoUrl;
+                } else if (voluntario.uid === user.uid && user.photoURL) {
+                    // Caso especial: Se o voluntário na lista for o usuário logado,
+                    // usa a foto do e-mail dele, mesmo que não esteja no banco.
+                    fotoUrlFinal = user.photoURL;
                 }
 
                 const funcoes = Array.isArray(voluntario.funcoes) ? voluntario.funcoes.join(', ') : 'Não informado';
