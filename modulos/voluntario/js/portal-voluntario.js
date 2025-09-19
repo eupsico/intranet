@@ -33,7 +33,6 @@ function initPortal(user, userData) {
     ];
 
     function buildSidebarMenu() {
-        // (Esta função permanece inalterada)
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = '';
         sidebarMenu.innerHTML += `
@@ -57,7 +56,7 @@ function initPortal(user, userData) {
     }
 
     async function loadView(viewId) {
-        // (Esta função permanece inalterada)
+        // (Esta função não foi alterada)
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
@@ -112,7 +111,7 @@ function initPortal(user, userData) {
             });
         }
         
-        // (O restante da função setupLayout continua igual)
+        // O restante da função setupLayout continua igual...
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');

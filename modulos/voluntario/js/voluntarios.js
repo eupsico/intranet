@@ -15,17 +15,17 @@ export function init(db, user, userData) {
             let cardsHtml = '';
             querySnapshot.forEach(doc => {
                 const voluntario = doc.data();
-                let fotoUrl = '../../../assets/img/avatar-padrao.png'; // Começa com a padrão
+                let fotoUrlFinal = '../../../assets/img/avatar-padrao.png'; // Imagem padrão
 
                 if (voluntario.fotoUrl) {
                     // --- ALTERAÇÃO APLICADA AQUI ---
                     // Se o campo 'fotoUrl' já for uma URL completa (do Google), usa diretamente.
                     if (voluntario.fotoUrl.startsWith('http')) {
-                        fotoUrl = voluntario.fotoUrl;
+                        fotoUrlFinal = voluntario.fotoUrl;
                     } 
                     // Se for um caminho relativo, constrói o caminho completo.
                     else {
-                        fotoUrl = `../../../${voluntario.fotoUrl}`;
+                        fotoUrlFinal = `../../../${voluntario.fotoUrl}`;
                     }
                 }
 
@@ -34,7 +34,7 @@ export function init(db, user, userData) {
                 cardsHtml += `
                     <div class="voluntario-card">
                         <div class="profile-pic-container">
-                            <img src="${fotoUrl}" alt="Foto de ${voluntario.nome}" class="profile-pic" onerror="this.src='../../../assets/img/avatar-padrao.png';">
+                            <img src="${fotoUrlFinal}" alt="Foto de ${voluntario.nome}" class="profile-pic" onerror="this.src='../../../assets/img/avatar-padrao.png';">
                         </div>
                         <h3 class="nome">${voluntario.nome || 'Nome não informado'}</h3>
                         <p class="funcao">${funcoes}</p>
