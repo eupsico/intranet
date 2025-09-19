@@ -84,8 +84,8 @@ export function init(db, user, userData) {
                         <ul>
                             <li>
                                 <span class="financeiro-horas">Total de horas: <strong>${totalHoras}</strong></span>
-                                <span class="financeiro-horas">Valor total a pagar:</span>
-                                <span class="financeiro-valor">${valorFormatado}</span>
+                                <span class="financeiro-valor">Valor total a pagar: ${valorFormatado}</span>
+                               
                                 <small>O pagamento deve ser realizado até o dia 10.</small>
                             </li>
                         </ul>
