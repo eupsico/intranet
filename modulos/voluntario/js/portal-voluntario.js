@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.5 (Puxando foto do perfil Google)
+// Versão: 2.6 (Força o uso da foto do e-mail)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
@@ -33,12 +33,13 @@ function initPortal(user, userData) {
     ];
 
     function buildSidebarMenu() {
+        // (Esta função permanece inalterada)
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = '';
         sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <svg xmlns="http="www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     <span>Voltar à Intranet</span>
                 </a>
             </li>
@@ -56,7 +57,7 @@ function initPortal(user, userData) {
     }
 
     async function loadView(viewId) {
-        // (Esta função não foi alterada)
+        // (Esta função permanece inalterada)
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
@@ -90,10 +91,8 @@ function initPortal(user, userData) {
 
         if(userPhoto) {
             // --- ALTERAÇÃO APLICADA AQUI ---
-            // Prioriza a foto da conta Google (user.photoURL).
-            // Se não existir, usa a foto do banco de dados (userData.fotoUrl).
-            // Se nenhuma existir, usa o avatar padrão.
-            userPhoto.src = user.photoURL || (userData.fotoUrl ? `../../../${userData.fotoUrl}` : '../../../assets/img/avatar-padrao.png');
+            // Usa a foto da conta Google (user.photoURL) ou, se não houver, a padrão.
+            userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
             userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
         }
         
@@ -111,7 +110,7 @@ function initPortal(user, userData) {
             });
         }
         
-        // O restante da função setupLayout continua igual...
+        // (O restante da função setupLayout continua igual)
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
