@@ -69,3 +69,7 @@
 .btn.btn-secondary:hover {
     background-color: #5a6268;
 }
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}

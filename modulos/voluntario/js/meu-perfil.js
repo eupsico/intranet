@@ -62,10 +62,10 @@ export function init(db, user, userData) {
     }
     
     function renderForm(data) {
-        const conselhos = ['CFP', 'CRM', 'CRESS', 'Outro'];
+        const conselhos = ['CRP', 'CRM', 'CRESS', 'OAB', 'Outro'];
         const conselhoAtual = data.conselhoProfissional || '';
 
-        container.innerHTML = `
+       container.innerHTML = `
             <div class="form-group">
                 <label for="nome-completo">Nome Completo *</label>
                 <input type="text" id="nome-completo" value="${data.nome || ''}" readonly>
@@ -74,11 +74,10 @@ export function init(db, user, userData) {
                 <label for="telefone">Telefone *</label>
                 <input type="tel" id="telefone" value="${data.telefone || ''}" readonly>
             </div>
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group full-width">
                 <label for="endereco">Endereço</label>
                 <input type="text" id="endereco" value="${data.endereco || ''}" readonly>
             </div>
-            
             <div class="form-group">
                 <label for="conselho-profissional">Conselho Profissional</label>
                 <select id="conselho-profissional" disabled>
@@ -106,7 +105,7 @@ export function init(db, user, userData) {
                 <label for="rg">RG</label>
                 <input type="text" id="rg" value="${data.rg || ''}" readonly>
             </div>
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group full-width">
                 <label for="especializacoes">Especializações (separadas por vírgula)</label>
                 <textarea id="especializacoes" readonly>${Array.isArray(data.especializacoes) ? data.especializacoes.join(', ') : ''}</textarea>
             </div>
