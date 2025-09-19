@@ -15,6 +15,8 @@
     padding: 25px 20px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border-top: 4px solid var(--cor-primaria);
+    display: flex; /* Adicionado para melhor controle do alinhamento interno */
+    flex-direction: column; /* Adicionado */
 }
 
 .voluntario-card:hover {
@@ -30,6 +32,7 @@
     overflow: hidden;
     border: 4px solid #fff;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    flex-shrink: 0; /* Impede que a imagem encolha */
 }
 
 .voluntario-card .profile-pic {
@@ -50,12 +53,13 @@
     color: var(--cor-primaria);
     margin: 5px 0 15px 0;
     font-weight: 500;
+    min-height: 24px; /* Garante uma altura mínima para o campo */
 }
 
 .voluntario-card .info-list {
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin-top: auto; /* Empurra a lista para a parte inferior do card */
     text-align: left;
     font-size: 0.9em;
     color: var(--cor-texto-secundario);
@@ -65,7 +69,8 @@
     padding: 8px 0;
     border-bottom: 1px solid var(--cor-borda);
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Alinha no topo para textos longos */
+    word-break: break-word; /* Quebra palavras longas */
 }
 
 .voluntario-card .info-list li:last-child {
@@ -75,5 +80,6 @@
 .voluntario-card .info-list li strong {
     color: var(--cor-texto-principal);
     margin-right: 8px;
-    min-width: 70px; /* Alinha os valores */
+    min-width: 100px; /* Aumentado para alinhar os novos campos */
+    flex-shrink: 0;
 }

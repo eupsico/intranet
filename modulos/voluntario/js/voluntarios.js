@@ -16,16 +16,46 @@ export function init(db, user, userData) {
             querySnapshot.forEach(doc => {
                 const voluntario = doc.data();
                 
-                // --- ALTERAÇÃO APLICADA AQUI ---
-                let fotoUrlFinal = '../../../assets/img/avatar-padrao.png'; // Começa com o logo padrão
+                let fotoUrlFinal = '../../../assets/img/avatar-padrao.png';
                 
-                // Usa a foto do banco de dados APENAS se for uma URL completa (do e-mail/Google).
                 if (voluntario.fotoUrl && voluntario.fotoUrl.startsWith('http')) {
                     fotoUrlFinal = voluntario.fotoUrl;
-                } else if (voluntario.uid === user.uid && user.photoURL) {
-                    // Caso especial: Se o voluntário na lista for o usuário logado,
-                    // usa a foto do e-mail dele, mesmo que não esteja no banco.
+                } else if (doc.id === user.uid && user.photoURL) {
                     fotoUrlFinal = user.photoURL;
+                }
+
+                // --- NOVAS INFORMAÇÕES ADICIONADAS AQUI ---
+
+                // 1. Formata o registro profissional
+                let registroHtml = '';
+                if (voluntario.conselhoProfissional && voluntario.registroProfissional) {
+                    const registroFormatado = `${voluntario.conselhoProfissional}/${voluntario.registroProfissional}`;
+                    registroHtml = `
+                        <li>
+                            <strong>Registro:</strong>
+                            <span>${registroFormatado}</span>
+                        </li>`;
+                }
+
+                // 2. Formata as especializações
+                let especializacoesHtml = '';
+                if (Array.isArray(voluntario.especializacoes) && voluntario.especializacoes.length > 0) {
+                    especializacoesHtml = `
+                        <li>
+                            <strong>Especialidades:</strong>
+                            <span>${voluntario.especializacoes.join(', ')}</span>
+                        </li>`;
+                }
+                
+                // 3. Formata o telefone
+                let telefoneHtml = '';
+                if (voluntario.telefone) {
+                    const telefoneFormatado = voluntario.telefone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+                    telefoneHtml = `
+                        <li>
+                            <strong>Telefone:</strong>
+                            <span>${telefoneFormatado}</span>
+                        </li>`;
                 }
 
                 const funcoes = Array.isArray(voluntario.funcoes) ? voluntario.funcoes.join(', ') : 'Não informado';
@@ -42,10 +72,9 @@ export function init(db, user, userData) {
                                 <strong>Profissão:</strong>
                                 <span>${voluntario.profissao || 'Não informada'}</span>
                             </li>
-                            <li>
-                                <strong>Início:</strong>
-                                <span>${voluntario.dataInicio || 'Não informada'}</span>
-                            </li>
+                            ${registroHtml}
+                            ${especializacoesHtml}
+                            ${telefoneHtml}
                         </ul>
                     </div>
                 `;
