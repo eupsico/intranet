@@ -1,0 +1,79 @@
+/* Arquivo: /modulos/voluntario/css/voluntarios.css */
+
+#voluntarios-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
+    padding-top: 10px;
+}
+
+.voluntario-card {
+    background-color: var(--cor-surface);
+    border-radius: var(--borda-radius);
+    box-shadow: var(--sombra-suave);
+    text-align: center;
+    padding: 25px 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-top: 4px solid var(--cor-primaria);
+}
+
+.voluntario-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--sombra-padrao);
+}
+
+.voluntario-card .profile-pic-container {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 20px auto;
+    overflow: hidden;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.voluntario-card .profile-pic {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.voluntario-card .nome {
+    font-size: 1.25em;
+    font-weight: 600;
+    color: var(--cor-texto-principal);
+    margin: 0;
+}
+
+.voluntario-card .funcao {
+    font-size: 1em;
+    color: var(--cor-primaria);
+    margin: 5px 0 15px 0;
+    font-weight: 500;
+}
+
+.voluntario-card .info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    font-size: 0.9em;
+    color: var(--cor-texto-secundario);
+}
+
+.voluntario-card .info-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--cor-borda);
+    display: flex;
+    align-items: center;
+}
+
+.voluntario-card .info-list li:last-child {
+    border-bottom: none;
+}
+
+.voluntario-card .info-list li strong {
+    color: var(--cor-texto-principal);
+    margin-right: 8px;
+    min-width: 70px; /* Alinha os valores */
+}

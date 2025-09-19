@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.3 (Corrigido para incluir 'Meu Perfil' na estrutura original)
+// Versão: 2.4 (Adicionada a view 'Voluntários')
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
@@ -22,11 +22,10 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // ALTERAÇÃO REALIZADA AQUI:
-    // Adicionei 'Meu Perfil' na sua lista de views, seguindo o padrão do seu código.
     const views = [
         { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
-        { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' }, // <<-- NOVA LINHA ADICIONADA
+        { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
+        { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' }, // <<-- NOVA LINHA ADICIONADA
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
         { id: 'recursos', name: 'Recursos do Voluntário', icon: '🛠️' },
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
@@ -48,7 +47,6 @@ function initPortal(user, userData) {
         `;
         
         views.forEach(view => {
-            // O href agora aponta para o ID correto da view, ex: #meu-perfil
             sidebarMenu.innerHTML += `
                 <li>
                     <a href="#${view.id}" data-view="${view.id}">
@@ -66,13 +64,17 @@ function initPortal(user, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // A busca pelo HTML está correta no seu código original
             const response = await fetch(`./${viewId}.html`);
             if (!response.ok) throw new Error(`View HTML not found: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
 
             try {
-                // A importação do JS também está correta no seu código original
+                // Carrega o CSS da nova página
+                const cssLink = document.createElement('link');
+                cssLink.rel = 'stylesheet';
+                cssLink.href = `../css/${viewId}.css`; 
+                document.head.appendChild(cssLink);
+                
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
                     viewModule.init(db, user, userData);
