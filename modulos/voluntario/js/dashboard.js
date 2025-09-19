@@ -45,6 +45,8 @@ export function init(db, user, userData) {
         const userUsername = userData.username;
         const userFullName = userData.name;
         let horasOnline = 0, horasPresencial = 0;
+        // NOVAS: Arrays para armazenar os detalhes dos horários
+        let agendamentosOnline = [], agendamentosPresencial = [];
         
         for (const path in dadosDasGrades) {
             const nomeDaGrade = dadosDasGrades[path];
@@ -52,8 +54,18 @@ export function init(db, user, userData) {
                 const parts = path.split('.');
                 if (parts.length === 4) {
                     const tipo = parts[0];
-                    if (tipo === 'online') horasOnline++;
-                    else if (tipo === 'presencial') horasPresencial++;
+                    const diaKey = parts[1];
+                    const horaFormatada = parts[2].replace('-', ':');
+                    const diaNome = diasDaSemana[diaKey];
+                    const horarioCompleto = `<li>${diaNome} - ${horaFormatada}</li>`;
+
+                    if (tipo === 'online') {
+                        horasOnline++;
+                        agendamentosOnline.push(horarioCompleto); // Adiciona o detalhe do horário
+                    } else if (tipo === 'presencial') {
+                        horasPresencial++;
+                        agendamentosPresencial.push(horarioCompleto); // Adiciona o detalhe do horário
+                    }
                 }
             }
         }
@@ -63,8 +75,6 @@ export function init(db, user, userData) {
         const valorPresencial = valoresConfig.presencial || 0;
         const totalHoras = horasOnline + horasPresencial;
         const valorTotalAPagar = (horasOnline * valorOnline) + (horasPresencial * valorPresencial);
-
-        // Formata o valor para moeda brasileira (BRL)
         const valorFormatado = valorTotalAPagar.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
         // Gera o HTML com os novos cards e design unificado
@@ -84,12 +94,12 @@ export function init(db, user, userData) {
 
                     <div class="summary-card">
                         <h4>🖥️ Grade Online (${horasOnline})</h4>
-                        <ul><li>Total de <strong>${horasOnline}</strong> horas semanais.</li></ul>
+                        <ul>${agendamentosOnline.length > 0 ? agendamentosOnline.join('') : '<li>Nenhum horário online.</li>'}</ul>
                     </div>
 
                     <div class="summary-card">
                         <h4>🏢 Grade Presencial (${horasPresencial})</h4>
-                        <ul><li>Total de <strong>${horasPresencial}</strong> horas semanais.</li></ul>
+                        <ul>${agendamentosPresencial.length > 0 ? agendamentosPresencial.join('') : '<li>Nenhum horário presencial.</li>'}</ul>
                     </div>
                 </div>
             </div>`;
@@ -101,8 +111,6 @@ export function init(db, user, userData) {
     function renderInfoCard() {
         const aniversariantesHtml = `<li>Nenhum aniversariante hoje.</li>`;
         const reuniaoHtml = `<li>Nenhuma reunião agendada.</li>`;
-
-        // O card "Seus Atendimentos" foi removido, conforme solicitado.
         infoCardContainer.innerHTML = `
             <div class="info-card-grid">
                 <div class="info-card">
@@ -118,15 +126,12 @@ export function init(db, user, userData) {
     // --- INICIALIZAÇÃO ---
     async function start() {
         summaryContainer.innerHTML = '<div class="loading-spinner"></div>';
-        renderInfoCard(); // Renderiza os cards estáticos imediatamente
-
-        await fetchValoresConfig(); // Espera buscar os valores antes de continuar
-
-        // Inicia o listener em tempo real para a grade
+        renderInfoCard();
+        await fetchValoresConfig();
         const gradesDocRef = db.collection('administrativo').doc('grades');
         gradesDocRef.onSnapshot((doc) => {
             dadosDasGrades = doc.exists ? doc.data() : {};
-            renderSummaryPanel(); // Re-renderiza o resumo sempre que a grade mudar
+            renderSummaryPanel();
         }, (error) => {
             console.error("Erro ao carregar resumo da grade:", error);
             summaryContainer.innerHTML = `<p class="alert alert-error">Não foi possível carregar o resumo semanal.</p>`;
