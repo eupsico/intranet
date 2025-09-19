@@ -16,13 +16,10 @@ export function init(db, user, userData) {
             querySnapshot.forEach(doc => {
                 const voluntario = doc.data();
                 
-                let fotoUrlFinal = '../../../assets/img/avatar-padrao.png';
-                
-                if (voluntario.fotoUrl && voluntario.fotoUrl.startsWith('http')) {
-                    fotoUrlFinal = voluntario.fotoUrl;
-                } else if (doc.id === user.uid && user.photoURL) {
-                    fotoUrlFinal = user.photoURL;
-                }
+                // Lógica simplificada: usa a foto do banco de dados se for um link, senão, usa a padrão.
+                const fotoUrlFinal = (voluntario.fotoUrl && voluntario.fotoUrl.startsWith('http'))
+                    ? voluntario.fotoUrl
+                    : '../../../assets/img/avatar-padrao.png';
 
                 // --- NOVAS INFORMAÇÕES ADICIONADAS AQUI ---
 

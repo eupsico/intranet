@@ -1,14 +1,36 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.6 (Força o uso da foto do e-mail)
+// Versão: 2.7 (Solução Definitiva para Fotos)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
+
+// NOVA FUNÇÃO: Atualiza a foto do usuário no Firestore se necessário
+async function updateUserPhotoOnLogin(user, userData) {
+    const firestorePhotoUrl = userData.fotoUrl || '';
+    const googlePhotoUrl = user.photoURL || '';
+
+    // Se o usuário tem uma foto no Google e ela é diferente da que está salva, atualiza.
+    if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
+        try {
+            const userDocRef = db.collection("usuarios").doc(user.uid);
+            await userDocRef.update({ fotoUrl: googlePhotoUrl });
+            console.log(`Foto de ${userData.nome} atualizada no Firestore.`);
+            // Atualiza o objeto local para que a mudança reflita imediatamente
+            userData.fotoUrl = googlePhotoUrl; 
+        } catch (error) {
+            console.error("Erro ao atualizar a foto do usuário:", error);
+        }
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             const userDoc = await db.collection("usuarios").doc(user.uid).get();
             if (userDoc.exists) {
-                initPortal(user, userDoc.data());
+                const userData = userDoc.data();
+                // Chama a nova função para verificar e atualizar a foto no login
+                await updateUserPhotoOnLogin(user, userData);
+                initPortal(user, userData);
             } else {
                 window.location.href = '../../../index.html';
             }
@@ -33,7 +55,6 @@ function initPortal(user, userData) {
     ];
 
     function buildSidebarMenu() {
-        // (Esta função permanece inalterada)
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = '';
         sidebarMenu.innerHTML += `
@@ -57,7 +78,6 @@ function initPortal(user, userData) {
     }
 
     async function loadView(viewId) {
-        // (Esta função permanece inalterada)
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
@@ -90,8 +110,6 @@ function initPortal(user, userData) {
         const logoutButton = document.getElementById('logout-button-dashboard');
 
         if(userPhoto) {
-            // --- ALTERAÇÃO APLICADA AQUI ---
-            // Usa a foto da conta Google (user.photoURL) ou, se não houver, a padrão.
             userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
             userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
         }
@@ -110,7 +128,6 @@ function initPortal(user, userData) {
             });
         }
         
-        // (O restante da função setupLayout continua igual)
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
