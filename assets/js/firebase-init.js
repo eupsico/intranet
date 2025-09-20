@@ -25,4 +25,4 @@ const db = firebase.firestore();
 
 // A inicialização e exportação do 'storage' foram removidas.
 
-export { auth, db, rtdb };
+export { auth, db };
