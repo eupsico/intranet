@@ -98,7 +98,7 @@ function initPortal(user, userData) {
                 loadCSS(cssPath);
             }
 
-            const viewModule = await import(`..${viewId}.js`);
+            const viewModule = await import(`../${viewId}.js`);
             if (viewModule && typeof viewModule.init === 'function') {
                 viewModule.init(db, user, userData, param);
             }
