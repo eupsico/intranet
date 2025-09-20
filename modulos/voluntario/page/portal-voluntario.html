@@ -4,37 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Voluntário - EuPsico</title>
-        <script>
-            // Obtém o nome da página atual (sem extensão)
-            const pageName = window.location.pathname.split("/").pop().replace(".html", "");
+    
+    <script>
+        // Lógica para carregar CSS dinamicamente (mantida)
+        const pageName = window.location.pathname.split("/").pop().replace(".html", "");
+        const commonStyles = ["../../../assets/css/design-system.css"];
+        const pageSpecificCSS = `../css/${pageName}.css`;
 
-            // Lista de CSSs comuns que devem ser carregados sempre
-            const commonStyles = [
-                "../../../assets/css/design-system.css"
-            ];
+        function loadCSS(href) {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = href;
+            document.head.appendChild(link);
+        }
 
-            // CSS específico da página
-            const pageSpecificCSS = `../css/${pageName}.css`;
-
-            // Função para adicionar um CSS ao <head>
-            function loadCSS(href) {
-                const link = document.createElement("link");
-                link.rel = "stylesheet";
-                link.href = href;
-                document.head.appendChild(link);
-            }
-
-            // Carrega os estilos comuns
-            commonStyles.forEach(loadCSS);
-
-            // Tenta carregar o CSS específico da página
-            fetch(pageSpecificCSS)
-                .then(response => {
-                    if (response.ok) loadCSS(pageSpecificCSS);
-                    else console.warn("CSS da página não encontrado:", pageSpecificCSS);
-                })
-                .catch(() => console.warn("Erro ao carregar CSS:", pageSpecificCSS));
-        </script>
+        commonStyles.forEach(loadCSS);
+        fetch(pageSpecificCSS)
+            .then(response => {
+                if (response.ok) loadCSS(pageSpecificCSS);
+                else console.warn("CSS da página não encontrado:", pageSpecificCSS);
+            })
+            .catch(() => console.warn("Erro ao carregar CSS:", pageSpecificCSS));
+    </script>
+    <link rel="icon" type="image/png" href="../../../favicon.png">
 
 </head>
 <body>
@@ -59,8 +51,7 @@
 
             <nav class="sidebar">
                 <div class="sidebar-content-wrapper">
-                    <ul id="sidebar-menu" class="sidebar-menu">
-                        </ul>
+                    <ul id="sidebar-menu" class="sidebar-menu"></ul>
                 </div>
             </nav>
             <div id="menu-overlay" class="menu-overlay"></div>
@@ -72,11 +63,6 @@
             </main>
         </div>
     </div>
-
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
 
     <script type="module" src="../../../assets/js/firebase-init.js"></script>
     <script type="module" src="../js/portal-voluntario.js"></script>
