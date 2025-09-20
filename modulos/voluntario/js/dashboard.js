@@ -1,8 +1,17 @@
+// Arquivo: /modulos/voluntario/js/dashboard.js
+// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
+// Descrição: Carrega o resumo de horas e financeiro do voluntário no dashboard.
+
+import { doc, getDoc, onSnapshot } from '../../../assets/js/firebase-init.js';
+
 export function init(db, user, userData) {
     const summaryContainer = document.getElementById('summary-panel-container');
     const infoCardContainer = document.getElementById('info-card-container');
 
-    if (!summaryContainer || !infoCardContainer) return;
+    if (!summaryContainer || !infoCardContainer) {
+        console.error("Elementos do container do dashboard não encontrados.");
+        return;
+    }
 
     let dadosDasGrades = {};
     let valoresConfig = {}; // Armazena a configuração de valores
@@ -13,16 +22,12 @@ export function init(db, user, userData) {
      */
     async function fetchValoresConfig() {
         try {
-            const docRef = db.collection('financeiro').doc('configuracoes');
-            const doc = await docRef.get();
-            if (doc.exists) {
-                const data = doc.data();
-                if (data.valores) {
-                    valoresConfig = data.valores;
-                } else {
-                    console.error("Documento 'configuracoes' não possui o campo 'valores'.");
-                    valoresConfig = { online: 0, presencial: 0 };
-                }
+            const docRef = doc(db, 'financeiro', 'configuracoes');
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                valoresConfig = data.valores || { online: 0, presencial: 0 };
             } else {
                 console.error("Documento 'financeiro/configuracoes' não encontrado!");
                 valoresConfig = { online: 0, presencial: 0 };
@@ -34,7 +39,7 @@ export function init(db, user, userData) {
     }
 
     /**
-     * Renderiza o painel "Meu Resumo Semanal" com as novas alterações.
+     * Renderiza o painel "Meu Resumo Semanal".
      */
     function renderSummaryPanel() {
         if (!userData || !userData.username) {
@@ -42,19 +47,19 @@ export function init(db, user, userData) {
             return;
         }
         
-        const userUsername = userData.username;
-        const userFullName = userData.name;
-        let horasOnline = 0, horasPresencial = 0;
-        let agendamentosOnline = [], agendamentosPresencial = [];
+        const { username: userUsername, nome: userFullName } = userData;
+        let horasOnline = 0;
+        let horasPresencial = 0;
+        const agendamentosOnline = [];
+        const agendamentosPresencial = [];
         
         for (const path in dadosDasGrades) {
-            const nomeDaGrade = dadosDasGrades[path];
-            if (nomeDaGrade === userUsername || nomeDaGrade === userFullName) {
+            const nomeNaGrade = dadosDasGrades[path];
+            if (nomeNaGrade === userUsername || nomeNaGrade === userFullName) {
                 const parts = path.split('.');
                 if (parts.length === 4) {
-                    const tipo = parts[0];
-                    const diaKey = parts[1];
-                    const horaFormatada = parts[2].replace('-', ':');
+                    const [tipo, diaKey, horaRaw] = parts;
+                    const horaFormatada = horaRaw.replace('-', ':');
                     const diaNome = diasDaSemana[diaKey];
                     const horarioCompleto = `<li>${diaNome} - ${horaFormatada}</li>`;
 
@@ -85,7 +90,6 @@ export function init(db, user, userData) {
                             <li>
                                 <span class="financeiro-horas">Total de horas: <strong>${totalHoras}</strong></span>
                                 <span class="financeiro-valor">Valor total a pagar: ${valorFormatado}</span>
-                               
                                 <small>O pagamento deve ser realizado até o dia 10.</small>
                             </li>
                         </ul>
@@ -103,33 +107,35 @@ export function init(db, user, userData) {
     }
 
     /**
-     * Renderiza os cards de informações gerais (Apenas Avisos).
+     * Renderiza os cards de informações gerais.
      */
     function renderInfoCard() {
-        const aniversariantesHtml = `<li>Nenhum aniversariante hoje.</li>`;
-        const reuniaoHtml = `<li>Nenhuma reunião agendada.</li>`;
         infoCardContainer.innerHTML = `
             <div class="info-card-grid">
                 <div class="info-card">
                     <h3>📢 Avisos Gerais</h3>
                     <ul>
-                        ${aniversariantesHtml}
-                        ${reuniaoHtml}
+                        <li>Nenhum aniversariante hoje.</li>
+                        <li>Nenhuma reunião agendada.</li>
                     </ul>
                 </div>
             </div>`;
     }
 
+    /**
+     * Função principal que orquestra o carregamento e a renderização do dashboard.
+     */
     async function start() {
         summaryContainer.innerHTML = '<div class="loading-spinner"></div>';
         renderInfoCard();
         await fetchValoresConfig();
-        const gradesDocRef = db.collection('administrativo').doc('grades');
-        gradesDocRef.onSnapshot((doc) => {
-            dadosDasGrades = doc.exists ? doc.data() : {};
+        
+        const gradesDocRef = doc(db, 'administrativo', 'grades');
+        onSnapshot(gradesDocRef, (docSnap) => {
+            dadosDasGrades = docSnap.exists() ? docSnap.data() : {};
             renderSummaryPanel();
         }, (error) => {
-            console.error("Erro ao carregar resumo da grade:", error);
+            console.error("Erro ao escutar atualizações da grade:", error);
             summaryContainer.innerHTML = `<p class="alert alert-error">Não foi possível carregar o resumo semanal.</p>`;
         });
     }
