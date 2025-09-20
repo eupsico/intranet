@@ -1,8 +1,10 @@
 /* Arquivo: /modulos/voluntario/css/voluntarios.css */
+/* Versão 2.0: Grid aprimorado */
 
 #voluntarios-grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    /* Usa no mínimo 280px, mas pode crescer até 1fr. Em telas grandes, isso criará 3 colunas. */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 30px;
     padding-top: 10px;
 }
@@ -10,18 +12,17 @@
 .voluntario-card {
     background-color: var(--cor-surface);
     border-radius: var(--borda-radius);
-    box-shadow: var(--sombra-suave);
+    box-shadow: var(--sombra-padrao);
     text-align: center;
     padding: 25px 20px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border-top: 4px solid var(--cor-primaria);
-    display: flex; /* Adicionado para melhor controle do alinhamento interno */
-    flex-direction: column; /* Adicionado */
+    display: flex;
+    flex-direction: column;
 }
 
 .voluntario-card:hover {
     transform: translateY(-5px);
-    box-shadow: var(--sombra-padrao);
 }
 
 .voluntario-card .profile-pic-container {
@@ -30,9 +31,9 @@
     border-radius: 50%;
     margin: 0 auto 20px auto;
     overflow: hidden;
-    border: 4px solid #fff;
+    border: 4px solid var(--cor-surface);
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    flex-shrink: 0; /* Impede que a imagem encolha */
+    flex-shrink: 0;
 }
 
 .voluntario-card .profile-pic {
@@ -53,24 +54,25 @@
     color: var(--cor-primaria);
     margin: 5px 0 15px 0;
     font-weight: 500;
-    min-height: 24px; /* Garante uma altura mínima para o campo */
+    min-height: 24px;
 }
 
 .voluntario-card .info-list {
     list-style: none;
-    padding: 0;
-    margin-top: auto; /* Empurra a lista para a parte inferior do card */
+    padding: 15px 0 0 0;
+    margin-top: auto;
     text-align: left;
     font-size: 0.9em;
     color: var(--cor-texto-secundario);
+    border-top: 1px solid var(--cor-borda);
 }
 
 .voluntario-card .info-list li {
     padding: 8px 0;
-    border-bottom: 1px solid var(--cor-borda);
+    border-bottom: 1px solid var(--cor-fundo);
     display: flex;
-    align-items: flex-start; /* Alinha no topo para textos longos */
-    word-break: break-word; /* Quebra palavras longas */
+    align-items: flex-start;
+    word-break: break-word;
 }
 
 .voluntario-card .info-list li:last-child {
@@ -80,6 +82,6 @@
 .voluntario-card .info-list li strong {
     color: var(--cor-texto-principal);
     margin-right: 8px;
-    min-width: 100px; /* Aumentado para alinhar os novos campos */
+    min-width: 100px;
     flex-shrink: 0;
 }
