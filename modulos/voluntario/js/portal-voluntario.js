@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.4 (Menu unificado e caminhos corrigidos)
+// Versão: 3.5 (Separação dos painéis de supervisão)
 import {
     auth,
     db,
@@ -47,23 +47,32 @@ function initPortal(user, userData) {
     const sidebarMenu = document.getElementById('sidebar-menu');
     const loadedCSS = new Set();
 
-    // CORREÇÃO: O menu agora é o mesmo para todos, a lógica de qual tela mostrar
-    // será gerenciada pelo próprio módulo de supervisão.
     const views = [
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
         { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
-        { id: 'supervisao', name: 'Supervisão', icon: '🎓' },
+        // O link de Supervisão/Painel do Supervisor será adicionado abaixo
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
         { id: 'recursos', name: 'Recursos', icon: '🛠️' },
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
     ];
 
+    // **NOVA LÓGICA DE MENU**
+    // Adiciona o link correto com base na função do usuário
+    const userRoles = userData.funcoes || [];
+    const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
+
+    if (isSupervisor) {
+        views.splice(3, 0, { id: 'painel-supervisor', name: 'Painel do Supervisor', icon: '⭐' });
+    } else {
+        views.splice(3, 0, { id: 'painel-supervisionado', name: 'Supervisão', icon: '🎓' });
+    }
+
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = `
-            <li><a href="../../../index.html" class="back-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Voltar à Intranet</span></a></li>
+            <li><a href="../../../index.html" class="back-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Voltar à Intranet</span></a></li>
             <li class="menu-separator"></li>
         `;
         views.forEach(view => {
@@ -88,7 +97,7 @@ function initPortal(user, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const response = await fetch(`./${viewId}.html`);
+            const response = await fetch(`./page/${viewId}.html`);
             if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
             
