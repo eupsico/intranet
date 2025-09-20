@@ -1,6 +1,5 @@
 /* Arquivo: /modulos/voluntario/css/grade.css
-   Versão: 6.2 (Final Corrigida)
-   Descrição: Ajusta seletores para garantir a aplicação correta dos estilos responsivos.
+   Versão: 7.0 (Otimizado com Variáveis e Padrões do Design System)
 */
 
 /* --- Abas dos Dias da Semana --- */
@@ -10,16 +9,16 @@
     margin-bottom: 20px;
     overflow-x: auto;
     padding-bottom: 8px;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: none; /* IE e Edge */
+    scrollbar-width: none; /* Firefox */
 }
 .grade-day-tabs-wrapper::-webkit-scrollbar {
-    display: none;
+    display: none; /* Chrome, Safari e Opera */
 }
 .grade-day-tabs-wrapper button {
-    background-color: #f0f0f0;
-    color: #333;
-    border: none;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto-principal);
+    border: 1px solid var(--cor-borda);
     padding: 10px 16px;
     border-radius: var(--borda-radius);
     cursor: pointer;
@@ -30,11 +29,13 @@
     white-space: nowrap;
 }
 .grade-day-tabs-wrapper button:hover {
-    background-color: #e0e0e0;
+    background-color: var(--cor-borda);
+    border-color: var(--cor-texto-secundario);
 }
 .grade-day-tabs-wrapper button.active {
-    background-color: #1d70b7;
-    color: white;
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    border-color: var(--cor-primaria);
 }
 
 /* --- Tabela da Grade --- */
@@ -59,19 +60,13 @@
     color: var(--cor-texto-inverso);
     padding: 12px 5px;
 }
-.grade-table .period-cell {
-    font-weight: 600;
-    background-color: var(--cor-fundo);
-    width: 80px;
-}
+.grade-table .period-cell,
 .grade-table .hour-cell {
     font-weight: 600;
     background-color: var(--cor-fundo);
-    width: 70px;
 }
-.grade-table .periodo-manha { background-color: #e3f2fd; }
-.grade-table .periodo-tarde { background-color: #fffde7; }
-.grade-table .periodo-noite { background-color: #f3e5f5; }
+.grade-table .period-cell { width: 80px; }
+.grade-table .hour-cell { width: 70px; }
 
 /* Célula de profissional (visualização) */
 .professional-cell {
@@ -79,7 +74,6 @@
     margin: 2px;
     font-weight: 500;
     border-radius: var(--borda-radius);
-    color: var(--cor-texto-principal);
     min-height: 28px;
     display: flex;
     align-items: center;
@@ -93,62 +87,49 @@
 
 /* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
 @media screen and (max-width: 768px) {
-    .table-wrapper {
-        overflow-x: hidden; /* Remove a barra de rolagem horizontal no modo lista */
-    }
-    .grade-table {
-        min-width: 100%;
-        border: 0;
-    }
-    .grade-table thead {
-        display: none; /* Esconde o cabeçalho da tabela original */
-    }
+    .table-wrapper { overflow-x: hidden; }
+    .grade-table { min-width: 100%; border: 0; }
+    .grade-table thead { display: none; }
     .grade-table tr {
-        display: block; /* Transforma cada linha em um "card" */
+        display: block;
         border: 1px solid var(--cor-borda);
         border-radius: var(--borda-radius);
         margin-bottom: 1em;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: var(--sombra-padrao);
     }
     .grade-table td {
-        display: block; /* Empilha as células verticalmente dentro do "card" */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         text-align: right;
         border: none;
-        border-bottom: 1px solid #eee;
-        padding-left: 50%;
+        border-bottom: 1px solid var(--cor-fundo);
+        padding: 10px 15px;
         position: relative;
     }
-    .grade-table td:last-child {
-        border-bottom: 0;
-    }
+    .grade-table tr td:last-child { border-bottom: 0; }
+    
     .grade-table td::before {
-        content: attr(data-label); /* Usa a "etiqueta" do JS como título da célula */
-        position: absolute;
-        left: 10px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left;
+        content: attr(data-label);
         font-weight: 600;
+        text-align: left;
         color: var(--cor-primaria);
     }
-    .grade-table .period-cell {
-        display: none; /* Esconde a célula de "Período" (Manhã, Tarde, Noite) */
-    }
+    .grade-table .period-cell { display: none; }
     .grade-table .hour-cell {
         font-size: 1.2em;
         font-weight: 700;
         background-color: var(--cor-fundo);
-        text-align: center;
-        padding-left: 0;
+        justify-content: center;
+        padding: 12px;
     }
-    .grade-table .hour-cell::before {
-        display: none; /* A célula de hora não precisa do título "HORAS" */
-    }
+    .grade-table .hour-cell::before { display: none; }
+    
     .professional-cell {
         margin: 0;
         padding: 8px;
         min-height: auto;
-        justify-content: flex-end; /* Alinha o nome do profissional à direita */
+        flex-grow: 1;
+        justify-content: flex-end;
     }
 }
