@@ -1,9 +1,10 @@
 // Arquivo: /modulos/voluntario/js/mensagens.js
-// Versão: 2.0 (Revisado e padronizado)
+// Versão: 2.1 (Corrigido para usar getElementById)
 // Descrição: Módulo para a aba "Modelos de Mensagem".
 
 export function init(db, user, userData) {
-    const container = document.querySelector('#mensagens');
+    // CORREÇÃO: O container agora é usado apenas como referência, e os seletores usam document.getElementById
+    const container = document.getElementById('mensagens');
     if (!container) return;
 
     // --- FUNÇÕES AUXILIARES ---
@@ -34,15 +35,15 @@ export function init(db, user, userData) {
 
     // --- INICIALIZAÇÃO DOS CAMPOS ---
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    container.querySelector('#cobranca-mes').innerHTML = meses.map(m => `<option value="${m}">${m}</option>`).join('');
+    document.getElementById('cobranca-mes').innerHTML = meses.map(m => `<option value="${m}">${m}</option>`).join('');
     
     let hoursOptions = '';
     for (let i = 8; i <= 21; i++) {
         const hour = String(i).padStart(2, '0') + ':00';
         hoursOptions += `<option value="${hour}">${hour}</option>`;
     }
-    container.querySelector('#agendada-hora').innerHTML = hoursOptions;
-    container.querySelector('#agendar-hora').innerHTML = hoursOptions.replace(/:00/g, 'h');
+    document.getElementById('agendada-hora').innerHTML = hoursOptions;
+    document.getElementById('agendar-hora').innerHTML = hoursOptions.replace(/:00/g, 'h');
 
     // --- LÓGICA DO ACCORDION ---
     const triggers = container.querySelectorAll('.accordion-trigger');
@@ -65,25 +66,26 @@ export function init(db, user, userData) {
     });
 
     // --- EVENT LISTENERS DOS BOTÕES ---
-    container.querySelector('#btn-cobranca').addEventListener('click', function () {
-        const p = container.querySelector('#cobranca-paciente').value, d = container.querySelector('#cobranca-data').value, m = container.querySelector('#cobranca-mes').value, v = container.querySelector('#cobranca-valor').value, px = container.querySelector('#cobranca-pix').value;
+    // CORREÇÃO: Todos os seletores foram trocados para document.getElementById
+    document.getElementById('btn-cobranca').addEventListener('click', function () {
+        const p = document.getElementById('cobranca-paciente').value, d = document.getElementById('cobranca-data').value, m = document.getElementById('cobranca-mes').value, v = document.getElementById('cobranca-valor').value, px = document.getElementById('cobranca-pix').value;
         const msg = `${getGreeting()}, ${p}!\n\nPassando para lembrar sobre a sua contribuição mensal, com vencimento em *${formatDateToDDMM(d)}*.\n\n*Ao contribuir, você garante a continuidade do seu atendimento e apoia o trabalho da EuPsico.* 😊\n\n*Mês de Referência:* ${m}\n*Valor:* R$ ${v}\n*Chave PIX:* ${px}\n\nQualquer dúvida, estou à disposição.`;
-        generateAndCopy(container.querySelector('#output-cobranca'), msg);
+        generateAndCopy(document.getElementById('output-cobranca'), msg);
     });
-    container.querySelector('#btn-agendada').addEventListener('click', function () {
-        const tipo = container.querySelector('#agendada-tipo').value, p = container.querySelector('#agendada-paciente').value, t = container.querySelector('#agendada-terapeuta').value, prof = container.querySelector('#agendada-profissao').value, dia = container.querySelector('#agendada-diasemana').value, data = container.querySelector('#agendada-data').value, hora = container.querySelector('#agendada-hora').value;
+    document.getElementById('btn-agendada').addEventListener('click', function () {
+        const tipo = document.getElementById('agendada-tipo').value, p = document.getElementById('agendada-paciente').value, t = document.getElementById('agendada-terapeuta').value, prof = document.getElementById('agendada-profissao').value, dia = document.getElementById('agendada-diasemana').value, data = document.getElementById('agendada-data').value, hora = document.getElementById('agendada-hora').value;
         let intro = tipo === 'plantao' ? `Meu nome é ${t} e sou o/a ${prof} da EuPsico que irá realizar seu atendimento no Plantão Psicológico.` : `Meu nome é ${t} e sou o/a ${prof} da EuPsico que irá realizar seu atendimento.`;
         let msg = tipo === 'plantao' ? `${getGreeting()}, ${p}!\n\n${intro}\n\nEscrevo para confirmar nossa primeira sessão:\n✨ *${dia}, ${formatDateToDDMM(data)} às ${hora}* ✨\n\nPara que você se sinta mais confortável para o nosso encontro, gostaria de explicar como funciona este acolhimento inicial. O Plantão Psicológico é um *atendimento breve e focado* (de até quatro sessões), onde nosso objetivo será:\n\n➡️ *Identificar sua demanda principal:* Compreender as questões que levaram você a buscar ajuda neste momento.\n➡️ *Avaliar sua necessidade:* Analisar a urgência e a natureza da sua queixa.\n➡️ *Realizar o encaminhamento adequado:* Direcionar você para a modalidade de terapia mais indicada ao final do nosso processo.\n\nDois pontos importantes sobre este formato:\n1. O Plantão funciona como uma porta de entrada. Ele *não é um processo psicoterapêutico completo*, mas sim o primeiro passo para o cuidado contínuo.\n2. Como profissional do Plantão, meu papel é te acolher e direcionar da melhor forma. Por isso, a terapia contínua, se for o caso, será realizada por *outro colega*, garantindo um encaminhamento isento e focado no que é melhor para você.\n\nSou ${prof} com registro profissional, e nosso atendimento é totalmente protegido pelo sigilo e pela ética profissional.\n\nSe tiver qualquer dúvida antes da nossa sessão, pode me perguntar. Estou à disposição para te acolher nesta jornada.` : `${getGreeting()}, ${p}!\n\n${intro}\n\nEscrevo para confirmar nossa primeira sessão:\n✨ *${dia}, ${formatDateToDDMM(data)} às ${hora}* ✨\n\nCaso precise remarcar, por favor, me avise com no mínimo 24 horas de antecedência.\n\nAté lá!`;
-        generateAndCopy(container.querySelector('#output-agendada'), msg);
+        generateAndCopy(document.getElementById('output-agendada'), msg);
     });
-    container.querySelector('#btn-agendar').addEventListener('click', function () {
-        const p = container.querySelector('#agendar-paciente').value, t = container.querySelector('#agendar-terapeuta').value, prof = container.querySelector('#agendar-profissao').value, mod = container.querySelector('#agendar-modalidade').value, dia = container.querySelector('#agendar-diasemana').value, hora = container.querySelector('#agendar-hora').value;
+    document.getElementById('btn-agendar').addEventListener('click', function () {
+        const p = document.getElementById('agendar-paciente').value, t = document.getElementById('agendar-terapeuta').value, prof = document.getElementById('agendar-profissao').value, mod = document.getElementById('agendar-modalidade').value, dia = document.getElementById('agendar-diasemana').value, hora = document.getElementById('agendar-hora').value;
         const msg = `${getGreeting()}, ${p}!\n\nSou ${t}, ${prof} na EuPsico.\n\nTenho uma vaga disponível para você no seguinte horário:\n*- Modalidade:* ${mod}\n*- Dia e Hora:* ${dia}, às ${hora}.\n\nEste horário funciona para você?\n\nAguardo sua confirmação para darmos os próximos passos. 😉`;
-        generateAndCopy(container.querySelector('#output-agendar'), msg);
+        generateAndCopy(document.getElementById('output-agendar'), msg);
     });
-    container.querySelector('#btn-primeira').addEventListener('click', function () {
-        const p = container.querySelector('#primeira-paciente').value, data = container.querySelector('#primeira-data-agendamento').value, v = container.querySelector('#primeira-valor').value, px = container.querySelector('#primeira-pix').value;
+    document.getElementById('btn-primeira').addEventListener('click', function () {
+        const p = document.getElementById('primeira-paciente').value, data = document.getElementById('primeira-data-agendamento').value, v = document.getElementById('primeira-valor').value, px = document.getElementById('primeira-pix').value;
         const msg = `Olá, ${p}! Que bom que o horário funcionou para você.\n\nPara confirmarmos e garantirmos sua vaga, o próximo passo é realizar o pagamento da primeira contribuição.\n\n*Agendamento:* ${formatDateTimeLocalString(data)}\n*Valor:* R$ ${v}\n*Chave PIX:* ${px}\n\n*Prazo para envio do comprovante:* ${getFutureDate(2)}\n\nSeu horário será confirmado assim que recebermos o comprovante. Qualquer dúvida, é só chamar!`;
-        generateAndCopy(container.querySelector('#output-primeira'), msg);
+        generateAndCopy(document.getElementById('output-primeira'), msg);
     });
 }
