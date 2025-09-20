@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.2 (Lógica de carregamento de CSS e seletores corrigidos)
+// Versão: 3.3 (Correção Crítica do Caminho de Carregamento)
 import {
     auth,
     db,
@@ -91,25 +91,22 @@ function initPortal(user, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // Carrega o HTML da view
-            const response = await fetch(`./page/${viewId}.html`);
+            // CORREÇÃO CRÍTICA: Removido o "/page" extra do caminho
+            const response = await fetch(`./${viewId}.html`);
             if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
             
-            // Tenta carregar o CSS específico da view
             const cssPath = `../css/${viewId}.css`;
             const cssResponse = await fetch(cssPath);
             if (cssResponse.ok) {
                 loadCSS(cssPath);
             }
 
-            // Carrega e inicializa o módulo JS da view
             const viewModule = await import(`../js/${viewId}.js`);
             if (viewModule && typeof viewModule.init === 'function') {
                 viewModule.init(db, user, userData, param);
             }
         } catch (error) {
-            // Ignora erros de módulo JS não encontrado, pois nem todas as views têm JS
             if (!error.message.includes('Failed to fetch dynamically imported module')) {
                 console.error(`Erro ao carregar a view ${viewId}:`, error);
                 contentArea.innerHTML = `<div class="dashboard-section"><p style="color: var(--cor-erro);">Erro Crítico: A página <strong>${viewId}</strong> não pôde ser carregada.</p></div>`;
@@ -130,7 +127,6 @@ function initPortal(user, userData) {
             const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
             userGreeting.textContent = `${greeting}, ${firstName}!`;
         }
-        // CORREÇÃO: Apontando para o ID correto do botão de logout
         const logoutButton = document.getElementById('logout-button');
         if (logoutButton) {
             logoutButton.addEventListener('click', (e) => {
@@ -150,7 +146,7 @@ function initPortal(user, userData) {
             loadView(viewId || defaultViewId, param);
         };
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Carrega a view inicial
+        handleHashChange();
     }
     start();
 }
