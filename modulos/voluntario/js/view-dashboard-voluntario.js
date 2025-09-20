@@ -1,8 +1,8 @@
-// Arquivo: /modulos/voluntario/js/dashboard.js
-// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
+// Arquivo: /modulos/voluntario/js/view-dashboard-voluntario.js
+// Versão: 2.1 (Corrigido e alinhado com o carregador de views)
 // Descrição: Carrega o resumo de horas e financeiro do voluntário no dashboard.
 
-import { doc, getDoc, onSnapshot } from '../../../assets/js/firebase-init.js';
+import { db, doc, getDoc, onSnapshot } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData) {
     const summaryContainer = document.getElementById('summary-panel-container');
@@ -15,7 +15,14 @@ export function init(db, user, userData) {
 
     let dadosDasGrades = {};
     let valoresConfig = {}; // Armazena a configuração de valores
-    const diasDaSemana = {segunda: 'Segunda-feira', terca: 'Terça-feira', quarta: 'Quarta-feira', quinta: 'Quinta-feira', sexta: 'Sexta-feira', sabado: 'Sábado'};
+    const diasDaSemana = {
+        segunda: 'Segunda-feira',
+        terca: 'Terça-feira',
+        quarta: 'Quarta-feira',
+        quinta: 'Quinta-feira',
+        sexta: 'Sexta-feira',
+        sabado: 'Sábado'
+    };
 
     /**
      * Busca as configurações de valores do financeiro no Firestore.
@@ -43,7 +50,7 @@ export function init(db, user, userData) {
      */
     function renderSummaryPanel() {
         if (!userData || !userData.username) {
-            summaryContainer.innerHTML = '<p>Não foi possível identificar o usuário para exibir o resumo.</p>';
+            summaryContainer.innerHTML = '<p class="info-card">Não foi possível identificar o usuário para exibir o resumo.</p>';
             return;
         }
         
@@ -136,7 +143,7 @@ export function init(db, user, userData) {
             renderSummaryPanel();
         }, (error) => {
             console.error("Erro ao escutar atualizações da grade:", error);
-            summaryContainer.innerHTML = `<p class="alert alert-error">Não foi possível carregar o resumo semanal.</p>`;
+            summaryContainer.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Não foi possível carregar o resumo semanal.</div>`;
         });
     }
 
