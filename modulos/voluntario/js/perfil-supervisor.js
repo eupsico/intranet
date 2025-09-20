@@ -1,16 +1,19 @@
-// Arquivo: /modulos/voluntario/js/perfil-supervisor.js (Novo)
-// Versão: 1.0
+// Arquivo: /modulos/voluntario/js/perfil-supervisor.js
+// Versão: 2.0 (Corrigido para a nova estrutura de abas)
 // Descrição: Controla a visualização e edição de perfis de supervisor.
 
 import { db, collection, query, where, getDocs, doc, updateDoc } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData) {
-    const container = document.getElementById('supervisor-profile-container');
-    const editModal = document.getElementById('edit-supervisor-profile-modal');
+    const container = document.getElementById('meu-perfil');
+    // Os modais agora devem estar no HTML principal (portal-voluntario.html) para serem globais
+    const editModal = document.getElementById('edit-supervisor-profile-modal'); 
     const form = document.getElementById('edit-supervisor-profile-form');
 
-    if (!container || !editModal || !form) {
-        console.error("Elementos essenciais para o perfil do supervisor não foram encontrados.");
+    if (!container) return;
+    if (!editModal || !form) {
+        console.error("O modal de edição de perfil do supervisor não foi encontrado no HTML principal.");
+        container.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Erro de configuração: Modal de edição ausente.</div>`;
         return;
     }
 
@@ -20,9 +23,8 @@ export function init(db, user, userData) {
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
-        card.className = 'info-card'; // Reutilizando a classe de card para consistência
+        card.className = 'info-card';
         
-        const toList = (data) => Array.isArray(data) && data.length > 0 ? `<ul>${data.map(item => `<li>${item}</li>`).join('')}</ul>` : '<p>Não informado.</p>';
         const photoPath = supervisor.fotoUrl ? `../../../${supervisor.fotoUrl}` : '../../../assets/img/avatar-padrao.png';
 
         card.innerHTML = `
@@ -87,7 +89,7 @@ export function init(db, user, userData) {
     const createHorarioRow = (horario = {}) => {
         const dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"];
         const row = document.createElement('div');
-        row.className = 'form-row'; // Reutilizando a classe
+        row.className = 'form-row';
         const diaOptions = dias.map(dia => `<option value="${dia}" ${horario.dia === dia ? 'selected' : ''}>${dia}</option>`).join('');
         row.innerHTML = `
             <div class="form-group"><label>Dia</label><select name="horario_dia" class="form-control">${diaOptions}</select></div>
@@ -145,10 +147,8 @@ export function init(db, user, userData) {
         try {
             let supervisorsQuery;
             if (isAdmin) {
-                // Admin vê todos os supervisores
                 supervisorsQuery = query(collection(db, 'usuarios'), where('funcoes', 'array-contains', 'supervisor'));
             } else {
-                // Supervisor vê apenas o próprio perfil
                 supervisorsQuery = query(collection(db, 'usuarios'), where('__name__', '==', user.uid));
             }
             
@@ -166,17 +166,7 @@ export function init(db, user, userData) {
         }
     }
 
-    // Event Listeners
-    editModal.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => editModal.style.display = 'none'));
-    form.addEventListener('submit', saveProfileChanges);
-    document.getElementById('add-horario-btn').addEventListener('click', () => {
-        document.getElementById('horarios-editor-container').appendChild(createHorarioRow());
-    });
-    document.getElementById('horarios-editor-container').addEventListener('click', e => {
-        if (e.target.classList.contains('remove-horario-btn')) {
-            e.target.closest('.form-row').remove();
-        }
-    });
-
+    // A inicialização dos event listeners do modal deve ser feita uma única vez no portal-voluntario.js
+    // para evitar duplicação. Aqui apenas chamamos a função de carregar.
     loadProfiles();
 }
