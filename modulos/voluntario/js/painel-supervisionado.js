@@ -1,4 +1,4 @@
-// Arquivo: /modulos/voluntario/js/painel-supervisionado.js (Novo)
+// Arquivo: /modulos/voluntario/js/painel-supervisionado.js
 // Versão: 1.0
 // Descrição: Controla as abas do Painel do Supervisionado (Psicólogo).
 
@@ -10,39 +10,40 @@ export function init(db, user, userData) {
     const contentSections = view.querySelectorAll('.tab-content');
     const loadedTabs = new Set();
 
-const loadTabModule = async (tabId) => {
-    if (loadedTabs.has(tabId)) return;
+    const loadTabModule = async (tabId) => {
+        // A aba 'ficha-supervisao' agora carrega um HTML diretamente, não um módulo JS
+        if (loadedTabs.has(tabId) && tabId !== 'ficha-supervisao') return;
 
-    try {
-        let module;
-        const params = [db, user, userData];
-
-        // CORREÇÃO: Tratamento especial para a ficha
-        if (tabId === 'ficha-supervisao') {
-            const response = await fetch('./page/ficha-supervisao-completa.html');
-            if (!response.ok) throw new Error('HTML da ficha não encontrado');
-            document.getElementById('ficha-supervisao').innerHTML = await response.text();
-
-            module = await import('./ficha-supervisao.js');
-            params.push('new'); // Indica que é uma nova ficha
-
-        } else {
+        try {
+            let module;
+            const params = [db, user, userData];
             switch (tabId) {
+                case 'ficha-supervisao':
+                    // Carrega o formulário completo diretamente na aba
+                    const response = await fetch('./page/ficha-supervisao-completa.html');
+                    const formHtml = await response.text();
+                    document.getElementById('ficha-supervisao').innerHTML = formHtml;
+                    // Inicializa o JS do formulário
+                    module = await import('./ficha-supervisao.js');
+                    break;
                 case 'acompanhamentos':
                     module = await import('./fichas-supervisao.js');
                     break;
-                case 'supervisores':
+                case 'ver-supervisores': // <-- ALTERAÇÃO AQUI
                     module = await import('./ver-supervisores.js');
                     break;
                 default: return;
             }
-        }
 
-        if (module && typeof module.init === 'function') {
-            await module.init(...params);
-            loadedTabs.add(tabId);
-        }
-    } catch (error) {
+            if (module && typeof module.init === 'function') {
+                // Para a ficha, o param é 'new' para indicar um novo formulário
+                if (tabId === 'ficha-supervisao') {
+                    params.push('new');
+                }
+                await module.init(...params);
+                loadedTabs.add(tabId);
+            }
+        } catch (error) {
             console.error(`Erro ao carregar o módulo da aba '${tabId}':`, error);
             const tabContent = view.querySelector(`#${tabId}`);
             if (tabContent) {
