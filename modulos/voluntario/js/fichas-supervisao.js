@@ -1,49 +1,65 @@
 // Arquivo: /modulos/voluntario/js/fichas-supervisao.js
-// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
+// Versão: 2.1 (Layout de tabela e padronização)
 // Descrição: Lista as fichas de supervisão preenchidas pelo voluntário.
 
-import { collection, getDocs, query, where, orderBy } from '../../../assets/js/firebase-init.js';
+import { db, collection, getDocs, query, where, orderBy } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData) {
     const container = document.getElementById('lista-registros-container');
-    if (!container) return;
+    if (!container) {
+        console.error("Container da lista de registros não encontrado.");
+        return;
+    }
 
-    /**
-     * Carrega e renderiza a lista de registros de supervisão do usuário.
-     */
     async function carregarRegistros() {
         container.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const supervisaoRef = collection(db, 'supervisao');
-            const q = query(supervisaoRef, where('psicologoUid', '==', user.uid), orderBy('supervisaoData', 'desc'));
+            // CORREÇÃO: Ordenando pelo campo 'data' que é o campo correto para a data da ficha.
+            const q = query(supervisaoRef, where('profissionalUid', '==', user.uid), orderBy('data', 'desc'));
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                container.innerHTML = '<p>Nenhuma ficha de acompanhamento encontrada para você.</p>';
+                container.innerHTML = '<p class="info-card">Nenhuma ficha de acompanhamento encontrada para você.</p>';
                 return;
             }
 
-            let registrosHtml = '<div class="registros-list">';
+            // Renderização em Tabela para melhor alinhamento
+            let tableHtml = `
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Paciente (Iniciais)</th>
+                            <th>Supervisor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
             querySnapshot.forEach(doc => {
                 const registro = doc.data();
-                const dataFormatada = registro.supervisaoData 
-                    ? new Date(registro.supervisaoData + 'T00:00:00').toLocaleDateString('pt-BR') 
+                const dataFormatada = registro.data 
+                    ? new Date(registro.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) 
                     : 'Não informada';
 
-                registrosHtml += `
-                    <a href="#ficha-supervisao/${doc.id}" class="registro-item">
-                        <div><strong>Paciente:</strong> ${registro.pacienteIniciais || 'N/A'}</div>
-                        <div><strong>Supervisor:</strong> ${registro.supervisorNome || 'N/A'}</div>
-                        <div><strong>Data:</strong> ${dataFormatada}</div>
-                    </a>
+                tableHtml += `
+                    <tr>
+                        <td>${dataFormatada}</td>
+                        <td>${registro.iniciaisPaciente || 'N/A'}</td>
+                        <td>${registro.supervisorNome || 'N/A'}</td>
+                        <td><a href="#ficha-supervisao/${doc.id}" class="btn btn-primary">Ver Ficha</a></td>
+                    </tr>
                 `;
             });
-            registrosHtml += '</div>';
-            container.innerHTML = registrosHtml;
+
+            tableHtml += '</tbody></table>';
+            container.innerHTML = tableHtml;
 
         } catch (error) {
             console.error("Erro ao carregar registros:", error);
-            container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao carregar seus acompanhamentos.</p>';
+            container.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar seus acompanhamentos.</div>`;
         }
     }
 
