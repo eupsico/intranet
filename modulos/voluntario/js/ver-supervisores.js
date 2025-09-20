@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/ver-supervisores.js
-// Versão: 2.0 (Revisado e padronizado)
+// Versão: 2.1 (Permissão de acesso corrigida)
 // Descrição: Painel de entrada para supervisores, verificando permissões e exibindo módulos.
 
 import { doc, getDoc } from '../../../assets/js/firebase-init.js';
@@ -55,7 +55,8 @@ export function init(db, user) {
 
             if (userDoc.exists()) {
                 const funcoes = userDoc.data().funcoes || [];
-                if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
+                // CORREÇÃO: Adicionada a função 'atendimento' na verificação de permissão.
+                if (funcoes.includes('supervisor') || funcoes.includes('admin') || funcoes.includes('atendimento')) {
                     renderSupervisorCards();
                 } else {
                     dashboardContent.innerHTML = '<h2>Acesso Negado</h2><p>Você não tem permissão para acessar esta área.</p>';
