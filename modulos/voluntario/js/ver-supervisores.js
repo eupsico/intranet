@@ -1,18 +1,13 @@
 // Arquivo: /modulos/voluntario/js/ver-supervisores.js
-// Versão: 3.2 (Simplificado para a visão do voluntário)
+// Versão: 4.0 (Focado na visão do supervisionado para agendamento)
 // Descrição: Carrega e exibe os perfis de supervisores para agendamento.
 
 import { db, collection, query, where, getDocs } from '../../../assets/js/firebase-init.js';
 import { agendamentoController } from './agendamento.js';
 
 export function init(db, user, userData) {
-    const gridContainer = document.getElementById('supervisor-cards-container');
-    const detailsModal = document.getElementById('supervisor-details-modal');
-
-    if (!gridContainer || !detailsModal) {
-        console.error("Elementos essenciais para a view de supervisores não foram encontrados.");
-        return;
-    }
+    const container = document.getElementById('supervisores');
+    if (!container) return;
 
     let fetchedSupervisors = [];
 
@@ -29,23 +24,50 @@ export function init(db, user, userData) {
             </div>
             <div class="card-content">
                 <p>${supervisor.titulo || 'Supervisor(a)'}</p>
+                <p style="font-size: 0.9em; color: var(--cor-secundaria);">Clique para ver detalhes e agendar</p>
             </div>
         `;
         return cardLink;
     };
 
     const renderProfiles = (supervisors) => {
-        gridContainer.innerHTML = '';
+        const grid = document.createElement('div');
+        grid.className = 'modules-grid';
+        
         if (supervisors.length === 0) {
-            gridContainer.innerHTML = '<p class="info-card">Nenhum perfil de supervisor encontrado.</p>';
+            container.innerHTML = '<p class="info-card">Nenhum perfil de supervisor encontrado.</p>';
             return;
         }
+        
         supervisors.forEach(supervisor => {
-            gridContainer.appendChild(createSupervisorCard(supervisor));
+            grid.appendChild(createSupervisorCard(supervisor));
+        });
+        
+        container.innerHTML = ''; // Limpa o spinner
+        container.appendChild(grid);
+
+        // Adiciona o event listener APÓS renderizar os cards
+        grid.addEventListener('click', (e) => {
+            e.preventDefault();
+            const card = e.target.closest('.module-card');
+            if (card) {
+                const supervisorUid = card.getAttribute('data-uid');
+                const supervisorData = fetchedSupervisors.find(s => s.uid === supervisorUid);
+                if (supervisorData) {
+                    openDetailsModal(supervisorData);
+                }
+            }
         });
     };
     
     const openDetailsModal = (supervisorData) => {
+        // Assume que o modal de detalhes já existe no HTML principal (portal-voluntario.html)
+        const detailsModal = document.getElementById('supervisor-details-modal');
+        if (!detailsModal) {
+            console.error('Modal de detalhes do supervisor não encontrado no DOM principal.');
+            return;
+        }
+
         document.getElementById('details-photo').src = supervisorData.fotoUrl ? `../../../${supervisorData.fotoUrl}` : '../../../assets/img/avatar-padrao.png';
         document.getElementById('details-nome').textContent = supervisorData.nome || 'Não informado';
         document.getElementById('details-titulo').textContent = supervisorData.titulo || 'Supervisor(a)';
@@ -67,7 +89,7 @@ export function init(db, user, userData) {
     };
 
     async function loadSupervisors() {
-        gridContainer.innerHTML = '<div class="loading-spinner"></div>';
+        container.innerHTML = '<div class="loading-spinner"></div>';
         try {
             const supervisors = [];
             const q = query(collection(db, 'usuarios'), where('funcoes', 'array-contains', 'supervisor'));
@@ -78,24 +100,9 @@ export function init(db, user, userData) {
             renderProfiles(supervisors);
         } catch (error) {
             console.error("Erro ao carregar perfis:", error);
-            gridContainer.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar os perfis.</div>`;
+            container.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar os perfis.</div>`;
         }
     }
-
-    // Event Listeners
-    detailsModal.querySelector('.close-modal-btn').addEventListener('click', () => detailsModal.style.display = 'none');
-    
-    gridContainer.addEventListener('click', (e) => {
-        e.preventDefault();
-        const card = e.target.closest('.module-card');
-        if (card) {
-            const supervisorUid = card.getAttribute('data-uid');
-            const supervisorData = fetchedSupervisors.find(s => s.uid === supervisorUid);
-            if (supervisorData) {
-                openDetailsModal(supervisorData);
-            }
-        }
-    });
 
     loadSupervisors();
 }
