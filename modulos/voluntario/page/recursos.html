@@ -1,8 +1,8 @@
 <div class="view-container">
-    <header class="section-header">
+    <div class="dashboard-section">
         <h1>Recursos do Voluntário</h1>
-    </header>
-    <p class="description-box">Acesse aqui ferramentas úteis para o seu dia a dia, como modelos de mensagem, sua disponibilidade e a grade de horários completa.</p>
+        <p>Acesse aqui ferramentas úteis para o seu dia a dia, como modelos de mensagem, sua disponibilidade e a grade de horários completa.</p>
+    </div>
 
     <nav class="tabs-container" aria-label="Navegação de recursos">
         <button class="tab-link active" data-tab="mensagens">Modelos de Mensagem</button>
@@ -22,7 +22,7 @@
                 <div class="form-group"><label for="cobranca-mes">Mês de Referência</label><select id="cobranca-mes"></select></div>
                 <div class="form-group"><label for="cobranca-valor">Valor (R$)</label><input type="number" id="cobranca-valor" placeholder="Ex: 100"></div>
                 <div class="form-group"><label for="cobranca-pix">Chave PIX</label><input type="text" id="cobranca-pix" placeholder="Insira a chave PIX aqui"></div>
-                <button class="action-button" id="btn-cobranca">Gerar Mensagem</button>
+                <button class="btn btn-primary" id="btn-cobranca">Gerar Mensagem</button>
                 <div class="output-area"><label>Mensagem Gerada (clique na caixa para copiar)</label><textarea readonly id="output-cobranca"></textarea></div>
             </div>
         </div>
@@ -39,7 +39,7 @@
                 <div class="form-group"><label for="agendada-diasemana">Dia da Semana</label><select id="agendada-diasemana"><option value="segunda-feira">Segunda-feira</option><option value="terça-feira">Terça-feira</option><option value="quarta-feira">Quarta-feira</option><option value="quinta-feira">Quinta-feira</option><option value="sexta-feira">Sexta-feira</option><option value="sábado">Sábado</option></select></div>
                 <div class="form-group"><label for="agendada-data">Data da Sessão</label><input type="date" id="agendada-data"></div>
                 <div class="form-group"><label for="agendada-hora">Hora da Sessão</label><select id="agendada-hora"></select></div>
-                <button class="action-button" id="btn-agendada">Gerar Mensagem</button>
+                <button class="btn btn-primary" id="btn-agendada">Gerar Mensagem</button>
                 <div class="output-area"><label>Mensagem Gerada (clique na caixa para copiar)</label><textarea readonly id="output-agendada"></textarea></div>
             </div>
         </div>

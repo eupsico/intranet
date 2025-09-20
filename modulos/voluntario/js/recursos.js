@@ -1,6 +1,6 @@
 // Arquivo: /modulos/voluntario/js/recursos.js
-// Versão: 4.1 (Revisado e padronizado)
-// Descrição: Controla as abas de recursos, carregando os submódulos corretos para cada uma.
+// Versão: 4.2 (Lógica de acordeão adicionada e estrutura revisada)
+// Descrição: Controla as abas de recursos e a interatividade da página.
 
 export function init(db, user, userData) {
     const view = document.querySelector('.view-container');
@@ -8,10 +8,34 @@ export function init(db, user, userData) {
 
     const tabContainer = view.querySelector('.tabs-container');
     const contentSections = view.querySelectorAll('.tab-content');
-    
-    // Mantém um registro das abas já carregadas para não recarregar desnecessariamente
     const loadedTabs = new Set();
 
+    /**
+     * Adiciona a funcionalidade de abrir/fechar para todos os acordeões na página.
+     */
+    const setupAccordions = () => {
+        const accordions = view.querySelectorAll('.accordion');
+        accordions.forEach(accordion => {
+            const trigger = accordion.querySelector('.accordion-trigger');
+            const content = accordion.querySelector('.accordion-content');
+            if (trigger && content) {
+                trigger.addEventListener('click', () => {
+                    const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+                    trigger.setAttribute('aria-expanded', !isExpanded);
+                    trigger.classList.toggle('active');
+                    content.classList.toggle('active');
+                    if (!isExpanded) {
+                        // Expande o conteúdo
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    } else {
+                        // Retrai o conteúdo
+                        content.style.maxHeight = '0px';
+                    }
+                });
+            }
+        });
+    };
+    
     /**
      * Carrega o módulo JS associado a uma aba específica.
      * @param {string} tabId - O ID da aba (ex: 'mensagens', 'disponibilidade').
@@ -34,14 +58,14 @@ export function init(db, user, userData) {
                     break;
                 case 'grade-online':
                     module = await import('./grade-view.js');
-                    initParams.push('online'); // Passa 'online' como parâmetro para o módulo
+                    initParams.push('online'); // Passa 'online' como parâmetro
                     break;
                 case 'grade-presencial':
                     module = await import('./grade-view.js');
                     initParams.push('presencial'); // Passa 'presencial' como parâmetro
                     break;
                 default:
-                    return; // Nenhuma ação se a aba não tiver um módulo JS
+                    return;
             }
 
             if (module && typeof module.init === 'function') {
@@ -51,8 +75,8 @@ export function init(db, user, userData) {
         } catch (error) {
             console.error(`Erro ao carregar o módulo da aba '${tabId}':`, error);
             const tabContent = view.querySelector(`#${tabId}`);
-            if (tabContent) {
-                tabContent.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao carregar este recurso.</p>`;
+            if (tabContent && !tabId.startsWith('grade')) { // Grades já têm spinner
+                 tabContent.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar este recurso.</div>`;
             }
         }
     };
@@ -74,8 +98,11 @@ export function init(db, user, userData) {
         });
     }
 
+    // Inicializa a funcionalidade de acordeão assim que a view de recursos é carregada
+    setupAccordions();
+
     // Carrega o conteúdo da primeira aba ativa ao entrar na página
-    const activeTab = tabContainer.querySelector('.tab-link.active');
+    const activeTab = tabContainer?.querySelector('.tab-link.active');
     if (activeTab) {
         loadTabModule(activeTab.dataset.tab);
     }
