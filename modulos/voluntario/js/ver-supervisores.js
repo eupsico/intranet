@@ -1,12 +1,7 @@
 // Arquivo: /modulos/voluntario/js/ver-supervisores.js
-// Versão: CORRIGIDA E ROBUSTA - Não usa mais import()
 
-// Espera o portal principal terminar de carregar para iniciar.
-document.addEventListener('portalContentLoaded', () => {
-    // Pega as informações de login que o portal disponibilizou
-    const { db, user } = window.eupsico;
-
-    console.log("Módulo ver-supervisores.js inicializado com sucesso.");
+export function init(db, user) {
+    console.log("Módulo ver-supervisores.js inicializado pelo portal (padrão moderno).");
 
     const dashboardContent = document.getElementById('supervisor-dashboard-content');
     const supervisorCardsGrid = document.getElementById('supervisor-cards-grid');
@@ -37,6 +32,8 @@ document.addEventListener('portalContentLoaded', () => {
             card.dataset.view = key; 
             card.innerHTML = `<div class="card-content"><h3>${module.titulo}</h3><p>${module.descricao}</p></div>`;
             
+            // Ao clicar, o hash da URL é atualizado, e o roteador principal
+            // cuidará de carregar a nova página e seu respectivo script.
             card.addEventListener('click', () => {
                 window.location.hash = `#${key}`;
             });
@@ -55,5 +52,8 @@ document.addEventListener('portalContentLoaded', () => {
                 dashboardContent.innerHTML = '<h2>Acesso Negado</h2><p>Você não tem permissão para acessar esta área.</p>';
             }
         }
+    }).catch(error => {
+        console.error("Erro ao verificar permissões:", error);
+        dashboardContent.innerHTML = '<h2>Ocorreu um erro ao verificar suas permissões.</h2>';
     });
-});
+}
