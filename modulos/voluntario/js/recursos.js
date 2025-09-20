@@ -1,6 +1,6 @@
 // Arquivo: /modulos/voluntario/js/recursos.js
-// Versão: 4.0 (Base Funcional Desktop)
-// Descrição: Controla as abas de recursos, carregando os módulos corretos para cada uma.
+// Versão: 4.1 (Revisado e padronizado)
+// Descrição: Controla as abas de recursos, carregando os submódulos corretos para cada uma.
 
 export function init(db, user, userData) {
     const view = document.querySelector('.view-container');
@@ -9,8 +9,13 @@ export function init(db, user, userData) {
     const tabContainer = view.querySelector('.tabs-container');
     const contentSections = view.querySelectorAll('.tab-content');
     
+    // Mantém um registro das abas já carregadas para não recarregar desnecessariamente
     const loadedTabs = new Set();
 
+    /**
+     * Carrega o módulo JS associado a uma aba específica.
+     * @param {string} tabId - O ID da aba (ex: 'mensagens', 'disponibilidade').
+     */
     const loadTabModule = async (tabId) => {
         if (loadedTabs.has(tabId)) {
             return;
@@ -18,7 +23,7 @@ export function init(db, user, userData) {
 
         try {
             let module;
-            let initParams = [db, user, userData];
+            const initParams = [db, user, userData];
 
             switch (tabId) {
                 case 'mensagens':
@@ -29,14 +34,14 @@ export function init(db, user, userData) {
                     break;
                 case 'grade-online':
                     module = await import('./grade-view.js');
-                    initParams.push('online'); // Informa ao módulo para carregar a grade online
+                    initParams.push('online'); // Passa 'online' como parâmetro para o módulo
                     break;
                 case 'grade-presencial':
                     module = await import('./grade-view.js');
-                    initParams.push('presencial'); // Informa ao módulo para carregar a grade presencial
+                    initParams.push('presencial'); // Passa 'presencial' como parâmetro
                     break;
                 default:
-                    return; 
+                    return; // Nenhuma ação se a aba não tiver um módulo JS
             }
 
             if (module && typeof module.init === 'function') {
@@ -46,7 +51,7 @@ export function init(db, user, userData) {
         } catch (error) {
             console.error(`Erro ao carregar o módulo da aba '${tabId}':`, error);
             const tabContent = view.querySelector(`#${tabId}`);
-            if(tabContent) {
+            if (tabContent) {
                 tabContent.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao carregar este recurso.</p>`;
             }
         }
@@ -69,6 +74,7 @@ export function init(db, user, userData) {
         });
     }
 
+    // Carrega o conteúdo da primeira aba ativa ao entrar na página
     const activeTab = tabContainer.querySelector('.tab-link.active');
     if (activeTab) {
         loadTabModule(activeTab.dataset.tab);
