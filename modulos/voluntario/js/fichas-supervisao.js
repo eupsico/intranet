@@ -1,9 +1,16 @@
-import { collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// Arquivo: /modulos/voluntario/js/fichas-supervisao.js
+// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
+// Descrição: Lista as fichas de supervisão preenchidas pelo voluntário.
+
+import { collection, getDocs, query, where, orderBy } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData) {
     const container = document.getElementById('lista-registros-container');
     if (!container) return;
 
+    /**
+     * Carrega e renderiza a lista de registros de supervisão do usuário.
+     */
     async function carregarRegistros() {
         container.innerHTML = '<div class="loading-spinner"></div>';
         try {
