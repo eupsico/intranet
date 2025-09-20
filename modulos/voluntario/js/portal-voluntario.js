@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.1 (Lógica de carregamento de CSS aprimorada)
+// Versão: 3.2 (Lógica de carregamento de CSS e seletores corrigidos)
 import {
     auth,
     db,
@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
+    const loadedCSS = new Set();
 
     const views = [
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
@@ -65,7 +66,7 @@ function initPortal(user, userData) {
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = `
-            <li><a href="../../../index.html" class="back-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Voltar à Intranet</span></a></li>
+            <li><a href="../../index.html" class="back-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Voltar à Intranet</span></a></li>
             <li class="menu-separator"></li>
         `;
         views.forEach(view => {
@@ -74,11 +75,12 @@ function initPortal(user, userData) {
     }
 
     function loadCSS(cssPath) {
-        if (!document.querySelector(`link[href="${cssPath}"]`)) {
+        if (!loadedCSS.has(cssPath)) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = cssPath;
             document.head.appendChild(link);
+            loadedCSS.add(cssPath);
         }
     }
 
@@ -89,28 +91,28 @@ function initPortal(user, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const response = await fetch(`./${viewId}.html`);
+            // Carrega o HTML da view
+            const response = await fetch(`./page/${viewId}.html`);
             if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
             
-            // Carrega o CSS específico da view, se existir
-            loadCSS(`../css/${viewId}.css`);
-            // Carrega CSS adicionais se necessário (ex: para a view de supervisão)
-            if (viewId.includes('supervis')) {
-                 loadCSS(`../css/supervisao-geral.css`);
-            }
-             if (viewId === 'recursos') {
-                loadCSS('../css/recursos.css');
+            // Tenta carregar o CSS específico da view
+            const cssPath = `../css/${viewId}.css`;
+            const cssResponse = await fetch(cssPath);
+            if (cssResponse.ok) {
+                loadCSS(cssPath);
             }
 
+            // Carrega e inicializa o módulo JS da view
             const viewModule = await import(`../js/${viewId}.js`);
             if (viewModule && typeof viewModule.init === 'function') {
                 viewModule.init(db, user, userData, param);
             }
         } catch (error) {
+            // Ignora erros de módulo JS não encontrado, pois nem todas as views têm JS
             if (!error.message.includes('Failed to fetch dynamically imported module')) {
                 console.error(`Erro ao carregar a view ${viewId}:`, error);
-                contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada.</p></div>`;
+                contentArea.innerHTML = `<div class="dashboard-section"><p style="color: var(--cor-erro);">Erro Crítico: A página <strong>${viewId}</strong> não pôde ser carregada.</p></div>`;
             }
         }
     }
@@ -118,7 +120,7 @@ function initPortal(user, userData) {
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
         if (userPhoto) {
-            userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
+            userPhoto.src = userData.fotoUrl || '../../../assets/img/avatar-padrao.png';
             userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
         }
         const userGreeting = document.getElementById('user-greeting');
@@ -128,11 +130,12 @@ function initPortal(user, userData) {
             const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
             userGreeting.textContent = `${greeting}, ${firstName}!`;
         }
-        const logoutButton = document.getElementById('logout-button-dashboard');
+        // CORREÇÃO: Apontando para o ID correto do botão de logout
+        const logoutButton = document.getElementById('logout-button');
         if (logoutButton) {
             logoutButton.addEventListener('click', (e) => {
                 e.preventDefault();
-                signOut(auth);
+                signOut(auth).catch(error => console.error("Erro ao fazer logout:", error));
             });
         }
     }
@@ -142,12 +145,12 @@ function initPortal(user, userData) {
         buildSidebarMenu();
         const handleHashChange = () => {
             const hash = window.location.hash.substring(1);
-            const defaultViewId = views.length > 0 ? views[0].id : null;
+            const defaultViewId = views.length > 0 ? views[0].id : 'view-dashboard-voluntario';
             const [viewId, param] = hash.split('/');
             loadView(viewId || defaultViewId, param);
         };
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange();
+        handleHashChange(); // Carrega a view inicial
     }
     start();
 }
