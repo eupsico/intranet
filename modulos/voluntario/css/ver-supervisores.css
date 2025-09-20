@@ -1,0 +1,150 @@
+/* Arquivo: /modulos/voluntario/css/ver-supervisores.css */
+/* Estilos para a lista de supervisores e o modal de edição. */
+
+/* Grid de cards */
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
+}
+
+.supervisor-card-item {
+    background-color: var(--cor-surface);
+    border-radius: var(--borda-radius);
+    box-shadow: var(--sombra-padrao);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--cor-borda);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background-color: var(--cor-fundo);
+}
+
+.supervisor-photo {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--cor-primaria);
+}
+
+.supervisor-identity h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: var(--cor-texto-principal);
+}
+
+.supervisor-identity p {
+    margin: 0;
+    color: var(--cor-texto-secundario);
+    font-size: 0.9em;
+}
+
+.card-body {
+    padding: 20px;
+    font-size: 0.9em;
+    line-height: 1.5;
+    flex-grow: 1;
+}
+
+.card-body p {
+    margin: 0 0 8px 0;
+}
+
+.card-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--cor-borda);
+    text-align: right;
+}
+
+.edit-supervisor-btn {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    padding: 8px 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+/* Estilos para o Modal de Edição (reaproveitados de outros módulos) */
+.modal-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    display: none; /* Alterado para none por padrão */
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: var(--cor-surface);
+    padding: 20px;
+    border-radius: var(--borda-radius);
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    box-shadow: var(--sombra-padrao);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--cor-borda);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 { margin: 0; }
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.8em;
+    cursor: pointer;
+    color: var(--cor-texto-secundario);
+}
+
+.modal-body {
+    overflow-y: auto;
+    padding-right: 15px; /* Para a barra de rolagem */
+}
+
+.modal-footer {
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 1px solid var(--cor-borda);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Linha de Horário no Modal */
+.horario-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.horario-row select, .horario-row input {
+    width: auto;
+    flex-grow: 1;
+}
+.remove-horario-btn {
+    background-color: var(--cor-erro);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+}
