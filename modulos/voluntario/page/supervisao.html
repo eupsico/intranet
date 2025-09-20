@@ -1,27 +1,30 @@
 <div class="view-container">
-    <div class="view-header-band">
-        <h1>Módulos de Supervisão</h1>
+    <div class="dashboard-section">
+        <h1>Portal de Supervisão</h1>
+        <p>Acesse aqui as ferramentas para sua supervisão clínica e acompanhamento profissional.</p>
     </div>
-    <p class="description-box">Acesse aqui as ferramentas relacionadas à sua supervisão clínica.</p>
-    
-    <div class="modules-grid" id="supervisao-modules-grid">
-        <a href="#ficha-supervisao/new" class="module-card">
-            <div class="card-content">
-                <h3>Preencher Ficha</h3>
-                <p>Clique aqui para preencher uma nova ficha de acompanhamento.</p>
-            </div>
-        </a>
-        <a href="#fichas-supervisao" class="module-card">
-            <div class="card-content">
-                <h3>Meus Acompanhamentos</h3>
-                <p>Visualize todas as fichas que você já preencheu.</p>
-            </div>
-        </a>
-        <a href="#ver-supervisores" class="module-card">
-            <div class="card-content">
-                <h3>Supervisores</h3>
-                <p>Visualize os perfis e agende horários com os supervisores.</p>
-            </div>
-        </a>
-    </div>
+
+    <nav class="tabs-container" id="supervisao-tabs" aria-label="Navegação de Supervisão">
+        <button class="tab-link" data-tab="meus-acompanhamentos" id="tab-meus-acompanhamentos">Meus Acompanhamentos</button>
+        <button class="tab-link" data-tab="agendar-supervisao" id="tab-agendar-supervisao">Agendar Supervisão</button>
+        
+        <button class="tab-link" data-tab="minhas-fichas" id="tab-minhas-fichas" style="display: none;">Minhas Fichas (Supervisionados)</button>
+        <button class="tab-link" data-tab="meus-agendamentos" id="tab-meus-agendamentos" style="display: none;">Meus Agendamentos</button>
+    </nav>
+
+    <section id="meus-acompanhamentos" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
+    </section>
+
+    <section id="agendar-supervisao" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
+    </section>
+
+    <section id="minhas-fichas" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
+    </section>
+
+    <section id="meus-agendamentos" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
+    </section>
 </div>
