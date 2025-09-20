@@ -1,6 +1,8 @@
 // Arquivo: /modulos/voluntario/js/grade-view.js
-// Versão: 2.1 (Otimização Mobile - Etapa 1: Atributos)
-// Descrição: Adiciona os atributos data-label para preparar a tabela para o CSS responsivo.
+// Versão: 3.0 (Modernizado para Firebase v9+ e ES6+)
+// Descrição: Renderiza a grade de horários (online ou presencial) para visualização.
+
+import { collection, query, where, getDocs, doc, onSnapshot } from '../../../assets/js/firebase-init.js';
 
 // --- FUNÇÕES AUXILIARES GLOBAIS ---
 function generateColorFromString(str) {
@@ -46,7 +48,7 @@ export async function init(db, user, userData, tipoGrade) {
         const tableBodyHtml = horarios.map((hora, index) => {
             const horaFormatada = hora.replace(":", "-");
             let periodoCell = '';
-            // ADICIONADO data-label
+            
             if (index === 0) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Manhã</td>`;
             if (index === 5) periodoCell = `<td data-label="Período" class="period-cell" rowspan="6">Tarde</td>`;
             if (index === 11) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Noite</td>`;
@@ -57,9 +59,8 @@ export async function init(db, user, userData, tipoGrade) {
                 const cor = coresProfissionais.get(nomeDaGrade) || generateColorFromString(nomeDaGrade);
                 const textColor = isColorDark(cor) ? 'var(--cor-texto-inverso)' : 'var(--cor-texto-principal)';
                 const estilo = nomeDaGrade ? `background-color: ${cor}; color: ${textColor};` : '';
-                const isCurrentUser = nomeDaGrade && (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
+                const isCurrentUser = nomeDaGrade && (nomeDaGrade === userData.username || nomeDaGrade.name === userData.name);
                 
-                // ADICIONADO data-label
                 return `<td data-label="${headerLabel}"><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
             }).join('');
             
@@ -69,7 +70,6 @@ export async function init(db, user, userData, tipoGrade) {
             else rowClass = 'periodo-noite';
 
             const horaSimples = hora.replace(':00', 'h');
-            // ADICIONADO data-label
             return `<tr class="${rowClass}">${periodoCell}<td class="hour-cell" data-label="HORAS">${horaSimples}</td>${celulasProfissionais}</tr>`;
         }).join('');
 
@@ -97,17 +97,19 @@ export async function init(db, user, userData, tipoGrade) {
         try {
             gradeContent.innerHTML = '<div class="loading-spinner"></div>';
             
-            const usuariosSnapshot = await db.collection("usuarios").where("fazAtendimento", "==", true).get();
-            usuariosSnapshot.forEach(doc => {
-                const prof = doc.data();
+            const q = query(collection(db, "usuarios"), where("fazAtendimento", "==", true));
+            const usuariosSnapshot = await getDocs(q);
+            
+            usuariosSnapshot.forEach(docSnap => {
+                const prof = docSnap.data();
                 const cor = prof.cor || generateColorFromString(prof.username);
                 if (prof.username) coresProfissionais.set(prof.username, cor);
                 if (prof.name) coresProfissionais.set(prof.name, cor);
             });
             
-            const gradesDocRef = db.collection('administrativo').doc('grades');
-            gradesDocRef.onSnapshot((doc) => {
-                dadosDasGrades = doc.exists ? doc.data() : {};
+            const gradesDocRef = doc(db, 'administrativo', 'grades');
+            onSnapshot(gradesDocRef, (docSnap) => {
+                dadosDasGrades = docSnap.exists() ? docSnap.data() : {};
                 const activeDayTabEl = gradeContent.querySelector('.grade-day-tabs-wrapper button.active');
                 const currentDia = activeDayTabEl ? activeDayTabEl.dataset.day : 'segunda';
                 renderGrade(currentDia);

@@ -1,4 +1,5 @@
 // Arquivo: /modulos/voluntario/js/mensagens.js
+// Versão: 2.0 (Revisado e padronizado)
 // Descrição: Módulo para a aba "Modelos de Mensagem".
 
 export function init(db, user, userData) {
