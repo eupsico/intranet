@@ -66,7 +66,7 @@ function initPortal(user, userData) {
 
     // Mapeamento de todas as views disponíveis no portal
     const views = [
-        { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
+        { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
         { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
         { id: 'supervisao', name: 'Supervisão', icon: '🎓' },

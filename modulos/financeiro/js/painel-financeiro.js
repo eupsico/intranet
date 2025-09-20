@@ -50,7 +50,7 @@ export function init(user, userData) {
 
     // Mapeamento das views (páginas) disponíveis no painel financeiro
     const views = [
-        { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
+        { id: 'view-dashboard-financeiro', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
         { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'] },
         { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'] },
         { id: 'cobranca_mensal', name: 'Cobrança Mensal', roles: ['admin', 'financeiro'] },
