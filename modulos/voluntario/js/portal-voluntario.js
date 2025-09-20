@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.5 (Separação dos painéis de supervisão)
+// Versão: 4.0 (Estrutura de painéis separados)
 import {
     auth,
     db,
@@ -51,15 +51,14 @@ function initPortal(user, userData) {
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
         { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
-        // O link de Supervisão/Painel do Supervisor será adicionado abaixo
+        // O link de Supervisão será inserido aqui
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
         { id: 'recursos', name: 'Recursos', icon: '🛠️' },
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
     ];
 
-    // **NOVA LÓGICA DE MENU**
-    // Adiciona o link correto com base na função do usuário
+    // **NOVA LÓGICA DE MENU SEPARADO**
     const userRoles = userData.funcoes || [];
     const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
 
@@ -72,7 +71,7 @@ function initPortal(user, userData) {
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = `
-            <li><a href="../../../index.html" class="back-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Voltar à Intranet</span></a></li>
+            <li><a href="../../../index.html" class="back-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Voltar à Intranet</span></a></li>
             <li class="menu-separator"></li>
         `;
         views.forEach(view => {
