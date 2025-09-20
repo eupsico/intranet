@@ -1,6 +1,6 @@
-// Arquivo: /modulos/voluntario/js/supervisao.js (Conteúdo Novo e Unificado)
-// Versão: 3.0
-// Descrição: Controla a nova interface de abas da Supervisão, exibindo conteúdo com base na função do usuário.
+// Arquivo: /modulos/voluntario/js/supervisao.js
+// Versão: 3.1 (Corrige loop, adiciona abas e refatora a lógica de visibilidade)
+// Descrição: Controla a interface de abas da Supervisão, agora com lógica robusta para cada perfil de usuário.
 
 export function init(db, user, userData) {
     const view = document.querySelector('.view-container');
@@ -12,55 +12,67 @@ export function init(db, user, userData) {
     const userRoles = userData.funcoes || [];
     const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
 
-    /**
-     * Configura a visibilidade das abas com base na função do usuário.
-     */
     const setupTabsVisibility = () => {
-        const defaultTabId = isSupervisor ? 'minhas-fichas' : 'meus-acompanhamentos';
+        // Esconde todas as abas e conteúdos primeiro para garantir um estado limpo
+        tabContainer.querySelectorAll('.tab-link').forEach(tab => tab.style.display = 'none');
+        contentSections.forEach(content => content.style.display = 'none');
+        
+        let defaultTabId = '';
 
         if (isSupervisor) {
+            // Define as abas visíveis para o SUPERVISOR
+            view.querySelector('#tab-meu-perfil-supervisor').style.display = 'block';
             view.querySelector('#tab-minhas-fichas').style.display = 'block';
             view.querySelector('#tab-meus-agendamentos').style.display = 'block';
+            defaultTabId = 'tab-meu-perfil-supervisor';
+        } else {
+            // Define as abas visíveis para o PSICÓLOGO
+            view.querySelector('#tab-preencher-ficha').style.display = 'block';
+            view.querySelector('#tab-meus-acompanhamentos').style.display = 'block';
+            view.querySelector('#tab-agendar-supervisao').style.display = 'block';
+            defaultTabId = 'tab-preencher-ficha';
         }
 
         // Ativa a primeira aba visível como padrão
-        const firstVisibleTab = view.querySelector(`.tab-link[data-tab="${defaultTabId}"]`);
+        const firstVisibleTab = view.querySelector(`#${defaultTabId}`);
         if (firstVisibleTab) {
             firstVisibleTab.classList.add('active');
-            view.querySelector(`#${defaultTabId}`).style.display = 'block';
-            loadTabModule(defaultTabId);
+            const contentId = firstVisibleTab.dataset.tab;
+            view.querySelector(`#${contentId}`).style.display = 'block';
+            loadTabModule(contentId);
         }
     };
 
-    /**
-     * Carrega o módulo JS associado a uma aba específica.
-     */
     const loadTabModule = async (tabId) => {
         if (loadedTabs.has(tabId)) return;
 
         try {
             let module;
+            const params = [db, user, userData];
             switch (tabId) {
+                case 'preencher-ficha': // Link direto para a criação de nova ficha
+                    window.location.hash = '#ficha-supervisao/new';
+                    return; // Navega e não carrega módulo aqui
                 case 'meus-acompanhamentos':
                     module = await import('./fichas-supervisao.js');
                     break;
                 case 'agendar-supervisao':
                     module = await import('./ver-supervisores.js');
                     break;
+                case 'meu-perfil-supervisor':
+                    module = await import('./perfil-supervisor.js'); // Vamos criar este
+                    break;
                 case 'minhas-fichas':
-                    // Este será o módulo para o supervisor ver as fichas dos seus supervisionados
                     module = await import('./view-meus-supervisionados.js');
                     break;
                 case 'meus-agendamentos':
-                    // Este será o módulo para o supervisor ver quem agendou com ele
-                    module = await import('./view-meus-agendamentos.js'); // Vamos criar este
+                    module = await import('./view-meus-agendamentos.js');
                     break;
-                default:
-                    return;
+                default: return;
             }
 
             if (module && typeof module.init === 'function') {
-                await module.init(db, user, userData);
+                await module.init(...params);
                 loadedTabs.add(tabId);
             }
         } catch (error) {
@@ -72,14 +84,14 @@ export function init(db, user, userData) {
         }
     };
     
-    // Adiciona o event listener para a troca de abas
     if (tabContainer) {
         tabContainer.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' && e.target.classList.contains('tab-link')) {
-                const tabId = e.target.dataset.tab;
+            const target = e.target.closest('.tab-link');
+            if (target) {
+                const tabId = target.dataset.tab;
 
                 tabContainer.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
+                target.classList.add('active');
 
                 contentSections.forEach(section => {
                     section.style.display = section.id === tabId ? 'block' : 'none';
@@ -90,6 +102,5 @@ export function init(db, user, userData) {
         });
     }
 
-    // Inicia o módulo
     setupTabsVisibility();
 }

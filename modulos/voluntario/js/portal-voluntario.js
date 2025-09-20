@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.3 (Correção Crítica do Caminho de Carregamento)
+// Versão: 3.4 (Menu unificado e caminhos corrigidos)
 import {
     auth,
     db,
@@ -47,6 +47,8 @@ function initPortal(user, userData) {
     const sidebarMenu = document.getElementById('sidebar-menu');
     const loadedCSS = new Set();
 
+    // CORREÇÃO: O menu agora é o mesmo para todos, a lógica de qual tela mostrar
+    // será gerenciada pelo próprio módulo de supervisão.
     const views = [
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
@@ -57,11 +59,6 @@ function initPortal(user, userData) {
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
     ];
-
-    const funcoes = userData.funcoes || [];
-    if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
-        views.splice(4, 0, { id: 'ver-supervisores', name: 'Painel Supervisor', icon: '⭐' });
-    }
 
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
@@ -91,8 +88,7 @@ function initPortal(user, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // CORREÇÃO CRÍTICA: Removido o "/page" extra do caminho
-            const response = await fetch(`./${viewId}.html`);
+            const response = await fetch(`./page/${viewId}.html`);
             if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
             
@@ -141,7 +137,7 @@ function initPortal(user, userData) {
         buildSidebarMenu();
         const handleHashChange = () => {
             const hash = window.location.hash.substring(1);
-            const defaultViewId = views.length > 0 ? views[0].id : 'view-dashboard-voluntario';
+            const defaultViewId = views[0].id;
             const [viewId, param] = hash.split('/');
             loadView(viewId || defaultViewId, param);
         };
