@@ -1,6 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.2 (Corrigido o carregamento de CSS e a lógica de navegação)
-
+// Versão: 3.1 (Lógica de carregamento de CSS aprimorada)
 import {
     auth,
     db,
@@ -11,11 +10,6 @@ import {
     updateDoc
 } from '../../../assets/js/firebase-init.js';
 
-/**
- * Atualiza a foto do usuário no Firestore se for diferente da do provedor Google.
- * @param {object} user - Objeto do usuário autenticado do Firebase.
- * @param {object} userData - Dados do usuário do Firestore.
- */
 async function updateUserPhotoOnLogin(user, userData) {
     const firestorePhotoUrl = userData.fotoUrl || '';
     const googlePhotoUrl = user.photoURL || '';
@@ -23,16 +17,13 @@ async function updateUserPhotoOnLogin(user, userData) {
         try {
             const userDocRef = doc(db, "usuarios", user.uid);
             await updateDoc(userDocRef, { fotoUrl: googlePhotoUrl });
-            userData.fotoUrl = googlePhotoUrl; // Atualiza o objeto em memória
+            userData.fotoUrl = googlePhotoUrl;
         } catch (error) {
             console.error("Erro ao atualizar a foto do usuário:", error);
         }
     }
 }
 
-/**
- * Ponto de entrada principal, verifica o estado da autenticação.
- */
 document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -43,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 await updateUserPhotoOnLogin(user, userData);
                 initPortal(user, userData);
             } else {
-                console.warn("Usuário autenticado mas sem registro no Firestore. Redirecionando.");
                 window.location.href = '../../../index.html';
             }
         } else {
@@ -52,11 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-/**
- * Inicializa a funcionalidade completa do portal.
- * @param {object} user - Objeto do usuário autenticado.
- * @param {object} userData - Dados do usuário do Firestore.
- */
 function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
@@ -108,17 +93,13 @@ function initPortal(user, userData) {
             if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
             contentArea.innerHTML = await response.text();
             
-            // --- LÓGICA DE CARREGAMENTO DE CSS CORRIGIDA ---
-            loadCSS(`../css/${viewId}.css`).catch(() => {}); // Tenta carregar o CSS do módulo
-            
+            // Carrega o CSS específico da view, se existir
+            loadCSS(`../css/${viewId}.css`);
+            // Carrega CSS adicionais se necessário (ex: para a view de supervisão)
             if (viewId.includes('supervis')) {
-                loadCSS(`../css/supervisao-geral.css`);
-                // CORREÇÃO: Carrega o supervisores.css da pasta assets
-                if (viewId === 'ver-supervisores' || viewId === 'view-meu-perfil') {
-                    loadCSS(`../../../assets/css/supervisores.css`);
-                }
+                 loadCSS(`../css/supervisao-geral.css`);
             }
-            if (viewId === 'recursos') {
+             if (viewId === 'recursos') {
                 loadCSS('../css/recursos.css');
             }
 
@@ -127,7 +108,7 @@ function initPortal(user, userData) {
                 viewModule.init(db, user, userData, param);
             }
         } catch (error) {
-            if (!error.message.includes('Failed to fetch')) {
+            if (!error.message.includes('Failed to fetch dynamically imported module')) {
                 console.error(`Erro ao carregar a view ${viewId}:`, error);
                 contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada.</p></div>`;
             }
