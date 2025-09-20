@@ -5,29 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Voluntário - EuPsico</title>
     
-    <script>
-        // Lógica para carregar CSS dinamicamente (mantida)
-        const pageName = window.location.pathname.split("/").pop().replace(".html", "");
-        const commonStyles = ["../../../assets/css/design-system.css"];
-        const pageSpecificCSS = `../css/${pageName}.css`;
+    <link rel="stylesheet" href="../../../assets/css/design-system.css">
+    <link rel="stylesheet" href="../css/portal-voluntario.css">
 
-        function loadCSS(href) {
-            const link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.href = href;
-            document.head.appendChild(link);
-        }
-
-        commonStyles.forEach(loadCSS);
-        fetch(pageSpecificCSS)
-            .then(response => {
-                if (response.ok) loadCSS(pageSpecificCSS);
-                else console.warn("CSS da página não encontrado:", pageSpecificCSS);
-            })
-            .catch(() => console.warn("Erro ao carregar CSS:", pageSpecificCSS));
-    </script>
     <link rel="icon" type="image/png" href="../../../favicon.png">
-
 </head>
 <body>
     <div id="app">
@@ -43,9 +24,9 @@
                     </div>
                 </div>
                 <div class="user-profile-header">
-                    <img id="user-photo-header" src="" alt="Foto do usuário">
+                    <img id="user-photo-header" src="../../../assets/img/avatar-padrao.png" alt="Foto do usuário">
                     <span id="user-greeting"></span>
-                    <a href="#" id="logout-button-dashboard" class="logout-button-dashboard">Sair</a>
+                    <a href="#" id="logout-button" class="btn btn-danger">Sair</a>
                 </div>
             </header>
 
