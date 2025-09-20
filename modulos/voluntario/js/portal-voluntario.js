@@ -106,10 +106,17 @@ function initPortal(user, userData) {
                 loadCSS(cssPath);
             }
 
-            const viewModule = await import(`../js/${viewId}.js`);
-            if (viewModule && typeof viewModule.init === 'function') {
-                viewModule.init(db, user, userData, param);
-            }
+            if (viewId === 'ficha-supervisao' && param) {
+                        const viewModule = await import(`../js/ficha-supervisao.js`);
+                        if (viewModule && typeof viewModule.init === 'function') {
+                            viewModule.init(db, user, userData, param);
+                        }
+                    } else {
+                        const viewModule = await import(`../js/${viewId}.js`);
+                        if (viewModule && typeof viewModule.init === 'function') {
+                            viewModule.init(db, user, userData, param);
+                        }
+                    }
         } catch (error) {
             if (!error.message.includes('Failed to fetch dynamically imported module')) {
                 console.error(`Erro ao carregar a view ${viewId}:`, error);
