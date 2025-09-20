@@ -1,13 +1,10 @@
 // Arquivo: /modulos/voluntario/js/ver-supervisores.js
-// Versão: MODERNA - Usando a sintaxe do Firebase v9
+// Versão: 2.0 (Revisado e padronizado)
+// Descrição: Painel de entrada para supervisores, verificando permissões e exibindo módulos.
 
-// Importa as funções 'doc' e 'getDoc' que foram exportadas pelo firebase-init.js
-// O portal-voluntario.js já importa 'db' e 'user' e nos passa pela função init.
 import { doc, getDoc } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user) {
-    console.log("Módulo ver-supervisores.js inicializado (Firebase v9).");
-
     const dashboardContent = document.getElementById('supervisor-dashboard-content');
     const supervisorCardsGrid = document.getElementById('supervisor-cards-grid');
 
@@ -16,6 +13,9 @@ export function init(db, user) {
         return;
     }
 
+    /**
+     * Renderiza os cards de navegação para as seções do supervisor.
+     */
     function renderSupervisorCards() {
         supervisorCardsGrid.innerHTML = '';
         
@@ -45,13 +45,12 @@ export function init(db, user) {
         }
     }
 
-    // ===== CÓDIGO ATUALIZADO PARA FIREBASE v9 =====
-    // Usamos async/await para um código mais limpo
+    /**
+     * Verifica se o usuário logado tem permissão de supervisor ou admin.
+     */
     async function checkPermissionsAndRender() {
         try {
-            // Cria a referência ao documento do usuário
             const userDocRef = doc(db, 'usuarios', user.uid);
-            // Busca o documento
             const userDoc = await getDoc(userDocRef);
 
             if (userDoc.exists()) {
@@ -70,6 +69,5 @@ export function init(db, user) {
         }
     }
 
-    // Chama a função para iniciar o processo
     checkPermissionsAndRender();
 }

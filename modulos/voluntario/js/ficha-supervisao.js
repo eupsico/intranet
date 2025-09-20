@@ -1,11 +1,19 @@
-import { collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// Arquivo: /modulos/voluntario/js/ficha-supervisao.js
+// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
+// Descrição: Controla a criação e edição das fichas de acompanhamento de supervisão.
+
+import { collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, serverTimestamp } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData, param) {
     const contentArea = document.getElementById('form-content-area');
     if (!contentArea) return;
 
-    const formId = param || 'new'; // 'new' ou um ID de documento
+    const formId = param || 'new'; // 'new' para um novo formulário ou um ID de documento para edição
 
+    /**
+     * Renderiza o formulário na tela.
+     * @param {object} docData - Dados existentes do documento para preencher o formulário.
+     */
     async function renderForm(docData = {}) {
         contentArea.innerHTML = `
             <form id="ficha-supervisao-form">
@@ -17,7 +25,7 @@ export function init(db, user, userData, param) {
                     <select id="supervisorUid" name="supervisorUid" required><option value="">Carregando...</option></select>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label for="supervisaoData">Data da supervisão:</label><input type="date" id="supervisaoData" name="supervisaoData"></div>
+                    <div class="form-group"><label for="supervisaoData">Data da supervisão:</label><input type="date" id="supervisaoData" name="supervisaoData" required></div>
                     <div class="form-group"><label for="terapiaInicio">Data de início da terapia:</label><input type="date" id="terapiaInicio" name="terapiaInicio"></div>
                 </div>
 
@@ -40,6 +48,7 @@ export function init(db, user, userData, param) {
                 <div class="form-group"><label for="pacienteApresentacao">Apresentação geral (queixa, demanda):</label><textarea id="pacienteApresentacao" name="pacienteApresentacao" rows="3"></textarea></div>
 
                 <div class="form-actions">
+                    <a href="#fichas-supervisao" class="btn btn-secondary">Voltar para Lista</a>
                     <button type="submit" class="btn btn-primary">Salvar Ficha</button>
                 </div>
             </form>
@@ -52,6 +61,10 @@ export function init(db, user, userData, param) {
         document.getElementById('ficha-supervisao-form').addEventListener('submit', handleFormSubmit);
     }
 
+    /**
+     * Popula o seletor de supervisores com dados do Firestore.
+     * @param {object} docData - Dados existentes para pré-selecionar o supervisor.
+     */
     async function populateSelects(docData) {
         const supervisorSelect = document.getElementById('supervisorUid');
         const q = query(collection(db, 'usuarios'), where('funcoes', 'array-contains', 'supervisor'));
@@ -67,6 +80,10 @@ export function init(db, user, userData, param) {
         });
     }
 
+    /**
+     * Preenche os campos do formulário com dados existentes.
+     * @param {object} data - Dados do documento para preencher.
+     */
     function fillForm(data) {
         const form = document.getElementById('ficha-supervisao-form');
         for (const key in data) {
@@ -76,6 +93,10 @@ export function init(db, user, userData, param) {
         }
     }
 
+    /**
+     * Lida com o envio do formulário, salvando ou atualizando os dados.
+     * @param {Event} e - O evento de submit.
+     */
     async function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
@@ -110,6 +131,9 @@ export function init(db, user, userData, param) {
         }
     }
 
+    /**
+     * Carrega os dados da ficha (se for edição) ou renderiza um formulário em branco.
+     */
     async function load() {
         if (formId === 'new') {
             await renderForm();
