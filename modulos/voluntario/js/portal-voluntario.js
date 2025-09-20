@@ -81,40 +81,34 @@ function initPortal(user, userData) {
         }
     }
 
-        async function loadView(modulo, viewId, db, user, userData, param) {
-        const basePath = `../modulos/${modulo}`;
-        const htmlPath = `${basePath}/page/${viewId}.html`;
-        const cssPath = `${basePath}/css/${viewId}.css`;
-        const jsPath = `${basePath}/js/${viewId}.js`;
+    async function loadView(viewId, param = null) {
+        sidebarMenu.querySelectorAll('a').forEach(link => {
+            link.classList.toggle('active', link.dataset.view === viewId);
+        });
 
+        contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // Carrega HTML
-            const htmlResponse = await fetch(htmlPath);
-            if (!htmlResponse.ok) throw new Error(`Arquivo HTML não encontrado: ${htmlPath}`);
-            contentArea.innerHTML = await htmlResponse.text();
-
-            // Carrega CSS se existir
+            const response = await fetch(`./${viewId}.html`);
+            if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
+            contentArea.innerHTML = await response.text();
+            
+            const cssPath = `../css/${viewId}.css`;
             const cssResponse = await fetch(cssPath);
             if (cssResponse.ok) {
                 loadCSS(cssPath);
             }
 
-            // Importa módulo JS
-            const viewModule = await import(jsPath);
+            const viewModule = await import(`../js/${viewId}.js`);
             if (viewModule && typeof viewModule.init === 'function') {
                 viewModule.init(db, user, userData, param);
             }
         } catch (error) {
-            console.error(`Erro ao carregar a view ${viewId}:`, error);
-            contentArea.innerHTML = `
-                <div class="dashboard-section">
-                    <p style="color: var(--cor-erro);">
-                        Erro Crítico: A página <strong>${viewId}</strong> não pôde ser carregada.
-                    </p>
-                </div>`;
+            if (!error.message.includes('Failed to fetch dynamically imported module')) {
+                console.error(`Erro ao carregar a view ${viewId}:`, error);
+                contentArea.innerHTML = `<div class="dashboard-section"><p style="color: var(--cor-erro);">Erro Crítico: A página <strong>${viewId}</strong> não pôde ser carregada.</p></div>`;
+            }
         }
     }
-
     
     function setupLayout() {
         const userPhoto = document.getElementById('user-photo-header');
