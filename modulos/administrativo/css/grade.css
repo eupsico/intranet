@@ -1,160 +1,166 @@
 /* Arquivo: /modulos/administrativo/css/grade.css
-   Versão: 2.0
-   Descrição: Estilos refatorados para a Grade de Horários, integrados ao design system.
+   Versão: 2.0 (Otimizado com Variáveis e Responsividade)
 */
 
-/* Abas secundárias (dias da semana) */
+/* --- Navegação da Grade (Abas de dia) --- */
 .grade-day-tabs {
     display: flex;
-    border-bottom: 2px solid var(--cor-borda);
+    flex-wrap: wrap;
+    gap: 5px;
     margin-bottom: 20px;
-    overflow-x: auto;
-    white-space: nowrap;
+    background-color: var(--cor-fundo);
+    padding: 5px;
+    border-radius: var(--borda-radius);
 }
 
 .grade-day-tabs button {
-    background-color: transparent;
-    border: none;
-    padding: 12px 18px;
-    cursor: pointer;
-    font-size: 1em;
-    font-weight: 500;
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid var(--cor-borda);
+    background-color: var(--cor-surface);
     color: var(--cor-texto-secundario);
-    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    border-radius: 6px;
     transition: all 0.2s ease;
-    flex-shrink: 0;
 }
 
 .grade-day-tabs button:hover {
-    background-color: var(--cor-fundo);
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    border-color: var(--cor-primaria);
 }
 
 .grade-day-tabs button.active {
-    color: var(--cor-primaria);
-    font-weight: 600;
-    border-bottom-color: var(--cor-primaria);
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    border-color: var(--cor-primaria);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Container da tabela para permitir rolagem horizontal em telas pequenas */
+/* --- Tabela da Grade --- */
 .table-wrapper {
     overflow-x: auto;
+    width: 100%;
 }
 
 .grade-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9em;
-    min-width: 900px; /* Largura mínima para evitar quebra excessiva */
+    table-layout: fixed; /* Garante que as colunas tenham largura igual */
 }
 
-.grade-table th, 
-.grade-table td {
+.grade-table th, .grade-table td {
     border: 1px solid var(--cor-borda);
-    padding: 5px;
+    padding: 0;
     text-align: center;
     vertical-align: middle;
+    height: 45px;
 }
 
 .grade-table thead th {
-    background-color: var(--cor-primaria);
-    color: var(--cor-texto-inverso);
-    padding: 12px 5px;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto-principal);
+    font-size: 0.85em;
+    font-weight: 600;
+    padding: 10px 5px;
 }
 
-/* Células de cabeçalho da linha (Período e Horário) */
-.grade-table .period-cell,
+.grade-table .period-cell {
+    background-color: var(--cor-fundo);
+    font-weight: 600;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    padding: 5px;
+}
+
 .grade-table .hour-cell {
     font-weight: 600;
-    background-color: var(--cor-fundo);
-    width: 90px;
-}
-
-/* Cores para os períodos do dia */
-.grade-table .periodo-manha { background-color: #e3f2fd; }
-.grade-table .periodo-tarde { background-color: #fffde7; }
-.grade-table .periodo-noite { background-color: #f3e5f5; }
-
-/* Estilo dos seletores (dropdowns) dentro da tabela */
-.grade-table tbody select {
-    width: 100%;
-    border: 2px solid transparent;
-    border-radius: var(--borda-radius);
-    font-weight: 500;
-    transition: all 0.3s ease;
-    appearance: none;
+    font-size: 0.9em;
     background-color: var(--cor-surface);
-    padding: 6px;
+}
+
+/* --- Estilo dos Seletores (Dropdowns) --- */
+.grade-table select {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background-color: transparent;
+    font-family: var(--fonte-principal);
+    font-size: 0.85em;
     cursor: pointer;
-    font-size: 0.95em;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding: 5px;
     text-align: center;
+    transition: all 0.2s ease;
 }
 
-/* Estilos de status para o salvamento automático */
-.grade-table tbody select.is-saving { 
-    border-color: var(--cor-alerta);
-    background-color: #fff3cd;
-}
-.grade-table tbody select.is-saved { 
-    border-color: var(--cor-sucesso); 
-    background-color: #d4edda;
-}
-.grade-table tbody select.is-error { 
-    border-color: var(--cor-erro); 
-    background-color: #f8d7da;
+.grade-table select:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--cor-secundaria);
 }
 
-/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
-@media screen and (max-width: 768px) {
-    .grade-table {
-        min-width: 100%;
-        border: 0;
-    }
+/* Indicadores de Salvamento */
+.grade-table select.is-saving {
+    opacity: 0.7;
+    cursor: progress;
+}
+.grade-table select.is-saved {
+    box-shadow: inset 0 0 0 2px var(--cor-sucesso);
+}
+.grade-table select.is-error {
+    box-shadow: inset 0 0 0 2px var(--cor-erro);
+}
+
+
+/* --- Responsividade para Telas Pequenas --- */
+@media (max-width: 768px) {
     .grade-table thead {
         display: none; /* Esconde o cabeçalho original */
     }
-    .grade-table tr {
+    .grade-table, .grade-table tbody, .grade-table tr, .grade-table td {
         display: block;
+        width: 100%;
+    }
+    .grade-table tr {
+        margin-bottom: 15px;
         border: 1px solid var(--cor-borda);
         border-radius: var(--borda-radius);
-        margin-bottom: 1em;
-        box-shadow: var(--sombra-suave);
+        overflow: hidden;
     }
     .grade-table td {
-        display: block;
-        text-align: right; /* Alinha o valor à direita */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+        padding: 10px;
         border: none;
-        border-bottom: 1px solid #eee;
-        padding-left: 50%; /* Espaço para o "label" */
-        position: relative;
-    }
-    .grade-table td:last-child {
-        border-bottom: 0;
+        border-bottom: 1px solid var(--cor-fundo);
     }
     .grade-table td::before {
-        content: attr(data-label); /* Pega o texto do cabeçalho */
-        position: absolute;
-        left: 10px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left; /* Alinha o "label" à esquerda */
-        font-weight: 600;
-        color: var(--cor-primaria);
+        content: attr(data-label); /* Usa o atributo data-label como pseudo-elemento */
+        font-weight: bold;
+        text-align: left;
+        margin-right: 15px;
+        color: var(--cor-texto-principal);
+    }
+    .grade-table td.period-cell, .grade-table .hour-cell {
+        background-color: var(--cor-fundo);
+        font-weight: bold;
+        justify-content: center;
     }
     .grade-table td.period-cell {
-        display: none; /* Esconde a coluna "Período" no celular */
+        writing-mode: horizontal-tb;
+        transform: none;
     }
-    .grade-table .hour-cell {
-        font-size: 1.2em;
-        font-weight: 700;
-        background-color: var(--cor-fundo);
-        text-align: center;
-        padding-left: 0;
+    .grade-table td:last-child {
+        border-bottom: none;
     }
-    .grade-table .hour-cell::before {
-        display: none;
+    .grade-table select {
+        text-align: right;
+        max-width: 60%;
     }
 }

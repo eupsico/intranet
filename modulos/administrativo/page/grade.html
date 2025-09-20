@@ -1,13 +1,16 @@
-<div class="view-container">
-    <h1>Grade de Horários</h1>
-    <p class="description-box">Selecione a modalidade e o dia da semana para visualizar ou editar os horários. As alterações são salvas automaticamente.</p>
-    
-    <div class="tabs-container" id="grade-main-tabs">
-        <button class="tab-link active" data-tab="online">Grade Online</button>
-        <button class="tab-link" data-tab="presencial">Grade Presencial</button>
+<div id="grade" class="view-container">
+
+    <div class="section-header">
+        <h2>Grade de Horários</h2>
     </div>
 
-    <div id="grade-content">
+    <nav id="grade-main-tabs" class="tabs-container" aria-label="Seleção de modalidade da grade">
+        <button class="tab-link active" data-tab="online">Online</button>
+        <button class="tab-link" data-tab="presencial">Presencial</button>
+    </nav>
+
+    <div id="grade-content" class="tab-content">
         <div class="loading-spinner"></div>
     </div>
+    
 </div>
