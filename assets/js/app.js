@@ -1,7 +1,16 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.8.2 (Login Aprimorado e Menu Mobile com Auto-fechamento)
+// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
 
-import { auth, db } from './firebase-init.js';
+import {
+    auth,
+    db,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signInWithPopup,
+    signOut,
+    doc,
+    getDoc
+} from './firebase-init.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginView = document.getElementById('login-view');
@@ -12,8 +21,8 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(inactivityTimer);
         inactivityTimer = setTimeout(() => {
             alert("Você foi desconectado por inatividade.");
-            auth.signOut();
-        }, 20 * 60 * 1000); 
+            signOut(auth);
+        }, 20 * 60 * 1000); // 20 minutos
     }
 
     function setupInactivityListeners() {
@@ -26,12 +35,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleAuth() {
-        auth.onAuthStateChanged(async (user) => {
+        onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
-                    const userDoc = await db.collection("usuarios").doc(user.uid).get();
-                    if (userDoc.exists && userDoc.data().funcoes?.length > 0) {
-                        const userData = userDoc.data();
+                    const userDocRef = doc(db, "usuarios", user.uid);
+                    const userDocSnap = await getDoc(userDocRef);
+
+                    if (userDocSnap.exists() && userDocSnap.data().funcoes?.length > 0) {
+                        const userData = userDocSnap.data();
                         await renderLayoutAndContent(user, userData);
                         setupInactivityListeners();
                     } else {
@@ -43,12 +54,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error("Erro de autenticação:", error);
                 renderLogin(`Ocorreu um erro: ${error.message}`);
-                auth.signOut();
+                signOut(auth);
             }
         });
     }
 
-    // FUNÇÃO DE LOGIN ATUALIZADA
     function renderLogin(message = "Por favor, faça login para continuar.") {
         if (!loginView || !dashboardView) return;
         dashboardView.style.display = 'none';
@@ -65,8 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
         document.getElementById('login-button').addEventListener('click', () => {
             loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(error => console.error(error));
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(error => console.error(error));
         });
     }
 
@@ -75,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dashboardView.style.display = 'none';
         loginView.style.display = 'block';
         loginView.innerHTML = `<div class="content-box" style="max-width: 800px; margin: 50px auto; text-align: center;"><h2>Acesso Negado</h2><p>Você está autenticado, mas seu usuário não tem permissões definidas. Contate o administrador.</p><button id="denied-logout">Sair</button></div>`;
-        document.getElementById('denied-logout').addEventListener('click', () => auth.signOut());
+        document.getElementById('denied-logout').addEventListener('click', () => signOut(auth));
     }
     
     function getGreeting() {
@@ -108,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         if (userPhoto) { userPhoto.src = user.photoURL || 'https://www.eupsico.org.br/wp-content/uploads/2024/02/user-1.png'; }
-        if (logoutButton) { logoutButton.addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });}
+        if (logoutButton) { logoutButton.addEventListener('click', (e) => { e.preventDefault(); signOut(auth); });}
 
         const modules = getVisibleModules(userData);
         setupSidebarToggle();
@@ -142,7 +152,8 @@ document.addEventListener('DOMContentLoaded', function() {
         else {
             const pageTitleContainer = document.getElementById('page-title-container');
             if(pageTitleContainer) {
-                pageTitleContainer.innerHTML = '<h1>Intranet EuPsico</h1>';
+                pageTitleContainer.querySelector('h1').textContent = 'Intranet EuPsico';
+                pageTitleContainer.querySelector('p').textContent = 'Seu espaço central para informações e ferramentas.';
             }
             renderSidebarMenu(modules);
             renderModuleCards(modules);
@@ -165,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 layoutContainer.classList.toggle('mobile-menu-open');
             } else {
                 const currentlyCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
-                localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
+                localStorage.setItem('sidebarCollapsed', currentlyCollapsed.toString());
                 toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
             }
         };
@@ -226,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
             plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`,
             rh: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
             servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-            supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
         };
         const areas = {
             portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e ferramentas para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
@@ -245,9 +255,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const area = areas[key];
             const rolesLowerCase = (area.roles || []).map(r => r.toLowerCase());
             let hasPermission = false;
-            if (userFuncoes.includes('admin') || rolesLowerCase.includes('todos')) { hasPermission = true; }
-            else if (rolesLowerCase.some(role => userFuncoes.includes(role))) { hasPermission = true; }
-            if (hasPermission) { modulesToShow.push(area); }
+            if (userFuncoes.includes('admin') || rolesLowerCase.includes('todos')) {
+                hasPermission = true;
+            } else if (rolesLowerCase.some(role => userFuncoes.includes(role))) {
+                hasPermission = true;
+            }
+            if (hasPermission) {
+                modulesToShow.push(area);
+            }
         }
         modulesToShow.sort((a, b) => {
             if (a.titulo === 'Portal do Voluntário') return -1;

@@ -1,6 +1,12 @@
+
 // Arquivo: assets/js/firebase-init.js
-// Versão: 1.2
-// Descrição: Remove a inicialização do Firebase Storage, que não é utilizado.
+// Versão: 2.0 (Modernizado para Firebase v9+ Modular)
+// Descrição: Inicializa o Firebase com a nova API modular e exporta as instâncias dos serviços.
+
+// Funções importadas dos módulos do Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
 const firebaseConfig = {
@@ -14,15 +20,22 @@ const firebaseConfig = {
 };
 
 // --- INICIALIZAÇÃO E EXPORTAÇÃO ---
-// Garante que o Firebase seja inicializado apenas uma vez
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+// Inicializa o app Firebase
+const app = initializeApp(firebaseConfig);
 
-// Exporta as instâncias de autenticação e banco de dados para serem usadas em outros arquivos
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Obtém as instâncias dos serviços
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// A inicialização e exportação do 'storage' foram removidas.
-
-export { auth, db };
+// Exporta as instâncias dos serviços e as funções necessárias para outros módulos
+export {
+    auth,
+    db,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signInWithPopup,
+    signOut,
+    collection,
+    doc,
+    getDoc
+};
