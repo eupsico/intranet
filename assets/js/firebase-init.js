@@ -1,13 +1,12 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: FINAL (Modernizado para Firebase v9+ Modular)
-// Descrição: Inicializa o Firebase com a nova API modular e exporta todas as instâncias e funções necessárias para a aplicação.
+// Versão: 2.1 FINAL (Exportando todas as funções necessárias)
+// Descrição: Inicializa o Firebase com a API modular e exporta todas as instâncias e funções para a aplicação.
 
-// Funções importadas dos módulos do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 import { 
     getFirestore, collection, query, where, orderBy, getDocs, 
-    getDoc, doc, setDoc, updateDoc, addDoc, serverTimestamp 
+    getDoc, doc, setDoc, updateDoc, addDoc, serverTimestamp, onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
@@ -44,5 +43,6 @@ export {
     setDoc,
     updateDoc,
     addDoc,
-    serverTimestamp
+    serverTimestamp,
+    onSnapshot
 };
