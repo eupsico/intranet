@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/ficha-supervisao.js
-// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
+// Versão: 2.1 (Corrigido com HTML completo e mantendo a lógica original)
 // Descrição: Controla a criação e edição das fichas de acompanhamento de supervisão.
 
 import { collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, serverTimestamp } from '../../../assets/js/firebase-init.js';
@@ -15,6 +15,7 @@ export function init(db, user, userData, param) {
      * @param {object} docData - Dados existentes do documento para preencher o formulário.
      */
     async function renderForm(docData = {}) {
+        // CORREÇÃO: O innerHTML foi substituído pela estrutura completa do formulário.
         contentArea.innerHTML = `
             <form id="ficha-supervisao-form">
                 <div class="view-header-band"><h1>Ficha de Acompanhamento</h1></div>
@@ -34,8 +35,12 @@ export function init(db, user, userData, param) {
                     <label>Nome do psicólogo (a):</label>
                     <input type="text" value="${userData.nome}" readonly>
                 </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="psicologoPeriodo">Período/Semestre (estagiários):</label><input type="number" id="psicologoPeriodo" name="psicologoPeriodo"></div>
+                    <div class="form-group"><label for="psicologoAbordagem">Abordagem teórica:</label><input type="text" id="psicologoAbordagem" name="psicologoAbordagem"></div>
+                </div>
 
-                <div class="section-subtitle">2. Identificação do Caso</div>
+                <div class="section-subtitle">2. Identificação do Caso (dados sigilosos)</div>
                 <div class="form-group">
                     <label for="pacienteIniciais">Iniciais do(a) paciente:</label>
                     <input type="text" id="pacienteIniciais" name="pacienteIniciais" required placeholder="Campo obrigatório">
@@ -45,7 +50,31 @@ export function init(db, user, userData, param) {
                     <div class="form-group"><label for="pacienteGenero">Gênero:</label><input type="text" id="pacienteGenero" name="pacienteGenero"></div>
                     <div class="form-group"><label for="pacienteSessoes">Nº de sessões:</label><input type="number" id="pacienteSessoes" name="pacienteSessoes"></div>
                 </div>
-                <div class="form-group"><label for="pacienteApresentacao">Apresentação geral (queixa, demanda):</label><textarea id="pacienteApresentacao" name="pacienteApresentacao" rows="3"></textarea></div>
+                <div class="form-group">
+                    <label for="pacienteApresentacao">Apresentação geral (queixa, demanda):</label>
+                    <textarea id="pacienteApresentacao" name="pacienteApresentacao" rows="3"></textarea>
+                </div>
+
+                <div class="section-title">FASE 1: INÍCIO DA TERAPIA (Sessões 1-8)</div>
+                <div class="form-group"><label for="fase1Data">Data do preenchimento:</label><input type="date" id="fase1Data" name="fase1Data"></div>
+                <div class="form-group"><label for="fase1Foco">Foco do atendimento:</label><textarea id="fase1Foco" name="fase1Foco" rows="3"></textarea></div>
+                <div class="form-group"><label for="fase1Objetivos">Objetivos terapêuticos:</label><textarea id="fase1Objetivos" name="fase1Objetivos" rows="3"></textarea></div>
+                <div class="form-group"><label for="fase1Hipoteses">Primeiras hipóteses diagnósticas:</label><textarea id="fase1Hipoteses" name="fase1Hipoteses" rows="3"></textarea></div>
+                
+                <div class="section-title">FASE 2: MEIO DA TERAPIA (Aprox. 3 meses)</div>
+                <div class="form-group"><label for="fase2Data">Data do preenchimento:</label><input type="date" id="fase2Data" name="fase2Data"></div>
+                <div class="form-group"><label for="fase2Reavaliacao">Reavaliação do foco:</label><textarea id="fase2Reavaliacao" name="fase2Reavaliacao" rows="3"></textarea></div>
+                <div class="form-group"><label for="fase2Progresso">Progresso em direção aos objetivos:</label><textarea id="fase2Progresso" name="fase2Progresso" rows="3"></textarea></div>
+
+                <div class="section-title">FASE 3: PROCESSO DE ALTA (5º e 6º mês)</div>
+                <div class="form-group"><label for="fase3Data">Data do preenchimento:</label><input type="date" id="fase3Data" name="fase3Data"></div>
+                <div class="form-group"><label for="fase3Avaliacao">Avaliação final dos objetivos:</label><textarea id="fase3Avaliacao" name="fase3Avaliacao" rows="3"></textarea></div>
+                <div class="form-group"><label for="fase3Mudancas">Principais mudanças e aprendizados:</label><textarea id="fase3Mudancas" name="fase3Mudancas" rows="3"></textarea></div>
+                
+                <div class="section-subtitle">Observações Finais</div>
+                <div class="form-group"><label for="obsFinais">Observações finais relevantes:</label><textarea id="obsFinais" name="obsFinais" rows="3"></textarea></div>
+                <div class="form-group"><label for="dataAlta">Data da alta:</label><input type="date" id="dataAlta" name="dataAlta"></div>
+                <div class="form-group"><label for="assinaturaSupervisor">Assinatura do supervisor:</label><input type="text" id="assinaturaSupervisor" name="assinaturaSupervisor"></div>
 
                 <div class="form-actions">
                     <a href="#fichas-supervisao" class="btn btn-secondary">Voltar para Lista</a>
