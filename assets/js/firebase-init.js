@@ -1,12 +1,8 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 2.0 (MODERNA - Firebase v9 modular)
+// Versão: 1.2
+// Descrição: Remove a inicialização do Firebase Storage, que não é utilizado.
 
-// Importa as funções necessárias da v9 usando os links completos (CDN)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-
-// Suas credenciais do Firebase
+// --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyDJqPJjDDIGo7uRewh3pw1SQZOpMgQJs5M",
     authDomain: "eupsico-agendamentos-d2048.firebaseapp.com",
@@ -17,13 +13,16 @@ const firebaseConfig = {
     appId: "1:1041518416343:web:0a11c03c205b802ed7bb92"
 };
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
+// --- INICIALIZAÇÃO E EXPORTAÇÃO ---
+// Garante que o Firebase seja inicializado apenas uma vez
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-// Inicializa os serviços
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Exporta as instâncias de autenticação e banco de dados para serem usadas em outros arquivos
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-// Exporta tanto os serviços (auth, db) quanto as funções do Firestore
-// para que outros scripts possam usá-los.
-export { auth, db, doc, getDoc, updateDoc };
+// A inicialização e exportação do 'storage' foram removidas.
+
+export { auth, db, rtdb };
