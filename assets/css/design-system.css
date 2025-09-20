@@ -121,6 +121,10 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
     font-size: 0.9em;
     border-radius: var(--borda-radius);
     transition: all 0.2s ease-in-out;
+    text-decoration: none; /* Garante que links não tenham sublinhado */
+}
+.btn:hover {
+    text-decoration: none; /* Garante que links não tenham sublinhado no hover */
 }
 .btn-primary {
     background-color: var(--cor-primaria);
@@ -137,22 +141,8 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .btn-danger:hover {
     background-color: #c0392b;
 }
-/* Estilo específico para o botão de logout no header */
-.header .logout-button {
-    padding: 8px 15px;
-    font-size: 0.9em;
-    font-weight: 500;
-    text-decoration: none;
-    border: none;
-    background-color: var(--cor-erro);
-    color: var(--cor-texto-inverso);
-}
-.header .logout-button:hover {
-    background-color: #c0392b;
-    text-decoration: none;
-    color: var(--cor-texto-inverso);
-}
 
+/* Estilo específico para o botão de logout no header FOI REMOVIDO para forçar o uso de .btn .btn-danger */
 
 /* --- Componentes: Formulários e Abas --- */
 .tabs-container { display: flex; flex-wrap: wrap; border-bottom: 2px solid var(--cor-borda); margin-bottom: 0; }
