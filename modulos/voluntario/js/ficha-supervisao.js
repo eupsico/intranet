@@ -1,27 +1,43 @@
 let db, user, userData;
 
-// A MUDANÇA ESTÁ AQUI: A função init também recebe o objeto de contexto
-export function init(context) {
-    db = context.db;
-    user = context.user;
-    userData = context.userData;
+// A função de inicialização que é chamada pelo supervisao.js
+export function init(dbRef, userRef, userDataRef) {
+    db = dbRef;
+    user = userRef;
+    userData = userDataRef;
     
-    console.log("Módulo Ficha de Supervisão inicializado.");
-    
-    document.getElementById('nome-psicologo').value = userData.nomeCompleto || '';
-    document.getElementById('psicologo-uid').value = user.uid || '';
-    document.getElementById('data-supervisao').valueAsDate = new Date();
+    // A CORREÇÃO ESTÁ AQUI:
+    // Usamos um setTimeout para garantir que o HTML seja totalmente renderizado
+    // antes de o JavaScript tentar interagir com ele.
+    setTimeout(() => {
+        console.log("Módulo Ficha de Supervisão inicializado.");
 
-    loadSupervisores();
+        // Seleciona os elementos do formulário
+        const form = document.getElementById('form-supervisao');
+        const btnLimpar = document.getElementById('btn-limpar-formulario');
 
-    const form = document.getElementById('form-supervisao');
-    form.addEventListener('submit', salvarFicha);
-
-    const btnLimpar = document.getElementById('btn-limpar-formulario');
-    btnLimpar.addEventListener('click', () => {
-        form.reset();
+        // Verifica se os elementos essenciais existem antes de continuar
+        if (!form || !btnLimpar) {
+            console.error("Erro crítico: Elementos do formulário da ficha de supervisão não foram encontrados no DOM.");
+            return;
+        }
+        
+        // Preenche os dados iniciais do formulário
+        document.getElementById('nome-psicologo').value = userData.nomeCompleto || '';
+        document.getElementById('psicologo-uid').value = user.uid || '';
         document.getElementById('data-supervisao').valueAsDate = new Date();
-    });
+
+        // Carrega a lista de supervisores
+        loadSupervisores();
+
+        // Adiciona os eventos de clique e envio
+        form.addEventListener('submit', salvarFicha);
+        btnLimpar.addEventListener('click', () => {
+            form.reset();
+            document.getElementById('data-supervisao').valueAsDate = new Date();
+        });
+
+    }, 0); // O '0' faz com que execute na próxima oportunidade, quando o DOM estiver pronto.
 }
 
 async function loadSupervisores() {
