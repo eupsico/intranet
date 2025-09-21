@@ -2,18 +2,18 @@
 
 const tabContent = {
     'ficha-supervisao': 'ficha-supervisao.html',
-    'meus-acompanhamentos': 'fichas-supervisao.html',
+    'meus-acompanhamentos': 'fichas-preenchidas.html',
     'ver-supervisores': 'ver-supervisores.html'
 };
 const tabScripts = {
     'ficha-supervisao': './ficha-supervisao.js',
-    'meus-acompanhamentos': './fichas-supervisao.js',
+    'meus-acompanhamentos': './fichas-preenchidas.js',
     'ver-supervisores': './ver-supervisores.js'
 };
 // NOVO: Mapeamento de CSS para cada aba
 const tabCSS = {
     'ficha-supervisao': '../css/ficha-supervisao.css',
-    'meus-acompanhamentos': '../css/fichas-supervisao.css',
+    'meus-acompanhamentos': '../css/fichas-preenchidas.css',
     'ver-supervisores': '../css/supervisores.css'
 };
 
