@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 6.0 (Roteamento simplificado e correção do menu)
+// Versão: 7.0 (Roteamento por filtro e correção de bugs)
 import {
     auth,
     db,
@@ -48,24 +48,32 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    const views = [
-        { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
-        { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
-        { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
-        { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
-        { id: 'recursos', name: 'Recursos', icon: '🛠️' },
-        { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
-        { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
+    // Define TODAS as views possíveis
+    const allViews = [
+        { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠', roles: ['all'] },
+        { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤', roles: ['all'] },
+        { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑', roles: ['all'] },
+        { id: 'painel-supervisionado', name: 'Supervisão', icon: '🎓', roles: ['atendimento'] },
+        { id: 'painel-supervisor', name: 'Painel do Supervisor', icon: '⭐', roles: ['supervisor', 'admin'] },
+        { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄', roles: ['all'] },
+        { id: 'recursos', name: 'Recursos', icon: '🛠️', roles: ['all'] },
+        { id: 'solicitacoes', name: 'Solicitações', icon: '📬', roles: ['all'] },
+        { id: 'gestao', name: 'Nossa Gestão', icon: '👥', roles: ['all'] },
     ];
     
+    // Filtra as views com base nas funções do usuário
     const userRoles = userData.funcoes || [];
     const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
+    const isAtendimento = userRoles.includes('atendimento');
 
-    if (isSupervisor) {
-        views.splice(3, 0, { id: 'painel-supervisor', name: 'Painel do Supervisor', icon: '⭐' });
-    } else {
-        views.splice(3, 0, { id: 'painel-supervisionado', name: 'Supervisão', icon: '🎓' });
-    }
+    const visibleViews = allViews.filter(view => {
+        if (view.roles.includes('all')) return true;
+        if (isSupervisor && view.roles.includes('supervisor')) return true;
+        if (isAtendimento && !isSupervisor && view.roles.includes('atendimento')) return true;
+        // Adicione outras regras se necessário
+        return false;
+    });
+
 
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
@@ -73,12 +81,18 @@ function initPortal(user, userData) {
             <li><a href="../../../index.html" class="back-link"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Voltar à Intranet</span></a></li>
             <li class="menu-separator"></li>
         `;
-        views.forEach(view => {
+        visibleViews.forEach(view => {
             sidebarMenu.innerHTML += `<li><a href="#${view.id}" data-view="${view.id}"><span class="icon">${view.icon}</span><span>${view.name}</span></a></li>`;
         });
     }
 
     async function loadView(viewId, param = null) {
+        if (!viewId) viewId = visibleViews[0]?.id; // Pega a primeira view visível como padrão
+        if (!viewId) {
+            contentArea.innerHTML = '<h2>Nenhuma seção disponível.</h2>';
+            return;
+        }
+
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
@@ -90,16 +104,21 @@ function initPortal(user, userData) {
             
             contentArea.innerHTML = await response.text();
             
-            const viewModule = await import(`../js/${viewId}.js`);
-            if (viewModule && typeof viewModule.init === 'function') {
-                viewModule.init(db, user, userData, param);
+            // Tenta carregar o módulo JS correspondente
+            // Adicionado bloco try/catch para módulos sem JS
+            try {
+                const viewModule = await import(`../js/${viewId}.js`);
+                if (viewModule && typeof viewModule.init === 'function') {
+                    viewModule.init(db, user, userData, param);
+                }
+            } catch (jsError) {
+                 if (jsError.name !== 'TypeError') { // Ignora erro "Failed to fetch" se o JS não existir
+                    console.warn(`Módulo JS para a view '${viewId}' não encontrado ou falhou ao carregar.`, jsError);
+                }
             }
         } catch (error) {
-            // Ignora o erro "Failed to fetch" que ocorre com o import dinâmico quando não há JS
-            if (!error.message.includes('Failed to fetch dynamically imported module')) {
-                console.error(`Erro ao carregar a view ${viewId}:`, error);
-                contentArea.innerHTML = `<div class="dashboard-section"><p style="color: var(--cor-erro);">Erro Crítico: A página <strong>${viewId}</strong> não pôde ser carregada.</p></div>`;
-            }
+            console.error(`Erro ao carregar a view ${viewId}:`, error);
+            contentArea.innerHTML = `<div class="dashboard-section"><p style="color: var(--cor-erro);">Erro Crítico: A página <strong>${viewId}</strong> não pôde ser carregada.</p></div>`;
         }
     }
     
@@ -124,7 +143,6 @@ function initPortal(user, userData) {
             });
         }
         
-        // CORREÇÃO: Lógica do menu hambúrguer
         const layoutContainer = document.querySelector('.layout-container');
         const sidebar = document.querySelector('.sidebar');
         const toggleButton = document.getElementById('sidebar-toggle');
@@ -153,9 +171,8 @@ function initPortal(user, userData) {
         buildSidebarMenu();
         const handleHashChange = () => {
             const hash = window.location.hash.substring(1);
-            const defaultViewId = views[0].id;
             const [viewId, param] = hash.split('/');
-            loadView(viewId || defaultViewId, param);
+            loadView(viewId || visibleViews[0]?.id, param);
         };
         window.addEventListener('hashchange', handleHashChange);
         handleHashChange(); // Carga inicial
