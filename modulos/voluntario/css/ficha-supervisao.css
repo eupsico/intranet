@@ -1,0 +1,87 @@
+.form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: var(--cor-surface);
+    padding: 30px;
+    border-radius: var(--borda-radius);
+    box-shadow: var(--sombra-suave);
+}
+
+.form-header h2 {
+    color: var(--cor-primaria);
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.form-header p {
+    margin-bottom: 25px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.95em;
+}
+
+.modern-form .form-section-title {
+    font-size: 1.2em;
+    color: var(--cor-primaria-dark);
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--cor-borda);
+    padding-bottom: 8px;
+}
+
+.modern-form hr {
+    border: 0;
+    height: 1px;
+    background-color: var(--cor-borda);
+    margin: 30px 0;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--cor-texto-principal);
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    background-color: var(--cor-fundo);
+    font-size: 1em;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.form-control[readonly] {
+    background-color: #f1f3f4;
+    cursor: not-allowed;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}

@@ -1,0 +1,79 @@
+<div class="form-container" id="form-supervisao-container">
+    <div class="form-header">
+        <h2>Ficha de Acompanhamento de Supervisão</h2>
+        <p>Preencha os dados abaixo para registrar sua sessão de supervisão.</p>
+    </div>
+
+    <form id="form-supervisao" class="modern-form">
+        <input type="hidden" id="ficha-id">
+        <input type="hidden" id="psicologo-uid" name="psicologo-uid">
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nome-psicologo">Seu Nome</label>
+                <input type="text" id="nome-psicologo" name="nome-psicologo" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label for="data-supervisao">Data da Supervisão</label>
+                <input type="date" id="data-supervisao" name="data-supervisao" class="form-control" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="supervisor">Supervisor(a)</label>
+            <select id="supervisor" name="supervisor" class="form-control" required>
+                <option value="">Carregando...</option>
+            </select>
+        </div>
+        
+        <hr>
+
+        <h3 class="form-section-title">Informações do Paciente</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="iniciais-paciente">Iniciais do Paciente</label>
+                <input type="text" id="iniciais-paciente" name="iniciais-paciente" class="form-control" placeholder="Ex: A.B.C." required>
+            </div>
+            <div class="form-group">
+                <label for="idade-paciente">Idade</label>
+                <input type="number" id="idade-paciente" name="idade-paciente" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="sexo-paciente">Sexo</label>
+                <select id="sexo-paciente" name="sexo-paciente" class="form-control">
+                    <option value="">Selecione</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Feminino">Feminino</option>
+                    <option value="Outro">Outro</option>
+                    <option value="Nao informado">Não desejo informar</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="queixa-principal">Queixa Principal / Demanda</label>
+            <textarea id="queixa-principal" name="queixa-principal" rows="4" class="form-control" placeholder="Descreva a principal demanda do paciente."></textarea>
+        </div>
+
+        <hr>
+
+        <h3 class="form-section-title">Análise da Sessão</h3>
+        <div class="form-group">
+            <label for="resumo-sessao">Breve Resumo da Sessão</label>
+            <textarea id="resumo-sessao" name="resumo-sessao" rows="5" class="form-control" placeholder="Descreva os principais pontos e acontecimentos da sessão." required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="manejo-clinico">Dificuldades e/ou Dúvidas sobre o Manejo Clínico</label>
+            <textarea id="manejo-clinico" name="manejo-clinico" rows="5" class="form-control" placeholder="Quais foram suas principais dificuldades ou dúvidas?"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="intervencoes-supervisor">Orientações e Intervenções do(a) Supervisor(a)</label>
+            <textarea id="intervencoes-supervisor" name="intervencoes-supervisor" rows="5" class="form-control" placeholder="Descreva as orientações e sugestões recebidas durante a supervisão."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="btn-limpar-formulario">Limpar</button>
+            <button type="submit" class="btn btn-primary" id="btn-salvar-ficha">Salvar Ficha</button>
+        </div>
+    </form>
+</div>
