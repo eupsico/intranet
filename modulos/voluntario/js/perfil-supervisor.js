@@ -1,51 +1,54 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor.js
-// Versão: 2.0 (Corrigido para a nova estrutura de abas)
+// Versão: 2.1 (Interage com o modal global)
 // Descrição: Controla a visualização e edição de perfis de supervisor.
 
 import { db, collection, query, where, getDocs, doc, updateDoc } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData) {
     const container = document.getElementById('meu-perfil');
-    // Os modais agora devem estar no HTML principal (portal-voluntario.html) para serem globais
     const editModal = document.getElementById('edit-supervisor-profile-modal'); 
     const form = document.getElementById('edit-supervisor-profile-form');
 
-    if (!container) return;
-    if (!editModal || !form) {
-        console.error("O modal de edição de perfil do supervisor não foi encontrado no HTML principal.");
-        container.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Erro de configuração: Modal de edição ausente.</div>`;
+    if (!container || !editModal || !form) {
+        console.error("Componentes essenciais para o perfil do supervisor não foram encontrados.");
+        if (container) container.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Erro de configuração: Componentes ausentes.</div>`;
         return;
     }
 
     let fetchedSupervisors = [];
-    const userRoles = userData.funcoes || [];
-    const isAdmin = userRoles.includes('admin');
+    const isAdmin = (userData.funcoes || []).includes('admin');
 
+    // ... (as funções createSupervisorCard, renderProfiles, createHorarioRow e saveProfileChanges permanecem as mesmas)
+    
+    // As funções abaixo continuam as mesmas da sua versão
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
-        card.className = 'info-card';
-        
-        const photoPath = supervisor.fotoUrl ? `../../../${supervisor.fotoUrl}` : '../../../assets/img/avatar-padrao.png';
-
+        card.className = 'supervisor-card'; // Usando a classe de estilo correta
         card.innerHTML = `
-            <div class="details-header" style="margin-bottom: 20px;">
-                <img src="${photoPath}" alt="Foto de ${supervisor.nome}" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
-                <div class="details-identity">
-                    <h3>${supervisor.nome}</h3>
-                    <p>${supervisor.titulo || 'Supervisor(a)'}</p>
+            <div class="supervisor-card-left">
+                <div class="photo-container">
+                    <img src="${supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png'}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
+                </div>
+                <div class="supervisor-identity">
+                    <h2>${supervisor.nome}</h2>
+                    <div class="title-box">${supervisor.titulo || 'SUPERVISOR(A)'}</div>
+                </div>
+                <div class="supervisor-contact">
+                    <p><strong>CRP:</strong> ${supervisor.crp || 'Não informado'}</p>
+                    <p><strong>Email:</strong> ${supervisor.email || 'Não informado'}</p>
+                    <p><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</p>
                 </div>
             </div>
-            <h4>Contato</h4>
-            <ul>
-                <li><strong>CRP:</strong> ${supervisor.crp || 'Não informado'}</li>
-                <li><strong>Email:</strong> ${supervisor.email || 'Não informado'}</li>
-                <li><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</li>
-            </ul>
-            <h4>Abordagem</h4>
-            <p>${supervisor.abordagem || 'Não informada'}</p>
-            <div class="form-actions" style="text-align: right; margin-top: 20px;">
-                 <button class="btn btn-primary edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
-            </div>
+            <div class="supervisor-card-right">
+                <button class="btn btn-primary edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
+                <div class="profile-header">
+                    <h3>PERFIL PROFISSIONAL</h3>
+                </div>
+                <div class="profile-section">
+                    <h4>Abordagem</h4>
+                    <p>${supervisor.abordagem || 'Não informada'}</p>
+                </div>
+                </div>
         `;
         card.querySelector('.edit-btn').addEventListener('click', (e) => {
             const uid = e.target.dataset.uid;
@@ -54,14 +57,14 @@ export function init(db, user, userData) {
         });
         return card;
     };
-
+    
     const renderProfiles = (supervisors) => {
         container.innerHTML = '';
         supervisors.forEach(supervisor => {
             container.appendChild(createSupervisorCard(supervisor));
         });
     };
-
+    
     const openEditModal = (data) => {
         form.elements['uid'].value = data.uid;
         form.elements['fotoUrl'].value = data.fotoUrl || '';
@@ -141,6 +144,8 @@ export function init(db, user, userData) {
             saveBtn.disabled = false;
         }
     }
+    
+    // ... restante da lógica ...
 
     async function loadProfiles() {
         container.innerHTML = '<div class="loading-spinner"></div>';
@@ -166,7 +171,10 @@ export function init(db, user, userData) {
         }
     }
 
-    // A inicialização dos event listeners do modal deve ser feita uma única vez no portal-voluntario.js
-    // para evitar duplicação. Aqui apenas chamamos a função de carregar.
+    // Adiciona os listeners para o modal uma única vez
+    document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => editModal.style.display = 'none'));
+    document.getElementById('add-horario-btn').addEventListener('click', () => document.getElementById('horarios-editor-container').appendChild(createHorarioRow()));
+    form.addEventListener('submit', saveProfileChanges);
+    
     loadProfiles();
 }

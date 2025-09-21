@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/fichas-supervisao.js (CORRIGIDO)
-// Versão: 3.3 (Usa o campo correto 'pacienteIniciais', validações e navegação corrigida)
+// Versão: 3.4 (Corrige nome do campo de busca e remove botão)
 // Descrição: Lista as fichas de supervisão do psicólogo com filtro.
 
 import { db, collection, getDocs, query, where } from '../../../assets/js/firebase-init.js';
@@ -24,7 +24,7 @@ export function init(db, user, userData) {
                 <tbody>
         `;
         if (fichas.length === 0) {
-            tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada. Verifique se você já preencheu alguma ou se os dados antigos no banco de dados possuem o campo "profissionalUid".</td></tr>';
+            tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada.</td></tr>';
         } else {
             fichas.sort((a, b) => new Date(b.data) - new Date(a.data));
             
@@ -35,7 +35,7 @@ export function init(db, user, userData) {
                         <td>${dataFormatada}</td>
                         <td>${ficha.pacienteIniciais || 'N/A'}</td>
                         <td>${ficha.supervisorNome || 'N/A'}</td>
-                        <td><a href="#" onclick="window.viewNavigator.push('ficha-supervisao/${ficha.id}')" class="btn btn-primary">Ver/Editar</a></td>
+                        <td><a href="#ficha-supervisao/${ficha.id}" class="btn btn-primary">Ver/Editar</a></td>
                     </tr>
                 `;
             });
@@ -59,9 +59,6 @@ export function init(db, user, userData) {
                     <label for="filtro-paciente">Filtrar por Iniciais do Paciente:</label>
                     <input type="text" id="filtro-paciente" class="form-control" placeholder="Digite as iniciais para buscar...">
                 </div>
-                <div class="form-actions" style="text-align: right;">
-                     <a href="#" onclick="window.viewNavigator.push('ficha-supervisao/new')" class="btn btn-primary">Preencher Nova Ficha</a>
-                </div>
             </div>
             <div id="lista-fichas-container" class="dashboard-section">
                 <div class="loading-spinner"></div>
@@ -72,7 +69,8 @@ export function init(db, user, userData) {
 
         try {
             const supervisaoRef = collection(db, 'supervisao');
-            const q = query(supervisaoRef, where('profissionalUid', '==', user.uid));
+            // CORREÇÃO: Utilizando o nome de campo correto 'psicologoUid'
+            const q = query(supervisaoRef, where('psicologoUid', '==', user.uid));
             const querySnapshot = await getDocs(q);
 
             todasAsFichas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -81,7 +79,7 @@ export function init(db, user, userData) {
 
         } catch (error) {
             console.error("Erro ao carregar registros:", error);
-            document.getElementById('lista-fichas-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar seus acompanhamentos. Isso pode ocorrer se as fichas antigas no banco de dados não possuírem o campo 'profissionalUid', que é exigido pelas regras de segurança.</div>`;
+            document.getElementById('lista-fichas-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar seus acompanhamentos.</div>`;
         }
     }
 

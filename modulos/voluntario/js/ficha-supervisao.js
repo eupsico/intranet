@@ -1,15 +1,15 @@
 // Arquivo: /modulos/voluntario/js/ficha-supervisao.js (CORRIGIDO)
-// Versão: 3.2 (Controla novo formulário e navegação)
+// Versão: 3.3 (Controla novo formulário, navegação e nome de campo 'psicologoUid')
 // Descrição: Controla a criação e edição das fichas de acompanhamento.
 
 import { db, collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, serverTimestamp } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData, param) {
-    const formContainer = document.getElementById('ficha-supervisao');
-    if (!formContainer) return;
+    const viewContainer = document.getElementById('content-area'); // O container principal
+    if (!viewContainer) return;
 
     const formId = param || 'new';
-    const form = document.getElementById('ficha-supervisao-form');
+    const form = viewContainer.querySelector('#ficha-supervisao-form');
     
     if (!form) {
         console.error("O formulário #ficha-supervisao-form não foi encontrado no DOM.");
@@ -26,14 +26,9 @@ export function init(db, user, userData, param) {
     const outraAbordagemContainer = form.querySelector('#outraAbordagemContainer');
     if (abordagemSelect && outraAbordagemContainer) {
         abordagemSelect.addEventListener('change', () => {
-            if (abordagemSelect.value === 'Outra') {
-                outraAbordagemContainer.style.display = 'block';
-            } else {
-                outraAbordagemContainer.style.display = 'none';
-            }
+            outraAbordagemContainer.style.display = abordagemSelect.value === 'Outra' ? 'block' : 'none';
         });
     }
-
 
     async function populateSupervisorSelect(docData = {}) {
         const supervisorSelect = form.querySelector('#supervisorUid');
@@ -61,10 +56,15 @@ export function init(db, user, userData, param) {
                 form.elements[key].value = data[key];
             }
         }
-        // Exibe o campo 'outra' se necessário
-        if (data.psicologoAbordagem && abordagemSelect.value === 'Outra') {
-            outraAbordagemContainer.style.display = 'block';
-            form.elements['outraAbordagem'].value = data.outraAbordagem || '';
+        if (data.psicologoAbordagem) {
+            const isStandardOption = [...abordagemSelect.options].some(opt => opt.value === data.psicologoAbordagem);
+            if (!isStandardOption) {
+                abordagemSelect.value = 'Outra';
+                outraAbordagemContainer.style.display = 'block';
+                form.elements['outraAbordagem'].value = data.psicologoAbordagem;
+            } else {
+                 abordagemSelect.value = data.psicologoAbordagem;
+            }
         }
     }
 
@@ -73,7 +73,8 @@ export function init(db, user, userData, param) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        data.profissionalUid = user.uid;
+        // CORREÇÃO: Usando o nome de campo correto do Firestore: 'psicologoUid'
+        data.psicologoUid = user.uid;
         data.psicologoNome = userData.nome;
         
         const supervisorSelect = form.elements['supervisorUid'];
@@ -83,28 +84,30 @@ export function init(db, user, userData, param) {
             data.supervisorNome = '';
         }
 
-        // Se a abordagem for 'Outra', salva o valor do campo de texto
         if (data.psicologoAbordagem === 'Outra') {
             data.psicologoAbordagem = data.outraAbordagem;
         }
-        delete data.outraAbordagem; // Remove o campo extra
+        delete data.outraAbordagem;
 
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.textContent = 'Salvando...';
 
         try {
+            const userRoles = userData.funcoes || [];
+            const returnHash = userRoles.includes('supervisor') || userRoles.includes('admin') ? '#painel-supervisor' : '#painel-supervisionado';
+
             if (formId === 'new') {
                 const newDocRef = doc(collection(db, 'supervisao'));
-                data.documentId = newDocRef.id; // Salva o ID do documento dentro dele mesmo
+                data.documentId = newDocRef.id;
                 await setDoc(newDocRef, { ...data, createdAt: serverTimestamp() });
                 alert("Ficha salva com sucesso!");
-                window.viewNavigator.back();
+                window.location.hash = returnHash;
             } else {
                 const docRef = doc(db, 'supervisao', formId);
                 await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
                 alert("Ficha atualizada com sucesso!");
-                window.viewNavigator.back();
+                window.location.hash = returnHash;
             }
         } catch (error) {
             console.error("Erro ao salvar a ficha:", error);
@@ -125,7 +128,7 @@ export function init(db, user, userData, param) {
                 await populateSupervisorSelect(data);
                 fillForm(data);
             } else {
-                formContainer.innerHTML = '<p class="info-card" style="border-left-color: var(--cor-erro);">Ficha não encontrada.</p>';
+                viewContainer.innerHTML = '<p class="info-card" style="border-left-color: var(--cor-erro);">Ficha não encontrada.</p>';
             }
         }
         form.addEventListener('submit', handleFormSubmit);
