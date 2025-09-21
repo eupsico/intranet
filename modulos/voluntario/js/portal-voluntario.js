@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 8.0 (Roteamento por filtro, correção de bugs e modularização aprimorada)
+// Versão: 8.1 CORRIGIDA (Carregamento dinâmico da ficha de supervisão)
 import {
     auth,
     db,
@@ -48,7 +48,6 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // Define TODAS as views (páginas) possíveis com suas respectivas permissões
     const allViews = [
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠', roles: ['all'] },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤', roles: ['all'] },
@@ -61,7 +60,6 @@ function initPortal(user, userData) {
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥', roles: ['all'] },
     ];
     
-    // Filtra as views que o usuário atual pode ver
     const userRoles = userData.funcoes || [];
     const visibleViews = allViews.filter(view => {
         if (view.roles.includes('all')) return true;
@@ -86,25 +84,40 @@ function initPortal(user, userData) {
             return;
         }
 
+        // CORREÇÃO: Trata a view "ficha-supervisao" de forma especial
+        const baseViewId = viewId.startsWith('ficha-supervisao') ? 'ficha-supervisao' : viewId;
+
         sidebarMenu.querySelectorAll('a').forEach(link => {
-            link.classList.toggle('active', link.dataset.view === viewId);
+            link.classList.toggle('active', link.dataset.view === baseViewId);
         });
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const response = await fetch(`./${viewId}.html`);
-            if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
+            // CORREÇÃO: Carrega o HTML do container da ficha
+            const response = await fetch(`./${baseViewId}.html`);
+            if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${baseViewId}.html`);
             
             contentArea.innerHTML = await response.text();
             
+            // CORREÇÃO: Se for a ficha, carrega o HTML do formulário completo DENTRO do container
+            if (baseViewId === 'ficha-supervisao') {
+                const fichaContainer = contentArea.querySelector('#ficha-supervisao-content');
+                if (fichaContainer) {
+                    const formResponse = await fetch('./ficha-supervisao-completa.html');
+                    if (!formResponse.ok) throw new Error('Template do formulário (ficha-supervisao-completa.html) não encontrado.');
+                    fichaContainer.innerHTML = await formResponse.text();
+                }
+            }
+            
             try {
-                const viewModule = await import(`../js/${viewId}.js`);
+                // CORREÇÃO: Passa o parâmetro (ID da ficha) para o módulo JS
+                const viewModule = await import(`../js/${baseViewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
                     viewModule.init(db, user, userData, param);
                 }
             } catch (jsError) {
                 if (!jsError.message.includes('not found')) {
-                     console.warn(`Módulo JS para a view '${viewId}' não encontrado ou falhou ao carregar.`, jsError);
+                     console.warn(`Módulo JS para a view '${baseViewId}' não encontrado ou falhou ao carregar.`, jsError);
                 }
             }
         } catch (error) {
@@ -126,7 +139,7 @@ function initPortal(user, userData) {
             const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
             userGreeting.textContent = `${greeting}, ${firstName}!`;
         }
-        const logoutButton = document.getElementById('logout-button-dashboard');
+        const logoutButton = document.getElementById('logout-button');
         if (logoutButton) {
             logoutButton.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -163,7 +176,14 @@ function initPortal(user, userData) {
         const handleHashChange = () => {
             const hash = window.location.hash.substring(1);
             const [viewId, param] = hash.split('/');
-            loadView(viewId || visibleViews[0]?.id, param);
+            const viewToLoad = viewId || visibleViews[0]?.id;
+
+            // Se a view for 'ficha-supervisao', passamos o 'param' (que é o ID do doc)
+            if (viewToLoad.startsWith('ficha-supervisao')) {
+                loadView(viewToLoad, param);
+            } else {
+                loadView(viewToLoad);
+            }
         };
         window.addEventListener('hashchange', handleHashChange);
         handleHashChange();
