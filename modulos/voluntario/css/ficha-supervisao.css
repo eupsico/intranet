@@ -1,8 +1,8 @@
 .form-container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
     background-color: var(--cor-surface);
-    padding: 30px;
+    padding: 20px 30px 30px 30px;
     border-radius: var(--borda-radius);
     box-shadow: var(--sombra-suave);
 }
@@ -19,30 +19,39 @@
     font-size: 0.95em;
 }
 
-.modern-form .form-section-title {
+/* Estilo para as seções */
+.modern-form fieldset {
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.modern-form legend {
     font-size: 1.2em;
+    font-weight: 600;
     color: var(--cor-primaria-dark);
-    margin-top: 25px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--cor-borda);
-    padding-bottom: 8px;
+    padding: 0 10px;
+    margin-left: 10px;
 }
 
-.modern-form hr {
-    border: 0;
-    height: 1px;
-    background-color: var(--cor-borda);
-    margin: 30px 0;
-}
-
+/* Layout em colunas */
 .form-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
+    width: 100%;
+}
+.form-row.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+.form-row.cols-4 {
+    grid-template-columns: repeat(4, 1fr);
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
 }
 
 .form-group label {
@@ -61,6 +70,7 @@
     background-color: var(--cor-fundo);
     font-size: 1em;
     transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
 }
 
 .form-control:focus {
@@ -72,16 +82,38 @@
 .form-control[readonly] {
     background-color: #f1f3f4;
     cursor: not-allowed;
+    color: #5f6368;
 }
 
 textarea.form-control {
     resize: vertical;
-    min-height: 100px;
+    min-height: 80px;
 }
+
+/* Campos exclusivos do supervisor */
+.supervisor-field {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: var(--borda-radius);
+    border: 1px dashed var(--cor-borda);
+}
+.supervisor-field label {
+    color: var(--cor-primaria-dark);
+    font-style: italic;
+}
+
 
 .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 15px;
-    margin-top: 30px;
+    margin-top: 20px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .form-row.cols-3,
+    .form-row.cols-4 {
+        grid-template-columns: 1fr; /* Coluna única em telas pequenas */
+    }
 }

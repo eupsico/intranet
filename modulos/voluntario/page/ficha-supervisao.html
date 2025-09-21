@@ -1,75 +1,189 @@
 <div class="form-container" id="form-supervisao-container">
     <div class="form-header">
         <h2>Ficha de Acompanhamento de Supervisão</h2>
-        <p>Preencha os dados abaixo para registrar sua sessão de supervisão.</p>
+        <p>Preencha os dados abaixo para registrar o acompanhamento do caso clínico.</p>
     </div>
 
     <form id="form-supervisao" class="modern-form">
-        <input type="hidden" id="ficha-id">
-        <input type="hidden" id="psicologo-uid" name="psicologo-uid">
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="nome-psicologo">Seu Nome</label>
-                <input type="text" id="nome-psicologo" name="nome-psicologo" class="form-control" readonly>
+        <fieldset>
+            <legend>Identificação Geral</legend>
+            <div class="form-row cols-3">
+                <div class="form-group">
+                    <label for="supervisor-nome">Nome do Supervisor(a)</label>
+                    <select id="supervisor-nome" name="supervisor-nome" class="form-control" required>
+                        <option value="">Carregando...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="data-supervisao">Data da Supervisão</label>
+                    <input type="date" id="data-supervisao" name="data-supervisao" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="data-inicio-terapia">Data de Início da Terapia</label>
+                    <input type="date" id="data-inicio-terapia" name="data-inicio-terapia" class="form-control">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="data-supervisao">Data da Supervisão</label>
-                <input type="date" id="data-supervisao" name="data-supervisao" class="form-control" required>
-            </div>
-        </div>
+        </fieldset>
 
-        <div class="form-group">
-            <label for="supervisor">Supervisor(a)</label>
-            <select id="supervisor" name="supervisor" class="form-control" required>
-                <option value="">Carregando...</option>
-            </select>
-        </div>
+        <fieldset>
+            <legend>1. Identificação do Psicólogo(a)</legend>
+            <div class="form-row cols-3">
+                <div class="form-group">
+                    <label for="psicologo-nome">Nome do Psicólogo(a)</label>
+                    <input type="text" id="psicologo-nome" name="psicologo-nome" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="psicologo-periodo">Período/Semestre (estagiários)</label>
+                    <input type="text" id="psicologo-periodo" name="psicologo-periodo" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="abordagem-teorica">Abordagem Teórica</label>
+                    <select id="abordagem-teorica" name="abordagem-teorica" class="form-control">
+                        <option value="">Selecione...</option>
+                        <option value="TCC">Terapia Cognitivo-Comportamental (TCC)</option>
+                        <option value="Psicanalise">Psicanálise</option>
+                        <option value="Psicodrama">Psicodrama</option>
+                        <option value="Analitica">Psicologia Analítica (Junguiana)</option>
+                        <option value="Gestalt">Gestalt-terapia</option>
+                        <option value="Humanista">Humanista</option>
+                        <option value="Sistemica">Sistêmica</option>
+                        <option value="Outra">Outra</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" id="outra-abordagem-container" style="display: none;">
+                <label for="outra-abordagem-texto">Especifique a outra abordagem</label>
+                <input type="text" id="outra-abordagem-texto" name="outra-abordagem-texto" class="form-control">
+            </div>
+        </fieldset>
         
-        <hr>
-
-        <h3 class="form-section-title">Informações do Paciente</h3>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="iniciais-paciente">Iniciais do Paciente</label>
-                <input type="text" id="iniciais-paciente" name="iniciais-paciente" class="form-control" placeholder="Ex: A.B.C." required>
+        <fieldset>
+            <legend>2. Identificação do Caso (dados sigilosos)</legend>
+            <div class="form-row cols-4">
+                <div class="form-group">
+                    <label for="paciente-iniciais">Iniciais do(a) Paciente</label>
+                    <input type="text" id="paciente-iniciais" name="paciente-iniciais" class="form-control" placeholder="Ex: A.B.C." required>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-idade">Idade</label>
+                    <input type="number" id="paciente-idade" name="paciente-idade" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="paciente-genero">Gênero</label>
+                    <select id="paciente-genero" name="paciente-genero" class="form-control">
+                        <option value="">Selecione...</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Nao-binario">Não-binário</option>
+                        <option value="Outro">Outro</option>
+                        <option value="Nao informado">Prefere não informar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-sessoes">Nº de Sessões</label>
+                    <input type="number" id="paciente-sessoes" name="paciente-sessoes" class="form-control">
+                </div>
             </div>
             <div class="form-group">
-                <label for="idade-paciente">Idade</label>
-                <input type="number" id="idade-paciente" name="idade-paciente" class="form-control">
+                <label for="queixa-demanda">Apresentação geral (queixa, demanda):</label>
+                <textarea id="queixa-demanda" name="queixa-demanda" rows="4" class="form-control"></textarea>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>FASE 1: INÍCIO DA TERAPIA (Sessões 1-8)</legend>
+            <div class="form-group">
+                <label for="fase1-data">Data do Preenchimento</label>
+                <input type="date" id="fase1-data" name="fase1-data" class="form-control">
             </div>
             <div class="form-group">
-                <label for="sexo-paciente">Sexo</label>
-                <select id="sexo-paciente" name="sexo-paciente" class="form-control">
-                    <option value="">Selecione</option>
-                    <option value="Masculino">Masculino</option>
-                    <option value="Feminino">Feminino</option>
-                    <option value="Outro">Outro</option>
-                    <option value="Nao informado">Não desejo informar</option>
-                </select>
+                <label for="fase1-foco">Foco do atendimento:</label>
+                <textarea id="fase1-foco" name="fase1-foco" rows="3" class="form-control"></textarea>
             </div>
-        </div>
-        
-        <div class="form-group">
-            <label for="queixa-principal">Queixa Principal / Demanda</label>
-            <textarea id="queixa-principal" name="queixa-principal" rows="4" class="form-control" placeholder="Descreva a principal demanda do paciente."></textarea>
-        </div>
+            <div class="form-group">
+                <label for="fase1-objetivos">Definição dos objetivos terapêuticos:</label>
+                <textarea id="fase1-objetivos" name="fase1-objetivos" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fase1-hipoteses">Primeiras hipóteses diagnósticas:</label>
+                <textarea id="fase1-hipoteses" name="fase1-hipoteses" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="fase1-obs-supervisor">Observações do Supervisor:</label>
+                <textarea id="fase1-obs-supervisor" name="fase1-obs-supervisor" rows="3" class="form-control" readonly></textarea>
+            </div>
+        </fieldset>
 
-        <hr>
+        <fieldset>
+            <legend>FASE 2: MEIO DA TERAPIA (Aprox. 3 meses)</legend>
+            <div class="form-group">
+                <label for="fase2-data">Data do Preenchimento</label>
+                <input type="date" id="fase2-data" name="fase2-data" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="fase2-reavaliacao">Reavaliação do foco:</label>
+                <textarea id="fase2-reavaliacao" name="fase2-reavaliacao" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fase2-progresso">Progresso em direção aos objetivos:</label>
+                <textarea id="fase2-progresso" name="fase2-progresso" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="fase2-obs-supervisor">Observações do Supervisor:</label>
+                <textarea id="fase2-obs-supervisor" name="fase2-obs-supervisor" rows="3" class="form-control" readonly></textarea>
+            </div>
+        </fieldset>
 
-        <h3 class="form-section-title">Análise da Sessão</h3>
-        <div class="form-group">
-            <label for="resumo-sessao">Breve Resumo da Sessão</label>
-            <textarea id="resumo-sessao" name="resumo-sessao" rows="5" class="form-control" placeholder="Descreva os principais pontos e acontecimentos da sessão." required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="manejo-clinico">Dificuldades e/ou Dúvidas sobre o Manejo Clínico</label>
-            <textarea id="manejo-clinico" name="manejo-clinico" rows="5" class="form-control" placeholder="Quais foram suas principais dificuldades ou dúvidas?"></textarea>
-        </div>
-        <div class="form-group">
-            <label for="intervencoes-supervisor">Orientações e Intervenções do(a) Supervisor(a)</label>
-            <textarea id="intervencoes-supervisor" name="intervencoes-supervisor" rows="5" class="form-control" placeholder="Descreva as orientações e sugestões recebidas durante a supervisão."></textarea>
-        </div>
+        <fieldset>
+            <legend>FASE 3: PROCESSO DE ALTA (5º e 6º mês)</legend>
+            <div class="form-group">
+                <label for="fase3-data">Data do Preenchimento</label>
+                <input type="date" id="fase3-data" name="fase3-data" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="fase3-avaliacao">Avaliação final dos objetivos:</label>
+                <textarea id="fase3-avaliacao" name="fase3-avaliacao" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fase3-mudancas">Principais mudanças e aprendizados:</label>
+                <textarea id="fase3-mudancas" name="fase3-mudancas" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="fase3-obs-supervisor">Observações do Supervisor:</label>
+                <textarea id="fase3-obs-supervisor" name="fase3-obs-supervisor" rows="3" class="form-control" readonly></textarea>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Observações Finais</legend>
+            <div class="form-row cols-3">
+                 <div class="form-group">
+                    <label for="desfecho">Desfecho do caso</label>
+                    <select id="desfecho" name="desfecho" class="form-control">
+                        <option value="">Selecione...</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Desistencia">Desistência</option>
+                        <option value="Em andamento">Em andamento</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="data-desfecho">Data da Alta/Desistência</label>
+                    <input type="date" id="data-desfecho" name="data-desfecho" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="obs-finais">Observações finais relevantes:</label>
+                <textarea id="obs-finais" name="obs-finais" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="obs-finais-supervisor">Observações do Supervisor:</label>
+                <textarea id="obs-finais-supervisor" name="obs-finais-supervisor" rows="3" class="form-control" readonly></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="assinatura-supervisor">Assinatura do Supervisor</label>
+                <input type="text" id="assinatura-supervisor" name="assinatura-supervisor" class="form-control" readonly>
+            </div>
+        </fieldset>
 
         <div class="form-actions">
             <button type="button" class="btn btn-secondary" id="btn-limpar-formulario">Limpar</button>
