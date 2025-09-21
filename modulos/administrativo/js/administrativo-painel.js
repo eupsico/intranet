@@ -1,6 +1,6 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 2.0 (Modernizado para ES6+)
-// Descrição: Controlador principal do Painel Administrativo, carrega a view da Grade de Horários.
+// Versão: 1.1
+// Descrição: Controlador principal do Painel Administrativo, com a Grade de Horários como view padrão.
 
 export function init(user, db, userData) {
     const contentArea = document.getElementById('content-area');
@@ -14,16 +14,15 @@ export function init(user, db, userData) {
             roles: ['admin', 'gestor', 'assistente'],
             icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
         }
+        // O Dashboard foi removido, a Grade é a página principal.
     ];
 
-    /**
-     * Constrói o menu lateral com base nas permissões do usuário.
-     * @param {string[]} userRoles - As funções do usuário logado.
-     */
     function buildSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        
-        sidebarMenu.innerHTML = `
+        sidebarMenu.innerHTML = ''; 
+
+        // Link para voltar à intranet principal
+        sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -47,10 +46,6 @@ export function init(user, db, userData) {
         });
     }
 
-    /**
-     * Carrega dinamicamente o HTML e o JS de uma view específica.
-     * @param {string} viewId - O ID da view a ser carregada.
-     */
     async function loadView(viewId) {
         if (!viewId) {
             contentArea.innerHTML = '<h2>Nenhuma view disponível para seu perfil.</h2>';
@@ -68,10 +63,13 @@ export function init(user, db, userData) {
             
             contentArea.innerHTML = await response.text();
 
-            // Tenta carregar o módulo JS da view
-            const viewModule = await import(`../js/${viewId}.js`);
-            if (viewModule && typeof viewModule.init === 'function') {
-                viewModule.init(db, user, userData);
+            try {
+                const viewModule = await import(`../js/${viewId}.js`);
+                if (viewModule && typeof viewModule.init === 'function') {
+                    viewModule.init(db, user, userData);
+                }
+            } catch (jsError) {
+                console.log(`Nenhum módulo JS para a view '${viewId}'. Carregando como página estática.`);
             }
         } catch (error) {
             console.error(`Erro ao carregar a view ${viewId}:`, error);
@@ -79,9 +77,6 @@ export function init(user, db, userData) {
         }
     }
 
-    /**
-     * Define o cabeçalho da página.
-     */
     function setupPageHeader() {
         const pageTitleContainer = document.getElementById('page-title-container');
         if (pageTitleContainer) {
@@ -92,9 +87,6 @@ export function init(user, db, userData) {
         }
     }
 
-    /**
-     * Função principal que inicializa o painel administrativo.
-     */
     function start() {
         const userRoles = userData.funcoes || [];
         setupPageHeader();

@@ -1,13 +1,6 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 2.1 FINAL (Exportando todas as funções necessárias)
-// Descrição: Inicializa o Firebase com a API modular e exporta todas as instâncias e funções para a aplicação.
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-import { 
-    getFirestore, collection, query, where, orderBy, getDocs, 
-    getDoc, doc, setDoc, updateDoc, addDoc, serverTimestamp, onSnapshot
-} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// Versão: 1.2
+// Descrição: Remove a inicialização do Firebase Storage, que não é utilizado.
 
 // --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
 const firebaseConfig = {
@@ -21,28 +14,15 @@ const firebaseConfig = {
 };
 
 // --- INICIALIZAÇÃO E EXPORTAÇÃO ---
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Garante que o Firebase seja inicializado apenas uma vez
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-// Exporta tudo que a aplicação precisa
-export {
-    auth,
-    db,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    signInWithPopup,
-    signOut,
-    collection,
-    query,
-    where,
-    orderBy,
-    getDocs,
-    getDoc,
-    doc,
-    setDoc,
-    updateDoc,
-    addDoc,
-    serverTimestamp,
-    onSnapshot
-};
+// Exporta as instâncias de autenticação e banco de dados para serem usadas em outros arquivos
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// A inicialização e exportação do 'storage' foram removidas.
+
+export { auth, db };

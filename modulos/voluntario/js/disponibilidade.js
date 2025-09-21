@@ -1,24 +1,16 @@
 // Arquivo: /modulos/voluntario/js/disponibilidade.js
-// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
-// Descrição: Módulo para a aba "Minha Disponibilidade", permitindo a visualização e edição dos horários do voluntário.
-
-import { doc, getDoc, updateDoc } from '../../../assets/js/firebase-init.js';
+// Descrição: Módulo para a aba "Minha Disponibilidade".
 
 export function init(db, user, userData) {
     const container = document.querySelector('#disponibilidade-container');
     if (!container) return;
     
-    /**
-     * Busca os dados de disponibilidade do usuário no Firestore.
-     */
     async function fetchData() {
         container.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const userDocRef = doc(db, 'usuarios', user.uid);
-            const docSnap = await getDoc(userDocRef);
-            
-            if (docSnap.exists()) {
-                renderUserView(docSnap.data());
+            const userDoc = await db.collection('usuarios').doc(user.uid).get();
+            if (userDoc.exists) {
+                renderUserView(userDoc.data());
             } else {
                 container.innerHTML = `<div class="disponibilidade-view"><h3>Minha Disponibilidade</h3><p>Seus dados não foram encontrados.</p></div>`;
             }
@@ -28,10 +20,6 @@ export function init(db, user, userData) {
         }
     }
     
-    /**
-     * Renderiza a visualização dos horários salvos do usuário.
-     * @param {object} profData - Os dados do profissional/voluntário.
-     */
     function renderUserView(profData) {
         const horariosHtml = profData.horarios && profData.horarios.length > 0
             ? profData.horarios.map(h => `<li><strong>${h.dia.charAt(0).toUpperCase() + h.dia.slice(1)} - ${String(h.horario).padStart(2,'0')}:00:</strong> ${h.modalidade} (${h.status})</li>`).join('')
@@ -55,10 +43,6 @@ export function init(db, user, userData) {
         container.querySelector('.modify-btn').addEventListener('click', () => renderEditView(profData));
     }
 
-    /**
-     * Cria o HTML para uma nova linha na tabela de edição de horários.
-     * @returns {string} O HTML da nova linha.
-     */
     function createNewScheduleRowHtml() {
         const dias = {segunda:"Segunda-feira", terca:"Terça-feira", quarta:"Quarta-feira", quinta:"Quinta-feira", sexta:"Sexta-feira", sabado:"Sábado"};
         const horarios = Array.from({length: 15}, (_, i) => i + 7); // 7h às 21h
@@ -74,25 +58,20 @@ export function init(db, user, userData) {
         `;
     }
 
-    /**
-     * Renderiza o formulário de edição de disponibilidade.
-     * @param {object} profData - Os dados do profissional/voluntário.
-     */
     function renderEditView(profData) {
         const scheduleRowsHtml = (profData.horarios && profData.horarios.length > 0 ? profData.horarios : [])
-            .map(h => {
-                const dias = {segunda:"Segunda-feira", terca:"Terça-feira", quarta:"Quarta-feira", quinta:"Quinta-feira", sexta:"Sexta-feira", sabado:"Sábado"};
-                const horarios = Array.from({length: 15}, (_, i) => i + 7);
-                return `
-                    <tr>
-                        <td><select class="dia">${Object.entries(dias).map(([val, text]) => `<option value="${val}" ${h.dia === val ? 'selected' : ''}>${text}</option>`).join('')}</select></td>
-                        <td><select class="horario">${horarios.map(hora => `<option value="${hora}" ${h.horario == hora ? 'selected' : ''}>${String(hora).padStart(2,'0')}:00</option>`).join('')}</select></td>
-                        <td><select class="modalidade"><option value="online" ${h.modalidade === 'online' ? 'selected' : ''}>Online</option><option value="presencial" ${h.modalidade === 'presencial' ? 'selected' : ''}>Presencial</option><option value="ambas" ${h.modalidade === 'ambas' ? 'selected' : ''}>Ambas</option></select></td>
-                        <td><select class="status"><option value="disponivel" ${h.status === 'disponivel' ? 'selected' : ''}>Disponível</option><option value="ocupado" ${h.status === 'ocupado' ? 'selected' : ''}>Ocupado</option></select></td>
-                        <td><button class="delete-row-btn">Excluir</button></td>
-                    </tr>
-                `;
-            }).join('');
+        .map(h => {
+            const dias = {segunda:"Segunda-feira", terca:"Terça-feira", quarta:"Quarta-feira", quinta:"Quinta-feira", sexta:"Sexta-feira", sabado:"Sábado"};
+            const horarios = Array.from({length: 15}, (_, i) => i + 7); // 7h às 21h
+            return `
+            <tr>
+                <td><select class="dia">${Object.entries(dias).map(([val, text]) => `<option value="${val}" ${h.dia === val ? 'selected' : ''}>${text}</option>`).join('')}</select></td>
+                <td><select class="horario">${horarios.map(hora => `<option value="${hora}" ${h.horario == hora ? 'selected' : ''}>${String(hora).padStart(2,'0')}:00</option>`).join('')}</select></td>
+                <td><select class="modalidade"><option value="online" ${h.modalidade === 'online' ? 'selected' : ''}>Online</option><option value="presencial" ${h.modalidade === 'presencial' ? 'selected' : ''}>Presencial</option><option value="ambas" ${h.modalidade === 'ambas' ? 'selected' : ''}>Ambas</option></select></td>
+                <td><select class="status"><option value="disponivel" ${h.status === 'disponivel' ? 'selected' : ''}>Disponível</option><option value="ocupado" ${h.status === 'ocupado' ? 'selected' : ''}>Ocupado</option></select></td>
+                <td><button class="delete-row-btn">Excluir</button></td>
+            </tr>
+        `}).join('');
         
         container.innerHTML = `
             <div class="disponibilidade-view">
@@ -116,7 +95,8 @@ export function init(db, user, userData) {
         `;
         
         container.querySelector('.add-row-btn').addEventListener('click', () => {
-            container.querySelector('.edit-table tbody').insertAdjacentHTML('beforeend', createNewScheduleRowHtml());
+            const newRowHtml = createNewScheduleRowHtml();
+            container.querySelector('.edit-table tbody').insertAdjacentHTML('beforeend', newRowHtml);
         });
         container.querySelector('.edit-table tbody').addEventListener('click', (e) => { 
             if (e.target.classList.contains('delete-row-btn')) e.target.closest('tr').remove(); 
@@ -125,10 +105,6 @@ export function init(db, user, userData) {
         container.querySelector('.save-btn').addEventListener('click', () => saveAvailability(user.uid));
     }
 
-    /**
-     * Salva as alterações de disponibilidade no Firestore.
-     * @param {string} uid - O ID do usuário.
-     */
     async function saveAvailability(uid) {
         const saveButton = container.querySelector('.save-btn');
         saveButton.disabled = true;
@@ -136,19 +112,21 @@ export function init(db, user, userData) {
 
         const updatedHorarios = [];
         container.querySelectorAll('.edit-table tbody tr').forEach(row => {
-            updatedHorarios.push({
-                dia: row.querySelector('.dia').value,
-                horario: parseInt(row.querySelector('.horario').value),
-                modalidade: row.querySelector('.modalidade').value,
-                status: row.querySelector('.status').value
-            });
+            const dia = row.querySelector('.dia').value;
+            const horario = row.querySelector('.horario').value;
+            if (dia && horario) {
+                updatedHorarios.push({
+                    dia: dia,
+                    horario: parseInt(horario),
+                    modalidade: row.querySelector('.modalidade').value,
+                    status: row.querySelector('.status').value
+                });
+            }
         });
-
         const updatedDemands = container.querySelector('.demands').value;
-        const userDocRef = doc(db, 'usuarios', uid);
         
         try {
-            await updateDoc(userDocRef, {
+            await db.collection('usuarios').doc(uid).update({
                 horarios: updatedHorarios,
                 demandasNaoAtendidas: updatedDemands
             });

@@ -1,21 +1,18 @@
 // Arquivo: /modulos/voluntario/js/envio_comprovantes.js
-// Versão: 3.0 (Modernizado para Firebase v9+ e ES6+)
-// Descrição: Controla o envio de comprovantes, utilizando Google Apps Script para upload e Firestore para registro.
+// Versão: 2.1
+// Descrição: Retorna a lógica para usar o Google Apps Script para upload de arquivos no Drive.
 
-import { db, collection, query, where, orderBy, getDocs, addDoc, serverTimestamp } from '../../../assets/js/firebase-init.js';
-
-export function init(user, userData) {
+export function init(db, user, userData) { // O parâmetro 'storage' foi removido
     if (!db) {
         console.error("Instância do Firestore (db) não encontrada.");
         return;
     }
     
-    // URL do Google Apps Script para o upload de arquivos
+    // ALTERAÇÃO: URL do seu App Script inserida aqui
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOGyDANVS--DeH6T-ZaqFiEmhpBYUJu4P8VT0uevQPwC3tLL5EgappHPI2mhKwPtf1fg/exec";
     
     let formData = {};
 
-    // Mapeamento dos elementos do DOM
     const formContainer = document.getElementById('form-container');
     const confirmationSection = document.getElementById('confirmation-section');
     const finalMessageSection = document.getElementById('final-message-section');
@@ -24,28 +21,23 @@ export function init(user, userData) {
     const selectProfissional = document.getElementById('form-profissional');
     const selectMes = document.getElementById('form-mes-ref');
 
-    /**
-     * Inicializa a view, populando os seletores de profissional e mês.
-     */
     async function initializeView() {
         try {
-            const usuariosRef = collection(db, 'usuarios');
-            const q = query(
-                usuariosRef,
-                where('inativo', '==', false),
-                where('recebeDireto', '==', true),
-                where('fazAtendimento', '==', true),
-                orderBy('nome')
-            );
+            const snapshot = await db.collection('usuarios')
+                .where('inativo', '==', false)
+                .where('recebeDireto', '==', true)
+                .where('fazAtendimento', '==', true)
+                .orderBy('nome')
+                .get();
             
-            const snapshot = await getDocs(q);
             const profissionais = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
             
+            // ALTERAÇÃO: Populando o select com o nome do profissional no value, como no seu código original
             const optionsHtml = ['<option value="">Selecione seu nome...</option>', ...profissionais.map(p => `<option value="${p.nome}">${p.nome}</option>`)].join('');
             selectProfissional.innerHTML = optionsHtml;
 
-            // Pré-seleciona o usuário logado
-            if (userData?.nome) {
+            // Pré-seleciona o usuário logado pelo nome
+            if (userData && userData.nome) {
                 selectProfissional.value = userData.nome;
             }
 
@@ -55,7 +47,7 @@ export function init(user, userData) {
         }
         
         const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-        const mesOptions = meses.map(m => `<option value="${m}">${m}</option>`).join('');
+        const mesOptions = meses.map(m => `<option value="${m}">${m}</option>`).join(''); // Usa o nome completo do mês
         selectMes.innerHTML = mesOptions;
         
         const today = new Date();
@@ -65,7 +57,7 @@ export function init(user, userData) {
     
     function showMessage(message, type = 'error') {
         messageContainer.textContent = message;
-        messageContainer.className = `alert alert-${type}`;
+        messageContainer.className = `alert alert-${type === 'error' ? 'error' : 'info'}`;
         messageContainer.style.display = 'block';
     }
 
@@ -129,16 +121,17 @@ export function init(user, userData) {
         confirmationSection.style.display = 'none';
     });
     
+    // ALTERAÇÃO: Lógica de envio reescrita para usar o Google Apps Script
     document.getElementById('btn-confirm-send').addEventListener('click', () => {
         const saveBtn = document.getElementById('btn-confirm-send');
         saveBtn.disabled = true;
         saveBtn.textContent = 'Enviando...';
         
         const reader = new FileReader();
-        reader.readAsDataURL(formData.file);
+        reader.readAsDataURL(formData.file); // Converte o arquivo para Base64
 
         reader.onload = function() {
-            const fileData = reader.result.split(',')[1];
+            const fileData = reader.result.split(',')[1]; // Pega apenas a parte do dado em Base64
             const payload = {
                 profissional: formData.profissional,
                 paciente: formData.paciente,
@@ -150,31 +143,33 @@ export function init(user, userData) {
                 fileData: fileData
             };
             
+            // Envia os dados para o seu App Script
             fetch(WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify(payload)
             })
             .then(res => res.json())
-            .then(async response => {
+            .then(response => {
                 if (response.status === 'success') {
+                    // Se o App Script salvou no Drive, agora salvamos no Firestore
                     const comprovanteData = {
                         profissional: payload.profissional,
                         paciente: payload.paciente,
                         valor: payload.valor,
                         dataPagamento: payload.dataPagamento,
-                        mesReferencia: payload.mesReferencia.toLowerCase(),
+                        mesReferencia: payload.mesReferencia.toLowerCase(), // salva em minúsculo para consistência
                         anoReferencia: new Date(payload.dataPagamento + 'T00:00:00').getFullYear(),
-                        comprovanteUrl: response.fileUrl,
+                        comprovanteUrl: response.fileUrl, // URL retornada pelo App Script
                         status: 'Pendente',
-                        timestamp: serverTimestamp()
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     };
-                    await addDoc(collection(db, 'comprovantes'), comprovanteData);
-                    return payload;
+                    return db.collection('comprovantes').add(comprovanteData).then(() => payload);
                 } else {
                     throw new Error(response.message);
                 }
             })
             .then(payload => {
+                // Mostra a tela de sucesso
                 confirmationSection.style.display = 'none';
                 const summaryHtml = `
                     <p><strong>Profissional:</strong> <span>${payload.profissional}</span></p>
@@ -186,8 +181,8 @@ export function init(user, userData) {
                 form.reset();
             })
             .catch(error => {
-                console.error('Erro no processo de envio:', error);
-                showMessage(`Ocorreu um erro grave no envio: ${error.message}`, 'error');
+                console.error('Erro:', error);
+                showMessage('Ocorreu um erro grave no envio: ' + error.message, 'error');
                 formContainer.style.display = 'block';
                 confirmationSection.style.display = 'none';
             })
@@ -197,7 +192,7 @@ export function init(user, userData) {
             });
         };
         
-        reader.onerror = (error) => {
+        reader.onerror = function(error) {
             console.error('Erro ao ler o arquivo:', error);
             showMessage('Não foi possível ler o arquivo anexado.', 'error');
             saveBtn.disabled = false;
@@ -209,7 +204,7 @@ export function init(user, userData) {
         finalMessageSection.style.display = 'none';
         formContainer.style.display = 'block';
         hideMessage();
-        initializeView();
+        initializeView(); // Re-inicializa os valores padrão do formulário
     });
 
     initializeView();

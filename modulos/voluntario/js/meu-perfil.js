@@ -1,9 +1,3 @@
-// Arquivo: /modulos/voluntario/js/meu-perfil.js
-// Versão: 2.0 (Modernizado para Firebase v9+ e ES6+)
-// Descrição: Controla a visualização e edição do perfil do voluntário.
-
-import { doc, getDoc, updateDoc } from '../../../assets/js/firebase-init.js';
-
 export function init(db, user, userData) {
     const container = document.getElementById('perfil-container');
     const actionsContainer = document.getElementById('perfil-actions');
@@ -32,7 +26,7 @@ export function init(db, user, userData) {
     function formatarTelefone(value) {
         if (!value) return "";
         value = value.replace(/\D/g,'');
-        value = value.substring(0, 11);
+        value = value.substring(0, 11); // Limita a 11 dígitos
         value = value.replace(/^(\d{2})(\d)/g,"($1) $2");
         value = value.replace(/(\d{5})(\d)/,"\$1-\$2");
         return value;
@@ -62,14 +56,11 @@ export function init(db, user, userData) {
         try {
             container.innerHTML = '<div class="loading-spinner"></div>';
             if (!user || !user.uid) throw new Error("UID do usuário não encontrado.");
-            
-            userDocRef = doc(db, 'usuarios', user.uid);
-            const docSnap = await getDoc(userDocRef);
-
-            if (!docSnap.exists()) throw new Error("Dados do usuário não encontrados no Firestore.");
-            
-            originalData = docSnap.data();
-            await renderForm(originalData);
+            userDocRef = db.collection('usuarios').doc(user.uid);
+            const doc = await userDocRef.get();
+            if (!doc.exists) throw new Error("Dados do usuário não encontrados no Firestore.");
+            originalData = doc.data();
+            await renderForm(originalData); // Tornou-se assíncrono para garantir que os listeners sejam adicionados depois
             toggleFormState(false);
         } catch (error) {
             console.error("Erro ao carregar perfil:", error);
@@ -78,13 +69,16 @@ export function init(db, user, userData) {
     }
     
     async function renderForm(data) {
+        // Listas de opções
         const profissoes = ['Psicologia', 'Psicopedagogia', 'Musicoterapia', 'Nutrição', 'Advogado', 'Estágiario', 'Outros'];
         const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
         
+        // Lógica para determinar a profissão selecionada
         const profissaoSalva = data.profissao || '';
         const profissaoPadrao = profissoes.includes(profissaoSalva) ? profissaoSalva : 'Outros';
         const outraProfissaoValor = profissaoPadrao === 'Outros' ? profissaoSalva : '';
 
+        // Monta o novo layout com divs aninhadas para controle de colunas
         container.innerHTML = `
             <div class="form-row-flex">
                 <div class="form-group flex-grow-2">
@@ -96,12 +90,14 @@ export function init(db, user, userData) {
                     <input type="tel" id="telefone" value="${formatarTelefone(data.telefone || '')}" maxlength="15" readonly>
                 </div>
             </div>
+
             <div class="form-row">
                 <div class="form-group full-width">
                     <label for="endereco">Endereço</label>
                     <input type="text" id="endereco" value="${data.endereco || ''}" readonly>
                 </div>
             </div>
+
             <div class="form-row-flex">
                 <div class="form-group">
                     <label for="profissao">Profissão</label>
@@ -120,6 +116,7 @@ export function init(db, user, userData) {
                     <input type="text" id="registro-profissional" value="${data.registroProfissional || ''}" readonly>
                 </div>
             </div>
+
             <div class="form-row-flex">
                 <div class="form-group">
                     <label for="cpf">CPF</label>
@@ -130,12 +127,14 @@ export function init(db, user, userData) {
                     <input type="text" id="rg" value="${data.rg || ''}" readonly>
                 </div>
             </div>
+
             <div class="form-row">
                 <div class="form-group full-width">
                     <label for="especializacoes">Especializações (separadas por vírgula)</label>
                     <textarea id="especializacoes" readonly>${Array.isArray(data.especializacoes) ? data.especializacoes.join(', ') : ''}</textarea>
                 </div>
             </div>
+            
             <div class="form-row-flex">
                 <div class="form-group">
                     <label for="data-inicio">Data de Início na EuPsico</label>
@@ -148,12 +147,14 @@ export function init(db, user, userData) {
             </div>
         `;
 
+        // Popula as listas de seleção de forma segura
         const profissaoSelect = document.getElementById('profissao');
         profissaoSelect.innerHTML = profissoes.map(p => `<option value="${p}" ${p === profissaoPadrao ? 'selected' : ''}>${p}</option>`).join('');
 
         const conselhoSelect = document.getElementById('conselho-profissional');
         conselhoSelect.innerHTML = conselhos.map(c => `<option value="${c}" ${c === (data.conselhoProfissional || 'Nenhum') ? 'selected' : ''}>${c}</option>`).join('');
         
+        // Adiciona os listeners para os campos dinâmicos
         attachDynamicFieldListeners();
     }
     
@@ -161,11 +162,11 @@ export function init(db, user, userData) {
         const profissaoSelect = document.getElementById('profissao');
         const outraProfissaoContainer = document.getElementById('outra-profissao-container');
         
-        const toggleOutraProfissao = () => {
+        function toggleOutraProfissao() {
             outraProfissaoContainer.style.display = profissaoSelect.value === 'Outros' ? 'block' : 'none';
-        };
+        }
         
-        toggleOutraProfissao();
+        toggleOutraProfissao(); // Executa na primeira vez para definir o estado inicial
         profissaoSelect.addEventListener('change', toggleOutraProfissao);
         
         document.getElementById('telefone').addEventListener('input', (e) => {
@@ -177,7 +178,8 @@ export function init(db, user, userData) {
         if (!userDocRef) return;
 
         const nome = document.getElementById('nome-completo').value;
-        const telefone = document.getElementById('telefone').value.replace(/\D/g,'');
+        const telefoneInput = document.getElementById('telefone');
+        const telefone = telefoneInput.value.replace(/\D/g,'');
         const cpf = document.getElementById('cpf').value;
 
         if (!nome || !telefone) {
@@ -190,19 +192,20 @@ export function init(db, user, userData) {
             return;
         }
         
+        // Lógica para salvar a profissão correta
         const profissaoSelecionada = document.getElementById('profissao').value;
         const profissaoFinal = profissaoSelecionada === 'Outros' 
             ? document.getElementById('outra-profissao').value.trim() 
             : profissaoSelecionada;
 
         const dadosParaAtualizar = {
-            nome,
-            telefone,
+            nome: nome,
+            telefone: telefone,
             endereco: document.getElementById('endereco').value,
             profissao: profissaoFinal,
             conselhoProfissional: document.getElementById('conselho-profissional').value,
             registroProfissional: document.getElementById('registro-profissional').value,
-            cpf,
+            cpf: cpf,
             rg: document.getElementById('rg').value,
             dataInicio: document.getElementById('data-inicio').value,
             especializacoes: document.getElementById('especializacoes').value.split(',').map(s => s.trim()).filter(Boolean)
@@ -213,7 +216,7 @@ export function init(db, user, userData) {
         saveButton.textContent = 'Salvando...';
 
         try {
-            await updateDoc(userDocRef, dadosParaAtualizar);
+            await userDocRef.update(dadosParaAtualizar);
             originalData = {...originalData, ...dadosParaAtualizar};
             alert("Perfil atualizado com sucesso!");
         } catch (error) {
@@ -233,7 +236,7 @@ export function init(db, user, userData) {
         if (saveButton) saveButton.addEventListener('click', salvarPerfil);
         if (cancelButton) {
             cancelButton.addEventListener('click', async () => {
-                await renderForm(originalData);
+                await renderForm(originalData); // Re-renderiza para restaurar valores e listeners
                 toggleFormState(false);
             });
         }

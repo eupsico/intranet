@@ -1,6 +1,6 @@
 // Arquivo: /modulos/voluntario/js/solicitacoes.js
-// Versão: 2.0 (Revisado e padronizado)
-// Descrição: Controla as abas e a funcionalidade do modal do Pipefy na página de Solicitações.
+// Versão: 1.0
+// Descrição: Controla as abas e a funcionalidade do modal da página de Solicitações.
 
 export function init(db, user, userData) {
     const view = document.querySelector('.view-container');
