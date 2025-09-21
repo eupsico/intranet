@@ -1,41 +1,38 @@
 // Arquivo: /modulos/voluntario/js/ficha-supervisao.js
-// Versão: 5.0 (Preenchimento de dados corrigido e implementação de auto-save)
+// Versão: 6.0 (Preenchimento de dados corrigido, auto-save para edições e botão de salvar para novas fichas)
 import { db, collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, serverTimestamp } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData, param) {
-    const viewContainer = document.getElementById('ficha-supervisao-view');
     const contentArea = document.getElementById('ficha-supervisao-content');
-    if (!viewContainer || !contentArea) return;
+    if (!contentArea) return;
 
-    const formId = param || 'new';
+    let formId = param || 'new'; // Mantém o controle do ID da ficha atual
     let autoSaveTimer = null;
-    
-    async function loadForm() {
-        try {
-            // O HTML já é carregado pelo roteador principal, então só precisamos encontrar o formulário
-            const form = document.getElementById('ficha-supervisao-form');
-            if (!form) {
-                console.error("O formulário #ficha-supervisao-form não foi encontrado no DOM.");
-                contentArea.innerHTML = `<p class="info-card error">Erro: O template do formulário não foi carregado.</p>`;
-                return;
-            }
+    let isSaving = false;
 
-            // Lógica do formulário
-            await initializeForm(form, formId);
-
-        } catch (error) {
-            console.error("Erro ao carregar formulário:", error);
-            contentArea.innerHTML = `<p class="info-card error">Não foi possível inicializar o formulário.</p>`;
-        }
+    // Função para debounce, evita salvar a cada tecla pressionada
+    function debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => func.apply(this, args), delay);
+        };
     }
     
-    async function initializeForm(form, formId) {
+    async function initializeForm() {
+        const form = document.getElementById('ficha-supervisao-form');
+        if (!form) {
+            console.error("O formulário #ficha-supervisao-form não foi encontrado no DOM.");
+            contentArea.innerHTML = `<p class="info-card error">Erro: O template do formulário não foi carregado.</p>`;
+            return;
+        }
+
         // Preenche o nome do profissional logado
         const psicologoNomeInput = form.querySelector('#psicologoNome');
         if (psicologoNomeInput) {
             psicologoNomeInput.value = userData.nome || 'Nome não encontrado';
         }
 
+        // Lógica do campo 'Outra Abordagem'
         const abordagemSelect = form.querySelector('#psicologoAbordagem');
         const outraAbordagemContainer = form.querySelector('#outraAbordagemContainer');
         if (abordagemSelect && outraAbordagemContainer) {
@@ -43,29 +40,35 @@ export function init(db, user, userData, param) {
                 outraAbordagemContainer.style.display = abordagemSelect.value === 'Outra' ? 'block' : 'none';
             });
         }
+        
+        // Carrega a lista de supervisores
+        await populateSupervisorSelect(form);
 
         if (formId === 'new') {
-            await populateSupervisorSelect(form);
+            // Se for uma ficha nova, adiciona um botão para criar o documento
+            const formActions = form.querySelector('.form-actions');
+            const saveButton = document.createElement('button');
+            saveButton.type = 'submit';
+            saveButton.className = 'btn btn-primary';
+            saveButton.textContent = 'Criar e Salvar Ficha';
+            formActions.innerHTML = ''; // Limpa a área de ações
+            formActions.appendChild(saveButton);
+            form.addEventListener('submit', handleFormSubmit);
         } else {
+            // Se for uma ficha existente, carrega os dados e ativa o auto-save
             const docRef = doc(db, 'supervisao', formId);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                const data = docSnap.data();
-                await populateSupervisorSelect(form, data);
-                fillForm(form, data);
+                fillForm(form, docSnap.data());
+                // O Debounce garante que a função de salvar só seja chamada após o usuário parar de digitar
+                form.addEventListener('input', debounce(() => handleAutoSave(form), 2000));
             } else {
                 contentArea.innerHTML = '<p class="info-card error">Ficha não encontrada.</p>';
             }
         }
-        
-        // Adiciona listener para o auto-save
-        form.addEventListener('input', () => {
-            clearTimeout(autoSaveTimer);
-            autoSaveTimer = setTimeout(() => handleAutoSave(form, formId), 1500); // Salva 1.5s após a última digitação
-        });
     }
 
-    async function populateSupervisorSelect(form, docData = {}) {
+    async function populateSupervisorSelect(form) {
         const supervisorSelect = form.querySelector('#supervisorUid');
         if (!supervisorSelect) return;
         try {
@@ -75,10 +78,6 @@ export function init(db, user, userData, param) {
             querySnapshot.forEach(doc => {
                 const supervisor = doc.data();
                 const option = new Option(supervisor.nome, doc.id);
-                // Utiliza o UID para verificar se a opção deve ser selecionada
-                if (doc.id === docData.supervisorUid) {
-                    option.selected = true;
-                }
                 supervisorSelect.add(option);
             });
         } catch (error) {
@@ -90,56 +89,92 @@ export function init(db, user, userData, param) {
     function fillForm(form, data) {
         for (const key in data) {
             if (form.elements[key]) {
-                form.elements[key].value = data[key];
+                if(form.elements[key].type === 'select-one'){
+                    // Garante que a opção correta seja selecionada
+                    const optionExists = [...form.elements[key].options].some(opt => opt.value === data[key]);
+                    if(optionExists) form.elements[key].value = data[key];
+                } else {
+                    form.elements[key].value = data[key];
+                }
             }
         }
+        // Lógica para 'Outra' abordagem
         const abordagemSelect = form.querySelector('#psicologoAbordagem');
-        const outraAbordagemContainer = form.querySelector('#outraAbordagemContainer');
-        if (data.psicologoAbordagem) {
-            const isStandardOption = [...abordagemSelect.options].some(opt => opt.value === data.psicologoAbordagem);
-            if (!isStandardOption) {
-                abordagemSelect.value = 'Outra';
-                outraAbordagemContainer.style.display = 'block';
-                form.elements['outraAbordagem'].value = data.psicologoAbordagem;
-            } else {
-                 abordagemSelect.value = data.psicologoAbordagem;
-            }
+        if (data.psicologoAbordagem && ![...abordagemSelect.options].some(opt => opt.value === data.psicologoAbordagem)) {
+            abordagemSelect.value = 'Outra';
+            form.querySelector('#outraAbordagemContainer').style.display = 'block';
+            form.elements['outraAbordagem'].value = data.psicologoAbordagem;
+        }
+    }
+    
+    // Função para salvar uma nova ficha (acionada pelo botão)
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        if (isSaving) return;
+        isSaving = true;
+        const form = e.target;
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Salvando...';
+
+        const data = getFormData(form);
+
+        try {
+            const newDocRef = doc(collection(db, 'supervisao'));
+            data.id = newDocRef.id;
+            await setDoc(newDocRef, { ...data, createdAt: serverTimestamp() });
+            alert("Ficha criada com sucesso!");
+            // Atualiza a URL para o ID do novo documento e muda para o modo de edição com auto-save
+            formId = newDocRef.id;
+            window.location.hash = `#ficha-supervisao/${formId}`;
+            // Remove o botão de submit e ativa o auto-save
+            submitButton.remove();
+            form.removeEventListener('submit', handleFormSubmit);
+            form.addEventListener('input', debounce(() => handleAutoSave(form), 2000));
+        } catch (error) {
+            console.error("Erro ao criar a ficha:", error);
+            alert("Ocorreu um erro ao criar a ficha: " + error.message);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Criar e Salvar Ficha';
+        } finally {
+            isSaving = false;
         }
     }
 
-    async function handleAutoSave(form, currentFormId) {
-        if (currentFormId === 'new') {
-            console.log("Auto-save desativado para novas fichas. Preencha os campos obrigatórios primeiro.");
-            // Poderia adicionar uma lógica para salvar um rascunho se desejado
-            return;
+    // Função para salvar alterações em uma ficha existente (auto-save)
+    async function handleAutoSave(form) {
+        if (isSaving || formId === 'new') return;
+        isSaving = true;
+        console.log("Auto-save acionado...");
+        const data = getFormData(form);
+        try {
+            const docRef = doc(db, 'supervisao', formId);
+            await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+            console.log("Ficha atualizada com sucesso!");
+            // Adicionar um feedback visual (ex: um ícone de 'Salvo!')
+        } catch (error) {
+            console.error("Erro no auto-save da ficha:", error);
+        } finally {
+            isSaving = false;
         }
-
-        console.log("Salvando alterações...");
+    }
+    
+    // Função auxiliar para extrair dados do formulário
+    function getFormData(form) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-
         data.psicologoUid = user.uid;
         data.psicologoNome = userData.nome;
-        
         const supervisorSelect = form.elements['supervisorUid'];
         if (supervisorSelect.selectedIndex > 0) {
             data.supervisorNome = supervisorSelect.options[supervisorSelect.selectedIndex].text;
         }
-
         if (data.psicologoAbordagem === 'Outra') {
             data.psicologoAbordagem = data.outraAbordagem;
         }
         delete data.outraAbordagem;
-
-        try {
-            const docRef = doc(db, 'supervisao', currentFormId);
-            await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
-            console.log("Ficha atualizada com sucesso!");
-            // Adicionar um feedback visual para o usuário, como um ícone de "salvo"
-        } catch (error) {
-            console.error("Erro no auto-save da ficha:", error);
-        }
+        return data;
     }
 
-    loadForm();
+    initializeForm();
 }
