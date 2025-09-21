@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 7.0 (Roteamento por filtro e correção de bugs)
+// Versão: 8.0 (Roteamento por filtro, correção de bugs e modularização aprimorada)
 import {
     auth,
     db,
@@ -48,7 +48,7 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // Define TODAS as views possíveis
+    // Define TODAS as views (páginas) possíveis com suas respectivas permissões
     const allViews = [
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠', roles: ['all'] },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤', roles: ['all'] },
@@ -61,19 +61,12 @@ function initPortal(user, userData) {
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥', roles: ['all'] },
     ];
     
-    // Filtra as views com base nas funções do usuário
+    // Filtra as views que o usuário atual pode ver
     const userRoles = userData.funcoes || [];
-    const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
-    const isAtendimento = userRoles.includes('atendimento');
-
     const visibleViews = allViews.filter(view => {
         if (view.roles.includes('all')) return true;
-        if (isSupervisor && view.roles.includes('supervisor')) return true;
-        if (isAtendimento && !isSupervisor && view.roles.includes('atendimento')) return true;
-        // Adicione outras regras se necessário
-        return false;
+        return view.roles.some(role => userRoles.includes(role));
     });
-
 
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
@@ -87,9 +80,9 @@ function initPortal(user, userData) {
     }
 
     async function loadView(viewId, param = null) {
-        if (!viewId) viewId = visibleViews[0]?.id; // Pega a primeira view visível como padrão
+        if (!viewId) viewId = visibleViews[0]?.id;
         if (!viewId) {
-            contentArea.innerHTML = '<h2>Nenhuma seção disponível.</h2>';
+            contentArea.innerHTML = '<h2>Nenhuma seção disponível para seu perfil.</h2>';
             return;
         }
 
@@ -104,16 +97,14 @@ function initPortal(user, userData) {
             
             contentArea.innerHTML = await response.text();
             
-            // Tenta carregar o módulo JS correspondente
-            // Adicionado bloco try/catch para módulos sem JS
             try {
                 const viewModule = await import(`../js/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
                     viewModule.init(db, user, userData, param);
                 }
             } catch (jsError) {
-                 if (jsError.name !== 'TypeError') { // Ignora erro "Failed to fetch" se o JS não existir
-                    console.warn(`Módulo JS para a view '${viewId}' não encontrado ou falhou ao carregar.`, jsError);
+                if (!jsError.message.includes('not found')) {
+                     console.warn(`Módulo JS para a view '${viewId}' não encontrado ou falhou ao carregar.`, jsError);
                 }
             }
         } catch (error) {
@@ -135,7 +126,7 @@ function initPortal(user, userData) {
             const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
             userGreeting.textContent = `${greeting}, ${firstName}!`;
         }
-        const logoutButton = document.getElementById('logout-button');
+        const logoutButton = document.getElementById('logout-button-dashboard');
         if (logoutButton) {
             logoutButton.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -175,7 +166,7 @@ function initPortal(user, userData) {
             loadView(viewId || visibleViews[0]?.id, param);
         };
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Carga inicial
+        handleHashChange();
     }
     start();
 }
