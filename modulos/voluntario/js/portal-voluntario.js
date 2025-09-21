@@ -87,7 +87,7 @@ function initPortal(user, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const response = await fetch(`./page/${viewId}.html`); // Corrigido para buscar na pasta /page/
+            const response = await fetch(`./${viewId}.html`); // Corrigido para buscar na pasta /page/
             if (!response.ok) throw new Error(`View HTML not found for viewId: ${viewId}`);
             contentArea.innerHTML = await response.text();
             
