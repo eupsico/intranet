@@ -1,6 +1,5 @@
 let db, user, userData;
 
-// Função Debounce para evitar salvamentos excessivos
 function debounce(func, delay) {
     let timeout;
     return (...args) => {
@@ -34,19 +33,19 @@ function setupInitialData() {
 
 function setupAutoSave() {
     const form = document.getElementById('form-supervisao');
-    const debouncedSave = debounce(autoSalvarFicha, 2000); // Salva 2 segundos após a última alteração
+    const debouncedSave = debounce(autoSalvarFicha, 2000);
     form.addEventListener('input', debouncedSave);
-    form.addEventListener('change', debouncedSave); // Para selects e datas
+    form.addEventListener('change', debouncedSave);
 }
 
 function verificarCamposObrigatorios() {
     const campos = document.querySelectorAll('.required-for-autosave');
     for (const campo of campos) {
-        if (!campo.value) {
-            return false; // Se qualquer campo obrigatório estiver vazio, retorna falso
+        if (!campo.value.trim()) { // .trim() para não aceitar só espaços
+            return false;
         }
     }
-    return true; // Todos os campos obrigatórios estão preenchidos
+    return true;
 }
 
 async function loadSupervisores() {
@@ -75,16 +74,20 @@ async function loadSupervisores() {
     }
 }
 
+// ===== FUNÇÃO DE SALVAMENTO AUTOMÁTICO ATUALIZADA =====
 async function autoSalvarFicha() {
     const statusEl = document.getElementById('autosave-status');
+    if (!statusEl) return;
+
+    // Se os campos obrigatórios não estiverem preenchidos, não faz nada.
+    // O aviso agora é estático (asteriscos e texto no parágrafo).
     if (!verificarCamposObrigatorios()) {
-        statusEl.className = 'status-message required-fields-notice';
-        statusEl.textContent = 'Preencha todos os campos de Identificação para iniciar o salvamento automático.';
+        statusEl.textContent = ''; // Limpa qualquer status anterior
         return;
     }
 
-    statusEl.className = 'status-message autosave-saving';
     statusEl.textContent = 'Salvando...';
+    statusEl.style.color = '#31708f'; // Azul
     
     const supervisorSelect = document.getElementById('supervisor-nome');
     const selectedSupervisorOption = supervisorSelect.options[supervisorSelect.selectedIndex];
@@ -113,47 +116,32 @@ async function autoSalvarFicha() {
             numSessoes: document.getElementById('paciente-sessoes').value,
             queixa: document.getElementById('queixa-demanda').value,
         },
-        fase1: {
-            data: document.getElementById('fase1-data').value,
-            foco: document.getElementById('fase1-foco').value,
-            objetivos: document.getElementById('fase1-objetivos').value,
-            hipoteses: document.getElementById('fase1-hipoteses').value,
-        },
-        fase2: {
-            data: document.getElementById('fase2-data').value,
-            reavaliacao: document.getElementById('fase2-reavaliacao').value,
-            progresso: document.getElementById('fase2-progresso').value,
-        },
-        fase3: {
-            data: document.getElementById('fase3-data').value,
-            avaliacao: document.getElementById('fase3-avaliacao').value,
-            mudancas: document.getElementById('fase3-mudancas').value,
-        },
-        observacoesFinais: {
-            desfecho: document.getElementById('desfecho').value,
-            dataDesfecho: document.getElementById('data-desfecho').value,
-            observacoes: document.getElementById('obs-finais').value,
-        },
-        supervisorFields: {
-            fase1_obs: "", fase2_obs: "", fase3_obs: "",
-            finais_obs: "", assinatura: ""
-        }
+        fase1: { data: document.getElementById('fase1-data').value, foco: document.getElementById('fase1-foco').value, objetivos: document.getElementById('fase1-objetivos').value, hipoteses: document.getElementById('fase1-hipoteses').value },
+        fase2: { data: document.getElementById('fase2-data').value, reavaliacao: document.getElementById('fase2-reavaliacao').value, progresso: document.getElementById('fase2-progresso').value },
+        fase3: { data: document.getElementById('fase3-data').value, avaliacao: document.getElementById('fase3-avaliacao').value, mudancas: document.getElementById('fase3-mudancas').value },
+        observacoesFinais: { desfecho: document.getElementById('desfecho').value, dataDesfecho: document.getElementById('data-desfecho').value, observacoes: document.getElementById('obs-finais').value },
+        supervisorFields: { fase1_obs: "", fase2_obs: "", fase3_obs: "", finais_obs: "", assinatura: "" }
     };
 
     try {
         if (docId) {
-            // Se já existe um ID, atualiza o documento existente
             await db.collection("fichas-supervisao-casos").doc(docId).set(formData, { merge: true });
         } else {
-            // Se não existe ID, cria um novo documento
             const newDocRef = await db.collection("fichas-supervisao-casos").add(formData);
-            document.getElementById('document-id').value = newDocRef.id; // Armazena o novo ID
+            document.getElementById('document-id').value = newDocRef.id;
         }
-        statusEl.className = 'status-message autosave-success';
         statusEl.textContent = 'Salvo ✓';
+        statusEl.style.color = '#3c763d'; // Verde
     } catch (error) {
         console.error("Erro no salvamento automático:", error);
-        statusEl.className = 'status-message required-fields-notice';
         statusEl.textContent = 'Erro ao salvar!';
+        statusEl.style.color = '#a94442'; // Vermelho
+    } finally {
+        // Limpa a mensagem de status após alguns segundos
+        setTimeout(() => {
+            if (statusEl.textContent !== 'Salvando...') {
+                statusEl.textContent = '';
+            }
+        }, 3000);
     }
 }

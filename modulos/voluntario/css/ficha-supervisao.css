@@ -145,3 +145,25 @@ textarea.form-control {
     background-color: #dff0d8;
     border-color: #d6e9c6;
 }
+/* Estilo para o asterisco de campo obrigatório */
+.required-asterisk {
+    color: #e74c3c;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+/* Estrutura do cabeçalho do formulário */
+.form-header .header-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Novo status de salvamento (discreto) */
+#autosave-status {
+    font-size: 0.9em;
+    font-style: italic;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
