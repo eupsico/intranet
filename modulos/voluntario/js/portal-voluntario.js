@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 4.1 (Adiciona gerenciamento de histórico de navegação para corrigir loops)
+// Versão: 4.2 (Corrige erro crítico de inicialização e mantém o histórico de navegação)
 import {
     auth,
     db,
@@ -10,7 +10,20 @@ import {
     updateDoc
 } from '../../../assets/js/firebase-init.js';
 
-// ... (função updateUserPhotoOnLogin continua a mesma)
+// CORREÇÃO: A função que faltava foi restaurada aqui.
+async function updateUserPhotoOnLogin(user, userData) {
+    const firestorePhotoUrl = userData.fotoUrl || '';
+    const googlePhotoUrl = user.photoURL || '';
+    if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
+        try {
+            const userDocRef = doc(db, "usuarios", user.uid);
+            await updateDoc(userDocRef, { fotoUrl: googlePhotoUrl });
+            userData.fotoUrl = googlePhotoUrl;
+        } catch (error) {
+            console.error("Erro ao atualizar a foto do usuário:", error);
+        }
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, async (user) => {
@@ -19,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
                 const userData = userDocSnap.data();
-                await updateUserPhotoOnLogin(user, userData);
+                await updateUserPhotoOnLogin(user, userData); // A chamada agora funcionará
                 initPortal(user, userData);
             } else {
                 window.location.href = '../../../index.html';
@@ -34,7 +47,7 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
     const loadedCSS = new Set();
-    let viewHistory = []; // NOVO: Array para guardar o histórico de navegação
+    let viewHistory = [];
 
     const views = [
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
@@ -55,7 +68,6 @@ function initPortal(user, userData) {
         views.splice(3, 0, { id: 'painel-supervisionado', name: 'Supervisão', icon: '🎓' });
     }
 
-    // NOVO: Adiciona a view de ficha de supervisão para o roteador, mas não ao menu
     views.push({ id: 'ficha-supervisao', name: 'Ficha de Supervisão' });
     
     window.viewNavigator = {
@@ -80,7 +92,7 @@ function initPortal(user, userData) {
             <li class="menu-separator"></li>
         `;
         views.forEach(view => {
-            if (view.icon) { // Apenas adiciona ao menu se tiver um ícone
+            if (view.icon) {
                 sidebarMenu.innerHTML += `<li><a href="#${view.id}" data-view="${view.id}"><span class="icon">${view.icon}</span><span>${view.name}</span></a></li>`;
             }
         });
@@ -99,16 +111,14 @@ function initPortal(user, userData) {
             
             let htmlContent = await response.text();
             
-            // Se for a ficha, carrega o HTML do formulário dentro da view do painel
             if (viewId === 'ficha-supervisao') {
                 const formResponse = await fetch('./ficha-supervisao-completa.html');
                 if (!formResponse.ok) throw new Error('Arquivo do formulário da ficha não encontrado.');
                 const formHtml = await formResponse.text();
                 
-                // Injeta o formulário e um botão de voltar
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlContent;
-                tempDiv.querySelector('.tabs-container').remove(); // Remove as abas
+                tempDiv.querySelector('.tabs-container').remove();
                 tempDiv.querySelector('.tab-content').innerHTML = formHtml;
                 tempDiv.querySelector('.tab-content').style.display = 'block';
                 tempDiv.querySelector('.dashboard-section h1').textContent = 'Ficha de Acompanhamento';
@@ -150,7 +160,27 @@ function initPortal(user, userData) {
         }
     }
     
-    // ... (função setupLayout continua a mesma)
+    function setupLayout() {
+        const userPhoto = document.getElementById('user-photo-header');
+        if (userPhoto) {
+            userPhoto.src = userData.fotoUrl || '../../../assets/img/avatar-padrao.png';
+            userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
+        }
+        const userGreeting = document.getElementById('user-greeting');
+        if (userGreeting && userData.nome) {
+            const firstName = userData.nome.split(' ')[0];
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+            userGreeting.textContent = `${greeting}, ${firstName}!`;
+        }
+        const logoutButton = document.getElementById('logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                signOut(auth).catch(error => console.error("Erro ao fazer logout:", error));
+            });
+        }
+    }
 
     function start() {
         setupLayout();
@@ -163,7 +193,6 @@ function initPortal(user, userData) {
             }
             const [viewId, param] = hash.split('/');
             
-            // Adiciona a view ao histórico apenas se for uma navegação principal
             if (!param && viewHistory[viewHistory.length - 1] !== `#${viewId}`) {
                 viewHistory.push(`#${viewId}`);
             }
