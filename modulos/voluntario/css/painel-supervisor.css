@@ -1,0 +1,126 @@
+/* Arquivo: /modulos/voluntario/css/painel-supervisor.css (NOVO) */
+
+/* --- Estilos para o Card de Perfil do Supervisor --- */
+.supervisor-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    background-color: var(--cor-fundo);
+    border-radius: var(--borda-radius);
+    padding: 20px;
+}
+
+.supervisor-card-left {
+    flex: 1;
+    min-width: 250px;
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    padding: 25px;
+    border-radius: var(--borda-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.photo-container {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid var(--cor-surface);
+    margin-bottom: 15px;
+}
+
+.supervisor-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.supervisor-identity h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.title-box {
+    background-color: var(--cor-secundaria);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+    margin: 5px 0 15px 0;
+    display: inline-block;
+}
+
+.supervisor-contact {
+    font-size: 0.9em;
+    line-height: 1.5;
+    margin-top: auto;
+}
+.supervisor-contact p {
+    margin: 2px 0;
+}
+
+.supervisor-card-right {
+    flex: 2;
+    min-width: 300px;
+    position: relative;
+}
+
+.edit-supervisor-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.profile-header h3 {
+    margin-top: 0;
+    color: var(--cor-primaria);
+    border-bottom: 2px solid var(--cor-primaria);
+    padding-bottom: 10px;
+}
+
+.profile-section {
+    margin-top: 20px;
+}
+
+.profile-section h4 {
+    color: var(--cor-texto-principal);
+    font-size: 1.1em;
+    margin-bottom: 8px;
+}
+
+.profile-section ul {
+    list-style-type: none;
+    padding-left: 0;
+    color: var(--cor-texto-secundario);
+}
+.profile-section ul li {
+    padding: 5px 0;
+}
+
+/* --- Tabela Moderna para Supervisionados e Agendamentos --- */
+.table-modern {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+.table-modern thead th {
+    background-color: var(--cor-fundo);
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--cor-borda);
+}
+.table-modern tbody td {
+    padding: 12px;
+    border-bottom: 1px solid var(--cor-borda);
+    vertical-align: middle;
+}
+.table-modern tbody tr:last-child td {
+    border-bottom: none;
+}
+.table-modern tbody tr:hover {
+    background-color: #f8f9fa;
+}

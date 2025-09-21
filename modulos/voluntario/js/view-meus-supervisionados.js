@@ -1,5 +1,5 @@
-// Arquivo: /modulos/voluntario/js/view-meus-supervisionados.js
-// Versão: 3.1 (Adaptado para a nova estrutura de abas)
+// Arquivo: /modulos/voluntario/js/view-meus-supervisionados.js (CORRIGIDO)
+// Versão: 3.2 (Simplifica a query para alinhar com as regras do Firestore)
 // Descrição: Carrega e exibe as FICHAS dos profissionais supervisionados.
 
 import { db, collection, query, where, getDocs, doc, getDoc } from '../../../assets/js/firebase-init.js';
@@ -29,6 +29,8 @@ export function init(db, user, userData) {
         if (fichas.length === 0) {
             tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada.</td></tr>';
         } else {
+            // Ordena as fichas pela data mais recente aqui no cliente
+            fichas.sort((a, b) => new Date(b.data) - new Date(a.data));
             fichas.forEach(ficha => {
                 const dataFormatada = ficha.data ? new Date(ficha.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
                 tableHtml += `
@@ -61,8 +63,8 @@ export function init(db, user, userData) {
     const popularFiltros = () => {
         const filtroProfissional = document.getElementById('filtro-profissional');
         const filtroPaciente = document.getElementById('filtro-paciente');
-        const profissionais = [...new Set(todasAsFichas.map(f => f.profissionalNome))];
-        const pacientes = [...new Set(todasAsFichas.map(f => f.iniciaisPaciente))];
+        const profissionais = [...new Set(todasAsFichas.map(f => f.profissionalNome).filter(Boolean))];
+        const pacientes = [...new Set(todasAsFichas.map(f => f.iniciaisPaciente).filter(Boolean))];
         filtroProfissional.innerHTML = '<option value="">Todos os Profissionais</option>' + profissionais.map(n => `<option value="${n}">${n}</option>`).join('');
         filtroPaciente.innerHTML = '<option value="">Todos os Pacientes</option>' + pacientes.map(i => `<option value="${i}">${i}</option>`).join('');
         filtroProfissional.addEventListener('change', aplicarFiltros);
@@ -96,8 +98,12 @@ export function init(db, user, userData) {
             const fichasPromises = querySnapshot.docs.map(async (docSnapshot) => {
                 const ficha = docSnapshot.data();
                 ficha.id = docSnapshot.id;
-                const profissionalSnap = await getDoc(doc(db, 'usuarios', ficha.profissionalUid));
-                ficha.profissionalNome = profissionalSnap.exists() ? profissionalSnap.data().nome : 'Desconhecido';
+                
+                // O nome do profissional já está na ficha, não precisa buscar de novo
+                if (!ficha.profissionalNome) {
+                    const profissionalSnap = await getDoc(doc(db, 'usuarios', ficha.profissionalUid));
+                    ficha.profissionalNome = profissionalSnap.exists() ? profissionalSnap.data().nome : 'Desconhecido';
+                }
                 return ficha;
             });
 

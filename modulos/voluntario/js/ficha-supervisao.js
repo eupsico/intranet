@@ -1,5 +1,5 @@
-// Arquivo: /modulos/voluntario/js/ficha-supervisao.js
-// Versão: 3.0 (Adaptado para a nova estrutura de abas)
+// Arquivo: /modulos/voluntario/js/ficha-supervisao.js (CORRIGIDO)
+// Versão: 3.1 (Garante o salvamento de 'profissionalUid' e 'supervisorUid')
 // Descrição: Controla a criação e edição das fichas de acompanhamento.
 
 import { db, collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, serverTimestamp } from '../../../assets/js/firebase-init.js';
@@ -9,13 +9,13 @@ export function init(db, user, userData, param) {
     if (!formContainer) return;
 
     const formId = param || 'new';
-
-    // O HTML do formulário já foi carregado pelo painel-supervisionado.js
-    // Agora, apenas adicionamos a interatividade.
-    
     const form = document.getElementById('ficha-supervisao-form');
     
-    // Preenche o nome do psicólogo logado
+    if (!form) {
+        console.error("O formulário #ficha-supervisao-form não foi encontrado no DOM.");
+        return;
+    }
+    
     const psicologoNomeInput = form.querySelector('#psicologoNome');
     if (psicologoNomeInput) {
         psicologoNomeInput.value = userData.nome;
@@ -54,10 +54,19 @@ export function init(db, user, userData, param) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        data.profissionalUid = user.uid;
+        // --- CORREÇÃO CRÍTICA ---
+        // Garante que os UIDs essenciais para as regras de segurança sejam salvos.
+        data.profissionalUid = user.uid; // UID do usuário logado (o profissional)
+        // O valor do select 'supervisorUid' já é o ID do supervisor, então ele é pego pelo Object.fromEntries.
+        
         data.psicologoNome = userData.nome;
         const supervisorSelect = form.elements['supervisorUid'];
-        data.supervisorNome = supervisorSelect.options[supervisorSelect.selectedIndex].text;
+        if (supervisorSelect.selectedIndex > 0) {
+            data.supervisorNome = supervisorSelect.options[supervisorSelect.selectedIndex].text;
+        } else {
+            data.supervisorNome = ''; // Garante que o campo exista mesmo se ninguém for selecionado
+        }
+
 
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true;
@@ -68,12 +77,12 @@ export function init(db, user, userData, param) {
                 const newDocRef = doc(collection(db, 'supervisao'));
                 await setDoc(newDocRef, { ...data, createdAt: serverTimestamp() });
                 alert("Ficha salva com sucesso!");
-                window.location.hash = '#painel-supervisionado'; // Volta para o painel
+                window.location.hash = '#painel-supervisionado';
             } else {
                 const docRef = doc(db, 'supervisao', formId);
                 await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
                 alert("Ficha atualizada com sucesso!");
-                window.location.hash = '#painel-supervisionado'; // Volta para o painel
+                window.location.hash = '#painel-supervisionado';
             }
         } catch (error) {
             console.error("Erro ao salvar a ficha:", error);
