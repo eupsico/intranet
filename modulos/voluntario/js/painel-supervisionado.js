@@ -1,5 +1,6 @@
 // Arquivo: /modulos/voluntario/js/painel-supervisionado.js
-// Versão: 2.0 (Lógica de abas simplificada para usar roteamento por hash)
+// Versão: 3.0 (Lógica de abas simplificada para usar roteamento por hash)
+// Descrição: Controla as abas "Acompanhamentos" e "Supervisores", e navega para a ficha.
 
 export function init(db, user, userData) {
     const view = document.querySelector('.view-container');
@@ -10,6 +11,7 @@ export function init(db, user, userData) {
     const loadedTabs = new Set();
 
     const loadTabModule = async (tabId) => {
+        // Não carrega o mesmo módulo duas vezes
         if (loadedTabs.has(tabId)) return;
 
         try {
@@ -23,7 +25,7 @@ export function init(db, user, userData) {
                     module = await import('./ver-supervisores.js');
                     break;
                 default:
-                    return; // A aba 'ficha-supervisao' agora é tratada por navegação de hash
+                    return; // Ignora a aba 'ficha-supervisao' que é tratada pela navegação
             }
 
             if (module && typeof module.init === 'function') {
@@ -43,16 +45,17 @@ export function init(db, user, userData) {
         tabContainer.addEventListener('click', (e) => {
             const target = e.target.closest('.tab-link');
             if (target) {
-                e.preventDefault(); // Previne o comportamento padrão do link/botão
+                e.preventDefault(); // Previne o comportamento padrão para controlar a navegação
 
                 const tabId = target.dataset.tab;
 
-                // Se a aba for 'ficha-supervisao', navega para a rota de criação de nova ficha
+                // Se for a aba da ficha, apenas muda a URL. O roteador principal cuidará do resto.
                 if (tabId === 'ficha-supervisao') {
                     window.location.hash = '#ficha-supervisao/new';
-                    return; // Interrompe a execução para o roteador principal assumir
+                    return;
                 }
 
+                // Lógica para as outras abas
                 tabContainer.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
                 target.classList.add('active');
 
@@ -65,21 +68,25 @@ export function init(db, user, userData) {
         });
     }
 
-    // Carrega a primeira aba visível ao entrar na página, se não for a ficha
-    const activeTab = tabContainer?.querySelector('.tab-link.active');
-    if (activeTab && activeTab.dataset.tab !== 'ficha-supervisao') {
-        loadTabModule(activeTab.dataset.tab);
+    // Ao carregar o painel, verifica se alguma aba já deveria estar ativa (exceto a ficha)
+    const currentHash = window.location.hash.substring(1);
+    const activeTabButton = tabContainer?.querySelector(`.tab-link[data-tab="${currentHash}"]`);
+    
+    if (activeTabButton && currentHash !== 'ficha-supervisao') {
+         activeTabButton.click();
     } else {
-        // Garante que a primeira aba (Ficha de Supervisão) seja ativada visualmente
-        const firstTab = tabContainer?.querySelector('[data-tab="ficha-supervisao"]');
+        // Se nenhuma aba estiver ativa ou for a da ficha, garante que a primeira aba esteja visualmente ativa.
+        const firstTab = tabContainer?.querySelector('.tab-link');
         if (firstTab) {
-            tabContainer.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
-            firstTab.classList.add('active');
-            contentSections.forEach(section => {
-                section.style.display = section.id === 'ficha-supervisao' ? 'block' : 'none';
-            });
-            // Carrega o módulo da ficha pela primeira vez
-            loadTabModule('ficha-supervisao');
+             tabContainer.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+             firstTab.classList.add('active');
+             contentSections.forEach(section => {
+                section.style.display = section.id === firstTab.dataset.tab ? 'block' : 'none';
+             });
+             // Carrega o módulo da primeira aba, se não for a ficha
+             if(firstTab.dataset.tab !== 'ficha-supervisao'){
+                loadTabModule(firstTab.dataset.tab);
+             }
         }
     }
 }
