@@ -117,3 +117,31 @@ textarea.form-control {
         grid-template-columns: 1fr; /* Coluna única em telas pequenas */
     }
 }
+/* Estilos para as mensagens de status */
+.status-message {
+    padding: 12px;
+    margin: 0 0 25px 0;
+    border-radius: var(--borda-radius);
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.95em;
+    border: 1px solid transparent;
+}
+
+.required-fields-notice {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+.autosave-saving {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+}
+
+.autosave-success {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}

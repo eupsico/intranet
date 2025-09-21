@@ -1,6 +1,13 @@
-// /modulos/voluntario/js/ficha-supervisao.js (SUBSTITUIR)
-
 let db, user, userData;
+
+// Função Debounce para evitar salvamentos excessivos
+function debounce(func, delay) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
 
 export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
@@ -14,7 +21,7 @@ export function init(dbRef, userRef, userDataRef) {
             return;
         }
         setupInitialData();
-        setupEventListeners();
+        setupAutoSave();
         loadSupervisores();
     }, 0);
 }
@@ -25,76 +32,70 @@ function setupInitialData() {
     document.getElementById('data-supervisao').valueAsDate = new Date();
 }
 
-function setupEventListeners() {
+function setupAutoSave() {
     const form = document.getElementById('form-supervisao');
-    const btnLimpar = document.getElementById('btn-limpar-formulario');
-    const abordagemSelect = document.getElementById('abordagem-teorica');
-
-    form.addEventListener('submit', salvarFicha);
-    
-    btnLimpar.addEventListener('click', () => {
-        form.reset();
-        setupInitialData();
-        document.getElementById('outra-abordagem-container').style.display = 'none';
-    });
-
-    abordagemSelect.addEventListener('change', (e) => {
-        const outraContainer = document.getElementById('outra-abordagem-container');
-        outraContainer.style.display = (e.target.value === 'Outra') ? 'block' : 'none';
-    });
+    const debouncedSave = debounce(autoSalvarFicha, 2000); // Salva 2 segundos após a última alteração
+    form.addEventListener('input', debouncedSave);
+    form.addEventListener('change', debouncedSave); // Para selects e datas
 }
 
-// ===== FUNÇÃO CORRIGIDA =====
+function verificarCamposObrigatorios() {
+    const campos = document.querySelectorAll('.required-for-autosave');
+    for (const campo of campos) {
+        if (!campo.value) {
+            return false; // Se qualquer campo obrigatório estiver vazio, retorna falso
+        }
+    }
+    return true; // Todos os campos obrigatórios estão preenchidos
+}
+
 async function loadSupervisores() {
     const select = document.getElementById('supervisor-nome');
     select.innerHTML = '<option value="">Carregando...</option>';
     try {
-        // Query ajustada para ser igual à do seu projeto original
         const supervisoresQuery = db.collection('usuarios')
             .where('funcoes', 'array-contains', 'supervisor')
             .where('inativo', '==', false);
-        
         const querySnapshot = await supervisoresQuery.get();
-        
         if (querySnapshot.empty) {
             select.innerHTML = '<option value="">Nenhum supervisor encontrado</option>';
             return;
         }
         let options = '<option value="">Selecione um supervisor</option>';
-        // Ordena os resultados no JavaScript para evitar a necessidade de outro índice
         const supervisores = [];
         querySnapshot.forEach(doc => supervisores.push(doc.data()));
         supervisores.sort((a, b) => a.nome.localeCompare(b.nome));
-
         supervisores.forEach(supervisor => {
-             options += `<option value="${supervisor.uid}" data-nome="${supervisor.nome}">${supervisor.nome}</option>`;
+            options += `<option value="${supervisor.uid}" data-nome="${supervisor.nome}">${supervisor.nome}</option>`;
         });
-        
         select.innerHTML = options;
-
     } catch (error) {
         console.error("Erro ao carregar supervisores:", error);
         select.innerHTML = '<option value="">Erro ao carregar</option>';
     }
 }
 
-async function salvarFicha(event) {
-    event.preventDefault();
-    const btnSalvar = document.getElementById('btn-salvar-ficha');
-    btnSalvar.disabled = true;
-    btnSalvar.textContent = 'Salvando...';
+async function autoSalvarFicha() {
+    const statusEl = document.getElementById('autosave-status');
+    if (!verificarCamposObrigatorios()) {
+        statusEl.className = 'status-message required-fields-notice';
+        statusEl.textContent = 'Preencha todos os campos de Identificação para iniciar o salvamento automático.';
+        return;
+    }
+
+    statusEl.className = 'status-message autosave-saving';
+    statusEl.textContent = 'Salvando...';
     
     const supervisorSelect = document.getElementById('supervisor-nome');
     const selectedSupervisorOption = supervisorSelect.options[supervisorSelect.selectedIndex];
-
     const abordagem = document.getElementById('abordagem-teorica').value;
     const abordagemTexto = abordagem === 'Outra' ? document.getElementById('outra-abordagem-texto').value : abordagem;
+    const docId = document.getElementById('document-id').value;
 
     const formData = {
-        criadoEm: new Date(),
+        lastUpdated: new Date(),
         psicologoUid: user.uid,
         psicologoNome: document.getElementById('psicologo-nome').value,
-        
         identificacaoGeral: {
             supervisorUid: selectedSupervisorOption.value,
             supervisorNome: selectedSupervisorOption.dataset.nome,
@@ -140,16 +141,19 @@ async function salvarFicha(event) {
     };
 
     try {
-        await db.collection("fichas-supervisao-casos").add(formData);
-        alert("Ficha de caso salva com sucesso!");
-        document.getElementById('form-supervisao').reset();
-        setupInitialData();
-        document.getElementById('outra-abordagem-container').style.display = 'none';
+        if (docId) {
+            // Se já existe um ID, atualiza o documento existente
+            await db.collection("fichas-supervisao-casos").doc(docId).set(formData, { merge: true });
+        } else {
+            // Se não existe ID, cria um novo documento
+            const newDocRef = await db.collection("fichas-supervisao-casos").add(formData);
+            document.getElementById('document-id').value = newDocRef.id; // Armazena o novo ID
+        }
+        statusEl.className = 'status-message autosave-success';
+        statusEl.textContent = 'Salvo ✓';
     } catch (error) {
-        console.error("Erro ao salvar a ficha:", error);
-        alert("Ocorreu um erro ao salvar a ficha. Tente novamente.");
-    } finally {
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Ficha';
+        console.error("Erro no salvamento automático:", error);
+        statusEl.className = 'status-message required-fields-notice';
+        statusEl.textContent = 'Erro ao salvar!';
     }
 }
