@@ -1,5 +1,5 @@
-// Arquivo: /modulos/voluntario/js/fichas-supervisao.js
-// Versão: 3.0 (Filtro de paciente e adaptado para abas)
+// Arquivo: /modulos/voluntario/js/fichas-supervisao.js (CORRIGIDO)
+// Versão: 3.1 (Corrige consulta de acordo com as novas regras do Firebase)
 // Descrição: Lista as fichas de supervisão do psicólogo com filtro.
 
 import { db, collection, getDocs, query, where, orderBy } from '../../../assets/js/firebase-init.js';
@@ -26,6 +26,9 @@ export function init(db, user, userData) {
         if (fichas.length === 0) {
             tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada.</td></tr>';
         } else {
+            // Ordena as fichas pela data mais recente primeiro
+            fichas.sort((a, b) => new Date(b.data) - new Date(a.data));
+            
             fichas.forEach(ficha => {
                 const dataFormatada = ficha.data ? new Date(ficha.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A';
                 tableHtml += `
@@ -70,7 +73,10 @@ export function init(db, user, userData) {
 
         try {
             const supervisaoRef = collection(db, 'supervisao');
-            const q = query(supervisaoRef, where('profissionalUid', '==', user.uid), orderBy('data', 'desc'));
+            
+            // CORREÇÃO: A regra "list" foi removida. A nova regra "read" permite a consulta se
+            // a cláusula 'where' corresponder ao UID do usuário.
+            const q = query(supervisaoRef, where('profissionalUid', '==', user.uid));
             const querySnapshot = await getDocs(q);
 
             todasAsFichas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -79,7 +85,7 @@ export function init(db, user, userData) {
 
         } catch (error) {
             console.error("Erro ao carregar registros:", error);
-            document.getElementById('lista-fichas-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar seus acompanhamentos.</div>`;
+            document.getElementById('lista-fichas-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar seus acompanhamentos. Verifique o console para mais detalhes.</div>`;
         }
     }
 
