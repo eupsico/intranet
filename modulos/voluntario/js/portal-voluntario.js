@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 5.0 (Roteamento simplificado para estabilidade)
+// Versão: 6.0 (Roteamento simplificado e correção do menu)
 import {
     auth,
     db,
@@ -34,6 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await updateUserPhotoOnLogin(user, userData);
                 initPortal(user, userData);
             } else {
+                alert("Seus dados de usuário não foram encontrados. Contate o suporte.");
+                signOut(auth);
                 window.location.href = '../../../index.html';
             }
         } else {
@@ -93,6 +95,7 @@ function initPortal(user, userData) {
                 viewModule.init(db, user, userData, param);
             }
         } catch (error) {
+            // Ignora o erro "Failed to fetch" que ocorre com o import dinâmico quando não há JS
             if (!error.message.includes('Failed to fetch dynamically imported module')) {
                 console.error(`Erro ao carregar a view ${viewId}:`, error);
                 contentArea.innerHTML = `<div class="dashboard-section"><p style="color: var(--cor-erro);">Erro Crítico: A página <strong>${viewId}</strong> não pôde ser carregada.</p></div>`;
@@ -101,7 +104,6 @@ function initPortal(user, userData) {
     }
     
     function setupLayout() {
-        // ... (código existente para foto, saudação e logout)
         const userPhoto = document.getElementById('user-photo-header');
         if (userPhoto) {
             userPhoto.src = userData.fotoUrl || '../../../assets/img/avatar-padrao.png';
@@ -121,6 +123,29 @@ function initPortal(user, userData) {
                 signOut(auth).catch(error => console.error("Erro ao fazer logout:", error));
             });
         }
+        
+        // CORREÇÃO: Lógica do menu hambúrguer
+        const layoutContainer = document.querySelector('.layout-container');
+        const sidebar = document.querySelector('.sidebar');
+        const toggleButton = document.getElementById('sidebar-toggle');
+        const overlay = document.getElementById('menu-overlay');
+
+        if (toggleButton) {
+            toggleButton.addEventListener('click', () => {
+                 if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('is-visible');
+                    layoutContainer.classList.toggle('mobile-menu-open');
+                } else {
+                    layoutContainer.classList.toggle('sidebar-collapsed');
+                }
+            });
+        }
+        if(overlay) {
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('is-visible');
+                layoutContainer.classList.remove('mobile-menu-open');
+            });
+        }
     }
 
     function start() {
@@ -133,7 +158,7 @@ function initPortal(user, userData) {
             loadView(viewId || defaultViewId, param);
         };
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange();
+        handleHashChange(); // Carga inicial
     }
     start();
 }

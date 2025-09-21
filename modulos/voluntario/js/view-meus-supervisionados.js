@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/view-meus-supervisionados.js (CORRIGIDO)
-// Versão: 3.5 (Navegação corrigida)
+// Versão: 3.6 (Navegação corrigida e usa 'psicologoUid')
 // Descrição: Carrega e exibe as FICHAS dos profissionais supervisionados.
 
 import { db, collection, query, where, getDocs, doc, getDoc } from '../../../assets/js/firebase-init.js';
@@ -35,7 +35,7 @@ export function init(db, user, userData) {
                 tableHtml += `
                     <tr>
                         <td>${dataFormatada}</td>
-                        <td>${ficha.profissionalNome || 'Não informado'}</td>
+                        <td>${ficha.psicologoNome || 'Não informado'}</td>
                         <td>${ficha.pacienteIniciais || 'N/A'}</td>
                         <td><a href="#ficha-supervisao/${ficha.id}" class="btn btn-primary">Ver Ficha</a></td>
                     </tr>
@@ -52,7 +52,7 @@ export function init(db, user, userData) {
         let fichasFiltradas = todasAsFichas;
 
         if (profSelecionado) {
-            fichasFiltradas = fichasFiltradas.filter(f => f.profissionalNome === profSelecionado);
+            fichasFiltradas = fichasFiltradas.filter(f => f.psicologoNome === profSelecionado);
         }
         if (pacSelecionado) {
             fichasFiltradas = fichasFiltradas.filter(f => f.pacienteIniciais && f.pacienteIniciais === pacSelecionado);
@@ -63,7 +63,7 @@ export function init(db, user, userData) {
     const popularFiltros = () => {
         const filtroProfissional = document.getElementById('filtro-profissional');
         const filtroPaciente = document.getElementById('filtro-paciente');
-        const profissionais = [...new Set(todasAsFichas.map(f => f.profissionalNome).filter(Boolean))];
+        const profissionais = [...new Set(todasAsFichas.map(f => f.psicologoNome).filter(Boolean))];
         const pacientes = [...new Set(todasAsFichas.map(f => f.pacienteIniciais).filter(Boolean))];
         
         filtroProfissional.innerHTML = '<option value="">Todos os Profissionais</option>' + profissionais.map(n => `<option value="${n}">${n}</option>`).join('');
@@ -97,18 +97,12 @@ export function init(db, user, userData) {
             const q = query(supervisaoRef, where('supervisorUid', '==', user.uid));
             const querySnapshot = await getDocs(q);
             
-            const fichasPromises = querySnapshot.docs.map(async (docSnapshot) => {
+            todasAsFichas = querySnapshot.docs.map(docSnapshot => {
                 const ficha = docSnapshot.data();
                 ficha.id = docSnapshot.id;
-                
-                if (!ficha.profissionalNome && ficha.psicologoUid) { // Corrigido para psicologoUid
-                    const profissionalSnap = await getDoc(doc(db, 'usuarios', ficha.psicologoUid));
-                    ficha.profissionalNome = profissionalSnap.exists() ? profissionalSnap.data().nome : 'Desconhecido';
-                }
                 return ficha;
             });
 
-            todasAsFichas = await Promise.all(fichasPromises);
             renderFichas(todasAsFichas);
             popularFiltros();
 
