@@ -80,19 +80,19 @@ function initPortal(user, userData) {
         });
     }
 
-    async function loadView(viewId, param = null) {
+        async function loadView(viewId, param = null) {
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const response = await fetch(`./${viewId}.html`);
+            const response = await fetch(`./page/${viewId}.html`); // Corrigido para buscar na pasta /page/
             if (!response.ok) throw new Error(`View HTML not found for viewId: ${viewId}`);
             contentArea.innerHTML = await response.text();
             
             try {
-                const cssFilesToLoad = ['supervisao-geral', viewId];
+                const cssFilesToLoad = [viewId]; 
                 cssFilesToLoad.forEach(cssName => {
                     const cssId = `css-${cssName}`;
                     if (!document.getElementById(cssId)) {
@@ -110,7 +110,7 @@ function initPortal(user, userData) {
                 }
             } catch (jsError) {
                 if (jsError.message.includes('Failed to fetch dynamically imported module')) {
-                    console.log(`Nenhum módulo JS encontrado ou necessário para a view '${viewId}'.`);
+                    console.log(`Nenhum módulo JS ou CSS encontrado ou necessário para a view '${viewId}'.`);
                 } else {
                     console.error(`Erro no script da view '${viewId}':`, jsError);
                 }
