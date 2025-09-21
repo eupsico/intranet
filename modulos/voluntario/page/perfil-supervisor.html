@@ -1,12 +1,24 @@
 <div class="view-container">
     <div class="dashboard-section">
-        <h2>Meu Perfil de Supervisor</h2>
-        <p>Visualize e edite suas informações de perfil, áreas de atuação e horários de supervisão.</p>
+        <h1>Painel do Supervisor</h1>
+        <p>Gerencie seu perfil, supervisionados e agendamentos.</p>
     </div>
 
-    <div id="supervisor-profile-container" class="dashboard-section">
+    <nav class="tabs-container" id="supervisor-tabs" aria-label="Navegação do Painel do Supervisor">
+        <button class="tab-link active" data-tab="meu-perfil">Meu Perfil</button>
+        <button class="tab-link" data-tab="meus-supervisionados">Meus Supervisionados</button>
+        <button class="tab-link" data-tab="meus-agendamentos">Meus Agendamentos</button>
+    </nav>
+
+    <section id="meu-perfil" class="tab-content">
         <div class="loading-spinner"></div>
-    </div>
+    </section>
+    <section id="meus-supervisionados" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
+    </section>
+    <section id="meus-agendamentos" class="tab-content" style="display: none;">
+        <div class="loading-spinner"></div>
+    </section>
 </div>
 
 <div id="edit-supervisor-profile-modal" class="modal-overlay" style="display: none;">
