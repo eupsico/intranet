@@ -1,17 +1,18 @@
-import { loadHTML } from './portal-voluntario.js';
+// AQUI ESTÁ A MUDANÇA: Importa do novo arquivo 'utils.js'
+import { loadHTML } from './utils.js';
 
 // Mapeamento de abas para arquivos
 const tabContent = {
     'ficha-supervisao': 'ficha-supervisao.html',
-    'meus-acompanhamentos': 'fichas-supervisao.html', // Usaremos este nome na próxima etapa
-    'ver-supervisores': 'ver-supervisores.html'     // Usaremos este nome na etapa final
+    'meus-acompanhamentos': 'fichas-supervisao.html',
+    'ver-supervisores': 'ver-supervisores.html'
 };
 
 // Mapeamento de abas para scripts
 const tabScripts = {
     'ficha-supervisao': '../js/ficha-supervisao.js',
-    'meus-acompanhamentos': '../js/fichas-supervisao.js', // Usaremos este nome na próxima etapa
-    'ver-supervisores': '../js/ver-supervisores.js'       // Usaremos este nome na etapa final
+    'meus-acompanhamentos': '../js/fichas-supervisao.js',
+    'ver-supervisores': '../js/ver-supervisores.js'
 };
 
 let db, user, userData;
@@ -27,7 +28,6 @@ export function init(dbRef, userRef, userDataRef) {
     if (tabsContainer) {
         tabsContainer.addEventListener('click', handleTabClick);
         
-        // Carrega a aba padrão (Ficha de Supervisão)
         const initialTab = tabsContainer.querySelector('.tab-link.active');
         if (initialTab) {
             loadTabContent(initialTab.dataset.tab);
@@ -56,7 +56,6 @@ async function loadTabContent(tabName) {
         return;
     }
 
-    // Remove script antigo se houver
     const oldScript = document.querySelector('script[data-module-script]');
     if (oldScript) {
         oldScript.remove();
@@ -71,14 +70,25 @@ async function loadTabContent(tabName) {
     }
 
     try {
+        // Agora usa o loadHTML importado de utils.js
         const html = await loadHTML(htmlFile);
         contentArea.innerHTML = html;
 
         const scriptFile = tabScripts[tabName];
         if (scriptFile) {
-            // Importa e inicializa o módulo JS da aba
             const module = await import(scriptFile);
             if (module.init) {
+                // Adiciona um data-attribute para identificar o script do módulo carregado
+                const scriptElement = document.createElement('script');
+                scriptElement.type = 'module';
+                scriptElement.dataset.moduleScript = tabName;
+                scriptElement.innerHTML = `
+                    import * as currentModule from '${scriptFile}';
+                    // Você pode chamar a função init aqui se precisar de um escopo isolado
+                `;
+                document.body.appendChild(scriptElement);
+
+                // Inicializa o módulo
                 module.init(db, user, userData);
             }
         }
