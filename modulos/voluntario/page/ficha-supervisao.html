@@ -5,25 +5,63 @@
     </div>
 
     <form id="form-supervisao" class="modern-form">
+        <input type="hidden" id="document-id">
+
         <fieldset>
             <legend>Identificação Geral</legend>
             <div class="form-row cols-3">
                 <div class="form-group">
                     <label for="supervisor-nome">Nome do Supervisor(a)</label>
-                    <select id="supervisor-nome" name="supervisorNome" class="form-control" required>
+                    <select id="supervisor-nome" name="supervisor-nome" class="form-control required-for-autosave" required>
                         <option value="">Carregando...</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="data-supervisao">Data da Supervisão</label>
-                    <input type="date" id="data-supervisao" name="data-supervisao" class="form-control" required>
+                    <input type="date" id="data-supervisao" name="data-supervisao" class="form-control required-for-autosave" required>
                 </div>
                 <div class="form-group">
                     <label for="data-inicio-terapia">Data de Início da Terapia</label>
-                    <input type="date" id="data-inicio-terapia" name="data-inicio-terapia" class="form-control">
+                    <input type="date" id="data-inicio-terapia" name="data-inicio-terapia" class="form-control required-for-autosave">
                 </div>
             </div>
         </fieldset>
+        
+        <fieldset>
+            <legend>2. Identificação do Caso (dados sigilosos)</legend>
+            <div class="form-row cols-4">
+                <div class="form-group">
+                    <label for="paciente-iniciais">Iniciais do(a) Paciente</label>
+                    <input type="text" id="paciente-iniciais" name="paciente-iniciais" class="form-control required-for-autosave" placeholder="Ex: A.B.C." required>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-idade">Idade</label>
+                    <input type="number" id="paciente-idade" name="paciente-idade" class="form-control required-for-autosave">
+                </div>
+                <div class="form-group">
+                    <label for="paciente-genero">Gênero</label>
+                    <select id="paciente-genero" name="paciente-genero" class="form-control required-for-autosave">
+                        <option value="">Selecione...</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Nao-binario">Não-binário</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-sessoes">Nº de Sessões</label>
+                    <input type="number" id="paciente-sessoes" name="paciente-sessoes" class="form-control required-for-autosave">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="queixa-demanda">Apresentação geral (queixa, demanda):</label>
+                <textarea id="queixa-demanda" name="queixa-demanda" rows="4" class="form-control required-for-autosave"></textarea>
+            </div>
+        </fieldset>
+
+        <div id="autosave-status" class="status-message required-fields-notice">
+            Preencha todos os campos de Identificação para iniciar o salvamento automático.
+        </div>
 
         <fieldset>
             <legend>1. Identificação do Psicólogo(a)</legend>
@@ -54,38 +92,6 @@
             <div class="form-group" id="outra-abordagem-container" style="display: none;">
                 <label for="outra-abordagem-texto">Especifique a outra abordagem</label>
                 <input type="text" id="outra-abordagem-texto" name="outra-abordagem-texto" class="form-control">
-            </div>
-        </fieldset>
-        
-        <fieldset>
-            <legend>2. Identificação do Caso (dados sigilosos)</legend>
-            <div class="form-row cols-4">
-                <div class="form-group">
-                    <label for="paciente-iniciais">Iniciais do(a) Paciente</label>
-                    <input type="text" id="paciente-iniciais" name="paciente-iniciais" class="form-control" placeholder="Ex: A.B.C." required>
-                </div>
-                <div class="form-group">
-                    <label for="paciente-idade">Idade</label>
-                    <input type="number" id="paciente-idade" name="paciente-idade" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="paciente-genero">Gênero</label>
-                    <select id="paciente-genero" name="paciente-genero" class="form-control">
-                        <option value="">Selecione...</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Feminino">Feminino</option>
-                        <option value="Nao-binario">Não-binário</option>
-                        <option value="Outro">Outro</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="paciente-sessoes">Nº de Sessões</label>
-                    <input type="number" id="paciente-sessoes" name="paciente-sessoes" class="form-control">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="queixa-demanda">Apresentação geral (queixa, demanda):</label>
-                <textarea id="queixa-demanda" name="queixa-demanda" rows="4" class="form-control"></textarea>
             </div>
         </fieldset>
 
@@ -184,9 +190,5 @@
             </div>
         </fieldset>
 
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" id="btn-limpar-formulario">Limpar</button>
-            <button type="submit" class="btn btn-primary" id="btn-salvar-ficha">Salvar Ficha</button>
-        </div>
-    </form>
+        </form>
 </div>
