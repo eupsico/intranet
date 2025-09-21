@@ -1,3 +1,5 @@
+// /modulos/voluntario/js/ficha-supervisao.js (SUBSTITUIR)
+
 let db, user, userData;
 
 export function init(dbRef, userRef, userDataRef) {
@@ -6,14 +8,11 @@ export function init(dbRef, userRef, userDataRef) {
     userData = userDataRef;
 
     setTimeout(() => {
-        console.log("Módulo Ficha de Supervisão (nova versão) inicializado.");
-        
         const form = document.getElementById('form-supervisao');
         if (!form) {
             console.error("Formulário #form-supervisao não encontrado.");
             return;
         }
-
         setupInitialData();
         setupEventListeners();
         loadSupervisores();
@@ -35,7 +34,7 @@ function setupEventListeners() {
     
     btnLimpar.addEventListener('click', () => {
         form.reset();
-        setupInitialData(); // Repopula dados fixos
+        setupInitialData();
         document.getElementById('outra-abordagem-container').style.display = 'none';
     });
 
@@ -45,20 +44,34 @@ function setupEventListeners() {
     });
 }
 
+// ===== FUNÇÃO CORRIGIDA =====
 async function loadSupervisores() {
     const select = document.getElementById('supervisor-nome');
     select.innerHTML = '<option value="">Carregando...</option>';
     try {
-        const querySnapshot = await db.collection("usuarios").where("funcoes", "array-contains", "supervisor").orderBy("nomeCompleto").get();
+        // Query ajustada para ser igual à do seu projeto original
+        const supervisoresQuery = db.collection('usuarios')
+            .where('funcoes', 'array-contains', 'supervisor')
+            .where('inativo', '==', false);
+        
+        const querySnapshot = await supervisoresQuery.get();
+        
         if (querySnapshot.empty) {
             select.innerHTML = '<option value="">Nenhum supervisor encontrado</option>';
             return;
         }
         let options = '<option value="">Selecione um supervisor</option>';
-        querySnapshot.forEach(doc => {
-            options += `<option value="${doc.id}" data-nome="${doc.data().nomeCompleto}">${doc.data().nomeCompleto}</option>`;
+        // Ordena os resultados no JavaScript para evitar a necessidade de outro índice
+        const supervisores = [];
+        querySnapshot.forEach(doc => supervisores.push(doc.data()));
+        supervisores.sort((a, b) => a.nome.localeCompare(b.nome));
+
+        supervisores.forEach(supervisor => {
+             options += `<option value="${supervisor.uid}" data-nome="${supervisor.nome}">${supervisor.nome}</option>`;
         });
+        
         select.innerHTML = options;
+
     } catch (error) {
         console.error("Erro ao carregar supervisores:", error);
         select.innerHTML = '<option value="">Erro ao carregar</option>';
@@ -120,7 +133,6 @@ async function salvarFicha(event) {
             dataDesfecho: document.getElementById('data-desfecho').value,
             observacoes: document.getElementById('obs-finais').value,
         },
-        // Campos do supervisor (salvos em branco inicialmente)
         supervisorFields: {
             fase1_obs: "", fase2_obs: "", fase3_obs: "",
             finais_obs: "", assinatura: ""
@@ -128,7 +140,7 @@ async function salvarFicha(event) {
     };
 
     try {
-        await db.collection("fichas-supervisao-casos").add(formData); // Salva em uma nova coleção
+        await db.collection("fichas-supervisao-casos").add(formData);
         alert("Ficha de caso salva com sucesso!");
         document.getElementById('form-supervisao').reset();
         setupInitialData();
