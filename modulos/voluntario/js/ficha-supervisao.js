@@ -27,7 +27,9 @@ export function init(db, user, userData, param) {
             const userRoles = userData.funcoes || [];
             const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
             const backButton = document.getElementById('back-to-panel-button');
-            backButton.href = isSupervisor ? '#painel-supervisor' : '#painel-supervisionado';
+            if(backButton){
+                backButton.href = isSupervisor ? '#painel-supervisor' : '#painel-supervisionado';
+            }
             
             // Lógica do formulário
             initializeForm(form, formId);
@@ -41,12 +43,12 @@ export function init(db, user, userData, param) {
     async function initializeForm(form, formId) {
         const psicologoNomeInput = form.querySelector('#psicologoNome');
         if (psicologoNomeInput) {
-            psicologoNomeInput.value = userData.nome;
+            psicologoNomeInput.value = userData.nome || 'Nome não encontrado';
         }
 
         const abordagemSelect = form.querySelector('#psicologoAbordagem');
         const outraAbordagemContainer = form.querySelector('#outraAbordagemContainer');
-        if (abordagemSelect) {
+        if (abordagemSelect && outraAbordagemContainer) {
             abordagemSelect.addEventListener('change', () => {
                 outraAbordagemContainer.style.display = abordagemSelect.value === 'Outra' ? 'block' : 'none';
             });
@@ -70,7 +72,7 @@ export function init(db, user, userData, param) {
 
     async function populateSupervisorSelect(form, docData = {}) {
         const supervisorSelect = form.querySelector('#supervisorUid');
-        // ... (código para popular supervisores, sem alterações)
+        if (!supervisorSelect) return;
         try {
             const q = query(collection(db, 'usuarios'), where('funcoes', 'array-contains', 'supervisor'));
             const querySnapshot = await getDocs(q);
@@ -84,12 +86,12 @@ export function init(db, user, userData, param) {
                 supervisorSelect.add(option);
             });
         } catch (error) {
+            console.error("Erro ao popular supervisores:", error);
             supervisorSelect.innerHTML = '<option value="">Erro ao carregar</option>';
         }
     }
 
     function fillForm(form, data) {
-        // ... (código para preencher o formulário, sem alterações)
         for (const key in data) {
             if (form.elements[key]) {
                 form.elements[key].value = data[key];
@@ -114,9 +116,11 @@ export function init(db, user, userData, param) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
+        // Garante que o UID e Nome do psicólogo (usuário logado) sejam salvos
         data.psicologoUid = user.uid;
         data.psicologoNome = userData.nome;
         
+        // Garante que o nome do supervisor seja salvo junto com o UID
         const supervisorSelect = form.elements['supervisorUid'];
         if (supervisorSelect.selectedIndex > 0) {
             data.supervisorNome = supervisorSelect.options[supervisorSelect.selectedIndex].text;
@@ -137,7 +141,7 @@ export function init(db, user, userData, param) {
 
             if (formId === 'new') {
                 const newDocRef = doc(collection(db, 'supervisao'));
-                data.documentId = newDocRef.id;
+                data.id = newDocRef.id; // Salva o ID do documento dentro dele mesmo para referência
                 await setDoc(newDocRef, { ...data, createdAt: serverTimestamp() });
                 alert("Ficha salva com sucesso!");
                 window.location.hash = returnHash;
