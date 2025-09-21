@@ -1,7 +1,7 @@
 // src/assets/js/firebase-config.js
 
 // Suas credenciais do Firebase ficam isoladas aqui.
-const firebaseConfig = {
+export const firebaseConfig = {
     apiKey: "AIzaSyDJqPJjDDIGo7uRewh3pw1SQZOpMgQJs5M", // É uma boa prática substituir por variáveis de ambiente em um projeto real
     authDomain: "eupsico-agendamentos-d2048.firebaseapp.com",
     databaseURL: "https://eupsico-agendamentos-d2048-default-rtdb.firebaseio.com",
