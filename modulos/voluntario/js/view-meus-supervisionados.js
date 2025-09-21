@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/view-meus-supervisionados.js (CORRIGIDO)
-// Versão: 3.2 (Simplifica a query para alinhar com as regras do Firestore)
+// Versão: 3.3 (Usa o campo correto 'pacienteIniciais' e adiciona validações)
 // Descrição: Carrega e exibe as FICHAS dos profissionais supervisionados.
 
 import { db, collection, query, where, getDocs, doc, getDoc } from '../../../assets/js/firebase-init.js';
@@ -37,7 +37,7 @@ export function init(db, user, userData) {
                     <tr>
                         <td>${dataFormatada}</td>
                         <td>${ficha.profissionalNome}</td>
-                        <td>${ficha.iniciaisPaciente || 'N/A'}</td>
+                        <td>${ficha.pacienteIniciais || 'N/A'}</td>
                         <td><a href="#ficha-supervisao/${ficha.id}" class="btn btn-primary">Ver Ficha</a></td>
                     </tr>
                 `;
@@ -51,11 +51,13 @@ export function init(db, user, userData) {
         const profSelecionado = document.getElementById('filtro-profissional').value;
         const pacSelecionado = document.getElementById('filtro-paciente').value;
         let fichasFiltradas = todasAsFichas;
+
         if (profSelecionado) {
             fichasFiltradas = fichasFiltradas.filter(f => f.profissionalNome === profSelecionado);
         }
         if (pacSelecionado) {
-            fichasFiltradas = fichasFiltradas.filter(f => f.iniciaisPaciente === pacSelecionado);
+            // CORREÇÃO: Adicionada verificação para evitar erro em fichas sem o campo
+            fichasFiltradas = fichasFiltradas.filter(f => f.pacienteIniciais && f.pacienteIniciais === pacSelecionado);
         }
         renderFichas(fichasFiltradas);
     };
@@ -63,10 +65,13 @@ export function init(db, user, userData) {
     const popularFiltros = () => {
         const filtroProfissional = document.getElementById('filtro-profissional');
         const filtroPaciente = document.getElementById('filtro-paciente');
+        // CORREÇÃO: Garante que apenas valores existentes sejam mapeados
         const profissionais = [...new Set(todasAsFichas.map(f => f.profissionalNome).filter(Boolean))];
-        const pacientes = [...new Set(todasAsFichas.map(f => f.iniciaisPaciente).filter(Boolean))];
+        const pacientes = [...new Set(todasAsFichas.map(f => f.pacienteIniciais).filter(Boolean))];
+        
         filtroProfissional.innerHTML = '<option value="">Todos os Profissionais</option>' + profissionais.map(n => `<option value="${n}">${n}</option>`).join('');
         filtroPaciente.innerHTML = '<option value="">Todos os Pacientes</option>' + pacientes.map(i => `<option value="${i}">${i}</option>`).join('');
+        
         filtroProfissional.addEventListener('change', aplicarFiltros);
         filtroPaciente.addEventListener('change', aplicarFiltros);
     };
@@ -99,8 +104,7 @@ export function init(db, user, userData) {
                 const ficha = docSnapshot.data();
                 ficha.id = docSnapshot.id;
                 
-                // O nome do profissional já está na ficha, não precisa buscar de novo
-                if (!ficha.profissionalNome) {
+                if (!ficha.profissionalNome && ficha.profissionalUid) {
                     const profissionalSnap = await getDoc(doc(db, 'usuarios', ficha.profissionalUid));
                     ficha.profissionalNome = profissionalSnap.exists() ? profissionalSnap.data().nome : 'Desconhecido';
                 }

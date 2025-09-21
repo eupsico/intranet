@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/fichas-supervisao.js (CORRIGIDO)
-// Versão: 3.1 (Corrige consulta de acordo com as novas regras do Firebase)
+// Versão: 3.2 (Usa o campo correto 'pacienteIniciais' e adiciona validação)
 // Descrição: Lista as fichas de supervisão do psicólogo com filtro.
 
 import { db, collection, getDocs, query, where, orderBy } from '../../../assets/js/firebase-init.js';
@@ -34,7 +34,7 @@ export function init(db, user, userData) {
                 tableHtml += `
                     <tr>
                         <td>${dataFormatada}</td>
-                        <td>${ficha.iniciaisPaciente || 'N/A'}</td>
+                        <td>${ficha.pacienteIniciais || 'N/A'}</td>
                         <td>${ficha.supervisorNome || 'N/A'}</td>
                         <td><a href="#ficha-supervisao/${ficha.id}" class="btn btn-primary">Ver/Editar</a></td>
                     </tr>
@@ -47,8 +47,9 @@ export function init(db, user, userData) {
 
     const aplicarFiltro = (e) => {
         const termo = e.target.value.toLowerCase();
+        // CORREÇÃO: Adiciona verificação para evitar erro em fichas sem o campo
         const fichasFiltradas = todasAsFichas.filter(ficha => 
-            ficha.iniciaisPaciente && ficha.iniciaisPaciente.toLowerCase().includes(termo)
+            ficha.pacienteIniciais && ficha.pacienteIniciais.toLowerCase().includes(termo)
         );
         document.getElementById('lista-fichas-container').innerHTML = renderFichas(fichasFiltradas);
     };
@@ -74,8 +75,7 @@ export function init(db, user, userData) {
         try {
             const supervisaoRef = collection(db, 'supervisao');
             
-            // CORREÇÃO: A regra "list" foi removida. A nova regra "read" permite a consulta se
-            // a cláusula 'where' corresponder ao UID do usuário.
+            // A regra de segurança do Firestore permite esta consulta se 'profissionalUid' corresponder ao UID do usuário logado.
             const q = query(supervisaoRef, where('profissionalUid', '==', user.uid));
             const querySnapshot = await getDocs(q);
 
