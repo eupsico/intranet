@@ -1,8 +1,8 @@
-// Arquivo: /modulos/voluntario/js/fichas-supervisao.js (CORRIGIDO)
-// Versão: 3.4 (Corrige nome do campo de busca e remove botão)
+// Arquivo: /modulos/voluntario/js/fichas-supervisao.js
+// Versão: 3.5 (Consulta e navegação validadas)
 // Descrição: Lista as fichas de supervisão do psicólogo com filtro.
 
-import { db, collection, getDocs, query, where } from '../../../assets/js/firebase-init.js';
+import { db, collection, getDocs, query, where, orderBy } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData) {
     const container = document.getElementById('acompanhamentos');
@@ -24,12 +24,13 @@ export function init(db, user, userData) {
                 <tbody>
         `;
         if (fichas.length === 0) {
-            tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada.</td></tr>';
+            tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada. Crie uma na aba "Ficha de Supervisão".</td></tr>';
         } else {
+            // Ordena as fichas pela data da supervisão, da mais recente para a mais antiga
             fichas.sort((a, b) => new Date(b.data) - new Date(a.data));
             
             fichas.forEach(ficha => {
-                const dataFormatada = ficha.data ? new Date(ficha.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A';
+                const dataFormatada = ficha.data ? new Date(ficha.data + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
                 tableHtml += `
                     <tr>
                         <td>${dataFormatada}</td>
@@ -47,7 +48,8 @@ export function init(db, user, userData) {
     const aplicarFiltro = (e) => {
         const termo = e.target.value.toLowerCase();
         const fichasFiltradas = todasAsFichas.filter(ficha => 
-            ficha.pacienteIniciais && ficha.pacienteIniciais.toLowerCase().includes(termo)
+            (ficha.pacienteIniciais && ficha.pacienteIniciais.toLowerCase().includes(termo)) ||
+            (ficha.supervisorNome && ficha.supervisorNome.toLowerCase().includes(termo))
         );
         document.getElementById('lista-fichas-container').innerHTML = renderFichas(fichasFiltradas);
     };
@@ -56,8 +58,8 @@ export function init(db, user, userData) {
         container.innerHTML = `
             <div class="dashboard-section">
                 <div class="form-group">
-                    <label for="filtro-paciente">Filtrar por Iniciais do Paciente:</label>
-                    <input type="text" id="filtro-paciente" class="form-control" placeholder="Digite as iniciais para buscar...">
+                    <label for="filtro-fichas">Filtrar por Paciente ou Supervisor:</label>
+                    <input type="text" id="filtro-fichas" class="form-control" placeholder="Digite para buscar...">
                 </div>
             </div>
             <div id="lista-fichas-container" class="dashboard-section">
@@ -65,11 +67,10 @@ export function init(db, user, userData) {
             </div>
         `;
         
-        document.getElementById('filtro-paciente').addEventListener('input', aplicarFiltro);
+        document.getElementById('filtro-fichas').addEventListener('input', aplicarFiltro);
 
         try {
             const supervisaoRef = collection(db, 'supervisao');
-            // CORREÇÃO: Utilizando o nome de campo correto 'psicologoUid'
             const q = query(supervisaoRef, where('psicologoUid', '==', user.uid));
             const querySnapshot = await getDocs(q);
 
