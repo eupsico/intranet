@@ -1,7 +1,10 @@
 <div class="form-container" id="form-supervisao-container">
     <div class="form-header">
-        <h2>Ficha de Acompanhamento de Supervisão</h2>
-        <p>Preencha os dados abaixo para registrar o acompanhamento do caso clínico.</p>
+        <div class="header-line">
+            <h2>Ficha de Acompanhamento de Supervisão</h2>
+            <span id="autosave-status"></span>
+        </div>
+        <p>Preencha os dados abaixo para registrar o acompanhamento do caso clínico, para iniciar o salvamento automatico e necessário preencher os campos obrigatórios que estão marcados com um *</p>
     </div>
 
     <form id="form-supervisao" class="modern-form">
@@ -11,17 +14,17 @@
             <legend>Identificação Geral</legend>
             <div class="form-row cols-3">
                 <div class="form-group">
-                    <label for="supervisor-nome">Nome do Supervisor(a)</label>
+                    <label for="supervisor-nome">Nome do Supervisor(a)<span class="required-asterisk">*</span></label>
                     <select id="supervisor-nome" name="supervisor-nome" class="form-control required-for-autosave" required>
                         <option value="">Carregando...</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="data-supervisao">Data da Supervisão</label>
+                    <label for="data-supervisao">Data da Supervisão<span class="required-asterisk">*</span></label>
                     <input type="date" id="data-supervisao" name="data-supervisao" class="form-control required-for-autosave" required>
                 </div>
                 <div class="form-group">
-                    <label for="data-inicio-terapia">Data de Início da Terapia</label>
+                    <label for="data-inicio-terapia">Data de Início da Terapia<span class="required-asterisk">*</span></label>
                     <input type="date" id="data-inicio-terapia" name="data-inicio-terapia" class="form-control required-for-autosave">
                 </div>
             </div>
@@ -31,37 +34,34 @@
             <legend>2. Identificação do Caso (dados sigilosos)</legend>
             <div class="form-row cols-4">
                 <div class="form-group">
-                    <label for="paciente-iniciais">Iniciais do(a) Paciente</label>
+                    <label for="paciente-iniciais">Iniciais do(a) Paciente<span class="required-asterisk">*</span></label>
                     <input type="text" id="paciente-iniciais" name="paciente-iniciais" class="form-control required-for-autosave" placeholder="Ex: A.B.C." required>
                 </div>
                 <div class="form-group">
-                    <label for="paciente-idade">Idade</label>
+                    <label for="paciente-idade">Idade<span class="required-asterisk">*</span></label>
                     <input type="number" id="paciente-idade" name="paciente-idade" class="form-control required-for-autosave">
                 </div>
                 <div class="form-group">
-                    <label for="paciente-genero">Gênero</label>
+                    <label for="paciente-genero">Gênero<span class="required-asterisk">*</span></label>
                     <select id="paciente-genero" name="paciente-genero" class="form-control required-for-autosave">
                         <option value="">Selecione...</option>
                         <option value="Masculino">Masculino</option>
                         <option value="Feminino">Feminino</option>
                         <option value="Nao-binario">Não-binário</option>
                         <option value="Outro">Outro</option>
+                        <option value="Nao informado">Prefere não informar</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="paciente-sessoes">Nº de Sessões</label>
+                    <label for="paciente-sessoes">Nº de Sessões<span class="required-asterisk">*</span></label>
                     <input type="number" id="paciente-sessoes" name="paciente-sessoes" class="form-control required-for-autosave">
                 </div>
             </div>
             <div class="form-group">
-                <label for="queixa-demanda">Apresentação geral (queixa, demanda):</label>
+                <label for="queixa-demanda">Apresentação geral (queixa, demanda):<span class="required-asterisk">*</span></label>
                 <textarea id="queixa-demanda" name="queixa-demanda" rows="4" class="form-control required-for-autosave"></textarea>
             </div>
         </fieldset>
-
-        <div id="autosave-status" class="status-message required-fields-notice">
-            Preencha todos os campos de Identificação para iniciar o salvamento automático.
-        </div>
 
         <fieldset>
             <legend>1. Identificação do Psicólogo(a)</legend>
@@ -189,6 +189,5 @@
                 <input type="text" id="assinatura-supervisor" name="assinatura-supervisor" class="form-control" readonly>
             </div>
         </fieldset>
-
-        </form>
+    </form>
 </div>
