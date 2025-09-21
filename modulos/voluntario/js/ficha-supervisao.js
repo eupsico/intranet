@@ -1,27 +1,27 @@
 let db, user, userData;
 
-export function init(dbRef, userRef, userDataRef) {
-    db = dbRef;
-    user = userRef;
-    userData = userDataRef;
+// A MUDANÇA ESTÁ AQUI: A função init também recebe o objeto de contexto
+export function init(context) {
+    db = context.db;
+    user = context.user;
+    userData = context.userData;
     
     console.log("Módulo Ficha de Supervisão inicializado.");
     
-    // Preenche informações do usuário
     document.getElementById('nome-psicologo').value = userData.nomeCompleto || '';
     document.getElementById('psicologo-uid').value = user.uid || '';
-
-    // Define a data de hoje como padrão
     document.getElementById('data-supervisao').valueAsDate = new Date();
 
     loadSupervisores();
 
-    // Adiciona listeners aos botões
     const form = document.getElementById('form-supervisao');
     form.addEventListener('submit', salvarFicha);
 
     const btnLimpar = document.getElementById('btn-limpar-formulario');
-    btnLimpar.addEventListener('click', () => form.reset());
+    btnLimpar.addEventListener('click', () => {
+        form.reset();
+        document.getElementById('data-supervisao').valueAsDate = new Date();
+    });
 }
 
 async function loadSupervisores() {
@@ -46,7 +46,6 @@ async function loadSupervisores() {
     } catch (error) {
         console.error("Erro ao carregar supervisores:", error);
         select.innerHTML = '<option value="">Erro ao carregar</option>';
-        alert("Não foi possível carregar a lista de supervisores. Tente recarregar a página.");
     }
 }
 
@@ -62,7 +61,7 @@ async function salvarFicha(event) {
         dataSupervisao: document.getElementById('data-supervisao').value,
         supervisorUid: document.getElementById('supervisor').value,
         supervisorNome: document.getElementById('supervisor').options[document.getElementById('supervisor').selectedIndex].text,
-        iniciaisPaciente: document.getElementById('iniciais-paciente').value,
+        iniciaisPaciente: document.getElementById('iniciais-paciente').value.toUpperCase(),
         idadePaciente: document.getElementById('idade-paciente').value,
         sexoPaciente: document.getElementById('sexo-paciente').value,
         queixaPrincipal: document.getElementById('queixa-principal').value,
@@ -76,7 +75,7 @@ async function salvarFicha(event) {
         await db.collection("fichas-supervisao").add(formData);
         alert("Ficha de supervisão salva com sucesso!");
         document.getElementById('form-supervisao').reset();
-        document.getElementById('data-supervisao').valueAsDate = new Date(); // Reset data
+        document.getElementById('data-supervisao').valueAsDate = new Date();
 
     } catch (error) {
         console.error("Erro ao salvar a ficha:", error);
