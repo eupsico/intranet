@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor.js
-// Versão: 2.1 (Interage com o modal global)
+// Versão: 2.2 (Completo e corrigido para interagir com modal global)
 // Descrição: Controla a visualização e edição de perfis de supervisor.
 
 import { db, collection, query, where, getDocs, doc, updateDoc } from '../../../assets/js/firebase-init.js';
@@ -18,19 +18,22 @@ export function init(db, user, userData) {
     let fetchedSupervisors = [];
     const isAdmin = (userData.funcoes || []).includes('admin');
 
-    // ... (as funções createSupervisorCard, renderProfiles, createHorarioRow e saveProfileChanges permanecem as mesmas)
-    
-    // As funções abaixo continuam as mesmas da sua versão
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
-        card.className = 'supervisor-card'; // Usando a classe de estilo correta
+        // Utiliza a classe principal que já tem os estilos corretos
+        card.className = 'supervisor-card'; 
+        
+        const photoPath = (supervisor.fotoUrl && supervisor.fotoUrl.startsWith('assets')) 
+            ? `../../../${supervisor.fotoUrl}` 
+            : supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png';
+
         card.innerHTML = `
             <div class="supervisor-card-left">
                 <div class="photo-container">
-                    <img src="${supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png'}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
+                    <img src="${photoPath}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
                 </div>
                 <div class="supervisor-identity">
-                    <h2>${supervisor.nome}</h2>
+                    <h2>${supervisor.nome || 'Nome não informado'}</h2>
                     <div class="title-box">${supervisor.titulo || 'SUPERVISOR(A)'}</div>
                 </div>
                 <div class="supervisor-contact">
@@ -40,7 +43,7 @@ export function init(db, user, userData) {
                 </div>
             </div>
             <div class="supervisor-card-right">
-                <button class="btn btn-primary edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
+                <button class="btn btn-primary edit-btn" data-uid="${supervisor.uid}" style="position: absolute; top: 0; right: 0;">Editar Perfil</button>
                 <div class="profile-header">
                     <h3>PERFIL PROFISSIONAL</h3>
                 </div>
@@ -48,8 +51,21 @@ export function init(db, user, userData) {
                     <h4>Abordagem</h4>
                     <p>${supervisor.abordagem || 'Não informada'}</p>
                 </div>
+                <div class="profile-section">
+                    <h4>Formação</h4>
+                    <ul>${(Array.isArray(supervisor.formacao) ? supervisor.formacao.map(item => `<li>${item}</li>`).join('') : `<li>${supervisor.formacao || 'Não informado'}</li>`)}</ul>
                 </div>
+                <div class="profile-section">
+                    <h4>Especialização</h4>
+                    <ul>${(Array.isArray(supervisor.especializacao) ? supervisor.especializacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>')}</ul>
+                </div>
+                 <div class="profile-section">
+                    <h4>Áreas de Atuação</h4>
+                    <ul>${(Array.isArray(supervisor.atuacao) ? supervisor.atuacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>')}</ul>
+                </div>
+            </div>
         `;
+        
         card.querySelector('.edit-btn').addEventListener('click', (e) => {
             const uid = e.target.dataset.uid;
             const supervisorData = fetchedSupervisors.find(s => s.uid === uid);
@@ -57,14 +73,14 @@ export function init(db, user, userData) {
         });
         return card;
     };
-    
+
     const renderProfiles = (supervisors) => {
         container.innerHTML = '';
         supervisors.forEach(supervisor => {
             container.appendChild(createSupervisorCard(supervisor));
         });
     };
-    
+
     const openEditModal = (data) => {
         form.elements['uid'].value = data.uid;
         form.elements['fotoUrl'].value = data.fotoUrl || '';
@@ -144,8 +160,6 @@ export function init(db, user, userData) {
             saveBtn.disabled = false;
         }
     }
-    
-    // ... restante da lógica ...
 
     async function loadProfiles() {
         container.innerHTML = '<div class="loading-spinner"></div>';
@@ -171,9 +185,12 @@ export function init(db, user, userData) {
         }
     }
 
-    // Adiciona os listeners para o modal uma única vez
-    document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => editModal.style.display = 'none'));
-    document.getElementById('add-horario-btn').addEventListener('click', () => document.getElementById('horarios-editor-container').appendChild(createHorarioRow()));
+    // Adiciona os listeners para o modal uma única vez, garantindo que não sejam duplicados
+    const closeModalButtons = document.querySelectorAll('.close-modal-btn');
+    const addHorarioButton = document.getElementById('add-horario-btn');
+    
+    closeModalButtons.forEach(btn => btn.addEventListener('click', () => editModal.style.display = 'none'));
+    addHorarioButton.addEventListener('click', () => document.getElementById('horarios-editor-container').appendChild(createHorarioRow()));
     form.addEventListener('submit', saveProfileChanges);
     
     loadProfiles();
