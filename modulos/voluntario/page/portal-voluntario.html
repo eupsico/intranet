@@ -7,7 +7,16 @@
     
     <link rel="stylesheet" href="../../../assets/css/design-system.css">
     <link rel="stylesheet" href="../css/portal-voluntario.css">
+    <link rel="stylesheet" href="../css/view-dashboard-voluntario.css">
+    <link rel="stylesheet" href="../css/meu-perfil.css">
+    <link rel="stylesheet" href="../css/voluntarios.css">
+    <link rel="stylesheet" href="../css/envio_comprovantes.css">
+    <link rel="stylesheet" href="../css/recursos.css">
+    <link rel="stylesheet" href="../css/grade.css">
+    <link rel="stylesheet" href="../css/solicitacoes.css">
+    <link rel="stylesheet" href="../css/supervisores.css">
     <link rel="stylesheet" href="../css/painel-supervisor.css">
+    <link rel="stylesheet" href="../css/fichas-supervisao.css">
     <link rel="stylesheet" href="../css/ficha-supervisao.css">
     <link rel="stylesheet" href="../css/painel-supervisionado.css">
 
@@ -48,6 +57,30 @@
         </div>
     </div>
 
+    <div id="supervisor-details-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Perfil do Supervisor</h2>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="details-header">
+                    <img id="details-photo" src="../../../assets/img/avatar-padrao.png" alt="Foto do Supervisor" class="supervisor-photo">
+                    <div class="details-identity">
+                        <h3 id="details-nome"></h3>
+                        <p id="details-titulo"></p>
+                    </div>
+                </div>
+                <div class="details-section"><h4>Formação</h4><ul id="details-formacao"></ul></div>
+                <div class="details-section"><h4>Especialização</h4><ul id="details-especializacao"></ul></div>
+                <div class="details-section"><h4>Áreas de Atuação</h4><ul id="details-atuacao"></ul></div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-agendar-supervisao" class="btn btn-primary">Agendar Supervisão</button>
+            </div>
+        </div>
+    </div>
+    
     <div id="edit-supervisor-profile-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -57,52 +90,17 @@
             <div class="modal-body">
                 <form id="edit-supervisor-profile-form">
                     <input type="hidden" id="editing-uid" name="uid">
-                    
-                    <div class="form-group">
-                        <label for="edit-fotoUrl">URL da Foto</label>
-                        <input type="text" id="edit-fotoUrl" name="fotoUrl" class="form-control" placeholder="assets/img/supervisores/seu-nome.png">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-titulo">Título (Ex: SUPERVISORA CLÍNICA)</label>
-                        <input type="text" id="edit-titulo" name="titulo" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-crp">CRP</label>
-                        <input type="text" id="edit-crp" name="crp" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-telefone">Telefone</label>
-                        <input type="text" id="edit-telefone" name="telefone" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-email">Email</label>
-                        <input type="email" id="edit-email" name="email" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-abordagem">Abordagem Teórica</label>
-                        <input type="text" id="edit-abordagem" name="abordagem" class="form-control">
-                    </div>
-
-                    <hr style="margin: 20px 0;">
-                    <p>Para os campos abaixo, insira um item por linha.</p>
-
-                    <div class="form-group">
-                        <label for="edit-formacao">Formação</label>
-                        <textarea id="edit-formacao" name="formacao" rows="3" class="form-control"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-especializacao">Especialização</label>
-                        <textarea id="edit-especializacao" name="especializacao" rows="4" class="form-control"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-atuacao">Áreas de Atuação</label>
-                        <textarea id="edit-atuacao" name="atuacao" rows="4" class="form-control"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-supervisaoInfo">Informações de Supervisão</label>
-                        <textarea id="edit-supervisaoInfo" name="supervisaoInfo" rows="4" class="form-control"></textarea>
-                    </div>
-
+                    <div class="form-group"><label for="edit-fotoUrl">URL da Foto</label><input type="text" id="edit-fotoUrl" name="fotoUrl" class="form-control" placeholder="assets/img/supervisores/seu-nome.png"></div>
+                    <div class="form-group"><label for="edit-titulo">Título (Ex: SUPERVISORA CLÍNICA)</label><input type="text" id="edit-titulo" name="titulo" class="form-control"></div>
+                    <div class="form-group"><label for="edit-crp">CRP</label><input type="text" id="edit-crp" name="crp" class="form-control"></div>
+                    <div class="form-group"><label for="edit-telefone">Telefone</label><input type="text" id="edit-telefone" name="telefone" class="form-control"></div>
+                    <div class="form-group"><label for="edit-email">Email</label><input type="email" id="edit-email" name="email" class="form-control"></div>
+                    <div class="form-group"><label for="edit-abordagem">Abordagem Teórica</label><input type="text" id="edit-abordagem" name="abordagem" class="form-control"></div>
+                    <hr style="margin: 20px 0;"><p>Para os campos abaixo, insira um item por linha.</p>
+                    <div class="form-group"><label for="edit-formacao">Formação</label><textarea id="edit-formacao" name="formacao" rows="3" class="form-control"></textarea></div>
+                    <div class="form-group"><label for="edit-especializacao">Especialização</label><textarea id="edit-especializacao" name="especializacao" rows="4" class="form-control"></textarea></div>
+                    <div class="form-group"><label for="edit-atuacao">Áreas de Atuação</label><textarea id="edit-atuacao" name="atuacao" rows="4" class="form-control"></textarea></div>
+                    <div class="form-group"><label for="edit-supervisaoInfo">Informações de Supervisão</label><textarea id="edit-supervisaoInfo" name="supervisaoInfo" rows="4" class="form-control"></textarea></div>
                     <div class="form-group">
                         <label>Dias e Horários Disponíveis</label>
                         <div id="horarios-editor-container"></div>
