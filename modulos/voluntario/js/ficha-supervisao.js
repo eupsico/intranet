@@ -21,7 +21,7 @@ export function init(dbRef, userRef, userDataRef) {
 }
 
 function setupInitialData() {
-    document.getElementById('psicologo-nome').value = userData.nomeCompleto || '';
+    document.getElementById('psicologo-nome').value = userData.nome || '';
     document.getElementById('fase1-data').valueAsDate = new Date();
     document.getElementById('data-supervisao').valueAsDate = new Date();
 }
