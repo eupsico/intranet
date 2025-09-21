@@ -1,7 +1,5 @@
-// Arquivo: /modulos/voluntario/js/ficha-supervisao.js (CORRIGIDO)
-// Versão: 4.0 (Simplificado para view dedicada)
-// Descrição: Controla a criação e edição das fichas de acompanhamento.
-
+// Arquivo: /modulos/voluntario/js/ficha-supervisao.js
+// Versão: 5.0 (Preenchimento de dados corrigido e implementação de auto-save)
 import { db, collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, serverTimestamp } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData, param) {
@@ -10,37 +8,29 @@ export function init(db, user, userData, param) {
     if (!viewContainer || !contentArea) return;
 
     const formId = param || 'new';
+    let autoSaveTimer = null;
     
     async function loadForm() {
         try {
-            const response = await fetch('./ficha-supervisao-completa.html');
-            if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário.');
-            contentArea.innerHTML = await response.text();
-            
+            // O HTML já é carregado pelo roteador principal, então só precisamos encontrar o formulário
             const form = document.getElementById('ficha-supervisao-form');
             if (!form) {
                 console.error("O formulário #ficha-supervisao-form não foi encontrado no DOM.");
+                contentArea.innerHTML = `<p class="info-card error">Erro: O template do formulário não foi carregado.</p>`;
                 return;
             }
 
-            // Define o botão voltar
-            const userRoles = userData.funcoes || [];
-            const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
-            const backButton = document.getElementById('back-to-panel-button');
-            if(backButton){
-                backButton.href = isSupervisor ? '#painel-supervisor' : '#painel-supervisionado';
-            }
-            
             // Lógica do formulário
-            initializeForm(form, formId);
+            await initializeForm(form, formId);
 
         } catch (error) {
             console.error("Erro ao carregar formulário:", error);
-            contentArea.innerHTML = `<p class="info-card error">Não foi possível carregar o formulário.</p>`;
+            contentArea.innerHTML = `<p class="info-card error">Não foi possível inicializar o formulário.</p>`;
         }
     }
     
     async function initializeForm(form, formId) {
+        // Preenche o nome do profissional logado
         const psicologoNomeInput = form.querySelector('#psicologoNome');
         if (psicologoNomeInput) {
             psicologoNomeInput.value = userData.nome || 'Nome não encontrado';
@@ -67,7 +57,12 @@ export function init(db, user, userData, param) {
                 contentArea.innerHTML = '<p class="info-card error">Ficha não encontrada.</p>';
             }
         }
-        form.addEventListener('submit', (e) => handleFormSubmit(e, form, formId));
+        
+        // Adiciona listener para o auto-save
+        form.addEventListener('input', () => {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => handleAutoSave(form, formId), 1500); // Salva 1.5s após a última digitação
+        });
     }
 
     async function populateSupervisorSelect(form, docData = {}) {
@@ -80,6 +75,7 @@ export function init(db, user, userData, param) {
             querySnapshot.forEach(doc => {
                 const supervisor = doc.data();
                 const option = new Option(supervisor.nome, doc.id);
+                // Utiliza o UID para verificar se a opção deve ser selecionada
                 if (doc.id === docData.supervisorUid) {
                     option.selected = true;
                 }
@@ -111,16 +107,20 @@ export function init(db, user, userData, param) {
         }
     }
 
-    async function handleFormSubmit(e, form, formId) {
-        e.preventDefault();
+    async function handleAutoSave(form, currentFormId) {
+        if (currentFormId === 'new') {
+            console.log("Auto-save desativado para novas fichas. Preencha os campos obrigatórios primeiro.");
+            // Poderia adicionar uma lógica para salvar um rascunho se desejado
+            return;
+        }
+
+        console.log("Salvando alterações...");
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // Garante que o UID e Nome do psicólogo (usuário logado) sejam salvos
         data.psicologoUid = user.uid;
         data.psicologoNome = userData.nome;
         
-        // Garante que o nome do supervisor seja salvo junto com o UID
         const supervisorSelect = form.elements['supervisorUid'];
         if (supervisorSelect.selectedIndex > 0) {
             data.supervisorNome = supervisorSelect.options[supervisorSelect.selectedIndex].text;
@@ -131,31 +131,13 @@ export function init(db, user, userData, param) {
         }
         delete data.outraAbordagem;
 
-        const submitButton = form.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
-        submitButton.textContent = 'Salvando...';
-
         try {
-            const userRoles = userData.funcoes || [];
-            const returnHash = userRoles.includes('supervisor') || userRoles.includes('admin') ? '#painel-supervisor' : '#painel-supervisionado';
-
-            if (formId === 'new') {
-                const newDocRef = doc(collection(db, 'supervisao'));
-                data.id = newDocRef.id; // Salva o ID do documento dentro dele mesmo para referência
-                await setDoc(newDocRef, { ...data, createdAt: serverTimestamp() });
-                alert("Ficha salva com sucesso!");
-                window.location.hash = returnHash;
-            } else {
-                const docRef = doc(db, 'supervisao', formId);
-                await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
-                alert("Ficha atualizada com sucesso!");
-                window.location.hash = returnHash;
-            }
+            const docRef = doc(db, 'supervisao', currentFormId);
+            await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+            console.log("Ficha atualizada com sucesso!");
+            // Adicionar um feedback visual para o usuário, como um ícone de "salvo"
         } catch (error) {
-            console.error("Erro ao salvar a ficha:", error);
-            alert("Ocorreu um erro ao salvar: " + error.message);
-            submitButton.disabled = false;
-            submitButton.textContent = 'Salvar Ficha';
+            console.error("Erro no auto-save da ficha:", error);
         }
     }
 
