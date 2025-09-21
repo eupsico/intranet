@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/view-meus-supervisionados.js (CORRIGIDO)
-// Versão: 3.3 (Usa o campo correto 'pacienteIniciais' e adiciona validações)
+// Versão: 3.4 (Usa o campo correto 'pacienteIniciais', validações e navegação corrigida)
 // Descrição: Carrega e exibe as FICHAS dos profissionais supervisionados.
 
 import { db, collection, query, where, getDocs, doc, getDoc } from '../../../assets/js/firebase-init.js';
@@ -29,16 +29,16 @@ export function init(db, user, userData) {
         if (fichas.length === 0) {
             tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada.</td></tr>';
         } else {
-            // Ordena as fichas pela data mais recente aqui no cliente
             fichas.sort((a, b) => new Date(b.data) - new Date(a.data));
             fichas.forEach(ficha => {
                 const dataFormatada = ficha.data ? new Date(ficha.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
+                // CORREÇÃO: Usando o nome de campo correto do Firestore
                 tableHtml += `
                     <tr>
                         <td>${dataFormatada}</td>
-                        <td>${ficha.profissionalNome}</td>
+                        <td>${ficha.profissionalNome || 'Não informado'}</td>
                         <td>${ficha.pacienteIniciais || 'N/A'}</td>
-                        <td><a href="#ficha-supervisao/${ficha.id}" class="btn btn-primary">Ver Ficha</a></td>
+                        <td><a href="#" onclick="window.viewNavigator.push('ficha-supervisao/${ficha.id}')" class="btn btn-primary">Ver Ficha</a></td>
                     </tr>
                 `;
             });
@@ -56,7 +56,6 @@ export function init(db, user, userData) {
             fichasFiltradas = fichasFiltradas.filter(f => f.profissionalNome === profSelecionado);
         }
         if (pacSelecionado) {
-            // CORREÇÃO: Adicionada verificação para evitar erro em fichas sem o campo
             fichasFiltradas = fichasFiltradas.filter(f => f.pacienteIniciais && f.pacienteIniciais === pacSelecionado);
         }
         renderFichas(fichasFiltradas);
@@ -65,7 +64,6 @@ export function init(db, user, userData) {
     const popularFiltros = () => {
         const filtroProfissional = document.getElementById('filtro-profissional');
         const filtroPaciente = document.getElementById('filtro-paciente');
-        // CORREÇÃO: Garante que apenas valores existentes sejam mapeados
         const profissionais = [...new Set(todasAsFichas.map(f => f.profissionalNome).filter(Boolean))];
         const pacientes = [...new Set(todasAsFichas.map(f => f.pacienteIniciais).filter(Boolean))];
         
@@ -117,7 +115,7 @@ export function init(db, user, userData) {
 
         } catch (error) {
             console.error("Erro ao carregar fichas:", error);
-            document.getElementById('lista-supervisionados-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar as fichas.</div>`;
+            document.getElementById('lista-supervisionados-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar as fichas. Verifique o console.</div>`;
         }
     }
     

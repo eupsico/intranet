@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/ficha-supervisao.js (CORRIGIDO)
-// Versão: 3.1 (Garante o salvamento de 'profissionalUid' e 'supervisorUid')
+// Versão: 3.2 (Controla novo formulário e navegação)
 // Descrição: Controla a criação e edição das fichas de acompanhamento.
 
 import { db, collection, getDocs, getDoc, doc, setDoc, updateDoc, query, where, serverTimestamp } from '../../../assets/js/firebase-init.js';
@@ -20,6 +20,20 @@ export function init(db, user, userData, param) {
     if (psicologoNomeInput) {
         psicologoNomeInput.value = userData.nome;
     }
+
+    // Lógica para o campo "Outra Abordagem"
+    const abordagemSelect = form.querySelector('#psicologoAbordagem');
+    const outraAbordagemContainer = form.querySelector('#outraAbordagemContainer');
+    if (abordagemSelect && outraAbordagemContainer) {
+        abordagemSelect.addEventListener('change', () => {
+            if (abordagemSelect.value === 'Outra') {
+                outraAbordagemContainer.style.display = 'block';
+            } else {
+                outraAbordagemContainer.style.display = 'none';
+            }
+        });
+    }
+
 
     async function populateSupervisorSelect(docData = {}) {
         const supervisorSelect = form.querySelector('#supervisorUid');
@@ -47,6 +61,11 @@ export function init(db, user, userData, param) {
                 form.elements[key].value = data[key];
             }
         }
+        // Exibe o campo 'outra' se necessário
+        if (data.psicologoAbordagem && abordagemSelect.value === 'Outra') {
+            outraAbordagemContainer.style.display = 'block';
+            form.elements['outraAbordagem'].value = data.outraAbordagem || '';
+        }
     }
 
     async function handleFormSubmit(e) {
@@ -54,19 +73,21 @@ export function init(db, user, userData, param) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // --- CORREÇÃO CRÍTICA ---
-        // Garante que os UIDs essenciais para as regras de segurança sejam salvos.
-        data.profissionalUid = user.uid; // UID do usuário logado (o profissional)
-        // O valor do select 'supervisorUid' já é o ID do supervisor, então ele é pego pelo Object.fromEntries.
-        
+        data.profissionalUid = user.uid;
         data.psicologoNome = userData.nome;
+        
         const supervisorSelect = form.elements['supervisorUid'];
         if (supervisorSelect.selectedIndex > 0) {
             data.supervisorNome = supervisorSelect.options[supervisorSelect.selectedIndex].text;
         } else {
-            data.supervisorNome = ''; // Garante que o campo exista mesmo se ninguém for selecionado
+            data.supervisorNome = '';
         }
 
+        // Se a abordagem for 'Outra', salva o valor do campo de texto
+        if (data.psicologoAbordagem === 'Outra') {
+            data.psicologoAbordagem = data.outraAbordagem;
+        }
+        delete data.outraAbordagem; // Remove o campo extra
 
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true;
@@ -75,18 +96,19 @@ export function init(db, user, userData, param) {
         try {
             if (formId === 'new') {
                 const newDocRef = doc(collection(db, 'supervisao'));
+                data.documentId = newDocRef.id; // Salva o ID do documento dentro dele mesmo
                 await setDoc(newDocRef, { ...data, createdAt: serverTimestamp() });
                 alert("Ficha salva com sucesso!");
-                window.location.hash = '#painel-supervisionado';
+                window.viewNavigator.back();
             } else {
                 const docRef = doc(db, 'supervisao', formId);
                 await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
                 alert("Ficha atualizada com sucesso!");
-                window.location.hash = '#painel-supervisionado';
+                window.viewNavigator.back();
             }
         } catch (error) {
             console.error("Erro ao salvar a ficha:", error);
-            alert("Ocorreu um erro ao salvar.");
+            alert("Ocorreu um erro ao salvar: " + error.message);
             submitButton.disabled = false;
             submitButton.textContent = 'Salvar Ficha';
         }

@@ -1,14 +1,14 @@
 // Arquivo: /modulos/voluntario/js/fichas-supervisao.js (CORRIGIDO)
-// Versão: 3.2 (Usa o campo correto 'pacienteIniciais' e adiciona validação)
+// Versão: 3.3 (Usa o campo correto 'pacienteIniciais', validações e navegação corrigida)
 // Descrição: Lista as fichas de supervisão do psicólogo com filtro.
 
-import { db, collection, getDocs, query, where, orderBy } from '../../../assets/js/firebase-init.js';
+import { db, collection, getDocs, query, where } from '../../../assets/js/firebase-init.js';
 
 export function init(db, user, userData) {
     const container = document.getElementById('acompanhamentos');
     if (!container) return;
 
-    let todasAsFichas = []; // Cache para filtrar no cliente
+    let todasAsFichas = []; 
 
     const renderFichas = (fichas) => {
         let tableHtml = `
@@ -24,9 +24,8 @@ export function init(db, user, userData) {
                 <tbody>
         `;
         if (fichas.length === 0) {
-            tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada.</td></tr>';
+            tableHtml += '<tr><td colspan="4">Nenhuma ficha encontrada. Verifique se você já preencheu alguma ou se os dados antigos no banco de dados possuem o campo "profissionalUid".</td></tr>';
         } else {
-            // Ordena as fichas pela data mais recente primeiro
             fichas.sort((a, b) => new Date(b.data) - new Date(a.data));
             
             fichas.forEach(ficha => {
@@ -36,7 +35,7 @@ export function init(db, user, userData) {
                         <td>${dataFormatada}</td>
                         <td>${ficha.pacienteIniciais || 'N/A'}</td>
                         <td>${ficha.supervisorNome || 'N/A'}</td>
-                        <td><a href="#ficha-supervisao/${ficha.id}" class="btn btn-primary">Ver/Editar</a></td>
+                        <td><a href="#" onclick="window.viewNavigator.push('ficha-supervisao/${ficha.id}')" class="btn btn-primary">Ver/Editar</a></td>
                     </tr>
                 `;
             });
@@ -47,7 +46,6 @@ export function init(db, user, userData) {
 
     const aplicarFiltro = (e) => {
         const termo = e.target.value.toLowerCase();
-        // CORREÇÃO: Adiciona verificação para evitar erro em fichas sem o campo
         const fichasFiltradas = todasAsFichas.filter(ficha => 
             ficha.pacienteIniciais && ficha.pacienteIniciais.toLowerCase().includes(termo)
         );
@@ -62,7 +60,7 @@ export function init(db, user, userData) {
                     <input type="text" id="filtro-paciente" class="form-control" placeholder="Digite as iniciais para buscar...">
                 </div>
                 <div class="form-actions" style="text-align: right;">
-                    <a href="#ficha-supervisao/new" class="btn btn-primary">Preencher Nova Ficha</a>
+                     <a href="#" onclick="window.viewNavigator.push('ficha-supervisao/new')" class="btn btn-primary">Preencher Nova Ficha</a>
                 </div>
             </div>
             <div id="lista-fichas-container" class="dashboard-section">
@@ -74,8 +72,6 @@ export function init(db, user, userData) {
 
         try {
             const supervisaoRef = collection(db, 'supervisao');
-            
-            // A regra de segurança do Firestore permite esta consulta se 'profissionalUid' corresponder ao UID do usuário logado.
             const q = query(supervisaoRef, where('profissionalUid', '==', user.uid));
             const querySnapshot = await getDocs(q);
 
@@ -85,7 +81,7 @@ export function init(db, user, userData) {
 
         } catch (error) {
             console.error("Erro ao carregar registros:", error);
-            document.getElementById('lista-fichas-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar seus acompanhamentos. Verifique o console para mais detalhes.</div>`;
+            document.getElementById('lista-fichas-container').innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Ocorreu um erro ao carregar seus acompanhamentos. Isso pode ocorrer se as fichas antigas no banco de dados não possuírem o campo 'profissionalUid', que é exigido pelas regras de segurança.</div>`;
         }
     }
 

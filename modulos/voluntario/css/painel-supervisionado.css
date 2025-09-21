@@ -1,0 +1,46 @@
+/* Arquivo: /modulos/voluntario/css/painel-supervisionado.css (NOVO) */
+/* Descrição: Estilos para o painel do supervisionado, incluindo o novo formulário da ficha. */
+
+/* Garante que o container da view se ajuste bem ao conteúdo das abas e seções */
+.view-painel-supervisionado .view-container {
+    padding: 0;
+}
+
+/* Estilos para o formulário da Ficha de Supervisão */
+#ficha-supervisao-form {
+    background-color: var(--cor-surface);
+    padding: 30px;
+    border-radius: var(--borda-radius);
+    box-shadow: var(--sombra-padrao);
+}
+
+/* Ajusta o layout de linhas do formulário para múltiplas colunas */
+.form-row-2-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.form-row-3-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.form-row-4-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+/* Botão de Voltar */
+.form-actions-header {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+/* Garante que o campo "Outra" comece escondido */
+.hidden-field {
+    display: none;
+}

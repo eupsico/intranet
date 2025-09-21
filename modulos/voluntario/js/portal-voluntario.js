@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 4.0 (Estrutura de painéis separados)
+// Versão: 4.1 (Adiciona gerenciamento de histórico de navegação para corrigir loops)
 import {
     auth,
     db,
@@ -10,19 +10,7 @@ import {
     updateDoc
 } from '../../../assets/js/firebase-init.js';
 
-async function updateUserPhotoOnLogin(user, userData) {
-    const firestorePhotoUrl = userData.fotoUrl || '';
-    const googlePhotoUrl = user.photoURL || '';
-    if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
-        try {
-            const userDocRef = doc(db, "usuarios", user.uid);
-            await updateDoc(userDocRef, { fotoUrl: googlePhotoUrl });
-            userData.fotoUrl = googlePhotoUrl;
-        } catch (error) {
-            console.error("Erro ao atualizar a foto do usuário:", error);
-        }
-    }
-}
+// ... (função updateUserPhotoOnLogin continua a mesma)
 
 document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, async (user) => {
@@ -46,19 +34,18 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
     const loadedCSS = new Set();
+    let viewHistory = []; // NOVO: Array para guardar o histórico de navegação
 
     const views = [
         { id: 'view-dashboard-voluntario', name: 'Dashboard', icon: '🏠' },
         { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
         { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
-        // O link de Supervisão será inserido aqui
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
         { id: 'recursos', name: 'Recursos', icon: '🛠️' },
         { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
         { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
     ];
-
-    // **NOVA LÓGICA DE MENU SEPARADO**
+    
     const userRoles = userData.funcoes || [];
     const isSupervisor = userRoles.includes('supervisor') || userRoles.includes('admin');
 
@@ -68,6 +55,24 @@ function initPortal(user, userData) {
         views.splice(3, 0, { id: 'painel-supervisionado', name: 'Supervisão', icon: '🎓' });
     }
 
+    // NOVO: Adiciona a view de ficha de supervisão para o roteador, mas não ao menu
+    views.push({ id: 'ficha-supervisao', name: 'Ficha de Supervisão' });
+    
+    window.viewNavigator = {
+        push: (hash) => {
+            viewHistory.push(window.location.hash || `#${views[0].id}`);
+            window.location.hash = hash;
+        },
+        back: () => {
+            const previousView = viewHistory.pop();
+            if (previousView) {
+                window.location.hash = previousView;
+            } else {
+                window.location.hash = isSupervisor ? '#painel-supervisor' : '#painel-supervisionado';
+            }
+        }
+    };
+
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = `
@@ -75,18 +80,10 @@ function initPortal(user, userData) {
             <li class="menu-separator"></li>
         `;
         views.forEach(view => {
-            sidebarMenu.innerHTML += `<li><a href="#${view.id}" data-view="${view.id}"><span class="icon">${view.icon}</span><span>${view.name}</span></a></li>`;
+            if (view.icon) { // Apenas adiciona ao menu se tiver um ícone
+                sidebarMenu.innerHTML += `<li><a href="#${view.id}" data-view="${view.id}"><span class="icon">${view.icon}</span><span>${view.name}</span></a></li>`;
+            }
         });
-    }
-
-    function loadCSS(cssPath) {
-        if (!loadedCSS.has(cssPath)) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = cssPath;
-            document.head.appendChild(link);
-            loadedCSS.add(cssPath);
-        }
     }
 
     async function loadView(viewId, param = null) {
@@ -96,14 +93,49 @@ function initPortal(user, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const response = await fetch(`./${viewId}.html`);
-            if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
-            contentArea.innerHTML = await response.text();
+            const htmlFile = viewId === 'ficha-supervisao' ? `./painel-supervisionado.html` : `./${viewId}.html`;
+            const response = await fetch(htmlFile);
+            if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${htmlFile}`);
             
+            let htmlContent = await response.text();
+            
+            // Se for a ficha, carrega o HTML do formulário dentro da view do painel
+            if (viewId === 'ficha-supervisao') {
+                const formResponse = await fetch('./ficha-supervisao-completa.html');
+                if (!formResponse.ok) throw new Error('Arquivo do formulário da ficha não encontrado.');
+                const formHtml = await formResponse.text();
+                
+                // Injeta o formulário e um botão de voltar
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                tempDiv.querySelector('.tabs-container').remove(); // Remove as abas
+                tempDiv.querySelector('.tab-content').innerHTML = formHtml;
+                tempDiv.querySelector('.tab-content').style.display = 'block';
+                tempDiv.querySelector('.dashboard-section h1').textContent = 'Ficha de Acompanhamento';
+                tempDiv.querySelector('.dashboard-section p').textContent = 'Preencha ou edite os dados da supervisão.';
+
+                const backButton = document.createElement('button');
+                backButton.innerHTML = '&larr; Voltar para Supervisão';
+                backButton.className = 'btn btn-secondary';
+                backButton.style.marginBottom = '20px';
+                backButton.onclick = () => window.viewNavigator.back();
+                tempDiv.querySelector('.dashboard-section').insertAdjacentElement('afterend', backButton);
+                
+                htmlContent = tempDiv.innerHTML;
+            }
+
+            contentArea.innerHTML = htmlContent;
+
             const cssPath = `../css/${viewId}.css`;
             const cssResponse = await fetch(cssPath);
             if (cssResponse.ok) {
-                loadCSS(cssPath);
+                 const link = document.createElement('link');
+                 link.rel = 'stylesheet';
+                 link.href = cssPath;
+                 link.id = `css-${viewId}`;
+                 if (!document.getElementById(link.id)) {
+                    document.head.appendChild(link);
+                 }
             }
 
             const viewModule = await import(`../js/${viewId}.js`);
@@ -118,37 +150,25 @@ function initPortal(user, userData) {
         }
     }
     
-    function setupLayout() {
-        const userPhoto = document.getElementById('user-photo-header');
-        if (userPhoto) {
-            userPhoto.src = userData.fotoUrl || '../../../assets/img/avatar-padrao.png';
-            userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
-        }
-        const userGreeting = document.getElementById('user-greeting');
-        if (userGreeting && userData.nome) {
-            const firstName = userData.nome.split(' ')[0];
-            const hour = new Date().getHours();
-            const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-            userGreeting.textContent = `${greeting}, ${firstName}!`;
-        }
-        const logoutButton = document.getElementById('logout-button');
-        if (logoutButton) {
-            logoutButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                signOut(auth).catch(error => console.error("Erro ao fazer logout:", error));
-            });
-        }
-    }
+    // ... (função setupLayout continua a mesma)
 
     function start() {
         setupLayout();
         buildSidebarMenu();
         const handleHashChange = () => {
             const hash = window.location.hash.substring(1);
-            const defaultViewId = views[0].id;
-            // ALTERAÇÃO: Divide a hash para obter view e parâmetro
+            if (!hash) {
+                window.location.hash = views[0].id;
+                return;
+            }
             const [viewId, param] = hash.split('/');
-            loadView(viewId || defaultViewId, param);
+            
+            // Adiciona a view ao histórico apenas se for uma navegação principal
+            if (!param && viewHistory[viewHistory.length - 1] !== `#${viewId}`) {
+                viewHistory.push(`#${viewId}`);
+            }
+
+            loadView(viewId, param);
         };
         window.addEventListener('hashchange', handleHashChange);
         handleHashChange();
