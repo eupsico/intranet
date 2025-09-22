@@ -87,7 +87,7 @@ export function init(db, user, userData) {
                 </div>
                 <div class="form-group flex-grow-1">
                     <label for="telefone">Telefone *</label>
-                    <input type="tel" id="telefone" value="${formatarTelefone(data.telefone || '')}" maxlength="15" readonly>
+                    <input type="tel" id="telefone" value="${formatarTelefone(data.contato || '')}" maxlength="15" readonly>
                 </div>
             </div>
 
