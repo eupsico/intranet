@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor.js (CORRIGIDO)
-// Versão: 2.3 (Corrige caminho da foto e exibe todas as informações no card)
+// Versão: 2.5 (Resolve conflito de CSS e caminho de imagem)
 // Descrição: Controla a visualização e edição de perfis de supervisor.
 
 import { db, collection, query, where, getDocs, doc, updateDoc } from '../../../assets/js/firebase-init.js';
@@ -22,58 +22,54 @@ export function init(db, user, userData) {
         const card = document.createElement('div');
         card.className = 'supervisor-card'; 
         
-        // --- CORREÇÃO DO CAMINHO DA FOTO ---
-        const photoPath = supervisor.fotoUrl 
-            ? `../../../assets/img/supervisores/${supervisor.fotoUrl}` 
-            : '../../../assets/img/avatar-padrao.png';
+        // --- LÓGICA CORRIGIDA PARA O CAMINHO DA FOTO ---
+        let photoPath = '../../../assets/img/avatar-padrao.png'; // Padrão
+        if (supervisor.fotoUrl) {
+            // Verifica se o caminho já está incluído para não duplicar
+            if (supervisor.fotoUrl.includes('assets/img/supervisores')) {
+                photoPath = `../../../${supervisor.fotoUrl}`;
+            } else {
+                photoPath = `../../../assets/img/supervisores/${supervisor.fotoUrl}`;
+            }
+        }
 
-        // --- CORREÇÃO E ADIÇÃO DAS INFORMAÇÕES FALTANTES ---
         const toList = (data) => {
             if (!data || data.length === 0) return '<ul><li>Não informado</li></ul>';
             const items = Array.isArray(data) ? data : [data];
             return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
         };
 
+        // --- ESTRUTURA HTML ALINHADA COM O CSS CORRETO ---
         card.innerHTML = `
-            <div class="supervisor-card-left">
-                <div class="photo-container">
+            <div class="supervisor-card-header">
+                <div class="supervisor-photo-container">
                     <img src="${photoPath}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
                 </div>
-                <div class="supervisor-identity">
-                    <h2>${supervisor.nome || 'Nome não informado'}</h2>
-                    <div class="title-box">${supervisor.titulo || 'SUPERVISOR(A)'}</div>
-                </div>
-                <div class="supervisor-contact">
-                    <p><strong>CRP:</strong> ${supervisor.crp || 'Não informado'}</p>
-                    <p><strong>Email:</strong> ${supervisor.email || 'Não informado'}</p>
-                    <p><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</p>
-                </div>
+                <h3>${supervisor.nome || 'Nome não informado'}</h3>
+                <p>${supervisor.titulo || 'Supervisor(a)'}</p>
             </div>
-            <div class="supervisor-card-right">
-                <button class="action-button edit-btn" data-uid="${supervisor.uid}" style="position: absolute; top: 15px; right: 15px;">Editar Perfil</button>
-                <div class="profile-header">
-                    <h3>PERFIL PROFISSIONAL</h3>
-                </div>
-                <div class="profile-section">
-                    <h4>Abordagem</h4>
-                    <p>${supervisor.abordagem || 'Não informada'}</p>
-                </div>
-                <div class="profile-section">
-                    <h4>Formação</h4>
-                    ${toList(supervisor.formacao)}
-                </div>
-                <div class="profile-section">
-                    <h4>Especialização</h4>
-                    ${toList(supervisor.especializacao)}
-                </div>
-                 <div class="profile-section">
-                    <h4>Áreas de Atuação</h4>
-                    ${toList(supervisor.atuacao)}
-                </div>
+            <div class="supervisor-card-body">
+                <h4>Contato</h4>
+                <p><strong>CRP:</strong> ${supervisor.crp || 'Não informado'}</p>
+                <p><strong>Email:</strong> ${supervisor.email || 'Não informado'}</p>
+                <p><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</p>
+                <hr>
+                <h4>Perfil Profissional</h4>
+                <p><strong>Abordagem:</strong> ${supervisor.abordagem || 'Não informada'}</p>
+                <p><strong>Formação:</strong></p>
+                ${toList(supervisor.formacao)}
+                <p><strong>Especialização:</strong></p>
+                ${toList(supervisor.especializacao)}
+                <p><strong>Áreas de Atuação:</strong></p>
+                ${toList(supervisor.atuacao)}
+            </div>
+             <div class="supervisor-card-footer">
+                <button class="action-button edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
             </div>
         `;
         
         card.querySelector('.edit-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
             const uid = e.target.dataset.uid;
             const supervisorData = fetchedSupervisors.find(s => s.uid === uid);
             if(supervisorData) openEditModal(supervisorData);
