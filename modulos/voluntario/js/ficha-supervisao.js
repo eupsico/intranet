@@ -27,7 +27,7 @@ export function init(dbRef, userRef, userDataRef, docId) {
         } else {
             setupNovaFicha();
         }
-        setupAutoSave(); // Configura o salvamento automático para ambas as situações
+        setupEventListeners(); // Configura os listeners para ambas as situações
     }, 0);
 }
 
@@ -38,6 +38,7 @@ function setupNovaFicha() {
     document.getElementById('fase1-data').valueAsDate = new Date();
     document.getElementById('data-supervisao').valueAsDate = new Date();
     document.getElementById('document-id').value = ''; // Garante que o ID da ficha anterior seja limpo
+    document.getElementById('outra-abordagem-container').style.display = 'none';
     loadSupervisores();
 }
 
@@ -53,25 +54,25 @@ async function carregarFichaExistente(docId) {
         if (docSnap.exists()) {
             const data = docSnap.data();
             document.getElementById('document-id').value = docId;
-
-            // Preenche o nome e carrega a lista de supervisores, já selecionando o correto
             document.getElementById('psicologo-nome').value = data.psicologoNome;
+            
             await loadSupervisores(data.identificacaoGeral.supervisorUid);
 
-            // Preenche todos os outros campos usando um mapeamento
-            Object.keys(data).forEach(sectionKey => {
+            // Preenche todos os outros campos de forma segura
+            for (const sectionKey in data) {
                 if (typeof data[sectionKey] === 'object' && data[sectionKey] !== null) {
-                    Object.keys(data[sectionKey]).forEach(fieldKey => {
+                    for (const fieldKey in data[sectionKey]) {
                         const fieldId = mapDataKeyToFieldId(sectionKey, fieldKey);
-                        const element = document.getElementById(fieldId);
-                        if (element) {
-                            element.value = data[sectionKey][fieldKey];
+                        if (fieldId) { // Apenas tenta preencher se o ID for encontrado no mapa
+                            const element = document.getElementById(fieldId);
+                            if (element) {
+                                element.value = data[sectionKey][fieldKey];
+                            }
                         }
-                    });
+                    }
                 }
-            });
+            }
             
-            // Lógica especial para o campo "Abordagem Teórica"
             const abordagem = data.identificacaoPsicologo.abordagem;
             const abordagemSelect = document.getElementById('abordagem-teorica');
             const outraContainer = document.getElementById('outra-abordagem-container');
@@ -90,7 +91,7 @@ async function carregarFichaExistente(docId) {
         } else {
             console.error("Nenhum documento encontrado com o ID:", docId);
             alert("Erro: A ficha selecionada não foi encontrada.");
-            setupNovaFicha(); // Se não encontrar, abre uma ficha nova
+            setupNovaFicha();
         }
     } catch (error) {
         console.error("Erro ao carregar ficha existente:", error);
@@ -99,26 +100,29 @@ async function carregarFichaExistente(docId) {
     }
 }
 
-// Função auxiliar que ajuda a preencher o formulário
+// Mapeia os nomes dos campos no Firebase para os IDs dos elementos no HTML
 function mapDataKeyToFieldId(section, key) {
     const map = {
         identificacaoGeral: { supervisorUid: 'supervisor-nome', dataSupervisao: 'data-supervisao', dataInicioTerapia: 'data-inicio-terapia' },
-        identificacaoPsicologo: { periodo: 'psicologo-periodo', abordagem: 'abordagem-teorica' },
+        identificacaoPsicologo: { periodo: 'psicologo-periodo' }, // 'abordagem' é tratada separadamente
         identificacaoCaso: { iniciais: 'paciente-iniciais', idade: 'paciente-idade', genero: 'paciente-genero', numSessoes: 'paciente-sessoes', queixa: 'queixa-demanda' },
         fase1: { data: 'fase1-data', foco: 'fase1-foco', objetivos: 'fase1-objetivos', hipoteses: 'fase1-hipoteses' },
         fase2: { data: 'fase2-data', reavaliacao: 'fase2-reavaliacao', progresso: 'fase2-progresso' },
         fase3: { data: 'fase3-data', avaliacao: 'fase3-avaliacao', mudancas: 'fase3-mudancas' },
         observacoesFinais: { desfecho: 'desfecho', dataDesfecho: 'data-desfecho', observacoes: 'obs-finais' },
     };
-    return map[section] ? (map[section][key] || null) : null;
+    return map[section]?.[key] || null;
 }
 
-function setupAutoSave() {
+// Configura o salvamento automático e outros eventos do formulário
+function setupEventListeners() {
     const form = document.getElementById('form-supervisao');
     const abordagemSelect = document.getElementById('abordagem-teorica');
     const debouncedSave = debounce(autoSalvarFicha, 2000);
+
     form.addEventListener('input', debouncedSave);
     form.addEventListener('change', debouncedSave);
+    
     abordagemSelect.addEventListener('change', (e) => {
         document.getElementById('outra-abordagem-container').style.display = (e.target.value === 'Outra') ? 'block' : 'none';
     });
@@ -134,7 +138,6 @@ function verificarCamposObrigatorios() {
     return true;
 }
 
-// A função agora aceita um ID para pré-selecionar um supervisor
 async function loadSupervisores(selectedSupervisorId = null) {
     const select = document.getElementById('supervisor-nome');
     select.innerHTML = '<option value="">Carregando...</option>';
@@ -191,14 +194,12 @@ async function autoSalvarFicha() {
         fase2: { data: document.getElementById('fase2-data').value, reavaliacao: document.getElementById('fase2-reavaliacao').value, progresso: document.getElementById('fase2-progresso').value },
         fase3: { data: document.getElementById('fase3-data').value, avaliacao: document.getElementById('fase3-avaliacao').value, mudancas: document.getElementById('fase3-mudancas').value },
         observacoesFinais: { desfecho: document.getElementById('desfecho').value, dataDesfecho: document.getElementById('data-desfecho').value, observacoes: document.getElementById('obs-finais').value },
-        supervisorFields: { fase1_obs: "", fase2_obs: "", fase3_obs: "", finais_obs: "", assinatura: "" }
     };
 
     try {
         if (docId) {
             await db.collection("fichas-supervisao-casos").doc(docId).set(formData, { merge: true });
         } else {
-            // Cria um novo documento se não houver um ID
             const dadosIniciais = { ...formData, criadoEm: new Date() };
             const newDocRef = await db.collection("fichas-supervisao-casos").add(dadosIniciais);
             document.getElementById('document-id').value = newDocRef.id;
