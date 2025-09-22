@@ -1,6 +1,6 @@
 /* Arquivo: /modulos/voluntario/css/portal-voluntario.css
-   Versão: 2.0
-   Descrição: Estilos compartilhados pelo módulo do voluntário.
+   Versão: 2.1
+   Descrição: Adicionada regra para corrigir a cor do texto da aba ativa.
 */
 
 /* Estilos para a seção de Gestão (leader-profile) */
@@ -41,4 +41,9 @@
         align-items: center;
         text-align: center;
     }
+}
+
+/* Regra específica para corrigir a cor do texto e do ícone na aba ativa do menu */
+#sidebar-menu a.active span {
+    color: var(--cor-texto-inverso) !important;
 }
