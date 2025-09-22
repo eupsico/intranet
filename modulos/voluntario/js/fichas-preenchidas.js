@@ -76,22 +76,17 @@ async function abrirFormularioParaEdicao(docId) {
 
     try {
         // 1. Carrega o HTML do formulário de edição
-        // ATENÇÃO: Verifique se o caminho para `editar-ficha.html` está correto.
         const response = await fetch('../page/editar-ficha.html');
         if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário de edição.');
         formContainer.innerHTML = await response.text();
         
         console.log('[FICHAS-PREENCHIDAS] HTML do formulário de edição carregado.');
         
-        // 2. Importa o módulo do formulário
-        const formModule = await import('./ficha-supervisao.js');
-        
-        // 3. Chama a função para preencher o formulário com os dados
-        if (formModule.preencherFormularioExistente) {
-            await formModule.preencherFormularioExistente(docId, db, user, userData);
-        } else {
-            throw new Error("A função 'preencherFormularioExistente' não foi encontrada no módulo 'ficha-supervisao.js'");
-        }
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Bloco antigo que causava o erro foi removido.
+        // A nova lógica de preenchimento será inserida aqui no PASSO 2.
+        console.log(`Próximo passo: buscar dados do docId "${docId}" e preencher o formulário.`);
+        // --- FIM DA ALTERAÇÃO ---
 
         // Adiciona o evento ao botão de voltar
         const backButton = document.getElementById('btn-voltar-para-lista');
