@@ -1,4 +1,3 @@
-// ESTE ARQUIVO AGORA SERVE APENAS PARA CRIAR UMA NOVA FICHA
 let db, user, userData;
 
 function debounce(func, delay) {
@@ -9,22 +8,20 @@ function debounce(func, delay) {
     };
 }
 
-// init é chamado pela aba "Ficha de Supervisão" para criar uma nova ficha
 export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
     user = userRef;
     userData = userDataRef;
-
     setTimeout(() => {
         const form = document.getElementById('form-supervisao');
         if (!form) { return; }
-        
         setupNovaFicha();
         setupEventListeners();
     }, 0);
 }
 
 function setupNovaFicha() {
+    // ... (código igual ao anterior)
     document.getElementById('form-supervisao').reset();
     document.getElementById('psicologo-nome').value = userData.nome || '';
     document.getElementById('fase1-data').valueAsDate = new Date();
@@ -35,18 +32,101 @@ function setupNovaFicha() {
 }
 
 function setupEventListeners() {
+    // ... (código igual ao anterior)
     const form = document.getElementById('form-supervisao');
     const abordagemSelect = document.getElementById('abordagem-teorica');
     const debouncedSave = debounce(autoSalvarFicha, 2000);
-
     form.addEventListener('input', debouncedSave);
     form.addEventListener('change', debouncedSave);
-    
     abordagemSelect.addEventListener('change', (e) => {
         document.getElementById('outra-abordagem-container').style.display = (e.target.value === 'Outra') ? 'block' : 'none';
     });
 }
 
+// ===== LOG POTENTE ADICIONADO AQUI =====
+export async function preencherFormularioExistente(docId, dbRef, userRef, userDataRef) {
+    console.log(`%c--- INICIANDO DIAGNÓSTICO: preencherFormularioExistente ---`, 'color: green; font-weight: bold; font-size: 14px;');
+    console.log(`[DIAGNÓSTICO] Tentando carregar ficha com ID: ${docId}`);
+
+    db = dbRef;
+    user = userRef;
+    userData = userDataRef;
+
+    const form = document.getElementById('form-supervisao');
+    if (!form) {
+        console.error('[DIAGNÓSTICO] ERRO CRÍTICO: Formulário #form-supervisao não foi encontrado no DOM.');
+        return;
+    }
+    form.reset();
+    
+    try {
+        console.log('[DIAGNÓSTICO] Buscando documento no Firestore...');
+        const docRef = db.collection("fichas-supervisao-casos").doc(docId);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log('[DIAGNÓSTICO] Documento encontrado. Dados:', data);
+
+            document.getElementById('document-id').value = docId;
+            document.getElementById('psicologo-nome').value = data.psicologoNome;
+            console.log('[DIAGNÓSTICO] SUCEESSO: Nome do psicólogo preenchido.');
+
+            await loadSupervisores(data.identificacaoGeral.supervisorUid);
+            console.log('[DIAGNÓSTICO] SUCEESSO: Lista de supervisores carregada.');
+
+            console.log('%c--- DIAGNÓSTICO: Preenchendo campos do formulário ---', 'color: orange; font-weight: bold;');
+            for (const sectionKey in data) {
+                if (typeof data[sectionKey] === 'object' && data[sectionKey] !== null) {
+                    for (const fieldKey in data[sectionKey]) {
+                        const fieldId = mapDataKeyToFieldId(sectionKey, fieldKey);
+                        if (fieldId) {
+                            console.log(`[DIAGNÓSTICO] Mapeando: [${sectionKey}.${fieldKey}] para o campo com ID: #${fieldId}`);
+                            const element = document.getElementById(fieldId);
+
+                            if (element) {
+                                element.value = data[sectionKey][fieldKey];
+                                console.log(`   └─ SUCESSO: Campo #${fieldId} preenchido.`);
+                            } else {
+                                // Este log nos dirá exatamente qual campo está faltando
+                                console.error(`   └─ ERRO FATAL: O campo com ID #${fieldId} NÃO FOI ENCONTRADO no HTML!`);
+                            }
+                        }
+                    }
+                }
+            }
+            console.log('%c--- DIAGNÓSTICO: Fim do preenchimento de campos ---', 'color: orange; font-weight: bold;');
+            
+            const abordagem = data.identificacaoPsicologo.abordagem;
+            const abordagemSelect = document.getElementById('abordagem-teorica');
+            const outraContainer = document.getElementById('outra-abordagem-container');
+            const outraInput = document.getElementById('outra-abordagem-texto');
+            
+            const optionExists = [...abordagemSelect.options].some(opt => opt.value === abordagem);
+            if (optionExists) {
+                abordagemSelect.value = abordagem;
+                outraContainer.style.display = 'none';
+            } else {
+                abordagemSelect.value = 'Outra';
+                outraInput.value = abordagem;
+                outraContainer.style.display = 'block';
+            }
+            console.log('[DIAGNÓSTICO] SUCEESSO: Campo de Abordagem preenchido.');
+            
+            setupEventListeners(); // Re-ativa o auto-save para a ficha carregada
+            console.log('[DIAGNÓSTICO] SUCEESSO: Salvamento automático ativado para esta ficha.');
+
+        } else {
+            throw new Error("Documento não encontrado");
+        }
+    } catch (error) {
+        console.error("[DIAGNÓSTICO] Ocorreu um erro GERAL ao tentar carregar a ficha:", error);
+        alert("Ocorreu um erro ao carregar a ficha.");
+    }
+}
+
+
+// O resto do arquivo (funções de salvar, verificar campos, etc.) continua igual
 function verificarCamposObrigatorios() {
     const campos = document.querySelectorAll('.required-for-autosave');
     for (const campo of campos) {
@@ -85,21 +165,17 @@ async function loadSupervisores(selectedSupervisorId = null) {
 async function autoSalvarFicha() {
     const statusEl = document.getElementById('autosave-status');
     if (!statusEl) return;
-
     if (!verificarCamposObrigatorios()) {
         statusEl.textContent = '';
         return;
     }
-
     statusEl.textContent = 'Salvando...';
     statusEl.style.color = '#31708f';
-    
     const supervisorSelect = document.getElementById('supervisor-nome');
     const selectedSupervisorOption = supervisorSelect.options[supervisorSelect.selectedIndex];
     const abordagem = document.getElementById('abordagem-teorica').value;
     const abordagemTexto = abordagem === 'Outra' ? document.getElementById('outra-abordagem-texto').value : abordagem;
     const docId = document.getElementById('document-id').value;
-
     const formData = {
         lastUpdated: new Date(),
         psicologoUid: user.uid,
@@ -112,9 +188,7 @@ async function autoSalvarFicha() {
         fase3: { data: document.getElementById('fase3-data').value, avaliacao: document.getElementById('fase3-avaliacao').value, mudancas: document.getElementById('fase3-mudancas').value },
         observacoesFinais: { desfecho: document.getElementById('desfecho').value, dataDesfecho: document.getElementById('data-desfecho').value, observacoes: document.getElementById('obs-finais').value },
     };
-
     try {
-        // Se já existe um ID, atualiza (set com merge). Se não, cria (add).
         if (docId) {
             await db.collection("fichas-supervisao-casos").doc(docId).set(formData, { merge: true });
         } else {
@@ -134,67 +208,6 @@ async function autoSalvarFicha() {
                 statusEl.textContent = '';
             }
         }, 3000);
-    }
-}
-
-// NOVA FUNÇÃO EXPORTADA: para ser usada pela tela "Meus Acompanhamentos"
-// Ela assume que o HTML do formulário já está na tela e o preenche.
-export async function preencherFormularioExistente(docId, dbRef, userRef, userDataRef) {
-    db = dbRef;
-    user = userRef;
-    userData = userDataRef;
-
-    const form = document.getElementById('form-supervisao');
-    form.reset();
-    
-    try {
-        const docRef = db.collection("fichas-supervisao-casos").doc(docId);
-        const docSnap = await docRef.get();
-
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('document-id').value = docId;
-            document.getElementById('psicologo-nome').value = data.psicologoNome;
-            await loadSupervisores(data.identificacaoGeral.supervisorUid);
-            
-            // Preenche todos os campos
-            for (const sectionKey in data) {
-                if (typeof data[sectionKey] === 'object' && data[sectionKey] !== null) {
-                    for (const fieldKey in data[sectionKey]) {
-                        const fieldId = mapDataKeyToFieldId(sectionKey, fieldKey);
-                        if (fieldId) {
-                            const element = document.getElementById(fieldId);
-                            if (element) {
-                                element.value = data[sectionKey][fieldKey];
-                            }
-                        }
-                    }
-                }
-            }
-            
-            const abordagem = data.identificacaoPsicologo.abordagem;
-            const abordagemSelect = document.getElementById('abordagem-teorica');
-            const outraContainer = document.getElementById('outra-abordagem-container');
-            const outraInput = document.getElementById('outra-abordagem-texto');
-            
-            const optionExists = [...abordagemSelect.options].some(opt => opt.value === abordagem);
-            if (optionExists) {
-                abordagemSelect.value = abordagem;
-                outraContainer.style.display = 'none';
-            } else {
-                abordagemSelect.value = 'Outra';
-                outraInput.value = abordagem;
-                outraContainer.style.display = 'block';
-            }
-            
-            // Inicia o auto-save para a ficha carregada
-            setupEventListeners();
-        } else {
-            throw new Error("Documento não encontrado");
-        }
-    } catch (error) {
-        console.error("Erro ao carregar ficha existente:", error);
-        alert("Ocorreu um erro ao carregar a ficha.");
     }
 }
 
