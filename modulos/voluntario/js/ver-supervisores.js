@@ -50,7 +50,14 @@ async function loadSupervisores() {
             const card = document.createElement('div');
             card.className = 'supervisor-card';
             card.dataset.id = supervisor.id;
-            const fotoUrl = supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png';
+
+            // --- INÍCIO DA CORREÇÃO ---
+            // Constrói o caminho completo da imagem
+            const fotoUrl = supervisor.fotoUrl 
+                ? `../../../assets/img/supervisores/${supervisor.fotoUrl}` 
+                : '../../../assets/img/avatar-padrao.png';
+            // --- FIM DA CORREÇÃO ---
+
             card.innerHTML = `
                 <div class="supervisor-card-header">
                     <div class="supervisor-photo-container">
@@ -73,19 +80,16 @@ async function loadSupervisores() {
     }
 }
 
-// --- FUNÇÃO CORRIGIDA ---
 function openSupervisorModal(supervisor) {
     const modal = document.getElementById('supervisor-modal');
     const modalBody = document.getElementById('supervisor-modal-body');
     
-    // Helper para criar listas
     const toList = (data) => {
         if (!data || data.length === 0) return '<ul><li>Não informado</li></ul>';
         const items = Array.isArray(data) ? data : [data];
         return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
     };
 
-    // Helper para formatar os horários
     let horariosHtml = '<ul><li>Nenhum horário cadastrado.</li></ul>';
     if (supervisor.diasHorarios && Array.isArray(supervisor.diasHorarios) && supervisor.diasHorarios.length > 0) {
         horariosHtml = '<ul>';
