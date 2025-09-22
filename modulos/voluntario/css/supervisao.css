@@ -6,29 +6,6 @@
     margin-bottom: 25px;
 }
 
-.tab-link {
-    padding: 12px 20px;
-    cursor: pointer;
-    background-color: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    font-size: 1.05em;
-    font-weight: 500;
-    color: var(--cor-texto-secundario);
-    transition: all 0.2s ease-in-out;
-}
-
-.tab-link:hover {
-    background-color: var(--cor-fundo-hover);
-    color: var(--cor-primaria);
-}
-
-.tab-link.active {
-    color: var(--cor-primaria);
-    border-bottom: 3px solid var(--cor-primaria);
-    font-weight: 600;
-}
-
 .tab-content-area {
     padding: 10px;
 }
