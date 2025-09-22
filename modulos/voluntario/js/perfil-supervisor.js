@@ -1,5 +1,5 @@
-// Arquivo: /modulos/voluntario/js/perfil-supervisor.js
-// Versão: 2.2 (Completo e corrigido para interagir com modal global)
+// Arquivo: /modulos/voluntario/js/perfil-supervisor.js (CORRIGIDO)
+// Versão: 2.3 (Corrige caminho da foto e exibe todas as informações no card)
 // Descrição: Controla a visualização e edição de perfis de supervisor.
 
 import { db, collection, query, where, getDocs, doc, updateDoc } from '../../../assets/js/firebase-init.js';
@@ -20,12 +20,19 @@ export function init(db, user, userData) {
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
-        // Utiliza a classe principal que já tem os estilos corretos
         card.className = 'supervisor-card'; 
         
-        const photoPath = (supervisor.fotoUrl && supervisor.fotoUrl.startsWith('assets')) 
-            ? `../../../${supervisor.fotoUrl}` 
-            : supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png';
+        // --- CORREÇÃO DO CAMINHO DA FOTO ---
+        const photoPath = supervisor.fotoUrl 
+            ? `../../../assets/img/supervisores/${supervisor.fotoUrl}` 
+            : '../../../assets/img/avatar-padrao.png';
+
+        // --- CORREÇÃO E ADIÇÃO DAS INFORMAÇÕES FALTANTES ---
+        const toList = (data) => {
+            if (!data || data.length === 0) return '<ul><li>Não informado</li></ul>';
+            const items = Array.isArray(data) ? data : [data];
+            return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
+        };
 
         card.innerHTML = `
             <div class="supervisor-card-left">
@@ -43,7 +50,7 @@ export function init(db, user, userData) {
                 </div>
             </div>
             <div class="supervisor-card-right">
-                <button class="btn btn-primary edit-btn" data-uid="${supervisor.uid}" style="position: absolute; top: 0; right: 0;">Editar Perfil</button>
+                <button class="action-button edit-btn" data-uid="${supervisor.uid}" style="position: absolute; top: 15px; right: 15px;">Editar Perfil</button>
                 <div class="profile-header">
                     <h3>PERFIL PROFISSIONAL</h3>
                 </div>
@@ -53,15 +60,15 @@ export function init(db, user, userData) {
                 </div>
                 <div class="profile-section">
                     <h4>Formação</h4>
-                    <ul>${(Array.isArray(supervisor.formacao) ? supervisor.formacao.map(item => `<li>${item}</li>`).join('') : `<li>${supervisor.formacao || 'Não informado'}</li>`)}</ul>
+                    ${toList(supervisor.formacao)}
                 </div>
                 <div class="profile-section">
                     <h4>Especialização</h4>
-                    <ul>${(Array.isArray(supervisor.especializacao) ? supervisor.especializacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>')}</ul>
+                    ${toList(supervisor.especializacao)}
                 </div>
                  <div class="profile-section">
                     <h4>Áreas de Atuação</h4>
-                    <ul>${(Array.isArray(supervisor.atuacao) ? supervisor.atuacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>')}</ul>
+                    ${toList(supervisor.atuacao)}
                 </div>
             </div>
         `;
@@ -185,7 +192,6 @@ export function init(db, user, userData) {
         }
     }
 
-    // Adiciona os listeners para o modal uma única vez, garantindo que não sejam duplicados
     const closeModalButtons = document.querySelectorAll('.close-modal-btn');
     const addHorarioButton = document.getElementById('add-horario-btn');
     
