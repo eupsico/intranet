@@ -3,9 +3,6 @@
 // Declaração das variáveis que serão usadas pelo módulo
 let db, user, userData;
 
-/**
- * Função de Debounce: Atraso na execução para não sobrecarregar o servidor.
- */
 function debounce(func, delay) {
     let timeout;
     return (...args) => {
@@ -15,60 +12,39 @@ function debounce(func, delay) {
 }
 
 /**
- * Função Principal (INIT): Ponto de entrada do módulo.
- * Decide se deve carregar um formulário novo ou preencher um existente.
+ * Função Principal (INIT): Chamada para preparar um formulário NOVO.
  */
 export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
     user = userRef;
     userData = userDataRef;
 
-    // Garante que o HTML esteja pronto antes de manipular os elementos
     setTimeout(() => {
         const form = document.getElementById('form-supervisao');
         if (!form) {
-            console.error("Erro Crítico: O formulário #form-supervisao não foi encontrado.");
+            console.error("Erro Crítico: Formulário #form-supervisao não foi encontrado.");
             return;
         }
-
-        // CORREÇÃO PRINCIPAL: Verifica a URL em busca de um ID
-        const urlParams = new URLSearchParams(window.location.search);
-        const docId = urlParams.get('id');
-
-        if (docId) {
-            // Se encontrou um ID, estamos em modo de EDIÇÃO
-            document.title = "Editando Acompanhamento"; // Muda o título da página
-            preencherFormularioExistente(docId);
-        } else {
-            // Se não encontrou ID, é uma NOVA ficha
-            setupNovaFicha();
-        }
-        
-        // Os listeners são configurados em ambos os casos (novo ou edição)
+        setupNovaFicha();
         setupEventListeners();
     }, 0);
 }
 
-/**
- * Prepara o formulário para uma nova entrada de dados.
- */
 function setupNovaFicha() {
     document.getElementById('form-supervisao').reset();
     document.getElementById('psicologo-nome').value = userData.nome || '';
     document.getElementById('fase1-data').valueAsDate = new Date();
     document.getElementById('data-supervisao').valueAsDate = new Date();
-    document.getElementById('document-id').value = ''; // Garante que o ID oculto está limpo
-    document.getElementById('outra-abordagem-container').style.display = 'none';
+    document.getElementById('document-id').value = ''; 
+    const outraContainer = document.getElementById('outra-abordagem-container');
+    if (outraContainer) outraContainer.style.display = 'none';
     loadSupervisores();
 }
 
-/**
- * Adiciona os listeners de eventos ao formulário (salvamento automático, etc.).
- */
 function setupEventListeners() {
     const form = document.getElementById('form-supervisao');
     const abordagemSelect = document.getElementById('abordagem-teorica');
-    const debouncedSave = debounce(autoSalvarFicha, 2000); // Configura o delay do auto-save
+    const debouncedSave = debounce(autoSalvarFicha, 2000);
 
     form.addEventListener('input', debouncedSave);
     form.addEventListener('change', debouncedSave);
@@ -76,27 +52,21 @@ function setupEventListeners() {
     if (abordagemSelect) {
         abordagemSelect.addEventListener('change', (event) => {
             const outraContainer = document.getElementById('outra-abordagem-container');
-            outraContainer.style.display = (event.target.value === 'Outra') ? 'block' : 'none';
+            if(outraContainer) outraContainer.style.display = (event.target.value === 'Outra') ? 'block' : 'none';
         });
     }
 }
 
-/**
- * Verifica se os campos marcados como obrigatórios para o auto-save foram preenchidos.
- */
 function verificarCamposObrigatorios() {
     const camposObrigatorios = document.querySelectorAll('.required-for-autosave');
     for (const campo of camposObrigatorios) {
         if (!campo.value.trim()) {
-            return false;
+            return false; 
         }
     }
     return true;
 }
 
-/**
- * Carrega a lista de supervisores do Firestore e popula o select.
- */
 async function loadSupervisores(selectedSupervisorId = null) {
     const select = document.getElementById('supervisor-nome');
     select.innerHTML = '<option value="">Carregando...</option>';
@@ -113,11 +83,10 @@ async function loadSupervisores(selectedSupervisorId = null) {
 
         let options = '<option value="">Selecione um supervisor</option>';
         const supervisores = [];
-        querySnapshot.forEach(doc => supervisores.push({ id: doc.id, ...doc.data() })); // Armazenar o ID do documento
+        querySnapshot.forEach(doc => supervisores.push(doc.data()));
         supervisores.sort((a, b) => a.nome.localeCompare(b.nome));
 
         supervisores.forEach(supervisor => {
-            // Usar o ID do supervisor (UID) como value da option
             options += `<option value="${supervisor.uid}" data-nome="${supervisor.nome}">${supervisor.nome}</option>`;
         });
 
@@ -131,33 +100,29 @@ async function loadSupervisores(selectedSupervisorId = null) {
     }
 }
 
-/**
- * Função de Salvamento Automático: Salva ou atualiza a ficha no Firestore.
- */
 async function autoSalvarFicha() {
     const statusEl = document.getElementById('autosave-status');
     if (!statusEl) return;
 
     if (!verificarCamposObrigatorios()) {
-        statusEl.textContent = 'Preencha Paciente e Supervisor para salvar.';
-        statusEl.style.color = '#a94442'; // Vermelho
+        statusEl.textContent = '';
         return;
     }
 
     statusEl.textContent = 'Salvando...';
-    statusEl.style.color = '#31708f'; // Azul
+    statusEl.style.color = '#31708f';
     
     const supervisorSelect = document.getElementById('supervisor-nome');
     const selectedSupervisorOption = supervisorSelect.options[supervisorSelect.selectedIndex];
     const abordagem = document.getElementById('abordagem-teorica').value;
     const abordagemTexto = abordagem === 'Outra' ? document.getElementById('outra-abordagem-texto').value : abordagem;
-    let docId = document.getElementById('document-id').value;
+    const docId = document.getElementById('document-id').value;
 
     const formData = {
         lastUpdated: new Date(),
         psicologoUid: user.uid,
         psicologoNome: document.getElementById('psicologo-nome').value,
-        identificacaoGeral: { supervisorUid: selectedSupervisorOption.value, supervisorNome: selectedSupervisorOption.dataset.nome || '', dataSupervisao: document.getElementById('data-supervisao').value, dataInicioTerapia: document.getElementById('data-inicio-terapia').value, },
+        identificacaoGeral: { supervisorUid: selectedSupervisorOption.value, supervisorNome: selectedSupervisorOption.dataset.nome, dataSupervisao: document.getElementById('data-supervisao').value, dataInicioTerapia: document.getElementById('data-inicio-terapia').value, },
         identificacaoPsicologo: { periodo: document.getElementById('psicologo-periodo').value, abordagem: abordagemTexto, },
         identificacaoCaso: { iniciais: document.getElementById('paciente-iniciais').value.toUpperCase(), idade: document.getElementById('paciente-idade').value, genero: document.getElementById('paciente-genero').value, numSessoes: document.getElementById('paciente-sessoes').value, queixa: document.getElementById('queixa-demanda').value, },
         fase1: { data: document.getElementById('fase1-data').value, foco: document.getElementById('fase1-foco').value, objetivos: document.getElementById('fase1-objetivos').value, hipoteses: document.getElementById('fase1-hipoteses').value },
@@ -172,17 +137,14 @@ async function autoSalvarFicha() {
         } else {
             const dadosIniciais = { ...formData, criadoEm: new Date() };
             const newDocRef = await db.collection("fichas-supervisao-casos").add(dadosIniciais);
-            document.getElementById('document-id').value = newDocRef.id; // Armazena o novo ID
-            docId = newDocRef.id; // Atualiza o docId para o próximo salvamento
-            // Atualiza a URL sem recarregar a página para que futuros reloads não criem uma nova ficha
-            window.history.replaceState(null, '', `?id=${docId}`);
+            document.getElementById('document-id').value = newDocRef.id;
         }
         statusEl.textContent = 'Salvo ✓';
-        statusEl.style.color = '#3c763d'; // Verde
+        statusEl.style.color = '#3c763d';
     } catch (error) {
         console.error("Erro no salvamento automático:", error);
         statusEl.textContent = 'Erro ao salvar!';
-        statusEl.style.color = '#a94442'; // Vermelho
+        statusEl.style.color = '#a94442';
     } finally {
         setTimeout(() => {
             if (statusEl.textContent !== 'Salvando...') {
@@ -193,12 +155,23 @@ async function autoSalvarFicha() {
 }
 
 /**
- * Preenche o formulário com os dados de uma ficha existente do Firestore.
+ * Função Exportada para Edição: Preenche o formulário com dados existentes.
  */
-export async function preencherFormularioExistente(docId) {
+export async function preencherFormularioExistente(docId, dbRef, userRef, userDataRef) {
+    db = dbRef;
+    user = userRef;
+    userData = userDataRef;
+    
+    // CORREÇÃO: Pequeno atraso para garantir que o DOM foi renderizado.
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     const form = document.getElementById('form-supervisao');
-    if (!form) return;
+    if (!form) {
+        console.error("Erro Crítico ao Editar: Formulário #form-supervisao não foi encontrado. O HTML pode não ter sido carregado a tempo.");
+        return;
+    }
     form.reset();
+    console.log(`[FICHA-SUPERVISAO] Tentando carregar dados para a ficha ID: ${docId}`);
     
     try {
         const docRef = db.collection("fichas-supervisao-casos").doc(docId);
@@ -206,28 +179,28 @@ export async function preencherFormularioExistente(docId) {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            document.getElementById('document-id').value = docId;
-            document.getElementById('psicologo-nome').value = data.psicologoNome || userData.nome;
+            console.log("[FICHA-SUPERVISAO] Dados recebidos do Firestore:", data);
             
-            // Carrega a lista de supervisores e pré-seleciona o correto
+            document.getElementById('document-id').value = docId;
+            document.getElementById('psicologo-nome').value = data.psicologoNome;
             await loadSupervisores(data.identificacaoGeral.supervisorUid);
             
-            // Mapeia e preenche todos os outros campos do formulário
-            Object.keys(data).forEach(sectionKey => {
+            for (const sectionKey in data) {
                 if (typeof data[sectionKey] === 'object' && data[sectionKey] !== null) {
-                    Object.keys(data[sectionKey]).forEach(fieldKey => {
+                    for (const fieldKey in data[sectionKey]) {
                         const fieldId = mapDataKeyToFieldId(sectionKey, fieldKey);
                         if (fieldId) {
                             const element = document.getElementById(fieldId);
                             if (element) {
                                 element.value = data[sectionKey][fieldKey];
+                            } else {
+                                console.warn(`[FICHA-SUPERVISAO] Elemento com ID '${fieldId}' não encontrado no formulário.`);
                             }
                         }
-                    });
+                    }
                 }
-            });
+            }
             
-            // Lógica específica para o campo de abordagem "Outra"
             const abordagem = data.identificacaoPsicologo.abordagem;
             const abordagemSelect = document.getElementById('abordagem-teorica');
             const outraContainer = document.getElementById('outra-abordagem-container');
@@ -242,20 +215,18 @@ export async function preencherFormularioExistente(docId) {
                 outraInput.value = abordagem;
                 outraContainer.style.display = 'block';
             }
+            
+            // Ativa os listeners para o salvamento automático da ficha carregada
+            setupEventListeners();
         } else {
-            throw new Error("Documento não encontrado");
+            throw new Error(`Documento com ID ${docId} não foi encontrado.`);
         }
     } catch (error) {
-        console.error("Erro ao carregar ficha para edição:", error);
-        alert("Ocorreu um erro ao carregar a ficha para edição. Verifique o console para mais detalhes.");
-        // Opcional: redirecionar de volta para a lista
-        // window.location.href = 'fichas-preenchidas.html';
+        console.error("Erro ao carregar ficha existente para edição:", error);
+        alert("Ocorreu um erro ao carregar a ficha para edição.");
     }
 }
 
-/**
- * Mapeia os nomes dos campos do banco de dados para os IDs dos elementos HTML.
- */
 function mapDataKeyToFieldId(section, key) {
     const map = {
         identificacaoGeral: { supervisorUid: 'supervisor-nome', dataSupervisao: 'data-supervisao', dataInicioTerapia: 'data-inicio-terapia' },
