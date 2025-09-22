@@ -66,28 +66,38 @@ function renderizarLista(fichas) {
     });
 }
 
+// ===== FUNÇÃO CORRIGIDA =====
 async function abrirFormularioParaEdicao(docId) {
     alternarVisao('form');
     const formContainer = document.getElementById('form-view-container');
     formContainer.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-        // AQUI ESTÁ A MUDANÇA: Carrega o novo arquivo 'editar-ficha.html'
         const response = await fetch('../page/editar-ficha.html');
         if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário de edição.');
         formContainer.innerHTML = await response.text();
 
-        // O script do formulário é o mesmo, pois a lógica interna é reutilizável
-        const formModule = await import('./ficha-supervisao.js');
-        
-        // Chamamos a função específica para preencher o formulário, não a 'init'
-        if (formModule.preencherFormularioExistente) {
-            await formModule.preencherFormularioExistente(docId, db, user, userData);
-        }
+        // A CORREÇÃO ESTÁ AQUI: Envolvemos a manipulação do novo HTML em um setTimeout
+        setTimeout(async () => {
+            try {
+                const formModule = await import('./ficha-supervisao.js');
+                if (formModule.preencherFormularioExistente) {
+                    await formModule.preencherFormularioExistente(docId, db, user, userData);
+                }
 
-        document.getElementById('btn-voltar-para-lista').addEventListener('click', () => {
-            alternarVisao('lista');
-        });
+                const backButton = document.getElementById('btn-voltar-para-lista');
+                if (backButton) {
+                    backButton.addEventListener('click', () => {
+                        alternarVisao('lista');
+                    });
+                } else {
+                     console.error('Botão "Voltar" não encontrado no HTML carregado.');
+                }
+            } catch (moduleError) {
+                console.error("Erro ao inicializar o módulo do formulário:", moduleError);
+                formContainer.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao preparar o formulário.</p>';
+            }
+        }, 0);
 
     } catch (error) {
         console.error("Erro ao abrir formulário para edição:", error);
