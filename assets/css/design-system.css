@@ -1,5 +1,5 @@
 /* Arquivo: assets/css/design-system.css
-   Versão: 1.9.5 (Correção de Botão e Aba Ativa)
+   Versão: 1.9.6 (Correção Final de Aba Ativa e Mensagens de Formulário)
 */
 
 /* --- :root e Reset --- */
@@ -61,7 +61,8 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .sidebar-menu a { display: flex; align-items: center; gap: 15px; padding: 12px 15px; border-radius: 6px; color: var(--cor-texto-secundario); font-weight: 500; font-size: 0.95em; transition: background-color 0.2s ease, color 0.2s ease; white-space: nowrap; overflow: hidden; }
 .sidebar-menu a:hover { background-color: var(--cor-fundo); color: var(--cor-primaria); text-decoration: none; }
 /* --- INÍCIO DA ALTERAÇÃO --- */
-.sidebar-menu a.active { background-color: var(--cor-primaria); color: var(--cor-texto-inverso); }
+.sidebar-menu a.active { background-color: var(--cor-primaria); }
+.sidebar-menu a.active span, .sidebar-menu a.active { color: var(--cor-texto-inverso); }
 .sidebar-menu a.active svg { color: var(--cor-texto-inverso); }
 /* --- FIM DA ALTERAÇÃO --- */
 .sidebar-menu a svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--cor-primaria); }
@@ -179,17 +180,15 @@ table tbody tr:hover { background-color: #e9ecef; }
         padding: 0 15px;
         height: 60px;
     }
-    /* --- INÍCIO DA CORREÇÃO DO TÍTULO --- */
     .header-start {
-        min-width: 0; /* Permite que o container do título encolha */
+        min-width: 0; 
     }
     #page-title-container h1 {
-        font-size: 1.2em; /* Reduz um pouco o tamanho do título */
-        text-overflow: ellipsis; /* Garante que o corte com "..." funcione */
+        font-size: 1.2em;
+        text-overflow: ellipsis;
         overflow: hidden;
         white-space: nowrap;
     }
-    /* --- FIM DA CORREÇÃO DO TÍTULO --- */
     .header-logo {
         display: none;
     }
@@ -280,3 +279,28 @@ table tbody tr:hover { background-color: #e9ecef; }
 .login-button:hover {
     filter: brightness(1.2);
 }
+
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* Estilos para as mensagens de feedback do formulário */
+.form-message {
+    padding: 10px 15px;
+    border-radius: var(--borda-radius);
+    margin-top: 15px; /* Aumentado o espaço */
+    font-size: 0.95em; /* Aumentado a fonte */
+    font-weight: 500;
+    text-align: center;
+    display: block; /* Garante que ocupe a linha toda */
+}
+
+.form-message.success {
+    background-color: #d4edda; /* Verde claro */
+    color: #155724; /* Verde escuro */
+    border: 1px solid #c3e6cb;
+}
+
+.form-message.error {
+    background-color: #f8d7da; /* Vermelho claro */
+    color: #721c24; /* Vermelho escuro */
+    border: 1px solid #f5c6cb;
+}
+/* --- FIM DA ALTERAÇÃO --- */
