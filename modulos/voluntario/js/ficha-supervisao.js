@@ -3,8 +3,7 @@
 let db, user, userData;
 
 /**
- * Função Principal (INIT): Chamada ao abrir a aba "Ficha de Supervisão".
- * Prepara um formulário limpo para um NOVO acompanhamento.
+ * Função Principal (INIT): Ponto de entrada do módulo.
  */
 export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
@@ -14,7 +13,7 @@ export function init(dbRef, userRef, userDataRef) {
     setTimeout(() => {
         const form = document.getElementById('form-supervisao');
         if (!form) {
-            console.error("Erro Crítico: O formulário #form-supervisao não foi encontrado na página.");
+            console.error("Erro Crítico: O formulário #form-supervisao não foi encontrado.");
             return;
         }
         setupNovaFicha();
@@ -23,7 +22,7 @@ export function init(dbRef, userRef, userDataRef) {
 }
 
 /**
- * Prepara o formulário para uma nova entrada de dados.
+ * Prepara o formulário para uma nova entrada.
  */
 function setupNovaFicha() {
     const form = document.getElementById('form-supervisao');
@@ -38,15 +37,22 @@ function setupNovaFicha() {
     const outraContainer = document.getElementById('outra-abordagem-container');
     if (outraContainer) outraContainer.style.display = 'none';
 
+    // Garante que o botão esteja no estado inicial
+    const saveButton = document.getElementById('btn-salvar-inicial');
+    if(saveButton) {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Salvar Etapa Inicial';
+    }
+
     // Limpa mensagens de erro/sucesso anteriores
-    mostrarMensagemErro('', false);
-    mostrarMensagemSucesso('', false);
+    mostrarMensagem('', 'success', false);
+    mostrarMensagem('', 'error', false);
     
     loadSupervisores();
 }
 
 /**
- * Adiciona os listeners de eventos ao formulário.
+ * Adiciona os listeners de eventos.
  */
 function setupEventListeners() {
     const saveButton = document.getElementById('btn-salvar-inicial');
@@ -56,7 +62,7 @@ function setupEventListeners() {
 }
 
 /**
- * Verifica se os campos mínimos para a criação da ficha foram preenchidos.
+ * Verifica se os campos obrigatórios estão preenchidos.
  * @returns {boolean}
  */
 function verificarCamposObrigatorios() {
@@ -70,7 +76,7 @@ function verificarCamposObrigatorios() {
 }
 
 /**
- * Carrega a lista de supervisores do Firestore e popula o select.
+ * Carrega a lista de supervisores do Firestore.
  */
 async function loadSupervisores() {
     const select = document.getElementById('supervisor-nome');
@@ -118,21 +124,19 @@ function coletarDadosIniciais() {
         identificacaoGeral: { supervisorUid: selectedSupervisorOption.value, supervisorNome: selectedSupervisorOption.dataset.nome || '', dataSupervisao: document.getElementById('data-supervisao').value, dataInicioTerapia: document.getElementById('data-inicio-terapia').value, },
         identificacaoPsicologo: { periodo: document.getElementById('psicologo-periodo').value, abordagem: abordagemTexto, },
         identificacaoCaso: { iniciais: document.getElementById('paciente-iniciais').value.toUpperCase(), idade: document.getElementById('paciente-idade').value, genero: document.getElementById('paciente-genero').value, numSessoes: document.getElementById('paciente-sessoes').value, queixa: document.getElementById('queixa-demanda').value, },
-        fase1: {}, fase2: {}, fase3: {}, observacoesFinais: {}, // Campos para preenchimento futuro
+        fase1: {}, fase2: {}, fase3: {}, observacoesFinais: {},
     };
 }
 
 /**
- * Lida com o clique final do botão de salvar.
+ * Lida com o clique do botão de salvar.
  */
 async function handleFinalSave() {
-    // 1. Limpa mensagens antigas
-    mostrarMensagemErro('', false);
-    mostrarMensagemSucesso('', false);
+    mostrarMensagem('', 'error', false);
+    mostrarMensagem('', 'success', false);
 
-    // 2. Valida os campos obrigatórios
     if (!verificarCamposObrigatorios()) {
-        mostrarMensagemErro('Por favor, preencha todos os campos com asterisco (*).');
+        mostrarMensagem('Por favor, preencha todos os campos com asterisco (*).', 'error');
         return;
     }
 
@@ -144,46 +148,34 @@ async function handleFinalSave() {
     const dadosIniciais = { ...formData, criadoEm: new Date(), lastUpdated: new Date() };
 
     try {
-        // 3. Salva os dados no banco de dados
         const newDocRef = await db.collection("fichas-supervisao-casos").add(dadosIniciais);
         console.log("Ficha criada com o ID: ", newDocRef.id);
 
-        // 4. Mostra a mensagem de sucesso e limpa o formulário
-        mostrarMensagemSucesso('Ficha salva! Para editar, acesse a aba "Meus Acompanhamentos".');
-        setTimeout(setupNovaFicha, 3000); // Limpa o formulário após 3 segundos
+        mostrarMensagem('Ficha salva! Para editar, acesse a aba "Meus Acompanhamentos".', 'success');
+        
+        setTimeout(() => {
+            setupNovaFicha(); 
+        }, 3000);
 
     } catch (error) {
         console.error("Erro ao salvar a ficha:", error);
-        mostrarMensagemErro('Ocorreu um erro ao salvar a ficha. Tente novamente.');
-    } finally {
-        // 5. Reabilita o botão
+        mostrarMensagem('Ocorreu um erro ao salvar a ficha. Tente novamente.', 'error');
+        // Reabilita o botão apenas em caso de erro para permitir nova tentativa
         saveButton.disabled = false;
         saveButton.textContent = 'Salvar Etapa Inicial';
     }
 }
 
 /**
- * Mostra ou esconde a mensagem de sucesso.
+ * Exibe ou oculta uma mensagem na tela.
  * @param {string} text - O texto a ser exibido.
- * @param {boolean} [show=true] - Se deve mostrar ou esconder.
+ * @param {'success'|'error'} type - O tipo de mensagem.
+ * @param {boolean} [show=true] - Se deve mostrar ou ocultar.
  */
-function mostrarMensagemSucesso(text, show = true) {
-    const successMessage = document.getElementById('success-message');
-    if (successMessage) {
-        successMessage.textContent = text;
-        successMessage.style.display = show ? 'block' : 'none';
-    }
-}
-
-/**
- * Mostra ou esconde a mensagem de erro.
- * @param {string} text - O texto a ser exibido.
- * @param {boolean} [show=true] - Se deve mostrar ou esconder.
- */
-function mostrarMensagemErro(text, show = true) {
-    const errorMessage = document.getElementById('error-message');
-    if (errorMessage) {
-        errorMessage.textContent = text;
-        errorMessage.style.display = show ? 'block' : 'none';
+function mostrarMensagem(text, type, show = true) {
+    const messageElement = document.getElementById(`${type}-message`);
+    if (messageElement) {
+        messageElement.textContent = text;
+        messageElement.style.display = show ? 'block' : 'none';
     }
 }
