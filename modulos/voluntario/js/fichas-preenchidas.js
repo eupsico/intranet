@@ -72,19 +72,19 @@ async function abrirFormularioParaEdicao(docId) {
     formContainer.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-        const response = await fetch('../page/ficha-supervisao.html');
-        if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário.');
+        // AQUI ESTÁ A MUDANÇA: Carrega o novo arquivo 'editar-ficha.html'
+        const response = await fetch('../page/editar-ficha.html');
+        if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário de edição.');
         formContainer.innerHTML = await response.text();
 
-        // Agora que o HTML do formulário está na tela, importamos seu script
+        // O script do formulário é o mesmo, pois a lógica interna é reutilizável
         const formModule = await import('./ficha-supervisao.js');
         
-        // E chamamos a nova função 'preencherFormularioExistente'
+        // Chamamos a função específica para preencher o formulário, não a 'init'
         if (formModule.preencherFormularioExistente) {
             await formModule.preencherFormularioExistente(docId, db, user, userData);
         }
 
-        // Finalmente, adicionamos o evento ao botão "Voltar" que acabamos de carregar
         document.getElementById('btn-voltar-para-lista').addEventListener('click', () => {
             alternarVisao('lista');
         });
