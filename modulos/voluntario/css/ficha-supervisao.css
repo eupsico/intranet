@@ -174,3 +174,60 @@ textarea.form-control {
 .hidden-on-create {
     display: none;
 }
+
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* Estilos para o Modal Pop-up Local */
+.local-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    animation: localFadeIn 0.3s forwards;
+}
+
+.local-modal-box {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+    transform: scale(0.9);
+    animation: localScaleUp 0.3s forwards;
+}
+
+.local-modal-content {
+    font-size: 1.1em;
+    color: #333333;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.local-modal-actions .action-button {
+    min-width: 100px;
+}
+
+.local-modal-box.success {
+    border-top: 5px solid #28a745;
+}
+
+.local-modal-box.error {
+    border-top: 5px solid #dc3545;
+}
+
+@keyframes localFadeIn {
+    to { opacity: 1; }
+}
+
+@keyframes localScaleUp {
+    to { transform: scale(1); }
+}
+/* --- FIM DA ALTERAÇÃO --- */
