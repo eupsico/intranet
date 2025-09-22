@@ -114,12 +114,11 @@ function renderizarLista(fichas) {
             </div>
         `;
         
-        // Adiciona evento de clique para (futuramente) abrir e editar a ficha
+        // O evento de clique agora chama a função de navegação
         itemEl.addEventListener('click', () => {
-            console.log(`Clicou na ficha com ID: ${ficha.id}`);
-            alert(`FUNCIONALIDADE EM DESENVOLVIMENTO:\n\nVocê clicou na ficha do paciente ${ficha.identificacaoCaso.iniciais}.\nID do Documento: ${ficha.id}`);
-            // No futuro, podemos fazer isso navegar de volta para a aba da ficha,
-            // carregando os dados deste ID.
+            if (navigateToTab) {
+                navigateToTab('ficha-supervisao', ficha.id);
+            }
         });
 
         container.appendChild(itemEl);
