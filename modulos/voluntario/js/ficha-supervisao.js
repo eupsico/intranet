@@ -125,7 +125,6 @@ async function criarFichaERedirecionar() {
     if (!statusEl || isRedirecting) return; // Se já estiver redirecionando, não faz nada
 
     if (!verificarCamposObrigatorios()) {
-        statusEl.textContent = 'Preencha Paciente e Supervisor para criar a ficha.';
         return;
     }
 
