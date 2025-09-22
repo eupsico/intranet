@@ -58,7 +58,6 @@ function setupEventListeners() {
 
 /**
  * Verifica se os campos obrigatórios estão preenchidos.
- * @returns {boolean}
  */
 function verificarCamposObrigatorios() {
     const camposObrigatorios = document.querySelectorAll('.required-for-autosave');
@@ -105,7 +104,6 @@ async function loadSupervisores() {
 
 /**
  * Coleta os dados dos campos do formulário.
- * @returns {object}
  */
 function coletarDadosIniciais() {
     const supervisorSelect = document.getElementById('supervisor-nome');
@@ -143,14 +141,19 @@ async function handleFinalSave() {
         const newDocRef = await db.collection("fichas-supervisao-casos").add(dadosIniciais);
         console.log("Ficha criada com o ID: ", newDocRef.id);
 
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Chama o modal de sucesso e passa a função de resetar o formulário como callback
         window.showModal(
             'Ficha salva com sucesso! Para editar, acesse a aba "Meus Acompanhamentos".',
             'success',
-            () => { setupNovaFicha(); }
+            () => { setupNovaFicha(); } // Esta função será executada quando o usuário clicar em "OK"
         );
+        // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
         console.error("Erro ao salvar a ficha:", error);
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Chama o modal de erro e reabilita o botão como callback
         window.showModal(
             'Ocorreu um erro ao salvar a ficha. Tente novamente.',
             'error',
@@ -159,5 +162,6 @@ async function handleFinalSave() {
                 saveButton.textContent = 'Salvar Etapa Inicial';
             }
         );
+        // --- FIM DA ALTERAÇÃO ---
     }
 }
