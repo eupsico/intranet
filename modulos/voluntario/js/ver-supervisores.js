@@ -1,7 +1,13 @@
-let db;
+// Arquivo: /modulos/voluntario/js/ver-supervisores.js
+import { agendamentoController } from './agendamento.js';
 
-export function init(dbRef) {
+let db, user, userData;
+
+export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
+    user = userRef;
+    userData = userDataRef;
+
     console.log("Módulo Ver Supervisores inicializado.");
     loadSupervisores();
 
@@ -29,12 +35,11 @@ async function loadSupervisores() {
 
         const querySnapshot = await q.get();
         const supervisores = [];
-        querySnapshot.forEach(doc => supervisores.push({ id: doc.id, ...doc.data() }));
+        querySnapshot.forEach(doc => supervisores.push({ id: doc.id, uid: doc.id, ...doc.data() }));
         
-        // Ordena por nome
         supervisores.sort((a, b) => a.nome.localeCompare(b.nome));
 
-        grid.innerHTML = ''; // Limpa o spinner
+        grid.innerHTML = ''; 
 
         if (supervisores.length === 0) {
             grid.innerHTML = '<p>Nenhum supervisor encontrado.</p>';
@@ -46,7 +51,6 @@ async function loadSupervisores() {
             card.className = 'supervisor-card';
             card.dataset.id = supervisor.id;
 
-            // Define a foto padrão caso não haja uma
             const fotoUrl = supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png';
 
             card.innerHTML = `
@@ -102,6 +106,12 @@ function openSupervisorModal(supervisor) {
             <p>${supervisor.supervisaoInfo || 'Informações sobre agendamento não disponíveis. Entre em contato para mais detalhes.'}</p>
         </div>
     `;
+
+    const agendarBtn = modal.querySelector('#agendar-supervisao-btn');
+    agendarBtn.onclick = () => {
+        modal.style.display = 'none'; // Fecha o modal atual
+        agendamentoController.open(db, user, userData, supervisor); // Abre o novo modal de agendamento
+    };
 
     modal.style.display = 'flex';
 }
