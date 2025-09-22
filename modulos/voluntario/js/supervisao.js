@@ -1,5 +1,3 @@
-// /modulos/voluntario/js/supervisao.js (SUBSTITUIR)
-
 const tabContent = {
     'ficha-supervisao': 'ficha-supervisao.html',
     'meus-acompanhamentos': 'fichas-preenchidas.html',
@@ -10,7 +8,6 @@ const tabScripts = {
     'meus-acompanhamentos': './fichas-preenchidas.js',
     'ver-supervisores': './ver-supervisores.js'
 };
-// NOVO: Mapeamento de CSS para cada aba
 const tabCSS = {
     'ficha-supervisao': '../css/ficha-supervisao.css',
     'meus-acompanhamentos': '../css/fichas-preenchidas.css',
@@ -19,7 +16,6 @@ const tabCSS = {
 
 let db, user, userData;
 
-// Função auxiliar para carregar CSS dinamicamente
 function loadCSS(path) {
     if (!path) return;
     const cssId = `css-${path.split('/').pop().replace('.css', '')}`;
@@ -32,6 +28,17 @@ function loadCSS(path) {
     }
 }
 
+// ===== NOVA FUNÇÃO =====
+// Esta função permite que um módulo filho (como a lista) navegue para outra aba
+function navigateToTab(tabName, param = null) {
+    const tabButton = document.querySelector(`.tab-link[data-tab="${tabName}"]`);
+    if (tabButton) {
+        document.querySelectorAll('#supervisao-tabs .tab-link').forEach(tab => tab.classList.remove('active'));
+        tabButton.classList.add('active');
+        loadTabContent(tabName, param);
+    }
+}
+
 export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
     user = userRef;
@@ -39,7 +46,12 @@ export function init(dbRef, userRef, userDataRef) {
     
     const tabsContainer = document.getElementById('supervisao-tabs');
     if (tabsContainer) {
-        tabsContainer.addEventListener('click', handleTabClick);
+        tabsContainer.addEventListener('click', (event) => {
+            const clickedTab = event.target.closest('.tab-link');
+            if (!clickedTab) return;
+            event.preventDefault();
+            navigateToTab(clickedTab.dataset.tab);
+        });
         const initialTab = tabsContainer.querySelector('.tab-link.active');
         if (initialTab) {
             loadTabContent(initialTab.dataset.tab);
@@ -47,22 +59,12 @@ export function init(dbRef, userRef, userDataRef) {
     }
 }
 
-function handleTabClick(event) {
-    const clickedTab = event.target.closest('.tab-link');
-    if (!clickedTab) return;
-    event.preventDefault();
-    document.querySelectorAll('#supervisao-tabs .tab-link').forEach(tab => tab.classList.remove('active'));
-    clickedTab.classList.add('active');
-    loadTabContent(clickedTab.dataset.tab);
-}
-
-async function loadTabContent(tabName) {
+// A função agora aceita um parâmetro (o ID da ficha)
+async function loadTabContent(tabName, param = null) {
     const contentArea = document.getElementById('supervisao-content');
     if (!contentArea) return;
 
     contentArea.innerHTML = '<div class="loading-spinner"></div>';
-    
-    // Carrega o CSS da aba antes de carregar o HTML
     loadCSS(tabCSS[tabName]);
 
     const htmlFile = `../page/${tabContent[tabName]}`;
@@ -76,7 +78,8 @@ async function loadTabContent(tabName) {
         if (scriptFile) {
             const module = await import(scriptFile);
             if (module.init) {
-                module.init(db, user, userData);
+                // Passa o db, user, o parâmetro e a função de navegação para o módulo filho
+                module.init(db, user, userData, param, navigateToTab);
             }
         }
     } catch (error) {
