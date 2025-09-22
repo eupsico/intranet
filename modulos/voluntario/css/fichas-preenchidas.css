@@ -78,16 +78,3 @@
     padding: 40px;
     color: var(--cor-texto-secundario);
 }
-.btn-voltar-para-lista {
-    margin-top: 20px;
-    background-color: #04396d;
-    color: #0000;
-    border: none;
-    padding: 12px 25px;
-    border-radius: var(--borda-radius);
-    font-size: 1em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    width: 100%;
-}
