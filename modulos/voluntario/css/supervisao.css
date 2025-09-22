@@ -6,16 +6,17 @@
     margin-top: 20px;
 }
 
-/* --- Card Individual (CORRIGIDO E CONSOLIDADO) --- */
+/* --- Card Individual (CORRIGIDO) --- */
 .supervisor-card {
-    background-color: #04396d; /* Cor de fundo principal */
-    color: #FFFFFF; /* Cor do texto padrão */
+    background-color: #04396d; /* Cor de fundo alterada */
+    color: #FFFFFF; /* Cor do texto padrão alterada para branco */
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     box-shadow: var(--sombra-suave);
+    cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -25,6 +26,7 @@
 }
 
 .supervisor-card-header {
+    background-color: transparent; /* Remove a cor de fundo antiga para usar a do card */
     text-align: center;
     padding: 20px;
 }
@@ -47,46 +49,116 @@
 .supervisor-card-header h3 {
     margin: 0;
     font-size: 1.3em;
-    color: #FFFFFF;
+    color: #FFFFFF; /* Garante que o texto seja branco */
 }
 
 .supervisor-card-header p {
     margin: 5px 0 0 0;
     font-size: 0.9em;
     opacity: 0.9;
-    color: #FFFFFF;
+    color: #FFFFFF; /* Garante que o texto seja branco */
 }
 
 .supervisor-card-body {
-    padding: 0 20px 20px 20px;
+    padding: 20px;
     flex-grow: 1;
-    font-size: 0.9em;
 }
 
 .supervisor-card-body h4 {
-    color: var(--cor-secundaria);
-    margin-top: 15px;
+    color: var(--cor-secundaria); /* Usa uma cor de destaque para os títulos */
+    margin-top: 0;
     margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.supervisor-card-body p,
-.supervisor-card-body li {
-    margin: 5px 0;
-    line-height: 1.5;
-    color: #FFFFFF;
+    font-size: 1em;
 }
 
 .supervisor-card-body ul {
     list-style-type: none;
     padding: 0;
     margin: 0;
+    font-size: 0.95em;
+    color: #FFFFFF; /* Garante que o texto da lista seja branco */
 }
 
-.supervisor-card-footer {
-    padding: 20px;
+.supervisor-card-body ul li {
+    margin-bottom: 5px;
+}
+
+/* --- Modal de Detalhes --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001; /* Acima do menu lateral */
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: var(--borda-radius);
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 15px 25px;
+    background-color: var(--cor-primaria);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 { margin: 0; }
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2em;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-body {
+    padding: 25px;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 15px 25px;
+    background-color: var(--cor-fundo-hover);
+    border-top: 1px solid var(--cor-borda);
     text-align: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 10px;
+    font-size: 0.9em;
+    color: var(--cor-texto-secundario);
+}
+.modal-footer p { margin: 0; }
+
+/* --- Conteúdo do Perfil no Modal --- */
+.profile-section {
+    margin-bottom: 20px;
+}
+.profile-section h4 {
+    color: var(--cor-primaria-dark);
+    border-bottom: 2px solid var(--cor-primaria);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+.profile-section ul {
+    list-style-position: inside;
+    padding-left: 5px;
+}
+.profile-section p, .profile-section li {
+    color: var(--cor-texto-principal);
+    line-height: 1.6;
 }
