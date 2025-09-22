@@ -1,3 +1,8 @@
+<style>
+    .hidden-on-create {
+        display: none;
+    }
+</style>
 <div class="container">
     <div class="form-header">
         <h1>Ficha de Supervisão de Caso Clínico</h1>
@@ -104,15 +109,53 @@
 
             <fieldset>
                 <legend>FASE 2: MEIO DA TERAPIA (Aprox. 3 meses)</legend>
-                </fieldset>
+                 <div class="form-group">
+                    <label for="fase2-data">Data</label>
+                    <input type="date" id="fase2-data" >
+                </div>
+                <div class="form-group">
+                    <label for="fase2-reavaliacao">Reavaliação do caso</label>
+                    <textarea id="fase2-reavaliacao" rows="4"></textarea>
+                </div>
+                 <div class="form-group">
+                    <label for="fase2-progresso">Progresso Terapêutico</label>
+                    <textarea id="fase2-progresso" rows="4"></textarea>
+                </div>
+            </fieldset>
 
             <fieldset>
                 <legend>FASE 3: PROCESSO DE ALTA (5º e 6º mês)</legend>
-                </fieldset>
+                <div class="form-group">
+                    <label for="fase3-data">Data</label>
+                    <input type="date" id="fase3-data" >
+                </div>
+                <div class="form-group">
+                    <label for="fase3-avaliacao">Avaliação do Processo</label>
+                    <textarea id="fase3-avaliacao" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="fase3-mudancas">Mudanças Percebidas</label>
+                    <textarea id="fase3-mudancas" rows="4"></textarea>
+                </div>
+            </fieldset>
 
             <fieldset>
                 <legend>Observações Finais</legend>
-                </fieldset>
+                 <div class="form-row">
+                <div class="form-group">
+                    <label for="desfecho">Desfecho do Caso</label>
+                    <input type="text" id="desfecho" >
+                </div>
+                <div class="form-group">
+                    <label for="data-desfecho">Data do Desfecho</label>
+                    <input type="date" id="data-desfecho">
+                </div>
+            </div>
+                 <div class="form-group">
+                    <label for="obs-finais">Observações</label>
+                    <textarea id="obs-finais" rows="4"></textarea>
+                </div>
+            </fieldset>
         </div>
 
         <div class="form-actions">
