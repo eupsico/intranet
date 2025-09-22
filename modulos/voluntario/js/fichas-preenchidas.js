@@ -1,13 +1,17 @@
-let db, user, userData;
-let todasAsFichas = []; // Armazena todas as fichas carregadas
+let db, user, userData, navigateToTab;
+let todasAsFichas = [];
 
-export function init(dbRef, userRef, userDataRef) {
-    db = dbRef;
-    user = userRef;
-    userData = userDataRef;
+// A função init agora garante que o HTML esteja pronto antes de executar
+export function init(dbRef, userRef, userDataRef, param, navigationFunc) {
+    setTimeout(() => {
+        db = dbRef;
+        user = userRef;
+        userData = userDataRef;
+        navigateToTab = navigationFunc;
 
-    console.log("Módulo Meus Acompanhamentos inicializado.");
-    carregarFichas();
+        console.log("Módulo Meus Acompanhamentos inicializado.");
+        carregarFichas();
+    }, 0); // O timeout de 0ms atrasa a execução o suficiente para o DOM carregar
 }
 
 async function carregarFichas() {
@@ -17,50 +21,41 @@ async function carregarFichas() {
     container.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-        // ===== AQUI ESTÁ A ALTERAÇÃO =====
-        // A ordenação .orderBy("criadoEm", "desc") foi removida da consulta.
         const q = db.collection("fichas-supervisao-casos")
             .where("psicologoUid", "==", user.uid);
         
         const querySnapshot = await q.get();
         todasAsFichas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // A ordenação agora é feita aqui no JavaScript, de forma segura.
         if (todasAsFichas.length > 0) {
             todasAsFichas.sort((a, b) => {
                 const dateA = a.criadoEm && a.criadoEm.toDate ? a.criadoEm.toDate() : new Date(0);
                 const dateB = b.criadoEm && b.criadoEm.toDate ? b.criadoEm.toDate() : new Date(0);
-                return dateB - dateA; // Ordena da data mais recente para a mais antiga
+                return dateB - dateA;
             });
         }
 
         renderizarLista(todasAsFichas);
         popularFiltroPacientes(todasAsFichas);
 
-        // Adiciona o listener para o filtro
         const filtroSelect = document.getElementById('filtro-paciente');
-        filtroSelect.removeEventListener('change', aplicarFiltro); // Garante que não haja duplicatas
+        filtroSelect.removeEventListener('change', aplicarFiltro);
         filtroSelect.addEventListener('change', aplicarFiltro);
 
     } catch (error) {
-        console.error("Erro ao carregar fichas de supervisão:", error);
-        container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao buscar seus acompanhamentos. Tente novamente mais tarde.</p>';
+        console.error("Erro ao carregar fichas:", error);
+        container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao buscar seus acompanhamentos.</p>';
     }
 }
 
 function popularFiltroPacientes(fichas) {
     const filtroSelect = document.getElementById('filtro-paciente');
     if (!filtroSelect) return;
-
-    // Extrai as iniciais únicas dos pacientes
     const iniciaisPacientes = [...new Set(fichas.map(ficha => ficha.identificacaoCaso.iniciais))];
-    iniciaisPacientes.sort(); // Ordena alfabeticamente
-
-    // Limpa opções antigas (exceto a primeira "Todos")
+    iniciaisPacientes.sort();
     filtroSelect.innerHTML = '<option value="todos">Todos os Pacientes</option>';
-
     iniciaisPacientes.forEach(iniciais => {
-        if (iniciais) { // Garante que não adicione opções vazias
+        if (iniciais) {
             const option = document.createElement('option');
             option.value = iniciais;
             option.textContent = iniciais;
@@ -72,7 +67,6 @@ function popularFiltroPacientes(fichas) {
 function aplicarFiltro() {
     const filtroSelect = document.getElementById('filtro-paciente');
     const valorSelecionado = filtroSelect.value;
-
     if (valorSelecionado === 'todos') {
         renderizarLista(todasAsFichas);
     } else {
@@ -84,37 +78,23 @@ function aplicarFiltro() {
 function renderizarLista(fichas) {
     const container = document.getElementById('lista-fichas-container');
     if (!container) return;
-
-    container.innerHTML = ''; // Limpa a lista atual
-
+    container.innerHTML = '';
     if (fichas.length === 0) {
         container.innerHTML = '<p class="no-fichas-message">Nenhum acompanhamento encontrado.</p>';
         return;
     }
-
     fichas.forEach(ficha => {
         const dataSupervisao = ficha.identificacaoGeral.dataSupervisao;
         const dataFormatada = dataSupervisao ? new Date(dataSupervisao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/D';
-
         const itemEl = document.createElement('div');
         itemEl.className = 'ficha-item';
         itemEl.dataset.id = ficha.id;
         itemEl.innerHTML = `
-            <div class="ficha-item-col">
-                <p class="label">Paciente</p>
-                <p class="value paciente">${ficha.identificacaoCaso.iniciais || 'N/A'}</p>
-            </div>
-            <div class="ficha-item-col">
-                <p class="label">Supervisor(a)</p>
-                <p class="value">${ficha.identificacaoGeral.supervisorNome || 'N/A'}</p>
-            </div>
-            <div class="ficha-item-col">
-                <p class="label">Data da Supervisão</p>
-                <p class="value">${dataFormatada}</p>
-            </div>
+            <div class="ficha-item-col"><p class="label">Paciente</p><p class="value paciente">${ficha.identificacaoCaso.iniciais || 'N/A'}</p></div>
+            <div class="ficha-item-col"><p class="label">Supervisor(a)</p><p class="value">${ficha.identificacaoGeral.supervisorNome || 'N/A'}</p></div>
+            <div class="ficha-item-col"><p class="label">Data da Supervisão</p><p class="value">${dataFormatada}</p></div>
         `;
         
-        // O evento de clique agora chama a função de navegação
         itemEl.addEventListener('click', () => {
             if (navigateToTab) {
                 navigateToTab('ficha-supervisao', ficha.id);
