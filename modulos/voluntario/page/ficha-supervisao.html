@@ -111,21 +111,76 @@
             </div>
             </fieldset>
 
-            <fieldset>
-                <legend>FASE 2: MEIO DA TERAPIA (Aprox. 3 meses)</legend>
-                </fieldset>
-
-            <fieldset>
-                <legend>FASE 3: PROCESSO DE ALTA (5º e 6º mês)</legend>
-                </fieldset>
-
-            <fieldset>
-                <legend>Observações Finais</legend>
-                </fieldset>
+                    <fieldset>
+            <legend>FASE 2: MEIO DA TERAPIA (Aprox. 3 meses)</legend>
+            <div class="form-group">
+                <label for="fase2-data">Data do Preenchimento</label>
+                <input type="date" id="fase2-data" name="fase2-data" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="fase2-reavaliacao">Reavaliação do foco:</label>
+                <textarea id="fase2-reavaliacao" name="fase2-reavaliacao" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fase2-progresso">Progresso em direção aos objetivos:</label>
+                <textarea id="fase2-progresso" name="fase2-progresso" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="fase2-obs-supervisor">Observações do Supervisor:</label>
+                <textarea id="fase2-obs-supervisor" name="fase2-obs-supervisor" rows="3" class="form-control" readonly></textarea>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>FASE 3: PROCESSO DE ALTA (5º e 6º mês)</legend>
+            <div class="form-group">
+                <label for="fase3-data">Data do Preenchimento</label>
+                <input type="date" id="fase3-data" name="fase3-data" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="fase3-avaliacao">Avaliação final dos objetivos:</label>
+                <textarea id="fase3-avaliacao" name="fase3-avaliacao" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fase3-mudancas">Principais mudanças e aprendizados:</label>
+                <textarea id="fase3-mudancas" name="fase3-mudancas" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="fase3-obs-supervisor">Observações do Supervisor:</label>
+                <textarea id="fase3-obs-supervisor" name="fase3-obs-supervisor" rows="3" class="form-control" readonly></textarea>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>Observações Finais</legend>
+            <div class="form-row cols-3">
+                 <div class="form-group">
+                    <label for="desfecho">Desfecho do caso</label>
+                    <select id="desfecho" name="desfecho" class="form-control">
+                        <option value="">Selecione...</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Desistencia">Desistência</option>
+                        <option value="Em andamento">Em andamento</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="data-desfecho">Data da Alta/Desistência</label>
+                    <input type="date" id="data-desfecho" name="data-desfecho" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="obs-finais">Observações finais relevantes:</label>
+                <textarea id="obs-finais" name="obs-finais" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="obs-finais-supervisor">Observações do Supervisor:</label>
+                <textarea id="obs-finais-supervisor" name="obs-finais-supervisor" rows="3" class="form-control" readonly></textarea>
+            </div>
+            <div class="form-group supervisor-field">
+                <label for="assinatura-supervisor">Assinatura do Supervisor</label>
+                <input type="text" id="assinatura-supervisor" name="assinatura-supervisor" class="form-control" readonly>
         </div>
 
         <div class="form-actions">
-            <button type="button" id="btn-salvar-inicial" class="btn btn-primary">Salvar Etapa Inicial</button>
+            <button type="button" id="btn-salvar-inicial" class="action-button:hover">Salvar Etapa Inicial</button>
             <span id="autosave-status"></span>
         </div>
     </form>
