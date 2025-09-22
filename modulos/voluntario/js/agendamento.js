@@ -1,5 +1,4 @@
-// Arquivo: /modulos/voluntario/js/agendamento.js
-import { collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// Arquivo: /modulos/voluntario/js/agendamento.js (CORRIGIDO)
 
 const modal = document.getElementById('agendamento-modal');
 let currentSupervisorData = null;
@@ -18,7 +17,7 @@ function getNextDates(diaDaSemana, quantidade) {
     
     for (let i = 0; i < quantidade; i++) {
         results.push(new Date(date));
-        date.setDate(date.getDate() + 14);
+        date.setDate(date.getDate() + 14); // Agendamentos quinzenais
     }
     return results;
 }
@@ -27,7 +26,7 @@ function calculateCapacity(inicio, fim) {
     try {
         const [startH, startM] = inicio.split(':').map(Number);
         const [endH, endM] = fim.split(':').map(Number);
-        return Math.floor(((endH * 60 + endM) - (startH * 60 + startM)) / 30);
+        return Math.floor(((endH * 60 + endM) - (startH * 60 + startM)) / 30); // Capacidade baseada em slots de 30min
     } catch (e) { return 0; }
 }
 
@@ -40,7 +39,7 @@ function renderDates(horariosDisponiveis) {
     const availableSlots = horariosDisponiveis.filter(slot => (slot.capacity - slot.booked) > 0);
     if (availableSlots.length === 0) {
         datasContainer.innerHTML = `<p>Não há vagas disponíveis no momento.</p>`;
-        confirmBtn.disabled = true;
+        if(confirmBtn) confirmBtn.disabled = true;
         return;
     }
     
@@ -57,7 +56,7 @@ function renderDates(horariosDisponiveis) {
                 </label>
             </div>`;
     });
-    confirmBtn.disabled = false;
+    if(confirmBtn) confirmBtn.disabled = false;
 }
 
 // Manipula a confirmação do agendamento
@@ -86,7 +85,7 @@ async function handleConfirmAgendamento() {
     };
 
     try {
-        await addDoc(collection(dbInstance, 'agendamentos'), agendamentoData);
+        await dbInstance.collection('agendamentos').add(agendamentoData);
         modal.querySelector('#agendamento-step-1').style.display = 'none';
         confirmBtn.style.display = 'none';
         modal.querySelector('#agendamento-step-2').style.display = 'block';
@@ -103,26 +102,22 @@ async function handleConfirmAgendamento() {
 async function open(db, user, userData, supervisorData) {
     if (!modal) return;
     
-    // Armazena as instâncias para uso interno
     dbInstance = db;
     currentUser = user;
     currentUserData = userData;
     currentSupervisorData = supervisorData;
 
-    // Reseta o estado do modal
     modal.querySelector('#agendamento-step-1').style.display = 'block';
     modal.querySelector('#agendamento-step-2').style.display = 'none';
     modal.querySelector('#agendamento-confirm-btn').style.display = 'inline-block';
     modal.querySelector('#agendamento-supervisor-nome').textContent = supervisorData.nome;
     
-    // Preenche os dados do usuário logado
     modal.querySelector('#agendamento-profissional-nome').value = userData.nome || '';
     modal.querySelector('#agendamento-profissional-email').value = user.email || '';
     modal.querySelector('#agendamento-profissional-telefone').value = userData.telefone || '';
     
     modal.style.display = 'flex';
     
-    // Busca e renderiza os horários
     const datasContainer = modal.querySelector('#datas-disponiveis-container');
     datasContainer.innerHTML = '<div class="loading-spinner"></div>';
     
@@ -141,14 +136,19 @@ async function open(db, user, userData, supervisorData) {
             });
         }
 
-        const agendamentosRef = collection(db, 'agendamentos');
+        // --- INÍCIO DA CORREÇÃO ---
+        const agendamentosRef = dbInstance.collection('agendamentos');
         const slotChecks = potentialSlots.map(async slot => {
-            const q = query(agendamentosRef, where('supervisorUid', '==', supervisorData.uid), where('dataAgendamento', '==', slot.date.toISOString()));
-            const querySnapshot = await getDocs(q);
+            const q = agendamentosRef
+                .where('supervisorUid', '==', supervisorData.uid)
+                .where('dataAgendamento', '==', slot.date.toISOString());
+            
+            const querySnapshot = await q.get();
             slot.booked = querySnapshot.size;
             slot.capacity = calculateCapacity(slot.horario.inicio, slot.horario.fim);
             return slot;
         });
+        // --- FIM DA CORREÇÃO ---
 
         const finalSlots = await Promise.all(slotChecks);
         renderDates(finalSlots);
@@ -165,7 +165,6 @@ if (modal) {
     modal.querySelector('#agendamento-confirm-btn').addEventListener('click', handleConfirmAgendamento);
 }
 
-// Exporta o controller para ser usado por outras páginas
 export const agendamentoController = {
     open
 };
