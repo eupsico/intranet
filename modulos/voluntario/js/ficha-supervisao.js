@@ -131,8 +131,7 @@ async function criarFichaERedirecionar() {
     }
 
     isRedirecting = true; // Ativa a flag para evitar execuções múltiplas
-    statusEl.textContent = 'Criando ficha e redirecionando...';
-    statusEl.style.color = '#31708f'; // Azul
+
     
     const supervisorSelect = document.getElementById('supervisor-nome');
     const selectedSupervisorOption = supervisorSelect.options[supervisorSelect.selectedIndex];
