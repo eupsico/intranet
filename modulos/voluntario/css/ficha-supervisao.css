@@ -167,3 +167,6 @@ textarea.form-control {
     font-weight: 500;
     transition: color 0.3s ease;
 }
+.hidden-on-create {
+    display: none;
+}
