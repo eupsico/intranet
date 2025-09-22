@@ -82,8 +82,8 @@ async function abrirFormularioParaEdicao(docId) {
         
         await preencherEConfigurarFormularioDeEdicao(docId);
 
-        const backButton = document.getElementById('btn-voltar-para-lista');
-        if (backButton) {
+        const backButton = document.getElementById('action-button');
+        if (backButton) { 
             backButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 alternarVisao('lista');
