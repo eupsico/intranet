@@ -126,7 +126,7 @@ function coletarDadosIniciais() {
  */
 async function handleFinalSave() {
     if (!verificarCamposObrigatorios()) {
-        window.showModal('Por favor, preencha todos os campos com asterisco (*).', 'error');
+        showLocalModal('Por favor, preencha todos os campos com asterisco (*).', 'error');
         return;
     }
 
@@ -141,27 +141,76 @@ async function handleFinalSave() {
         const newDocRef = await db.collection("fichas-supervisao-casos").add(dadosIniciais);
         console.log("Ficha criada com o ID: ", newDocRef.id);
 
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Chama o modal de sucesso e passa a função de resetar o formulário como callback
-        window.showModal(
+        showLocalModal(
             'Ficha salva com sucesso! Para editar, acesse a aba "Meus Acompanhamentos".',
             'success',
             () => { setupNovaFicha(); } // Esta função será executada quando o usuário clicar em "OK"
         );
-        // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
         console.error("Erro ao salvar a ficha:", error);
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Chama o modal de erro e reabilita o botão como callback
-        window.showModal(
+        showLocalModal(
             'Ocorreu um erro ao salvar a ficha. Tente novamente.',
             'error',
-            () => {
+            () => { // Reabilita o botão para permitir nova tentativa
                 saveButton.disabled = false;
                 saveButton.textContent = 'Salvar Etapa Inicial';
             }
         );
-        // --- FIM DA ALTERAÇÃO ---
     }
+}
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Exibe um modal de notificação local.
+ * @param {string} message - A mensagem a ser exibida no modal.
+ * @param {'success' | 'error'} type - O tipo de modal ('success' ou 'error').
+ * @param {function} [onCloseCallback] - Função a ser executada quando o modal for fechado.
+ */
+function showLocalModal(message, type = 'success', onCloseCallback) {
+    const existingModal = document.getElementById('local-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'local-modal';
+    modalOverlay.className = 'local-modal-overlay';
+
+    const modalBox = document.createElement('div');
+    modalBox.className = 'local-modal-box';
+    modalBox.classList.add(type);
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'local-modal-content';
+    modalContent.textContent = message;
+
+    const modalActions = document.createElement('div');
+    modalActions.className = 'local-modal-actions';
+
+    const okButton = document.createElement('button');
+    // Reutiliza a classe 'action-button' que já existe no design system
+    okButton.className = 'action-button';
+    okButton.textContent = 'OK';
+
+    modalActions.appendChild(okButton);
+    modalBox.appendChild(modalContent);
+    modalBox.appendChild(modalActions);
+    modalOverlay.appendChild(modalBox);
+
+    document.body.appendChild(modalOverlay);
+
+    const closeModal = () => {
+        modalOverlay.remove();
+        if (typeof onCloseCallback === 'function') {
+            onCloseCallback();
+        }
+    };
+
+    okButton.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
 }
