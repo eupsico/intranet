@@ -17,18 +17,29 @@ async function carregarFichas() {
     container.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
+        // ===== AQUI ESTÁ A ALTERAÇÃO =====
+        // A ordenação .orderBy("criadoEm", "desc") foi removida da consulta.
         const q = db.collection("fichas-supervisao-casos")
-            .where("psicologoUid", "==", user.uid)
-            .orderBy("criadoEm", "desc");
+            .where("psicologoUid", "==", user.uid);
         
         const querySnapshot = await q.get();
         todasAsFichas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // A ordenação agora é feita aqui no JavaScript, de forma segura.
+        if (todasAsFichas.length > 0) {
+            todasAsFichas.sort((a, b) => {
+                const dateA = a.criadoEm && a.criadoEm.toDate ? a.criadoEm.toDate() : new Date(0);
+                const dateB = b.criadoEm && b.criadoEm.toDate ? b.criadoEm.toDate() : new Date(0);
+                return dateB - dateA; // Ordena da data mais recente para a mais antiga
+            });
+        }
 
         renderizarLista(todasAsFichas);
         popularFiltroPacientes(todasAsFichas);
 
         // Adiciona o listener para o filtro
         const filtroSelect = document.getElementById('filtro-paciente');
+        filtroSelect.removeEventListener('change', aplicarFiltro); // Garante que não haja duplicatas
         filtroSelect.addEventListener('change', aplicarFiltro);
 
     } catch (error) {
