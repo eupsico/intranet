@@ -6,10 +6,9 @@
     margin-top: 20px;
 }
 
-/* --- Card Individual (CORRIGIDO) --- */
+/* --- Card Individual --- */
 .supervisor-card {
-    background-color: #04396d; /* Cor de fundo alterada */
-    color: #FFFFFF; /* Cor do texto padrão alterada para branco */
+    background-color: var(--cor-surface);
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
     overflow: hidden;
@@ -26,7 +25,8 @@
 }
 
 .supervisor-card-header {
-    background-color: transparent; /* Remove a cor de fundo antiga para usar a do card */
+    background-color: var(--cor-primaria-dark);
+    color: white;
     text-align: center;
     padding: 20px;
 }
@@ -49,14 +49,12 @@
 .supervisor-card-header h3 {
     margin: 0;
     font-size: 1.3em;
-    color: #FFFFFF; /* Garante que o texto seja branco */
 }
 
 .supervisor-card-header p {
     margin: 5px 0 0 0;
     font-size: 0.9em;
     opacity: 0.9;
-    color: #FFFFFF; /* Garante que o texto seja branco */
 }
 
 .supervisor-card-body {
@@ -65,7 +63,7 @@
 }
 
 .supervisor-card-body h4 {
-    color: var(--cor-secundaria); /* Usa uma cor de destaque para os títulos */
+    color: var(--cor-primaria);
     margin-top: 0;
     margin-bottom: 10px;
     font-size: 1em;
@@ -76,7 +74,7 @@
     padding: 0;
     margin: 0;
     font-size: 0.95em;
-    color: #FFFFFF; /* Garante que o texto da lista seja branco */
+    color: var(--cor-texto-secundario);
 }
 
 .supervisor-card-body ul li {
