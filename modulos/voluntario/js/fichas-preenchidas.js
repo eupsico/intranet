@@ -82,7 +82,7 @@ async function abrirFormularioParaEdicao(docId) {
         
         await preencherEConfigurarFormularioDeEdicao(docId);
 
-        const backButton = document.getElementById('action-button');
+        const backButton = document.getElementById('btn-voltar-para-lista');
         if (backButton) { 
             backButton.addEventListener('click', (e) => {
                 e.preventDefault();
