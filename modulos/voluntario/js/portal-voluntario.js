@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 2.9 (Corrigido para apontar para o módulo correto do supervisor)
+// Versão: 3.1 (Caminho de carregamento de HTML corrigido)
 
 import { auth, db } from '../../../assets/js/firebase-init.js';
 
@@ -51,10 +51,7 @@ function initPortal(user, userData) {
 
     const funcoes = userData.funcoes || [];
     if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
-        // ===== AQUI ESTÁ A ALTERAÇÃO =====
-        // O 'id' foi alterado de 'painel-supervisor' para 'ver-supervisores'
-        // para carregar o arquivo correto que já criamos.
-        views.splice(4, 0, { id: 'ver-supervisores', name: 'Painel Supervisor', icon: '⭐' });
+        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: '⭐' });
     }
 
     function buildSidebarMenu() {
@@ -63,7 +60,7 @@ function initPortal(user, userData) {
         sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     <span>Voltar à Intranet</span>
                 </a>
             </li>
@@ -80,48 +77,53 @@ function initPortal(user, userData) {
         });
     }
 
-        async function loadView(viewId, param = null) {
+    async function loadView(viewId, param = null) {
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
+        
+        // ===== AQUI ESTÁ A CORREÇÃO PRINCIPAL =====
+        // O caminho do HTML agora é relativo à pasta 'page' onde a página principal está.
+        const htmlPath = `./${viewId}.html`; 
+        const jsPath = `../js/${viewId}.js`; // O JS é relativo à pasta 'page', sobe um nível para 'voluntario' e entra em 'js'
+        const cssPath = `../css/${viewId}.css`; // O CSS segue a mesma lógica do JS
+
         try {
-            const response = await fetch(`./${viewId}.html`); // Corrigido para buscar na pasta /page/
-            if (!response.ok) throw new Error(`View HTML not found for viewId: ${viewId}`);
+            const response = await fetch(htmlPath);
+            if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${htmlPath}`);
             contentArea.innerHTML = await response.text();
             
-            try {
-                const cssFilesToLoad = [viewId]; 
-                cssFilesToLoad.forEach(cssName => {
-                    const cssId = `css-${cssName}`;
-                    if (!document.getElementById(cssId)) {
-                        const link = document.createElement('link');
-                        link.id = cssId;
-                        link.rel = 'stylesheet';
-                        link.href = `../css/${cssName}.css`;
-                        document.head.appendChild(link);
-                    }
-                });
-                
-                const viewModule = await import(`../js/${viewId}.js`);
-                if (viewModule && typeof viewModule.init === 'function') {
-                    viewModule.init(db, user, userData, param);
-                }
-            } catch (jsError) {
-                if (jsError.message.includes('Failed to fetch dynamically imported module')) {
-                    console.log(`Nenhum módulo JS ou CSS encontrado ou necessário para a view '${viewId}'.`);
-                } else {
-                    console.error(`Erro no script da view '${viewId}':`, jsError);
-                }
+            const cssId = `css-${viewId}`;
+            if (!document.getElementById(cssId)) {
+                const link = document.createElement('link');
+                link.id = cssId;
+                link.rel = 'stylesheet';
+                link.href = cssPath;
+                link.onerror = () => { console.log(`CSS para a view '${viewId}' não encontrado. Ignorando.`); link.remove(); };
+                document.head.appendChild(link);
             }
-        } catch (htmlError) {
-            console.error(`Erro ao carregar a view ${viewId}:`, htmlError);
-            contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada. Verifique se o arquivo existe na pasta 'page' e se o link no menu está correto.</p></div>`;
+            
+            const viewModule = await import(jsPath);
+            if (viewModule && typeof viewModule.init === 'function') {
+                viewModule.init(db, user, userData, param);
+            }
+        } catch (error) {
+            if (error.message.includes('Failed to fetch dynamically imported module')) {
+                console.log(`Nenhum módulo JS encontrado ou necessário para a view '${viewId}'.`);
+            } else if (error.message.includes('HTML não encontrado')) {
+                console.error(`Erro ao carregar a view ${viewId}:`, error);
+                contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada na pasta 'page'.</p></div>`;
+            } else {
+                console.error(`Ocorreu um erro inesperado ao carregar a view '${viewId}':`, error);
+                contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Ocorreu um erro inesperado.</p></div>`;
+            }
         }
     }
     
     function setupLayout() {
+        // ... (seu código de setupLayout original, sem alterações)
         const userPhoto = document.getElementById('user-photo-header');
         if(userPhoto) {
             userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
