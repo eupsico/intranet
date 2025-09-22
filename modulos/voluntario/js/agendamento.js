@@ -80,7 +80,7 @@ async function handleConfirmAgendamento() {
         profissionalUid: currentUser.uid,
         profissionalNome: nome,
         profissionalEmail: email,
-        profissionalTelefone: telefone,
+        profissionalTelefone: contato,
         criadoEm: new Date().toISOString()
     };
 
