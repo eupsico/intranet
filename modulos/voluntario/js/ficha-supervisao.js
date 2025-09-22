@@ -44,8 +44,7 @@ function setupNovaFicha() {
     isRedirecting = false; // Reseta a flag de redirecionamento
     document.getElementById('form-supervisao').reset();
     document.getElementById('psicologo-nome').value = userData.nome || '';
-    document.getElementById('fase1-data').valueAsDate = new Date();
-    document.getElementById('data-supervisao').valueAsDate = new Date();
+
     document.getElementById('document-id').value = ''; // Limpa o ID de qualquer ficha anterior
     const outraContainer = document.getElementById('outra-abordagem-container');
     if (outraContainer) outraContainer.style.display = 'none';
