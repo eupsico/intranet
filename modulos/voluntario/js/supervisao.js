@@ -28,17 +28,6 @@ function loadCSS(path) {
     }
 }
 
-// ===== NOVA FUNÇÃO =====
-// Esta função permite que um módulo filho (como a lista) navegue para outra aba
-function navigateToTab(tabName, param = null) {
-    const tabButton = document.querySelector(`.tab-link[data-tab="${tabName}"]`);
-    if (tabButton) {
-        document.querySelectorAll('#supervisao-tabs .tab-link').forEach(tab => tab.classList.remove('active'));
-        tabButton.classList.add('active');
-        loadTabContent(tabName, param);
-    }
-}
-
 export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
     user = userRef;
@@ -50,7 +39,7 @@ export function init(dbRef, userRef, userDataRef) {
             const clickedTab = event.target.closest('.tab-link');
             if (!clickedTab) return;
             event.preventDefault();
-            navigateToTab(clickedTab.dataset.tab);
+            loadTabContent(clickedTab.dataset.tab); // Carrega a aba clicada
         });
         const initialTab = tabsContainer.querySelector('.tab-link.active');
         if (initialTab) {
@@ -59,10 +48,13 @@ export function init(dbRef, userRef, userDataRef) {
     }
 }
 
-// A função agora aceita um parâmetro (o ID da ficha)
-async function loadTabContent(tabName, param = null) {
+async function loadTabContent(tabName) {
     const contentArea = document.getElementById('supervisao-content');
     if (!contentArea) return;
+
+    // Atualiza o botão da aba ativa
+    document.querySelectorAll('#supervisao-tabs .tab-link').forEach(tab => tab.classList.remove('active'));
+    document.querySelector(`.tab-link[data-tab="${tabName}"]`)?.classList.add('active');
 
     contentArea.innerHTML = '<div class="loading-spinner"></div>';
     loadCSS(tabCSS[tabName]);
@@ -78,8 +70,8 @@ async function loadTabContent(tabName, param = null) {
         if (scriptFile) {
             const module = await import(scriptFile);
             if (module.init) {
-                // Passa o db, user, o parâmetro e a função de navegação para o módulo filho
-                module.init(db, user, userData, param, navigateToTab);
+                // Passa apenas as dependências básicas
+                module.init(db, user, userData);
             }
         }
     } catch (error) {
