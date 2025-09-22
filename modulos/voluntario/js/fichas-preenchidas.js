@@ -66,7 +66,6 @@ function renderizarLista(fichas) {
     });
 }
 
-// ===== FUNÇÃO CORRIGIDA =====
 async function abrirFormularioParaEdicao(docId) {
     alternarVisao('form');
     const formContainer = document.getElementById('form-view-container');
@@ -76,34 +75,28 @@ async function abrirFormularioParaEdicao(docId) {
         const response = await fetch('../page/editar-ficha.html');
         if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário de edição.');
         formContainer.innerHTML = await response.text();
+        
+        // ===== LOG POTENTE ADICIONADO AQUI =====
+        console.log('%c[LOG-DIAGNÓSTICO] HTML do formulário de edição foi carregado na página.', 'color: blue; font-weight: bold;');
+        
+        const formModule = await import('./ficha-supervisao.js');
+        if (formModule.preencherFormularioExistente) {
+            await formModule.preencherFormularioExistente(docId, db, user, userData);
+        }
 
-        // A CORREÇÃO ESTÁ AQUI: Envolvemos a manipulação do novo HTML em um setTimeout
-        setTimeout(async () => {
-            try {
-                const formModule = await import('./ficha-supervisao.js');
-                if (formModule.preencherFormularioExistente) {
-                    await formModule.preencherFormularioExistente(docId, db, user, userData);
-                }
-
-                const backButton = document.getElementById('btn-voltar-para-lista');
-                if (backButton) {
-                    backButton.addEventListener('click', () => {
-                        alternarVisao('lista');
-                    });
-                } else {
-                     console.error('Botão "Voltar" não encontrado no HTML carregado.');
-                }
-            } catch (moduleError) {
-                console.error("Erro ao inicializar o módulo do formulário:", moduleError);
-                formContainer.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao preparar o formulário.</p>';
-            }
-        }, 0);
+        const backButton = document.getElementById('btn-voltar-para-lista');
+        if (backButton) {
+            backButton.addEventListener('click', () => {
+                alternarVisao('lista');
+            });
+        }
 
     } catch (error) {
         console.error("Erro ao abrir formulário para edição:", error);
         formContainer.innerHTML = '<p class="alert alert-error">Não foi possível carregar o formulário de edição.</p>';
     }
 }
+
 
 function popularFiltroPacientes(fichas) {
     const filtroSelect = document.getElementById('filtro-paciente');
