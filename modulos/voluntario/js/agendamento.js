@@ -114,7 +114,7 @@ async function open(db, user, userData, supervisorData) {
     
     modal.querySelector('#agendamento-profissional-nome').value = userData.nome || '';
     modal.querySelector('#agendamento-profissional-email').value = user.email || '';
-    modal.querySelector('#agendamento-profissional-telefone').value = userData.telefone || '';
+    modal.querySelector('#agendamento-profissional-telefone').value = userData.contato || '';
     
     modal.style.display = 'flex';
     
