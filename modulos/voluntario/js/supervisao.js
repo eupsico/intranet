@@ -11,7 +11,7 @@ const tabScripts = {
 const tabCSS = {
     'ficha-supervisao': '../css/ficha-supervisao.css',
     'meus-acompanhamentos': '../css/fichas-preenchidas.css',
-    'ver-supervisores': '../css/supervisores.css'
+    'ver-supervisores': '../css/supervisao.css'
 };
 
 let db, user, userData;
