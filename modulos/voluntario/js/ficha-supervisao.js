@@ -1,3 +1,4 @@
+// ESTE ARQUIVO AGORA SERVE APENAS PARA CRIAR UMA NOVA FICHA
 let db, user, userData;
 
 function debounce(func, delay) {
@@ -8,113 +9,31 @@ function debounce(func, delay) {
     };
 }
 
-// A função init agora pode receber um 'docId' para carregar uma ficha específica
-export function init(dbRef, userRef, userDataRef, docId) {
+// init é chamado pela aba "Ficha de Supervisão" para criar uma nova ficha
+export function init(dbRef, userRef, userDataRef) {
     db = dbRef;
     user = userRef;
     userData = userDataRef;
 
     setTimeout(() => {
         const form = document.getElementById('form-supervisao');
-        if (!form) {
-            console.error("Formulário #form-supervisao não encontrado.");
-            return;
-        }
+        if (!form) { return; }
         
-        // Decide se carrega uma ficha existente ou prepara uma nova
-        if (docId) {
-            carregarFichaExistente(docId);
-        } else {
-            setupNovaFicha();
-        }
-        setupEventListeners(); // Configura os listeners para ambas as situações
+        setupNovaFicha();
+        setupEventListeners();
     }, 0);
 }
 
-// Prepara o formulário para uma nova entrada
 function setupNovaFicha() {
     document.getElementById('form-supervisao').reset();
     document.getElementById('psicologo-nome').value = userData.nome || '';
     document.getElementById('fase1-data').valueAsDate = new Date();
     document.getElementById('data-supervisao').valueAsDate = new Date();
-    document.getElementById('document-id').value = ''; // Garante que o ID da ficha anterior seja limpo
+    document.getElementById('document-id').value = '';
     document.getElementById('outra-abordagem-container').style.display = 'none';
     loadSupervisores();
 }
 
-// Carrega os dados de uma ficha existente do Firebase
-async function carregarFichaExistente(docId) {
-    const form = document.getElementById('form-supervisao');
-    form.reset();
-    
-    try {
-        const docRef = db.collection("fichas-supervisao-casos").doc(docId);
-        const docSnap = await docRef.get();
-
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('document-id').value = docId;
-            document.getElementById('psicologo-nome').value = data.psicologoNome;
-            
-            await loadSupervisores(data.identificacaoGeral.supervisorUid);
-
-            // Preenche todos os outros campos de forma segura
-            for (const sectionKey in data) {
-                if (typeof data[sectionKey] === 'object' && data[sectionKey] !== null) {
-                    for (const fieldKey in data[sectionKey]) {
-                        const fieldId = mapDataKeyToFieldId(sectionKey, fieldKey);
-                        if (fieldId) { // Apenas tenta preencher se o ID for encontrado no mapa
-                            const element = document.getElementById(fieldId);
-                            if (element) {
-                                element.value = data[sectionKey][fieldKey];
-                            }
-                        }
-                    }
-                }
-            }
-            
-            const abordagem = data.identificacaoPsicologo.abordagem;
-            const abordagemSelect = document.getElementById('abordagem-teorica');
-            const outraContainer = document.getElementById('outra-abordagem-container');
-            const outraInput = document.getElementById('outra-abordagem-texto');
-            
-            const optionExists = [...abordagemSelect.options].some(opt => opt.value === abordagem);
-            if (optionExists) {
-                abordagemSelect.value = abordagem;
-                outraContainer.style.display = 'none';
-            } else {
-                abordagemSelect.value = 'Outra';
-                outraInput.value = abordagem;
-                outraContainer.style.display = 'block';
-            }
-
-        } else {
-            console.error("Nenhum documento encontrado com o ID:", docId);
-            alert("Erro: A ficha selecionada não foi encontrada.");
-            setupNovaFicha();
-        }
-    } catch (error) {
-        console.error("Erro ao carregar ficha existente:", error);
-        alert("Ocorreu um erro ao carregar a ficha.");
-        setupNovaFicha();
-    }
-}
-
-// Mapeia os nomes dos campos no Firebase para os IDs dos elementos no HTML
-function mapDataKeyToFieldId(section, key) {
-    const map = {
-        identificacaoGeral: { supervisorUid: 'supervisor-nome', dataSupervisao: 'data-supervisao', dataInicioTerapia: 'data-inicio-terapia' },
-        identificacaoPsicologo: { periodo: 'psicologo-periodo' }, // 'abordagem' é tratada separadamente
-        identificacaoCaso: { iniciais: 'paciente-iniciais', idade: 'paciente-idade', genero: 'paciente-genero', numSessoes: 'paciente-sessoes', queixa: 'queixa-demanda' },
-        fase1: { data: 'fase1-data', foco: 'fase1-foco', objetivos: 'fase1-objetivos', hipoteses: 'fase1-hipoteses' },
-        fase2: { data: 'fase2-data', reavaliacao: 'fase2-reavaliacao', progresso: 'fase2-progresso' },
-        fase3: { data: 'fase3-data', avaliacao: 'fase3-avaliacao', mudancas: 'fase3-mudancas' },
-        observacoesFinais: { desfecho: 'desfecho', dataDesfecho: 'data-desfecho', observacoes: 'obs-finais' },
-    };
-    return map[section]?.[key] || null;
-}
-
-// Configura o salvamento automático e outros eventos do formulário
 function setupEventListeners() {
     const form = document.getElementById('form-supervisao');
     const abordagemSelect = document.getElementById('abordagem-teorica');
@@ -131,9 +50,7 @@ function setupEventListeners() {
 function verificarCamposObrigatorios() {
     const campos = document.querySelectorAll('.required-for-autosave');
     for (const campo of campos) {
-        if (!campo.value.trim()) {
-            return false;
-        }
+        if (!campo.value.trim()) { return false; }
     }
     return true;
 }
@@ -197,6 +114,7 @@ async function autoSalvarFicha() {
     };
 
     try {
+        // Se já existe um ID, atualiza (set com merge). Se não, cria (add).
         if (docId) {
             await db.collection("fichas-supervisao-casos").doc(docId).set(formData, { merge: true });
         } else {
@@ -217,4 +135,78 @@ async function autoSalvarFicha() {
             }
         }, 3000);
     }
+}
+
+// NOVA FUNÇÃO EXPORTADA: para ser usada pela tela "Meus Acompanhamentos"
+// Ela assume que o HTML do formulário já está na tela e o preenche.
+export async function preencherFormularioExistente(docId, dbRef, userRef, userDataRef) {
+    db = dbRef;
+    user = userRef;
+    userData = userDataRef;
+
+    const form = document.getElementById('form-supervisao');
+    form.reset();
+    
+    try {
+        const docRef = db.collection("fichas-supervisao-casos").doc(docId);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('document-id').value = docId;
+            document.getElementById('psicologo-nome').value = data.psicologoNome;
+            await loadSupervisores(data.identificacaoGeral.supervisorUid);
+            
+            // Preenche todos os campos
+            for (const sectionKey in data) {
+                if (typeof data[sectionKey] === 'object' && data[sectionKey] !== null) {
+                    for (const fieldKey in data[sectionKey]) {
+                        const fieldId = mapDataKeyToFieldId(sectionKey, fieldKey);
+                        if (fieldId) {
+                            const element = document.getElementById(fieldId);
+                            if (element) {
+                                element.value = data[sectionKey][fieldKey];
+                            }
+                        }
+                    }
+                }
+            }
+            
+            const abordagem = data.identificacaoPsicologo.abordagem;
+            const abordagemSelect = document.getElementById('abordagem-teorica');
+            const outraContainer = document.getElementById('outra-abordagem-container');
+            const outraInput = document.getElementById('outra-abordagem-texto');
+            
+            const optionExists = [...abordagemSelect.options].some(opt => opt.value === abordagem);
+            if (optionExists) {
+                abordagemSelect.value = abordagem;
+                outraContainer.style.display = 'none';
+            } else {
+                abordagemSelect.value = 'Outra';
+                outraInput.value = abordagem;
+                outraContainer.style.display = 'block';
+            }
+            
+            // Inicia o auto-save para a ficha carregada
+            setupEventListeners();
+        } else {
+            throw new Error("Documento não encontrado");
+        }
+    } catch (error) {
+        console.error("Erro ao carregar ficha existente:", error);
+        alert("Ocorreu um erro ao carregar a ficha.");
+    }
+}
+
+function mapDataKeyToFieldId(section, key) {
+    const map = {
+        identificacaoGeral: { supervisorUid: 'supervisor-nome', dataSupervisao: 'data-supervisao', dataInicioTerapia: 'data-inicio-terapia' },
+        identificacaoPsicologo: { periodo: 'psicologo-periodo' },
+        identificacaoCaso: { iniciais: 'paciente-iniciais', idade: 'paciente-idade', genero: 'paciente-genero', numSessoes: 'paciente-sessoes', queixa: 'queixa-demanda' },
+        fase1: { data: 'fase1-data', foco: 'fase1-foco', objetivos: 'fase1-objetivos', hipoteses: 'fase1-hipoteses' },
+        fase2: { data: 'fase2-data', reavaliacao: 'fase2-reavaliacao', progresso: 'fase2-progresso' },
+        fase3: { data: 'fase3-data', avaliacao: 'fase3-avaliacao', mudancas: 'fase3-mudancas' },
+        observacoesFinais: { desfecho: 'desfecho', dataDesfecho: 'data-desfecho', observacoes: 'obs-finais' },
+    };
+    return map[section]?.[key] || null;
 }

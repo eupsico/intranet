@@ -2,12 +2,10 @@ let db, user, userData;
 let todasAsFichas = [];
 
 export function init(dbRef, userRef, userDataRef) {
-    // Usamos o setTimeout para garantir que o HTML da aba esteja pronto
     setTimeout(() => {
         db = dbRef;
         user = userRef;
         userData = userDataRef;
-        console.log("Módulo Meus Acompanhamentos (com edição) inicializado.");
         carregarFichas();
     }, 0);
 }
@@ -20,7 +18,7 @@ function alternarVisao(mostrar) {
     if (mostrar === 'lista') {
         listaView.style.display = 'block';
         formView.style.display = 'none';
-        formView.innerHTML = ''; // Limpa o formulário antigo ao voltar
+        formView.innerHTML = '';
     } else {
         listaView.style.display = 'none';
         formView.style.display = 'block';
@@ -28,7 +26,7 @@ function alternarVisao(mostrar) {
 }
 
 async function carregarFichas() {
-    alternarVisao('lista'); // Garante que a lista esteja visível
+    alternarVisao('lista');
     const container = document.getElementById('lista-fichas-container');
     container.innerHTML = '<div class="loading-spinner"></div>';
     try {
@@ -78,14 +76,15 @@ async function abrirFormularioParaEdicao(docId) {
         if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário.');
         formContainer.innerHTML = await response.text();
 
-        // Agora que o HTML está na página, podemos importar e iniciar o script do formulário
+        // Agora que o HTML do formulário está na tela, importamos seu script
         const formModule = await import('./ficha-supervisao.js');
-        if (formModule.init) {
-            // Passamos o ID do documento para o script do formulário saber qual ficha carregar
-            formModule.init(db, user, userData, docId);
+        
+        // E chamamos a nova função 'preencherFormularioExistente'
+        if (formModule.preencherFormularioExistente) {
+            await formModule.preencherFormularioExistente(docId, db, user, userData);
         }
 
-        // Adicionamos o listener para o botão "Voltar" que acabamos de carregar
+        // Finalmente, adicionamos o evento ao botão "Voltar" que acabamos de carregar
         document.getElementById('btn-voltar-para-lista').addEventListener('click', () => {
             alternarVisao('lista');
         });

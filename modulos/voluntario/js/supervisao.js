@@ -37,9 +37,10 @@ export function init(dbRef, userRef, userDataRef) {
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (event) => {
             const clickedTab = event.target.closest('.tab-link');
-            if (!clickedTab) return;
-            event.preventDefault();
-            loadTabContent(clickedTab.dataset.tab); // Carrega a aba clicada
+            if (clickedTab) {
+                event.preventDefault();
+                loadTabContent(clickedTab.dataset.tab);
+            }
         });
         const initialTab = tabsContainer.querySelector('.tab-link.active');
         if (initialTab) {
@@ -52,7 +53,6 @@ async function loadTabContent(tabName) {
     const contentArea = document.getElementById('supervisao-content');
     if (!contentArea) return;
 
-    // Atualiza o botão da aba ativa
     document.querySelectorAll('#supervisao-tabs .tab-link').forEach(tab => tab.classList.remove('active'));
     document.querySelector(`.tab-link[data-tab="${tabName}"]`)?.classList.add('active');
 
@@ -64,18 +64,17 @@ async function loadTabContent(tabName) {
 
     try {
         const response = await fetch(htmlFile);
-        if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${htmlFile}`);
+        if (!response.ok) throw new Error(`HTML não encontrado: ${htmlFile}`);
         contentArea.innerHTML = await response.text();
 
         if (scriptFile) {
             const module = await import(scriptFile);
             if (module.init) {
-                // Passa apenas as dependências básicas
                 module.init(db, user, userData);
             }
         }
     } catch (error) {
-        console.error(`Erro ao carregar a aba ${tabName}:`, error);
-        contentArea.innerHTML = '<p>Ocorreu um erro ao carregar este conteúdo.</p>';
+        console.error(`Erro ao carregar aba ${tabName}:`, error);
+        contentArea.innerHTML = '<p>Ocorreu um erro ao carregar o conteúdo.</p>';
     }
 }
