@@ -37,16 +37,11 @@ function setupNovaFicha() {
     const outraContainer = document.getElementById('outra-abordagem-container');
     if (outraContainer) outraContainer.style.display = 'none';
 
-    // Garante que o botão esteja no estado inicial
     const saveButton = document.getElementById('btn-salvar-inicial');
     if(saveButton) {
         saveButton.disabled = false;
         saveButton.textContent = 'Salvar Etapa Inicial';
     }
-
-    // Limpa mensagens de erro/sucesso anteriores
-    mostrarMensagem('', 'success', false);
-    mostrarMensagem('', 'error', false);
     
     loadSupervisores();
 }
@@ -132,11 +127,8 @@ function coletarDadosIniciais() {
  * Lida com o clique do botão de salvar.
  */
 async function handleFinalSave() {
-    mostrarMensagem('', 'error', false);
-    mostrarMensagem('', 'success', false);
-
     if (!verificarCamposObrigatorios()) {
-        mostrarMensagem('Por favor, preencha todos os campos com asterisco (*).', 'error');
+        window.showModal('Por favor, preencha todos os campos com asterisco (*).', 'error');
         return;
     }
 
@@ -151,31 +143,21 @@ async function handleFinalSave() {
         const newDocRef = await db.collection("fichas-supervisao-casos").add(dadosIniciais);
         console.log("Ficha criada com o ID: ", newDocRef.id);
 
-        mostrarMensagem('Ficha salva! Para editar, acesse a aba "Meus Acompanhamentos".', 'success');
-        
-        setTimeout(() => {
-            setupNovaFicha(); 
-        }, 3000);
+        window.showModal(
+            'Ficha salva com sucesso! Para editar, acesse a aba "Meus Acompanhamentos".',
+            'success',
+            () => { setupNovaFicha(); }
+        );
 
     } catch (error) {
         console.error("Erro ao salvar a ficha:", error);
-        mostrarMensagem('Ocorreu um erro ao salvar a ficha. Tente novamente.', 'error');
-        // Reabilita o botão apenas em caso de erro para permitir nova tentativa
-        saveButton.disabled = false;
-        saveButton.textContent = 'Salvar Etapa Inicial';
-    }
-}
-
-/**
- * Exibe ou oculta uma mensagem na tela.
- * @param {string} text - O texto a ser exibido.
- * @param {'success'|'error'} type - O tipo de mensagem.
- * @param {boolean} [show=true] - Se deve mostrar ou ocultar.
- */
-function mostrarMensagem(text, type, show = true) {
-    const messageElement = document.getElementById(`${type}-message`);
-    if (messageElement) {
-        messageElement.textContent = text;
-        messageElement.style.display = show ? 'block' : 'none';
+        window.showModal(
+            'Ocorreu um erro ao salvar a ficha. Tente novamente.',
+            'error',
+            () => {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Salvar Etapa Inicial';
+            }
+        );
     }
 }

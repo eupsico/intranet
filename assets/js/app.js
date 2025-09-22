@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.8.2 (Login Aprimorado e Menu Mobile com Auto-fechamento)
+// Versão: 1.8.3 (Implementação de Modal Global)
 
 import { auth, db } from './firebase-init.js';
 
@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // FUNÇÃO DE LOGIN ATUALIZADA
     function renderLogin(message = "Por favor, faça login para continuar.") {
         if (!loginView || !dashboardView) return;
         dashboardView.style.display = 'none';
@@ -259,3 +258,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
     handleAuth();
 });
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Exibe um modal de notificação genérico.
+ * @param {string} message - A mensagem a ser exibida no modal.
+ * @param {'success' | 'error'} type - O tipo de modal ('success' ou 'error').
+ * @param {function} [onCloseCallback] - Função a ser executada quando o modal for fechado.
+ */
+window.showModal = function(message, type = 'success', onCloseCallback) {
+    const existingModal = document.getElementById('global-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'global-modal';
+    modalOverlay.className = 'modal-overlay';
+
+    const modalBox = document.createElement('div');
+    modalBox.className = 'modal-box';
+    modalBox.classList.add(type);
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modalContent.textContent = message;
+
+    const modalActions = document.createElement('div');
+    modalActions.className = 'modal-actions';
+
+    const okButton = document.createElement('button');
+    okButton.className = 'action-button';
+    okButton.textContent = 'OK';
+
+    modalActions.appendChild(okButton);
+    modalBox.appendChild(modalContent);
+    modalBox.appendChild(modalActions);
+    modalOverlay.appendChild(modalBox);
+    document.body.appendChild(modalOverlay);
+
+    const closeModal = () => {
+        modalOverlay.remove();
+        if (typeof onCloseCallback === 'function') {
+            onCloseCallback();
+        }
+    };
+
+    okButton.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
+};
+// --- FIM DA ALTERAÇÃO ---
