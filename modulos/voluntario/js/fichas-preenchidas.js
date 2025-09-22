@@ -4,7 +4,6 @@ let db, user, userData;
 let todasAsFichas = [];
 
 export function init(dbRef, userRef, userDataRef) {
-    // Usamos um setTimeout para garantir que as referências globais estejam prontas
     setTimeout(() => {
         db = dbRef;
         user = userRef;
@@ -13,55 +12,50 @@ export function init(dbRef, userRef, userDataRef) {
     }, 0);
 }
 
-/**
- * Carrega as fichas do psicólogo logado a partir do Firestore.
- */
-async function carregarFichas() {
-    const container = document.getElementById('lista-fichas-container');
-    if (!container) {
-        console.error("Container #lista-fichas-container não encontrado.");
-        return;
-    }
-    container.innerHTML = '<div class="loading-spinner"></div>'; // Mostra o spinner de carregamento
+function alternarVisao(mostrar) {
+    const listaView = document.getElementById('lista-view-container');
+    const formView = document.getElementById('form-view-container');
+    if (!listaView || !formView) return;
 
+    if (mostrar === 'lista') {
+        listaView.style.display = 'block';
+        formView.style.display = 'none';
+        formView.innerHTML = ''; // Limpa o container do formulário ao voltar para a lista
+    } else {
+        listaView.style.display = 'none';
+        formView.style.display = 'block';
+    }
+}
+
+async function carregarFichas() {
+    alternarVisao('lista');
+    const container = document.getElementById('lista-fichas-container');
+    container.innerHTML = '<div class="loading-spinner"></div>';
     try {
         const q = db.collection("fichas-supervisao-casos").where("psicologoUid", "==", user.uid);
         const querySnapshot = await q.get();
         todasAsFichas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Ordena as fichas pela data de criação, da mais recente para a mais antiga
         if (todasAsFichas.length > 0) {
             todasAsFichas.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
         }
-
         renderizarLista(todasAsFichas);
         popularFiltroPacientes(todasAsFichas);
         document.getElementById('filtro-paciente').addEventListener('change', aplicarFiltro);
-
     } catch (error) {
         console.error("Erro ao carregar fichas:", error);
         container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao buscar seus acompanhamentos.</p>';
     }
 }
 
-/**
- * Renderiza a lista de fichas na tela.
- * @param {Array} fichas - O array de fichas a ser renderizado.
- */
 function renderizarLista(fichas) {
     const container = document.getElementById('lista-fichas-container');
-    container.innerHTML = ''; // Limpa o container
-
+    container.innerHTML = '';
     if (fichas.length === 0) {
         container.innerHTML = '<p class="no-fichas-message">Nenhum acompanhamento encontrado.</p>';
         return;
     }
-
     fichas.forEach(ficha => {
-        const dataFormatada = ficha.identificacaoGeral.dataSupervisao 
-            ? new Date(ficha.identificacaoGeral.dataSupervisao + 'T00:00:00').toLocaleDateString('pt-BR') 
-            : 'N/D';
-        
+        const dataFormatada = ficha.identificacaoGeral.dataSupervisao ? new Date(ficha.identificacaoGeral.dataSupervisao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/D';
         const itemEl = document.createElement('div');
         itemEl.className = 'ficha-item';
         itemEl.innerHTML = `
@@ -69,33 +63,53 @@ function renderizarLista(fichas) {
             <div class="ficha-item-col"><p class="label">Supervisor(a)</p><p class="value">${ficha.identificacaoGeral.supervisorNome || 'N/A'}</p></div>
             <div class="ficha-item-col"><p class="label">Data da Supervisão</p><p class="value">${dataFormatada}</p></div>
         `;
-        
-        // CORREÇÃO PRINCIPAL: Adiciona um evento de clique que redireciona para a página de edição.
-        // A página do formulário (`ficha-supervisao.html`) será responsável por carregar os dados.
-        itemEl.addEventListener('click', () => abrirFichaParaEdicao(ficha.id));
-        
+        // A chamada para abrir o formulário de edição está correta.
+        itemEl.addEventListener('click', () => abrirFormularioParaEdicao(ficha.id));
         container.appendChild(itemEl);
     });
 }
 
-/**
- * Redireciona o usuário para a página do formulário, passando o ID da ficha na URL.
- * @param {string} docId - O ID do documento da ficha no Firestore.
- */
-function abrirFichaParaEdicao(docId) {
-    // Assumindo que a página do formulário se chama 'ficha-supervisao.html'
-    // Se o nome for diferente, ajuste aqui.
-    window.location.href = `ficha-supervisao.html?id=${docId}`;
+async function abrirFormularioParaEdicao(docId) {
+    alternarVisao('form');
+    const formContainer = document.getElementById('form-view-container');
+    formContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+    try {
+        // 1. Carrega o HTML do formulário de edição
+        // ATENÇÃO: Verifique se o caminho para `editar-ficha.html` está correto.
+        const response = await fetch('../page/editar-ficha.html');
+        if (!response.ok) throw new Error('Falha ao carregar o HTML do formulário de edição.');
+        formContainer.innerHTML = await response.text();
+        
+        console.log('[FICHAS-PREENCHIDAS] HTML do formulário de edição carregado.');
+        
+        // 2. Importa o módulo do formulário
+        const formModule = await import('./ficha-supervisao.js');
+        
+        // 3. Chama a função para preencher o formulário com os dados
+        if (formModule.preencherFormularioExistente) {
+            await formModule.preencherFormularioExistente(docId, db, user, userData);
+        } else {
+            throw new Error("A função 'preencherFormularioExistente' não foi encontrada no módulo 'ficha-supervisao.js'");
+        }
+
+        // Adiciona o evento ao botão de voltar
+        const backButton = document.getElementById('btn-voltar-para-lista');
+        if (backButton) {
+            backButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                alternarVisao('lista');
+            });
+        }
+
+    } catch (error) {
+        console.error("Erro ao abrir formulário para edição:", error);
+        formContainer.innerHTML = '<p class="alert alert-error">Não foi possível carregar o formulário de edição.</p>';
+    }
 }
 
-/**
- * Popula o dropdown de filtro com as iniciais dos pacientes.
- * @param {Array} fichas - O array de todas as fichas.
- */
 function popularFiltroPacientes(fichas) {
     const filtroSelect = document.getElementById('filtro-paciente');
-    if (!filtroSelect) return;
-
     const iniciais = [...new Set(fichas.map(f => f.identificacaoCaso.iniciais))].sort();
     filtroSelect.innerHTML = '<option value="todos">Todos os Pacientes</option>';
     iniciais.forEach(i => {
@@ -103,13 +117,8 @@ function popularFiltroPacientes(fichas) {
     });
 }
 
-/**
- * Aplica o filtro de paciente selecionado na lista de fichas.
- */
 function aplicarFiltro() {
     const valor = document.getElementById('filtro-paciente').value;
-    const fichasFiltradas = (valor === 'todos') 
-        ? todasAsFichas 
-        : todasAsFichas.filter(f => f.identificacaoCaso.iniciais === valor);
+    const fichasFiltradas = (valor === 'todos') ? todasAsFichas : todasAsFichas.filter(f => f.identificacaoCaso.iniciais === valor);
     renderizarLista(fichasFiltradas);
 }
