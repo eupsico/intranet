@@ -57,7 +57,7 @@ export async function init(db, user, userData) {
                 </div>
             </div>
             <div class="supervisor-card-footer">
-                <button class="action-button edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
+                <button class="action-button edit-btn" data-uid="${supervisor.uid}" style="margin-bottom: 20px; background-color: var(--cor-texto-secundario);">Editar Perfil</button>
             </div>
         `;
 
