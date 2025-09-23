@@ -71,7 +71,7 @@ export function init(db, user, userData) {
     async function renderForm(data) {
         // Listas de opções
         const profissoes = ['Psicologia', 'Psicopedagogia', 'Musicoterapia', 'Nutrição', 'Advogado', 'Estágiario', 'Outros'];
-        const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
+        const conselhos = ['Nenhum', 'CRP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
         
         // Lógica para determinar a profissão selecionada
         const profissaoSalva = data.profissao || '';

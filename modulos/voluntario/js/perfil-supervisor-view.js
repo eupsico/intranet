@@ -14,7 +14,7 @@ export async function init(db, user, userData) {
     let fetchedSupervisors = [];
     const funcoesUsuario = userData.funcoes || [];
     const isAdmin = funcoesUsuario.includes('admin');
-    const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
+    const conselhos = ['Nenhum', 'CRP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
 
     // Aplica estilos ao container com base nas funções
     if (funcoesUsuario.includes('admin')) {
