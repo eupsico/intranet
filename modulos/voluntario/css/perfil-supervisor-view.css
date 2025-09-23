@@ -4,14 +4,13 @@
 /* --- INÍCIO DA ALTERAÇÃO: Layout em Grade para a Lista de Perfis --- */
 #meu-perfil-container.admin {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* Define 4 colunas */
-    gap: 30px; /* Aumenta o espaçamento entre os cards */
+    grid-template-columns: repeat(3, 1fr); /* Define 3 colunas */
+    gap: 20px; /* Aumenta o espaçamento entre os cards */
 }
 
 #meu-perfil-container.supervisor {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Define 1 coluna */
-    gap: 10px; /* Aumenta o espaçamento entre os cards */
+    grid-template-columns: repeat(1, 1fr); /* Define 1 coluna */
     justify-items: center;
 }
 
