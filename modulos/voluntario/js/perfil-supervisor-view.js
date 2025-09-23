@@ -27,10 +27,10 @@ export async function init(db, user, userData) {
         const card = document.createElement('div');
         card.className = 'supervisor-card';
 
-        let fotoUrl = '../../../assets/img/avatar-padrao.png';
-        if (supervisor.fotoUrl) {
-            const cleanPath = supervisor.fotoUrl.replace('assets/img/supervisores/', '');
-            fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
+        let fotoSupervisor = '../../../assets/img/avatar-padrao.png';
+        if (supervisor.fotoSupervisor) {
+            const cleanPath = supervisor.fotoSupervisor.replace('assets/img/supervisores/', '');
+            fotoSupervisor = `../../../assets/img/supervisores/${cleanPath}`;
         }
 
         const registroCompleto = (supervisor.conselhoProfissional && supervisor.conselhoProfissional !== 'Nenhum' && supervisor.registroProfissional)
@@ -40,7 +40,7 @@ export async function init(db, user, userData) {
         card.innerHTML = `
             <div class="supervisor-card-header">
                 <div class="supervisor-photo-container">
-                    <img src="${fotoUrl}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
+                    <img src="${fotoSupervisor}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
                 </div>
                 <h3>${supervisor.nome || 'Nome não informado'}</h3>
                 <div class="title-banner">${supervisor.titulo || 'Supervisor(a) Clínico(a)'}</div>
@@ -57,7 +57,7 @@ export async function init(db, user, userData) {
                 </div>
             </div>
             <div class="supervisor-card-footer">
-                <button class="action-button edit-btn" data-uid="${supervisor.uid}" style="margin-bottom: 20px; background-color: var(-cor-texto-inverso);">Editar Perfil</button>
+                <button class="action-button edit-btn" data-uid="${supervisor.uid}" style="margin-bottom: 20px; background-color: #1d70b7;">Editar Perfil</button>
             </div>
         `; 
 
@@ -79,7 +79,7 @@ export async function init(db, user, userData) {
 
     const openEditModal = (data) => {
         form.elements['uid'].value = data.uid;
-        form.elements['fotoUrl'].value = data.fotoUrl || '';
+        form.elements['fotoSupervisor'].value = data.fotoSupervisor || '';
         form.elements['titulo'].value = data.titulo || '';
         form.elements['email'].value = data.email || '';
         form.elements['abordagem'].value = data.abordagem || '';
@@ -102,13 +102,13 @@ export async function init(db, user, userData) {
             data.diasHorarios.forEach(h => horariosContainer.appendChild(createHorarioRow(h)));
         }
 
-        const fotoUrlInput = form.elements['fotoUrl'];
+        const fotoSupervisorInput = form.elements['fotoSupervisor'];
         if (!isAdmin) {
-            fotoUrlInput.readOnly = true;
-            fotoUrlInput.title = "Apenas administradores podem alterar a URL da foto.";
+            fotoSupervisorInput.readOnly = true;
+            fotoSupervisorInput.title = "Apenas administradores podem alterar a URL da foto.";
         } else {
-            fotoUrlInput.readOnly = false;
-            fotoUrlInput.title = "";
+            fotoSupervisorInput.readOnly = false;
+            fotoSupervisorInput.title = "";
         }
 
         editModal.style.display = 'flex';
@@ -155,7 +155,7 @@ export async function init(db, user, userData) {
         };
 
         if (isAdmin) {
-            dataToUpdate.fotoUrl = form.elements['fotoUrl'].value;
+            dataToUpdate.fotoSupervisor = form.elements['fotoSupervisor'].value;
         }
 
         const saveBtn = document.getElementById('save-profile-btn');

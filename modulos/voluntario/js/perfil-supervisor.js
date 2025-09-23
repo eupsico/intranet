@@ -23,9 +23,9 @@ export function init(db, user, userData) {
         // Utiliza a classe principal que já tem os estilos corretos
         card.className = 'supervisor-card'; 
         
-        const photoPath = (supervisor.fotoUrl && supervisor.fotoUrl.startsWith('assets')) 
-            ? `../../../${supervisor.fotoUrl}` 
-            : supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png';
+        const photoPath = (supervisor.fotoSupervisor && supervisor.fotoSupervisor.startsWith('assets')) 
+            ? `../../../${supervisor.fotoSupervisor}` 
+            : supervisor.fotoSupervisor || '../../../assets/img/avatar-padrao.png';
 
         card.innerHTML = `
             <div class="supervisor-card-left">
@@ -83,7 +83,7 @@ export function init(db, user, userData) {
 
     const openEditModal = (data) => {
         form.elements['uid'].value = data.uid;
-        form.elements['fotoUrl'].value = data.fotoUrl || '';
+        form.elements['fotoSupervisor'].value = data.fotoSupervisor || '';
         form.elements['titulo'].value = data.titulo || '';
         form.elements['crp'].value = data.crp || '';
         form.elements['telefone'].value = data.telefone || '';
@@ -132,7 +132,7 @@ export function init(db, user, userData) {
         }));
 
         const dataToUpdate = {
-            fotoUrl: form.elements['fotoUrl'].value,
+            fotoSupervisor: form.elements['fotoSupervisor'].value,
             titulo: form.elements['titulo'].value,
             crp: form.elements['crp'].value,
             telefone: form.elements['telefone'].value,

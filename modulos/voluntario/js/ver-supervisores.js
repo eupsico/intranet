@@ -52,10 +52,10 @@ async function loadSupervisores() {
             card.className = 'supervisor-card';
             card.dataset.id = supervisor.id;
 
-            let fotoUrl = '../../../assets/img/avatar-padrao.png';
-            if (supervisor.fotoUrl) {
-                const cleanPath = supervisor.fotoUrl.replace('assets/img/supervisores/', '');
-                fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
+            let fotoSupervisor = '../../../assets/img/avatar-padrao.png';
+            if (supervisor.fotoSupervisor) {
+                const cleanPath = supervisor.fotoSupervisor.replace('assets/img/supervisores/', '');
+                fotoSupervisor = `../../../assets/img/supervisores/${cleanPath}`;
             }
             
             // --- ESTRUTURA HTML FINAL DO CARD ---
@@ -63,7 +63,7 @@ async function loadSupervisores() {
                 <div class="supervisor-card-header">
                     <div class.supervisor-identity>
                         <div class="supervisor-photo-container">
-                            <img src="${fotoUrl}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
+                            <img src="${fotoSupervisor}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
                         </div>
                         <h3>${supervisor.nome || 'Nome não informado'}</h3>
                     </div class.supervisor-identity>
