@@ -1,5 +1,5 @@
-// Arquivo: /modulos/voluntario/js/ver-supervisores.js (CORRIGIDO)
-// Versão: 3.1 (Restaura clique, exibe dados e corrige caminho da foto)
+// Arquivo: /modulos/voluntario/js/ver-supervisores.js 
+// Versão: 3.2 (Altera layout do card para o design final com faixa de título)
 import { agendamentoController } from './agendamento.js';
 
 let db, user, userData;
@@ -49,35 +49,38 @@ async function loadSupervisores() {
 
         supervisores.forEach(supervisor => {
             const card = document.createElement('div');
-            card.className = 'supervisor-card'; // Classe principal para o estilo azul
+            card.className = 'supervisor-card';
             card.dataset.id = supervisor.id;
 
-            // --- LÓGICA CORRIGIDA E FINAL PARA O CAMINHO DA FOTO ---
-            let fotoUrl = '../../../assets/img/avatar-padrao.png'; // Padrão
+            let fotoUrl = '../../../assets/img/avatar-padrao.png';
             if (supervisor.fotoUrl) {
-                // Remove qualquer duplicação de caminho que possa existir no dado do banco
                 const cleanPath = supervisor.fotoUrl.replace('assets/img/supervisores/', '');
                 fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
             }
             
-            // --- ESTRUTURA HTML CORRETA E COMPLETA PARA O CARD, ALINHADA COM O CSS ---
+            // --- ESTRUTURA HTML FINAL DO CARD ---
             card.innerHTML = `
                 <div class="supervisor-card-header">
-                    <div class="supervisor-photo-container">
-                        <img src="${fotoUrl}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
-                    </div>
-                    <h3>${supervisor.nome || 'Nome não informado'}</h3>
-                    <p>${supervisor.titulo || 'Supervisor(a) Clínico(a)'}</p>
+                    <div class.supervisor-identity>
+                        <div class="supervisor-photo-container">
+                            <img src="${fotoUrl}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
+                        </div>
+                        <h3>${supervisor.nome || 'Nome não informado'}</h3>
+                    </div class.supervisor-identity>
+                    <div class="title-banner">${supervisor.titulo || 'Supervisor(a) Clínico(a)'}</div>
                 </div>
                 <div class="supervisor-card-body">
-                    <h4>Áreas de Atuação</h4>
-                    <ul>
-                        ${(supervisor.atuacao && supervisor.atuacao.length > 0) ? supervisor.atuacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>'}
-                    </ul>
+                    <div class="supervisor-contact">
+                        <p><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</p>
+                        <p><strong>E-mail:</strong> ${supervisor.email || 'Não informado'}</p>
+                        <p>www.eupsico.org.br</p>
+                    </div>
+                    <div class="logo-container">
+                        <img src="../../../assets/img/logo-branca.png" alt="Logo EuPsico">
+                    </div>
                 </div>
             `;
             
-            // --- RESTAURA O EVENTO DE CLIQUE NO CARD INTEIRO ---
             card.addEventListener('click', () => openSupervisorModal(supervisor));
             grid.appendChild(card);
         });
