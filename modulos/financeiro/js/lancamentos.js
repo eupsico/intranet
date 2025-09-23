@@ -1,6 +1,6 @@
 // Arquivo: /modulos/financeiro/js/lancamentos.js
-// Versão: 2.3
-// Descrição: Corrige o seletor do modal para evitar erro 'null' e garante a robustez do filtro de data.
+// Versão: 2.4
+// Descrição: Adiciona verificações para rodar de forma segura quando a lista de lançamentos é removida.
 
 export function init(db) {
     if (!db) {
@@ -15,15 +15,9 @@ export function init(db) {
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     
     // --- Seleção de Elementos ---
-
-    // Elementos do Formulário (dentro da view)
     const saveBtn = viewContent.querySelector('#save-lancamento-btn');
     const form = viewContent.querySelector('.lancamentos-form-grid');
-    
-    // Elementos da Tabela (dentro da view)
     const tableBody = viewContent.querySelector('#lancamentos-table tbody');
-    
-    // ALTERAÇÃO: Elementos do Modal são buscados no documento inteiro, pois estão fora do .view-lancamentos
     const modal = document.querySelector('#confirmation-modal');
     const btnConfirmDelete = document.querySelector('#btn-confirm-delete');
     const btnCancelDelete = document.querySelector('#btn-cancel-delete');
@@ -43,6 +37,7 @@ export function init(db) {
     // --- Lógica das Abas ---
     function setupTabs() {
         const tabContainer = viewContent.querySelector('.tabs-container');
+        if (!tabContainer) return; // Adicionado para segurança
         tabContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('tab-link')) {
                 const tabId = e.target.dataset.tab;
@@ -59,6 +54,13 @@ export function init(db) {
     function setupFilters() {
         const mesSelector = viewContent.querySelector('#filtro-mes');
         const anoSelector = viewContent.querySelector('#filtro-ano');
+        const tipoFilterButtons = viewContent.querySelector('#tipo-filter-buttons');
+
+        // VERIFICAÇÃO: Só executa se os elementos de filtro existirem
+        if (!mesSelector || !anoSelector || !tipoFilterButtons) {
+            return;
+        }
+
         const d = new Date();
         const currentMonth = d.getMonth();
         const currentYear = d.getFullYear();
@@ -76,7 +78,7 @@ export function init(db) {
         mesSelector.addEventListener('change', (e) => { currentFilter.mes = parseInt(e.target.value); renderTable(); });
         anoSelector.addEventListener('change', (e) => { currentFilter.ano = parseInt(e.target.value); renderTable(); });
         
-        viewContent.querySelector('#tipo-filter-buttons').addEventListener('click', (e) => {
+        tipoFilterButtons.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 viewContent.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
@@ -87,6 +89,7 @@ export function init(db) {
     }
 
     function renderTable() {
+        // VERIFICAÇÃO: Só executa se a tabela existir
         if (!tableBody) return;
         tableBody.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
         
@@ -94,16 +97,12 @@ export function init(db) {
             if (!l.dataVencimento || typeof l.dataVencimento !== 'string' || !l.dataVencimento.includes('-')) {
                 return false;
             }
-
             const parts = l.dataVencimento.split('-');
             if (parts.length !== 3) return false;
-
             const anoLancamento = parseInt(parts[0], 10);
             const mesLancamento = parseInt(parts[1], 10) - 1;
-
             const matchPeriodo = mesLancamento === currentFilter.mes && anoLancamento === currentFilter.ano;
             const matchTipo = currentFilter.tipo === 'todos' || l.tipo === currentFilter.tipo;
-            
             return matchPeriodo && matchTipo;
         });
         
@@ -153,10 +152,12 @@ export function init(db) {
             fluxoCaixaRef.add(novoLancamento)
                 .then(() => {
                     window.showToast('Lançamento salvo com sucesso!', 'success');
-                    form.querySelectorAll('input, select').forEach(el => {
-                        if(el.type !== 'select-one') el.value = '';
-                    });
-                    viewContent.querySelector('#lancamento-tipo').value = 'despesa';
+                    if(form) {
+                        form.querySelectorAll('input, select').forEach(el => {
+                            if(el.type !== 'select-one') el.value = '';
+                        });
+                        viewContent.querySelector('#lancamento-tipo').value = 'despesa';
+                    }
                 })
                 .catch(err => { console.error(err); window.showToast('Erro ao salvar.', 'error'); })
                 .finally(() => { saveBtn.disabled = false; saveBtn.textContent = 'Salvar Lançamento'; });
@@ -165,13 +166,12 @@ export function init(db) {
 
     // --- Lógica do Modal de Exclusão ---
     function setupModalEvents() {
-        // Verifica se os elementos do modal existem antes de adicionar listeners
-        if (!modal || !btnCancelDelete || !btnConfirmDelete) {
-            console.error("Elementos do modal de confirmação não foram encontrados. Verifique o HTML.");
-            return;
+        const table = viewContent.querySelector('#lancamentos-table');
+        if (!modal || !btnCancelDelete || !btnConfirmDelete || !table) {
+            return; // VERIFICAÇÃO: Só executa se os elementos do modal e da tabela existirem
         }
 
-        viewContent.querySelector('#lancamentos-table').addEventListener('click', (e) => {
+        table.addEventListener('click', (e) => {
             if (e.target.classList.contains('delete-btn')) {
                 lancamentoIdParaExcluir = e.target.dataset.id;
                 modal.classList.add('is-visible');
@@ -210,13 +210,16 @@ export function init(db) {
         setupForm();
         setupModalEvents();
 
-        fluxoCaixaRef.onSnapshot(snapshot => {
-            allLancamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderTable();
-        }, error => {
-            console.error("Erro ao buscar dados do fluxo de caixa: ", error);
-            if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar dados.</td></tr>';
-        });
+        // VERIFICAÇÃO: Só ativa o listener de snapshot se a tabela existir
+        if(tableBody) {
+            fluxoCaixaRef.onSnapshot(snapshot => {
+                allLancamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTable();
+            }, error => {
+                console.error("Erro ao buscar dados do fluxo de caixa: ", error);
+                if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar dados.</td></tr>';
+            });
+        }
     }
 
     start();
