@@ -1,3 +1,6 @@
+// Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js (CORRIGIDO)
+// Versão: 1.3 (Implementa lógica de Conselho/Registro e ajusta campo de contato)
+
 export async function init(db, user, userData) {
     const container = document.getElementById('meu-perfil-container');
     const editModal = document.getElementById('edit-supervisor-profile-modal');
@@ -9,15 +12,15 @@ export async function init(db, user, userData) {
     }
 
     let fetchedSupervisors = [];
-    const funcoesUsuario = userData.funcoes || [];
-    const isAdmin = funcoesUsuario.includes('admin');
-
-    // Aplica estilos ao container com base nas funções
+    const isAdmin = (userData.funcoes || []).includes('admin');
+        // Aplica estilos ao container com base nas funções
     if (funcoesUsuario.includes('admin')) {
         container.classList.add('admin');
     } else if (funcoesUsuario.includes('supervisor')) {
         container.classList.add('supervisor');
     }
+    // Lista de conselhos, baseada no arquivo meu-perfil.js
+    const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
@@ -29,6 +32,11 @@ export async function init(db, user, userData) {
             fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
         }
 
+        // --- ALTERAÇÃO: Exibe o conselho e registro no card ---
+        const registroCompleto = (supervisor.conselhoProfissional && supervisor.conselhoProfissional !== 'Nenhum' && supervisor.registroProfissional)
+            ? `${supervisor.conselhoProfissional}: ${supervisor.registroProfissional}`
+            : 'Não informado';
+
         card.innerHTML = `
             <div class="supervisor-card-header">
                 <div class="supervisor-photo-container">
@@ -39,7 +47,8 @@ export async function init(db, user, userData) {
             </div>
             <div class="supervisor-card-body">
                 <div class="supervisor-contact">
-                    <p><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</p>
+                    <p><strong>Registro:</strong> ${registroCompleto}</p>
+                    <p><strong>Telefone:</strong> ${supervisor.contato || 'Não informado'}</p>
                     <p><strong>E-mail:</strong> ${supervisor.email || 'Não informado'}</p>
                     <p>www.eupsico.org.br</p>
                 </div>
@@ -72,10 +81,17 @@ export async function init(db, user, userData) {
         form.elements['uid'].value = data.uid;
         form.elements['fotoUrl'].value = data.fotoUrl || '';
         form.elements['titulo'].value = data.titulo || '';
-        form.elements['crp'].value = data.crp || '';
-        form.elements['telefone'].value = data.telefone || '';
         form.elements['email'].value = data.email || '';
         form.elements['abordagem'].value = data.abordagem || '';
+        
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Popula os campos de conselho, registro e contato
+        const conselhoSelect = form.elements['conselhoProfissional'];
+        conselhoSelect.innerHTML = conselhos.map(c => `<option value="${c}" ${c === (data.conselhoProfissional || 'Nenhum') ? 'selected' : ''}>${c}</option>`).join('');
+        
+        form.elements['registroProfissional'].value = data.registroProfissional || '';
+        form.elements['contato'].value = data.contato || '';
+        // --- FIM DA ALTERAÇÃO ---
 
         const toText = (arr) => Array.isArray(arr) ? arr.join('\n') : (arr || '');
         form.elements['formacao'].value = toText(data.formacao);
@@ -128,10 +144,13 @@ export async function init(db, user, userData) {
             fim: row.querySelector('[name="horario_fim"]').value
         })).filter(h => h.dia && h.inicio && h.fim);
 
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Monta o objeto de dados para salvar
         const dataToUpdate = {
             titulo: form.elements['titulo'].value,
-            crp: form.elements['crp'].value,
-            telefone: form.elements['telefone'].value,
+            conselhoProfissional: form.elements['conselhoProfissional'].value,
+            registroProfissional: form.elements['registroProfissional'].value,
+            contato: form.elements['contato'].value, // Salva em 'contato'
             abordagem: form.elements['abordagem'].value,
             formacao: fromText(form.elements['formacao'].value),
             especializacao: fromText(form.elements['especializacao'].value),
@@ -139,6 +158,7 @@ export async function init(db, user, userData) {
             supervisaoInfo: fromText(form.elements['supervisaoInfo'].value),
             diasHorarios: horarios
         };
+        // --- FIM DA ALTERAÇÃO ---
 
         if (isAdmin) {
             dataToUpdate.fotoUrl = form.elements['fotoUrl'].value;
