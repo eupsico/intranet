@@ -38,20 +38,32 @@ function initPortal(user, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
+    const icons = {
+        dashboard: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+        perfil: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        voluntarios: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        supervisao: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+        comprovantes: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+        recursos: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-4.22a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.38"/><path d="M16 2l6 6"/><path d="M15 8h-5"/><path d="M15 12h-5"/><path d="M15 16h-5"/></svg>',
+        solicitacoes: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>',
+        gestao: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        painelSupervisor: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+    };
+
     const views = [
-        { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
-        { id: 'meu-perfil', name: 'Meu Perfil', icon: '👤' },
-        { id: 'voluntarios', name: 'Voluntários', icon: '🧑‍🤝‍🧑' },
-        { id: 'supervisao', name: 'Supervisão', icon: '🎓' },
-        { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: '📄' },
-        { id: 'recursos', name: 'Recursos do Voluntário', icon: '🛠️' },
-        { id: 'solicitacoes', name: 'Solicitações', icon: '📬' },
-        { id: 'gestao', name: 'Nossa Gestão', icon: '👥' },
+        { id: 'dashboard', name: 'Dashboard', icon: icons.dashboard },
+        { id: 'meu-perfil', name: 'Meu Perfil', icon: icons.perfil },
+        { id: 'voluntarios', name: 'Voluntários', icon: icons.voluntarios },
+        { id: 'supervisao', name: 'Supervisão', icon: icons.supervisao },
+        { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: icons.comprovantes },
+        { id: 'recursos', name: 'Recursos do Voluntário', icon: icons.recursos },
+        { id: 'solicitacoes', name: 'Solicitações', icon: icons.solicitacoes },
+        { id: 'gestao', name: 'Nossa Gestão', icon: icons.gestao },
     ];
 
     const funcoes = userData.funcoes || [];
     if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
-        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: '⭐' });
+        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: icons.painelSupervisor });
     }
 
     function buildSidebarMenu() {
@@ -66,11 +78,12 @@ function initPortal(user, userData) {
             </li>
             <li class="menu-separator"></li>
         `;
+        // 2. Modificar a criação dos links para usar o SVG
         views.forEach(view => {
             sidebarMenu.innerHTML += `
                 <li>
                     <a href="#${view.id}" data-view="${view.id}">
-                        <span class="icon">${view.icon}</span>
+                        ${view.icon}
                         <span>${view.name}</span>
                     </a>
                 </li>`;
