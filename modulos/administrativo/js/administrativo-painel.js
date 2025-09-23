@@ -1,12 +1,11 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 1.5
-// Descrição: Modifica a view de Lançamentos para exibir apenas o formulário de adição.
+// Versão: 1.6
+// Descrição: Adiciona carregamento dinâmico de CSS para as views.
 
 export function init(user, db, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // Definição das views (páginas) disponíveis no painel
     const views = [
         {
             id: 'grade',
@@ -16,9 +15,9 @@ export function init(user, db, userData) {
         },
         {
             id: 'lancamentos',
-            name: 'Adicionar Lançamento', // Nome do menu alterado para refletir a ação
+            name: 'Adicionar Lançamento',
             module: 'financeiro',
-            roles: ['admin', 'financeiro', 'assistente'],
+            roles: ['admin', 'gestor', 'assistente'],
             icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`
         }
     ];
@@ -64,13 +63,15 @@ export function init(user, db, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            let htmlPath, jsPath;
+            let htmlPath, jsPath, cssPath;
             if (view.module) {
                 htmlPath = `../../${view.module}/page/${viewId}.html`;
                 jsPath = `../../${view.module}/js/${viewId}.js`;
+                cssPath = `../../${view.module}/css/${viewId}.css`; // Caminho para o CSS externo
             } else {
                 htmlPath = `./${viewId}.html`;
                 jsPath = `./${viewId}.js`;
+                cssPath = `../css/${viewId}.css`; // Caminho para o CSS interno
             }
 
             const response = await fetch(htmlPath);
@@ -78,24 +79,28 @@ export function init(user, db, userData) {
 
             let htmlContent = await response.text();
 
-            // Modifica o HTML de Lançamentos especificamente para a visão administrativa
             if (viewId === 'lancamentos') {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(htmlContent, 'text/html');
-                
                 const title = doc.querySelector('h1');
                 if (title) title.textContent = 'Adicionar Lançamento';
-
                 const tabs = doc.querySelector('.tabs-container');
                 if (tabs) tabs.style.display = 'none';
-
                 const registeredTabContent = doc.querySelector('#LancamentosRegistrados');
                 if (registeredTabContent) registeredTabContent.remove();
-                
                 htmlContent = doc.body.innerHTML;
             }
 
             contentArea.innerHTML = htmlContent;
+
+            // Lógica para carregar o CSS dinamicamente
+            document.querySelectorAll('link[data-dynamic-style]').forEach(el => el.remove());
+            const link = document.createElement('link');
+            link.setAttribute('data-dynamic-style', 'true');
+            link.rel = 'stylesheet';
+            link.href = cssPath;
+            link.onerror = () => { link.remove(); };
+            document.head.appendChild(link);
 
             try {
                 const viewModule = await import(jsPath);
@@ -135,7 +140,7 @@ export function init(user, db, userData) {
         };
 
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Carrega a view inicial
+        handleHashChange();
     }
 
     start();
