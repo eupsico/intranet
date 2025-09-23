@@ -1,7 +1,6 @@
 // Arquivo: /modulos/voluntario/js/agendamento.js (CORRIGIDO)
-// Versão: 1.1 (Corrige o escopo do banco de dados no evento de clique)
+// Versão: 1.2 (Salva datas como Timestamps e ajusta botão 'OK')
 
-// (As funções auxiliares no topo do arquivo permanecem as mesmas)
 function getNextDates(diaDaSemana, quantidade) {
     const weekMap = { "domingo": 0, "segunda-feira": 1, "terça-feira": 2, "quarta-feira": 3, "quinta-feira": 4, "sexta-feira": 5, "sábado": 6 };
     const targetDay = weekMap[diaDaSemana.toLowerCase()];
@@ -59,7 +58,6 @@ function renderDates(horariosDisponiveis) {
     if(confirmBtn) confirmBtn.disabled = false;
 }
 
-// --- INÍCIO DA CORREÇÃO 1: A função agora recebe 'db' como parâmetro ---
 async function handleConfirmAgendamento(db, currentSupervisorData) {
     const nome = modal.querySelector('#agendamento-profissional-nome').value;
     const email = modal.querySelector('#agendamento-profissional-email').value;
@@ -73,24 +71,33 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Aguarde...';
 
+    // --- INÍCIO DA CORREÇÃO 1: Salvar datas como Timestamp ---
     const agendamentoData = {
         supervisorUid: currentSupervisorData.uid,
         supervisorNome: currentSupervisorData.nome,
-        dataAgendamento: selectedRadio.value,
+        dataAgendamento: firebase.firestore.Timestamp.fromDate(new Date(selectedRadio.value)),
         profissionalUid: currentUser.uid,
         profissionalNome: nome,
         profissionalEmail: email,
         profissionalTelefone: telefone,
-        criadoEm: new Date().toISOString()
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
     };
+    // --- FIM DA CORREÇÃO 1 ---
 
     try {
-        // Agora 'db' está garantido de ter o valor correto
         await db.collection('agendamentos').add(agendamentoData);
         
         modal.querySelector('#agendamento-step-1').style.display = 'none';
         confirmBtn.style.display = 'none';
         modal.querySelector('#agendamento-step-2').style.display = 'block';
+
+        // --- INÍCIO DA CORREÇÃO 2: Alterar texto do botão Cancelar para OK ---
+        const cancelBtn = modal.querySelector('#agendamento-cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.textContent = 'OK';
+        }
+        // --- FIM DA CORREÇÃO 2 ---
+
     } catch (error) {
         console.error("Erro ao agendar:", error);
         alert("Não foi possível realizar o agendamento. Verifique o console para mais detalhes.");
@@ -106,10 +113,17 @@ async function open(db, user, userData, supervisorData) {
     currentUser = user;
     currentUserData = userData;
 
+    // Reseta o modal para o estado inicial
     modal.querySelector('#agendamento-step-1').style.display = 'block';
     modal.querySelector('#agendamento-step-2').style.display = 'none';
     modal.querySelector('#agendamento-confirm-btn').style.display = 'inline-block';
     modal.querySelector('#agendamento-supervisor-nome').textContent = supervisorData.nome;
+    
+    // Reseta o texto do botão "Cancelar"
+    const cancelBtn = modal.querySelector('#agendamento-cancel-btn');
+    if (cancelBtn) {
+        cancelBtn.textContent = 'Cancelar';
+    }
     
     modal.querySelector('#agendamento-profissional-nome').value = userData.nome || '';
     modal.querySelector('#agendamento-profissional-email').value = user.email || '';
@@ -117,15 +131,10 @@ async function open(db, user, userData, supervisorData) {
     
     modal.style.display = 'flex';
     
-    // --- INÍCIO DA CORREÇÃO 2: Adiciona o listener de clique aqui dentro ---
     const confirmBtn = modal.querySelector('#agendamento-confirm-btn');
-    // Para evitar múltiplos listeners, clonamos e substituímos o botão
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-    // Adicionamos o listener ao novo botão, garantindo o acesso ao 'db'
     newConfirmBtn.addEventListener('click', () => handleConfirmAgendamento(db, supervisorData));
-    // --- FIM DA CORREÇÃO 2 ---
     
     const datasContainer = modal.querySelector('#datas-disponiveis-container');
     datasContainer.innerHTML = '<div class="loading-spinner"></div>';
@@ -147,9 +156,10 @@ async function open(db, user, userData, supervisorData) {
 
         const agendamentosRef = db.collection('agendamentos');
         const slotChecks = potentialSlots.map(async slot => {
+            // Compara com Timestamp
             const q = agendamentosRef
                 .where('supervisorUid', '==', supervisorData.uid)
-                .where('dataAgendamento', '==', slot.date.toISOString());
+                .where('dataAgendamento', '==', firebase.firestore.Timestamp.fromDate(slot.date));
             
             const querySnapshot = await q.get();
             slot.booked = querySnapshot.size;
