@@ -42,20 +42,33 @@ export function initFinancePanel(user, db, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    const views = [
-        { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'] },
-        { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'] },
-        { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'] },
-        { id: 'cobranca_mensal', name: 'Cobrança Mensal', roles: ['admin', 'financeiro'] },
-        { id: 'controle_pagamentos', name: 'Controle de Pagamentos', roles: ['admin', 'financeiro'] },
-        { id: 'devedores', name: 'Devedores', roles: ['admin', 'financeiro'] },
-        { id: 'acordos', name: 'Acordos', roles: ['admin', 'financeiro'] },
-        { id: 'lancamentos', name: 'Lançamentos', roles: ['admin', 'financeiro'] },
-        { id: 'repasse', name: 'Repasse Profissionais', roles: ['admin', 'financeiro'] },
-        { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'] },
-    ];
+        const icons = {
+            dashboard: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>',
+            configuracoes: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-4.22a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.38"/><path d="M16 2l6 6"/><path d="M15 8h-5"/><path d="M15 12h-5"/><path d="M15 16h-5"/></svg>',
+            resumo_horas: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+            cobranca_mensal: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>',
+            controle_pagamentos: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+            devedores: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
+            acordos: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+            lancamentos: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>',
+            repasse: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+            relatorios: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>'
+        };
 
-    function buildFinanceSidebarMenu(userRoles = []) {
+        const views = [
+            { id: 'dashboard', name: 'Dashboard', roles: ['admin', 'financeiro', 'rh'], icon: icons.dashboard },
+            { id: 'configuracoes', name: 'Configurações', roles: ['admin', 'financeiro'], icon: icons.configuracoes },
+            { id: 'resumo_horas', name: 'Resumo de Horas', roles: ['admin', 'financeiro'], icon: icons.resumo_horas },
+            { id: 'cobranca_mensal', name: 'Cobrança Mensal', roles: ['admin', 'financeiro'], icon: icons.cobranca_mensal },
+            { id: 'controle_pagamentos', name: 'Controle de Pagamentos', roles: ['admin', 'financeiro'], icon: icons.controle_pagamentos },
+            { id: 'devedores', name: 'Devedores', roles: ['admin', 'financeiro'], icon: icons.devedores },
+            { id: 'acordos', name: 'Acordos', roles: ['admin', 'financeiro'], icon: icons.acordos },
+            { id: 'lancamentos', name: 'Lançamentos', roles: ['admin', 'financeiro'], icon: icons.lancamentos },
+            { id: 'repasse', name: 'Repasse Profissionais', roles: ['admin', 'financeiro'], icon: icons.repasse },
+            { id: 'relatorios', name: 'Relatórios e Backup', roles: ['admin', 'financeiro'], icon: icons.relatorios },
+        ];
+
+        function buildFinanceSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = ''; 
 
@@ -79,7 +92,8 @@ export function initFinancePanel(user, db, userData) {
                 const link = document.createElement('a');
                 link.href = `#${view.id}`;
                 link.dataset.view = view.id;
-                link.innerHTML = `<span>${view.name}</span>`;
+                // 2. Adicionar o ícone ao lado do nome
+                link.innerHTML = `${view.icon}<span>${view.name}</span>`;
                 menuItem.appendChild(link);
                 sidebarMenu.appendChild(menuItem);
             }
