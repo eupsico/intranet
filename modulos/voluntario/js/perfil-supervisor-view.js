@@ -35,7 +35,7 @@ export async function init(db, user, userData) {
 
         const registroCompleto = (supervisor.conselhoProfissional && supervisor.conselhoProfissional !== 'Nenhum' && supervisor.registroProfissional)
             ? `${supervisor.conselhoProfissional}: ${supervisor.registroProfissional}`
-            : 'Não informado';
+            : '';
 
         card.innerHTML = `
             <div class="supervisor-card-header">
