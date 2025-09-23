@@ -4,7 +4,7 @@
 /* --- INÍCIO DA ALTERAÇÃO: Layout em Grade para a Lista de Perfis --- */
 #meu-perfil-container.admin {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* Define 3 colunas */
+    grid-template-columns: repeat(2, 1fr); /* Define 3 colunas */
     gap: 20px; /* Aumenta o espaçamento entre os cards */
 }
 
