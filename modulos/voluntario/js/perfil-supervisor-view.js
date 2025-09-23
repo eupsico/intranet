@@ -1,8 +1,5 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js
-// Descrição: Controla a visualização e edição de perfis de supervisor na aba "Meu Perfil".
-
-import { collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-
+// Versão: 1.1 
 export async function init(db, user, userData) {
     const container = document.getElementById('meu-perfil-container');
     const editModal = document.getElementById('edit-supervisor-profile-modal');
@@ -18,7 +15,7 @@ export async function init(db, user, userData) {
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
-        card.className = 'supervisor-card'; // Reutiliza a classe do card azul
+        card.className = 'supervisor-card';
 
         let fotoUrl = '../../../assets/img/avatar-padrao.png';
         if (supervisor.fotoUrl) {
@@ -150,8 +147,11 @@ export async function init(db, user, userData) {
         saveBtn.textContent = 'Salvando...';
 
         try {
-            const userDocRef = doc(db, 'usuarios', uid);
-            await updateDoc(userDocRef, dataToUpdate);
+            // --- INÍCIO DA CORREÇÃO (SINTAXE v8) ---
+            const userDocRef = db.collection('usuarios').doc(uid);
+            await userDocRef.update(dataToUpdate);
+            // --- FIM DA CORREÇÃO ---
+
             alert("Perfil salvo com sucesso!");
             editModal.style.display = 'none';
             loadProfiles();
@@ -167,15 +167,16 @@ export async function init(db, user, userData) {
     async function loadProfiles() {
         container.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            let q;
-            const usersCollection = collection(db, 'usuarios');
+            // --- INÍCIO DA CORREÇÃO (SINTAXE v8) ---
+            let query;
             if (isAdmin) {
-                q = query(usersCollection, where('funcoes', 'array-contains', 'supervisor'));
+                query = db.collection('usuarios').where('funcoes', 'array-contains', 'supervisor');
             } else {
-                q = query(usersCollection, where('__name__', '==', user.uid));
+                query = db.collection('usuarios').where(firebase.firestore.FieldPath.documentId(), '==', user.uid);
             }
+            const querySnapshot = await query.get();
+            // --- FIM DA CORREÇÃO ---
             
-            const querySnapshot = await getDocs(q);
             fetchedSupervisors = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
             
             if (fetchedSupervisors.length > 0) {
