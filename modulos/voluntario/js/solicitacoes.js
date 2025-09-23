@@ -1,8 +1,7 @@
 // Arquivo: /modulos/voluntario/js/solicitacoes.js
-// Versão: 1.0
-// Descrição: Controla as abas e a funcionalidade do modal da página de Solicitações.
+// Versão: 1.1 (Adiciona suporte para deep linking de abas)
 
-export function init(db, user, userData) {
+export function init(db, user, userData, tabToOpen) {
     const view = document.querySelector('.view-container');
     if (!view) return;
 
@@ -24,6 +23,16 @@ export function init(db, user, userData) {
             }
         });
     }
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Verifica se uma aba específica deve ser aberta
+    if (tabToOpen) {
+        const tabButton = tabContainer.querySelector(`.tab-link[data-tab="${tabToOpen}"]`);
+        if (tabButton) {
+            tabButton.click(); // Simula o clique para ativar a aba correta
+        }
+    }
+    // --- FIM DA ALTERAÇÃO ---
 
     // --- Lógica do Modal do Pipefy ---
     const modal = document.getElementById("pipefyModal");
