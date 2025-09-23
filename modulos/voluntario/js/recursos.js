@@ -1,8 +1,4 @@
-// Arquivo: /modulos/voluntario/js/recursos.js
-// Versão: 4.0 (Base Funcional Desktop)
-// Descrição: Controla as abas de recursos, carregando os módulos corretos para cada uma.
-
-export function init(db, user, userData) {
+export function init(db, user, userData, tabToOpen) {
     const view = document.querySelector('.view-container');
     if (!view) return;
 
@@ -29,11 +25,11 @@ export function init(db, user, userData) {
                     break;
                 case 'grade-online':
                     module = await import('./grade-view.js');
-                    initParams.push('online'); // Informa ao módulo para carregar a grade online
+                    initParams.push('online');
                     break;
                 case 'grade-presencial':
                     module = await import('./grade-view.js');
-                    initParams.push('presencial'); // Informa ao módulo para carregar a grade presencial
+                    initParams.push('presencial');
                     break;
                 default:
                     return; 
@@ -69,18 +65,17 @@ export function init(db, user, userData) {
         });
     }
 
-    // Verifica se uma aba específica deve ser aberta ao carregar a página
+    // Lógica que usa a variável 'tabToOpen'
     if (tabToOpen) {
         const tabButton = tabContainer.querySelector(`.tab-link[data-tab="${tabToOpen}"]`);
         if (tabButton) {
-            tabButton.click(); // Simula o clique para ativar a aba e carregar seu conteúdo
+            tabButton.click(); // Simula o clique para abrir a aba correta
         }
     } else {
-        // Comportamento padrão: carrega a primeira aba ativa
+        // Comportamento padrão se nenhum link direto for usado
         const activeTab = tabContainer.querySelector('.tab-link.active');
         if (activeTab) {
             loadTabModule(activeTab.dataset.tab);
         }
     }
-    // --- FIM DA ALTERAÇÃO ---
 }
