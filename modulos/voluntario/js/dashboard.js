@@ -101,29 +101,120 @@ export function init(db, user, userData) {
                 </div>
             </div>`;
     }
+    
+    // --- INÍCIO DAS NOVAS FUNÇÕES ---
 
     /**
-     * Renderiza os cards de informações gerais (Apenas Avisos).
+     * Busca e renderiza os novos cards de informação.
      */
-    function renderInfoCard() {
-        const aniversariantesHtml = `<li>Nenhum aniversariante hoje.</li>`;
-        const reuniaoHtml = `<li>Nenhuma reunião agendada.</li>`;
-        infoCardContainer.innerHTML = `
-            <div class="info-card-grid">
-                <div class="info-card">
-                    <h3>📢 Avisos Gerais</h3>
-                    <ul>
-                        ${aniversariantesHtml}
-                        ${reuniaoHtml}
-                    </ul>
-                </div>
+    async function renderInfoCards() {
+        let cardsHtml = '';
+
+        // Card de Disponibilidade
+        const disponibilidade = userData.horarios && userData.horarios.length > 0 
+            ? `${userData.horarios.length} horários cadastrados.`
+            : 'Nenhuma disponibilidade cadastrada.';
+        cardsHtml += `
+            <div class="info-card">
+                <h3>🗓️ Minha Disponibilidade</h3>
+                <ul>
+                    <li>${disponibilidade}</li>
+                    <li><a href="#recursos" data-view="recursos">Atualize sua disponibilidade em Recursos do Voluntário.</a></li>
+                </ul>
             </div>`;
+
+        // Card de Próxima Supervisão (para voluntários)
+        const proximaSupervisao = await getProximaSupervisao('profissional');
+        cardsHtml += `
+            <div class="info-card">
+                <h3>🎓 Próxima Supervisão</h3>
+                <ul>
+                    <li>${proximaSupervisao}</li>
+                </ul>
+            </div>`;
+        
+        // Card de Agendamentos Futuros (apenas para supervisores)
+        if (userData.funcoes && userData.funcoes.includes('supervisor')) {
+            const agendamentosFuturos = await getAgendamentosFuturosSupervisor();
+            cardsHtml += `
+                <div class="info-card">
+                    <h3>⭐ Agendamentos (Supervisor)</h3>
+                    <ul>
+                        ${agendamentosFuturos}
+                    </ul>
+                </div>`;
+        }
+
+        infoCardContainer.innerHTML = `<div class="info-card-grid">${cardsHtml}</div>`;
     }
+
+    /**
+     * Busca a próxima supervisão agendada.
+     */
+    async function getProximaSupervisao() {
+        try {
+            const hoje = new Date();
+            const q = db.collection("agendamentos")
+                        .where("profissionalUid", "==", user.uid)
+                        .where("dataAgendamento", ">=", hoje)
+                        .orderBy("dataAgendamento")
+                        .limit(1);
+            
+            const querySnapshot = await q.get();
+
+            if (querySnapshot.empty) {
+                return 'Nenhuma supervisão agendada.';
+            }
+
+            const agendamento = querySnapshot.docs[0].data();
+            const data = agendamento.dataAgendamento.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            return `<strong>${data}</strong> com ${agendamento.supervisorNome}`;
+
+        } catch (error) {
+            console.error("Erro ao buscar próxima supervisão:", error);
+            return "Não foi possível carregar a informação.";
+        }
+    }
+
+    /**
+     * Busca os próximos agendamentos para um supervisor.
+     */
+    async function getAgendamentosFuturosSupervisor() {
+        try {
+            const hoje = new Date();
+            const q = db.collection("agendamentos")
+                        .where("supervisorUid", "==", user.uid)
+                        .where("dataAgendamento", ">=", hoje)
+                        .orderBy("dataAgendamento");
+            
+            const querySnapshot = await q.get();
+
+            if (querySnapshot.empty) {
+                return '<li>Nenhum agendamento futuro.</li>';
+            }
+
+            return querySnapshot.docs.map(doc => {
+                const agendamento = doc.data();
+                const data = agendamento.dataAgendamento.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return `<li><strong>${data}</strong> com ${agendamento.profissionalNome}</li>`;
+            }).join('');
+
+        } catch (error) {
+            console.error("Erro ao buscar agendamentos do supervisor:", error);
+            return "<li>Não foi possível carregar os agendamentos.</li>";
+        }
+    }
+
+    // --- FIM DAS NOVAS FUNÇÕES ---
+
 
     async function start() {
         summaryContainer.innerHTML = '<div class="loading-spinner"></div>';
-        renderInfoCard();
+        infoCardContainer.innerHTML = ''; // Limpa a área de cards de informação
+        
         await fetchValoresConfig();
+        renderInfoCards(); // Chama a nova função para renderizar os cards
+        
         const gradesDocRef = db.collection('administrativo').doc('grades');
         gradesDocRef.onSnapshot((doc) => {
             dadosDasGrades = doc.exists ? doc.data() : {};
