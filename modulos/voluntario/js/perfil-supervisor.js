@@ -1,5 +1,5 @@
-// Arquivo: /modulos/voluntario/js/perfil-supervisor.js (CORRIGIDO)
-// Versão: 2.6 (Sincroniza HTML com supervisao.css e corrige caminho da imagem)
+// Arquivo: /modulos/voluntario/js/perfil-supervisor.js
+// Versão: 2.2 (Completo e corrigido para interagir com modal global)
 // Descrição: Controla a visualização e edição de perfis de supervisor.
 
 import { db, collection, query, where, getDocs, doc, updateDoc } from '../../../assets/js/firebase-init.js';
@@ -19,43 +19,58 @@ export function init(db, user, userData) {
     const isAdmin = (userData.funcoes || []).includes('admin');
 
     const createSupervisorCard = (supervisor) => {
-        const photoPath = supervisor.fotoUrl ? pathPrefix + supervisor.fotoUrl : pathPrefix + 'assets/img/default-user.png';
         const card = document.createElement('div');
+        // Utiliza a classe principal que já tem os estilos corretos
         card.className = 'supervisor-card'; 
         
+        const photoPath = (supervisor.fotoUrl && supervisor.fotoUrl.startsWith('assets')) 
+            ? `../../../${supervisor.fotoUrl}` 
+            : supervisor.fotoUrl || '../../../assets/img/avatar-padrao.png';
 
-
-        const toList = (data) => {
-            if (!data || data.length === 0) return '<ul><li>Não informado</li></ul>';
-            const items = Array.isArray(data) ? data : [data];
-            return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
-        };
-
-        // --- ESTRUTURA HTML 100% ALINHADA COM O supervisao.css ---
         card.innerHTML = `
-            <div class="supervisor-card-header">
-                <div class="supervisor-photo-container"><img src="${photoPath}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='${pathPrefix}assets/img/avatar-padrao.png';">
-                <div class="supervisor-identity"><h2>${supervisor.nome || 'Nome Indisponível'}</h2><div class="title-box">${titleText}</div></div>
-                <div class="supervisor-contact">${crpHtml}<p><strong>Telefone:</strong> ${supervisor.telefone || 'N/A'}</p><p><strong>Email:</strong> ${supervisor.email || 'N/A'}</p><p>www.eupsico.org.br</p></div>
-                <div class="logo-container"><img src="${pathPrefix}assets/img/logo-branca.png" alt="Logo EuPsico"></div>
+            <div class="supervisor-card-left">
+                <div class="photo-container">
+                    <img src="${photoPath}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
+                </div>
+                <div class="supervisor-identity">
+                    <h2>${supervisor.nome || 'Nome não informado'}</h2>
+                    <div class="title-box">${supervisor.titulo || 'SUPERVISOR(A)'}</div>
+                </div>
+                <div class="supervisor-contact">
+                    <p><strong>CRP:</strong> ${supervisor.crp || 'Não informado'}</p>
+                    <p><strong>Email:</strong> ${supervisor.email || 'Não informado'}</p>
+                    <p><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</p>
+                </div>
+            </div>
+            <div class="supervisor-card-right">
+                <button class="btn btn-primary edit-btn" data-uid="${supervisor.uid}" style="position: absolute; top: 0; right: 0;">Editar Perfil</button>
+                <div class="profile-header">
+                    <h3>PERFIL PROFISSIONAL</h3>
+                </div>
+                <div class="profile-section">
+                    <h4>Abordagem</h4>
+                    <p>${supervisor.abordagem || 'Não informada'}</p>
+                </div>
+                <div class="profile-section">
+                    <h4>Formação</h4>
+                    <ul>${(Array.isArray(supervisor.formacao) ? supervisor.formacao.map(item => `<li>${item}</li>`).join('') : `<li>${supervisor.formacao || 'Não informado'}</li>`)}</ul>
+                </div>
+                <div class="profile-section">
+                    <h4>Especialização</h4>
+                    <ul>${(Array.isArray(supervisor.especializacao) ? supervisor.especializacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>')}</ul>
+                </div>
+                 <div class="profile-section">
+                    <h4>Áreas de Atuação</h4>
+                    <ul>${(Array.isArray(supervisor.atuacao) ? supervisor.atuacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>')}</ul>
+                </div>
             </div>
         `;
         
-        // Adiciona o botão "Editar" que agora será estilizado corretamente
-        const editButton = document.createElement('button');
-        editButton.className = 'action-button edit-btn';
-        editButton.textContent = 'Editar Perfil';
-        editButton.dataset.uid = supervisor.uid;
-        editButton.style.margin = '0 20px 20px 20px'; // Adiciona um espaçamento
-        
-        editButton.addEventListener('click', (e) => {
-            e.stopPropagation();
+        card.querySelector('.edit-btn').addEventListener('click', (e) => {
             const uid = e.target.dataset.uid;
             const supervisorData = fetchedSupervisors.find(s => s.uid === uid);
             if(supervisorData) openEditModal(supervisorData);
         });
-
-        card.appendChild(editButton);
         return card;
     };
 
@@ -170,6 +185,7 @@ export function init(db, user, userData) {
         }
     }
 
+    // Adiciona os listeners para o modal uma única vez, garantindo que não sejam duplicados
     const closeModalButtons = document.querySelectorAll('.close-modal-btn');
     const addHorarioButton = document.getElementById('add-horario-btn');
     
