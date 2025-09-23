@@ -113,14 +113,6 @@ textarea.form-control {
     margin-top: 20px;
 }
 
-/* Responsividade para telas menores */
-@media (max-width: 768px) {
-    .form-row.cols-2,
-    .form-row.cols-3,
-    .form-row.cols-4 {
-        grid-template-columns: 1fr; /* Coluna única em telas pequenas */
-    }
-}
 /* Estilos para as mensagens de status */
 .status-message {
     padding: 12px;
@@ -229,4 +221,20 @@ textarea.form-control {
 @keyframes localScaleUp {
     to { transform: scale(1); }
 }
-/* --- FIM DA ALTERAÇÃO --- */
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .form-row.cols-2,
+    .form-row.cols-3,
+    .form-row.cols-4 {
+        grid-template-columns: 1fr; /* Força uma única coluna */
+    }
+
+    .form-header h2 {
+        font-size: 1.5em;
+    }
+
+    #form-supervisao fieldset {
+        padding: 15px;
+    }
+}
+
