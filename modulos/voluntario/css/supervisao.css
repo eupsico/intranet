@@ -8,7 +8,7 @@
 
 /* --- Card Individual --- */
 .supervisor-card {
-    background-color: #04396d;
+    background-color: #40b0df;
     color: #FFFFFF;
     border-radius: var(--borda-radius);
     overflow: hidden;
@@ -50,7 +50,7 @@
 }
 
 .title-banner {
-    background-color: #1d70b7;
+    background-color: #04396d;
     color: #FFFFFF;
     padding: 8px 10px;
     font-weight: 600;
