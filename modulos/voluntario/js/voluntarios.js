@@ -29,7 +29,6 @@ export function init(db, user, userData) {
                     const registroFormatado = `${voluntario.conselhoProfissional}/${voluntario.registroProfissional}`;
                     registroHtml = `
                         <li>
-                            <strong>Registro:</strong>
                             <span>${registroFormatado}</span>
                         </li>`;
                 }

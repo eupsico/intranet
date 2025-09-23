@@ -47,7 +47,7 @@ export async function init(db, user, userData) {
             </div>
             <div class="supervisor-card-body">
                 <div class="supervisor-contact">
-                    <p><strong>Registro:</strong> ${registroCompleto}</p>
+                    <p>${registroCompleto}</p>
                     <p><strong>Telefone:</strong> ${supervisor.contato || 'Não informado'}</p>
                     <p><strong>E-mail:</strong> ${supervisor.email || 'Não informado'}</p>
                     <p>www.eupsico.org.br</p>
