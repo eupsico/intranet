@@ -1,4 +1,5 @@
-// Arquivo: /modulos/voluntario/js/meus-supervisionados-view.js
+// Arquivo: /modulos/voluntario/js/meus-supervisionados-view.js (CORRIGIDO)
+// Versão: 1.3 (Trava a edição apenas para os campos do supervisor)
 // Descrição: Controla a aba "Meus Supervisionados", listando as fichas e permitindo a edição.
 
 export async function init(db, user, userData) {
@@ -11,19 +12,17 @@ export async function init(db, user, userData) {
         return;
     }
 
-    // Função para alternar entre a visão da lista e a do formulário
     function alternarVisao(mostrar) {
         if (mostrar === 'lista') {
             listaView.style.display = 'block';
             formView.style.display = 'none';
-            formView.innerHTML = ''; // Limpa o formulário ao voltar
+            formView.innerHTML = '';
         } else {
             listaView.style.display = 'none';
             formView.style.display = 'block';
         }
     }
 
-    // Renderiza a lista de fichas encontradas
     function renderizarLista(fichas) {
         listaContainer.innerHTML = '';
         if (fichas.length === 0) {
@@ -37,7 +36,7 @@ export async function init(db, user, userData) {
                 : 'N/D';
             
             const itemEl = document.createElement('div');
-            itemEl.className = 'ficha-item'; // Reutiliza o estilo de 'fichas-preenchidas.css'
+            itemEl.className = 'ficha-item';
             itemEl.innerHTML = `
                 <div class="ficha-item-col"><p class="label">Paciente</p><p class="value paciente">${ficha.identificacaoCaso?.iniciais || 'N/A'}</p></div>
                 <div class="ficha-item-col"><p class="label">Psicólogo(a)</p><p class="value">${ficha.psicologoNome || 'N/A'}</p></div>
@@ -48,7 +47,6 @@ export async function init(db, user, userData) {
         });
     }
 
-    // Carrega o HTML do formulário, preenche com os dados e ativa o autosave
     async function abrirFormularioParaEdicao(docId) {
         alternarVisao('form');
         formView.innerHTML = '<div class="loading-spinner"></div>';
@@ -63,77 +61,129 @@ export async function init(db, user, userData) {
             if (!docSnap.exists) throw new Error("Documento da ficha não encontrado.");
             const data = docSnap.data();
 
-            // Preenche os campos (lógica similar à de fichas-preenchidas.js)
             const setFieldValue = (id, value) => {
                 const el = document.getElementById(id);
                 if (el) el.value = value || '';
             };
             
+            // Preenche todos os campos para visualização
             setFieldValue('supervisor-nome', data.identificacaoGeral?.supervisorUid);
             setFieldValue('data-supervisao', data.identificacaoGeral?.dataSupervisao);
-            // ... (adicione aqui o preenchimento de todos os outros campos se necessário)
+            setFieldValue('data-inicio-terapia', data.identificacaoGeral?.dataInicioTerapia);
+            setFieldValue('psicologo-nome', data.psicologoNome);
+            setFieldValue('psicologo-periodo', data.identificacaoPsicologo?.periodo);
+            setFieldValue('abordagem-teorica', data.identificacaoPsicologo?.abordagem);
+            setFieldValue('paciente-iniciais', data.identificacaoCaso?.iniciais);
+            setFieldValue('paciente-idade', data.identificacaoCaso?.idade);
+            setFieldValue('paciente-genero', data.identificacaoCaso?.genero);
+            setFieldValue('paciente-sessoes', data.identificacaoCaso?.numSessoes);
+            setFieldValue('queixa-demanda', data.identificacaoCaso?.queixa);
+            setFieldValue('fase1-data', data.fase1?.data);
+            setFieldValue('fase1-foco', data.fase1?.foco);
+            setFieldValue('fase1-objetivos', data.fase1?.objetivos);
+            setFieldValue('fase1-hipoteses', data.fase1?.hipoteses);
+            setFieldValue('fase1-obs-supervisor', data.fase1?.obsSupervisor);
+            setFieldValue('fase2-data', data.fase2?.data);
+            setFieldValue('fase2-reavaliacao', data.fase2?.reavaliacao);
+            setFieldValue('fase2-progresso', data.fase2?.progresso);
+            setFieldValue('fase2-obs-supervisor', data.fase2?.obsSupervisor);
+            setFieldValue('fase3-data', data.fase3?.data);
+            setFieldValue('fase3-avaliacao', data.fase3?.avaliacao);
+            setFieldValue('fase3-mudancas', data.fase3?.mudancas);
+            setFieldValue('fase3-obs-supervisor', data.fase3?.obsSupervisor);
+            setFieldValue('desfecho', data.observacoesFinais?.desfecho);
+            setFieldValue('data-desfecho', data.observacoesFinais?.dataDesfecho);
+            setFieldValue('obs-finais', data.observacoesFinais?.obsFinais);
+            setFieldValue('obs-finais-supervisor', data.observacoesFinais?.obsSupervisor);
+            setFieldValue('assinatura-supervisor', data.observacoesFinais?.assinaturaSupervisor);
+            
+            // --- INÍCIO DA CORREÇÃO ---
+            // Trava todos os campos, exceto os do supervisor
+            const camposEditaveisSupervisor = [
+                'fase1-obs-supervisor',
+                'fase2-obs-supervisor',
+                'fase3-obs-supervisor',
+                'obs-finais-supervisor',
+                'assinatura-supervisor'
+            ];
 
-            // Lógica do botão voltar
+            const form = formView.querySelector('#form-supervisao');
+            form.querySelectorAll('input, textarea, select').forEach(el => {
+                if (!camposEditaveisSupervisor.includes(el.id)) {
+                    el.disabled = true;
+                }
+            });
+            // --- FIM DA CORREÇÃO ---
+            
             const backButton = formView.querySelector('#btn-voltar-para-lista');
             if (backButton) {
                 backButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     alternarVisao('lista');
+                    carregarFichas();
                 });
             }
 
-            // Habilita o autosave
             setupAutoSave(docRef);
 
         } catch (error) {
             console.error("Erro ao abrir formulário para edição:", error);
-            formView.innerHTML = '<p class="alert alert-error">Não foi possível carregar o formulário de edição.</p>';
+            formView.innerHTML = `<p class="alert alert-error">Não foi possível carregar o formulário de edição.</p><button id="btn-voltar" class="action-button">Voltar</button>`;
+            formView.querySelector('#btn-voltar').addEventListener('click', () => alternarVisao('lista'));
         }
     }
     
-    // Configura o salvamento automático para o formulário
     function setupAutoSave(docRef) {
         const form = formView.querySelector('#form-supervisao');
         const statusEl = formView.querySelector('#autosave-status');
         if (!form || !statusEl) return;
         
         let saveTimeout;
-        const handleFormChange = () => {
-            clearTimeout(saveTimeout);
-            statusEl.textContent = 'Salvando...';
-            saveTimeout = setTimeout(async () => {
-                const formData = new FormData(form);
-                const dataToSave = {};
-                // Constrói o objeto de dados a partir do formulário
-                // (aqui você precisaria de uma lógica mais completa para mapear todos os campos)
-                formData.forEach((value, key) => {
-                    // Esta é uma forma simplificada. O ideal é reconstruir o objeto aninhado.
-                    dataToSave[key] = value;
-                });
-                
-                try {
-                    await docRef.update(dataToSave);
-                    statusEl.textContent = 'Salvo!';
-                } catch (error) {
-                    console.error("Erro no salvamento automático:", error);
-                    statusEl.textContent = 'Erro ao salvar.';
-                }
-            }, 1500);
+        const handleFormChange = (e) => {
+            // Só ativa o salvamento se o campo alterado for um dos permitidos
+            if (e.target.id.includes('obs-supervisor') || e.target.id.includes('assinatura-supervisor')) {
+                clearTimeout(saveTimeout);
+                statusEl.textContent = 'Salvando...';
+                statusEl.style.color = '#007bff';
+
+                saveTimeout = setTimeout(async () => {
+                    const dataToSave = {
+                        'fase1.obsSupervisor': document.getElementById('fase1-obs-supervisor').value,
+                        'fase2.obsSupervisor': document.getElementById('fase2-obs-supervisor').value,
+                        'fase3.obsSupervisor': document.getElementById('fase3-obs-supervisor').value,
+                        'observacoesFinais.obsSupervisor': document.getElementById('obs-finais-supervisor').value,
+                        'observacoesFinais.assinaturaSupervisor': document.getElementById('assinatura-supervisor').value,
+                        lastUpdated: new Date()
+                    };
+                    
+                    try {
+                        await docRef.update(dataToSave);
+                        statusEl.textContent = 'Salvo!';
+                        statusEl.style.color = '#28a745';
+                    } catch (error) {
+                        console.error("Erro no salvamento automático:", error);
+                        statusEl.textContent = 'Erro ao salvar.';
+                        statusEl.style.color = '#dc3545';
+                    }
+                }, 1500);
+            }
         };
-        form.addEventListener('change', handleFormChange);
-        form.addEventListener('keyup', handleFormChange);
+        form.addEventListener('input', handleFormChange);
     }
 
-
-    // Inicia o carregamento das fichas
-    try {
-        const q = db.collection("fichas-supervisao-casos").where("supervisorUid", "==", user.uid);
-        const querySnapshot = await q.get();
-        const fichas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        fichas.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
-        renderizarLista(fichas);
-    } catch (error) {
-        console.error("Erro ao carregar fichas dos supervisionados:", error);
-        listaContainer.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao buscar as fichas.</p>';
+    async function carregarFichas() {
+        listaContainer.innerHTML = '<div class="loading-spinner"></div>';
+        try {
+            const q = db.collection("fichas-supervisao-casos").where("identificacaoGeral.supervisorUid", "==", user.uid);
+            const querySnapshot = await q.get();
+            const fichas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            fichas.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
+            renderizarLista(fichas);
+        } catch (error) {
+            console.error("Erro ao carregar fichas dos supervisionados:", error);
+            listaContainer.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao buscar as fichas.</p>';
+        }
     }
+
+    carregarFichas();
 }
