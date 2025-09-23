@@ -28,6 +28,9 @@ export function init(db, user, userData) {
             // Verifica se o caminho já está incluído para não duplicar
             if (supervisor.fotoUrl.includes('assets/img/supervisores')) {
                 photoPath = `../../${supervisor.fotoUrl}`;
+            } else {
+                photoPath = `../${supervisor.fotoUrl}`;
+            }
         }
 
         const toList = (data) => {
