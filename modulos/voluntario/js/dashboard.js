@@ -93,10 +93,12 @@ export function init(db, user, userData) {
                     <div class="summary-card">
                         <h4>🖥️ Grade Online (${horasOnline})</h4>
                         <ul>${agendamentosOnline.length > 0 ? agendamentosOnline.join('') : '<li>Nenhum horário online.</li>'}</ul>
+                        <a href="#solicitacoes/agenda" class="card-footer-link">Atualize sua grade em Solicitações.</a>
                     </div>
                     <div class="summary-card">
                         <h4>🏢 Grade Presencial (${horasPresencial})</h4>
                         <ul>${agendamentosPresencial.length > 0 ? agendamentosPresencial.join('') : '<li>Nenhum horário presencial.</li>'}</ul>
+                        <a href="#solicitacoes/agenda" class="card-footer-link">Atualize sua grade em Solicitações.</a>
                     </div>
                 </div>
             </div>`;
