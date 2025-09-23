@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js (CORRIGIDO)
-// Versão: 1.3 (Implementa lógica de Conselho/Registro e ajusta campo de contato)
+// Versão: 1.4 (Restaura a lógica de diferenciação de CSS para admin/supervisor)
 
 export async function init(db, user, userData) {
     const container = document.getElementById('meu-perfil-container');
@@ -12,9 +12,16 @@ export async function init(db, user, userData) {
     }
 
     let fetchedSupervisors = [];
-    const isAdmin = (userData.funcoes || []).includes('admin');
-    // Lista de conselhos, baseada no arquivo meu-perfil.js
+    const funcoesUsuario = userData.funcoes || [];
+    const isAdmin = funcoesUsuario.includes('admin');
     const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
+
+    // --- INÍCIO DA CORREÇÃO ---
+    // Restaura a lógica que adiciona a classe ao container para o CSS
+    if (isAdmin) {
+        container.classList.add('admin-view'); // Usa uma classe mais específica para evitar conflitos
+    }
+    // --- FIM DA CORREÇÃO ---
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
@@ -26,7 +33,6 @@ export async function init(db, user, userData) {
             fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
         }
 
-        // --- ALTERAÇÃO: Exibe o conselho e registro no card ---
         const registroCompleto = (supervisor.conselhoProfissional && supervisor.conselhoProfissional !== 'Nenhum' && supervisor.registroProfissional)
             ? `${supervisor.conselhoProfissional}: ${supervisor.registroProfissional}`
             : 'Não informado';
@@ -78,14 +84,11 @@ export async function init(db, user, userData) {
         form.elements['email'].value = data.email || '';
         form.elements['abordagem'].value = data.abordagem || '';
         
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Popula os campos de conselho, registro e contato
         const conselhoSelect = form.elements['conselhoProfissional'];
         conselhoSelect.innerHTML = conselhos.map(c => `<option value="${c}" ${c === (data.conselhoProfissional || 'Nenhum') ? 'selected' : ''}>${c}</option>`).join('');
         
         form.elements['registroProfissional'].value = data.registroProfissional || '';
         form.elements['contato'].value = data.contato || '';
-        // --- FIM DA ALTERAÇÃO ---
 
         const toText = (arr) => Array.isArray(arr) ? arr.join('\n') : (arr || '');
         form.elements['formacao'].value = toText(data.formacao);
@@ -138,13 +141,11 @@ export async function init(db, user, userData) {
             fim: row.querySelector('[name="horario_fim"]').value
         })).filter(h => h.dia && h.inicio && h.fim);
 
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Monta o objeto de dados para salvar
         const dataToUpdate = {
             titulo: form.elements['titulo'].value,
             conselhoProfissional: form.elements['conselhoProfissional'].value,
             registroProfissional: form.elements['registroProfissional'].value,
-            contato: form.elements['contato'].value, // Salva em 'contato'
+            contato: form.elements['contato'].value,
             abordagem: form.elements['abordagem'].value,
             formacao: fromText(form.elements['formacao'].value),
             especializacao: fromText(form.elements['especializacao'].value),
@@ -152,7 +153,6 @@ export async function init(db, user, userData) {
             supervisaoInfo: fromText(form.elements['supervisaoInfo'].value),
             diasHorarios: horarios
         };
-        // --- FIM DA ALTERAÇÃO ---
 
         if (isAdmin) {
             dataToUpdate.fotoUrl = form.elements['fotoUrl'].value;
@@ -202,13 +202,11 @@ export async function init(db, user, userData) {
         }
     }
 
-    // Adiciona os listeners
     editModal.querySelector('.close-modal-btn').addEventListener('click', () => editModal.style.display = 'none');
     document.getElementById('add-horario-btn').addEventListener('click', () => {
         document.getElementById('horarios-editor-container').appendChild(createHorarioRow());
     });
     form.addEventListener('submit', saveProfileChanges);
     
-    // Inicia o carregamento dos perfis
     await loadProfiles();
 }
