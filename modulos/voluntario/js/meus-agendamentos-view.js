@@ -1,4 +1,5 @@
-// Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js
+// Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js (CORRIGIDO)
+// Versão: 1.1 (Altera a ordenação para o lado do cliente para contornar erro do SDK)
 // Descrição: Controla a aba "Meus Agendamentos", listando as solicitações recebidas.
 
 export async function init(db, user, userData) {
@@ -54,12 +55,18 @@ export async function init(db, user, userData) {
     // Inicia o carregamento
     try {
         listaContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+        // --- INÍCIO DA CORREÇÃO ---
+        // 1. Removemos o .orderBy() da consulta ao banco de dados para evitar o erro.
         const q = db.collection("agendamentos")
-                    .where("supervisorUid", "==", user.uid)
-                    .orderBy("dataAgendamento", "desc"); // Mais recentes primeiro
+                    .where("supervisorUid", "==", user.uid);
 
         const querySnapshot = await q.get();
-        const agendamentos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let agendamentos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // 2. Fazemos a ordenação aqui no Javascript, o que produz o mesmo resultado.
+        agendamentos.sort((a, b) => new Date(b.dataAgendamento) - new Date(a.dataAgendamento));
+        // --- FIM DA CORREÇÃO ---
         
         renderizarLista(agendamentos);
 
