@@ -16,12 +16,12 @@ export async function init(db, user, userData) {
     const isAdmin = funcoesUsuario.includes('admin');
     const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // Restaura a lógica que adiciona a classe ao container para o CSS
-    if (isAdmin) {
-        container.classList.add('admin-view'); // Usa uma classe mais específica para evitar conflitos
+    // Aplica estilos ao container com base nas funções
+    if (funcoesUsuario.includes('admin')) {
+        container.classList.add('admin');
+    } else if (funcoesUsuario.includes('supervisor')) {
+        container.classList.add('supervisor');
     }
-    // --- FIM DA CORREÇÃO ---
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
