@@ -1,6 +1,6 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 1.2
-// Descrição: Adicionada a view de Lançamentos do módulo financeiro.
+// Versão: 1.3
+// Descrição: Corrige o carregamento de views de múltiplos módulos.
 
 export function init(user, db, userData) {
     const contentArea = document.getElementById('content-area');
@@ -14,12 +14,11 @@ export function init(user, db, userData) {
             roles: ['admin', 'gestor', 'assistente'],
             icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
         },
-        // Adicionado novo objeto para Lançamentos
         {
             id: 'lancamentos',
             name: 'Lançamentos',
             module: 'financeiro', // Especifica o módulo de origem
-            roles: ['admin', 'financeiro', 'assistente'], // Mantém as mesmas roles do financeiro
+            roles: ['admin', 'financeiro'],
             icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`
         }
     ];
@@ -65,25 +64,34 @@ export function init(user, db, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // Lógica de carregamento ajustada
-            const modulePath = view.module ? `../${view.module}` : '.';
-            const response = await fetch(`${modulePath}/page/${viewId}.html`);
+            // CORREÇÃO: Lógica de caminhos para múltiplos módulos
+            let htmlPath, jsPath;
+            if (view.module) {
+                // View de um módulo externo
+                htmlPath = `../${view.module}/page/${viewId}.html`;   // Caminho a partir de /administrativo/page/
+                jsPath = `../../${view.module}/js/${viewId}.js`;     // Caminho a partir de /administrativo/js/
+            } else {
+                // View do módulo atual (administrativo)
+                htmlPath = `./${viewId}.html`;                       // Caminho a partir de /administrativo/page/
+                jsPath = `./${viewId}.js`;                         // Caminho a partir de /administrativo/js/
+            }
 
-            if (!response.ok) throw new Error(`Arquivo da view não encontrado: ${viewId}.html (Status: ${response.status})`);
+            const response = await fetch(htmlPath);
+            if (!response.ok) throw new Error(`Arquivo da view não encontrado: ${htmlPath} (Status: ${response.status})`);
 
             contentArea.innerHTML = await response.text();
 
             try {
-                const viewModule = await import(`../${view.module || 'js'}/${viewId}.js`);
+                const viewModule = await import(jsPath);
                 if (viewModule && typeof viewModule.init === 'function') {
                     viewModule.init(db, user, userData);
                 }
             } catch (jsError) {
-                console.log(`Nenhum módulo JS para a view '${viewId}'. Carregando como página estática.`);
+                console.log(`Nenhum módulo JS para a view '${viewId}'. Carregando como página estática.`, jsError);
             }
         } catch (error) {
             console.error(`Erro ao carregar a view ${viewId}:`, error);
-            contentArea.innerHTML = `<h2>Erro ao carregar o módulo.</h2>`;
+            contentArea.innerHTML = `<h2>Erro ao carregar o módulo.</h2><p>${error.message}</p>`;
         }
     }
 
