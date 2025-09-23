@@ -1,5 +1,5 @@
 /* Arquivo: /modulos/voluntario/css/recursos.css
-   Versão: 2.1
+   Versão: 2.2 (Adiciona responsividade para tabelas)
    Descrição: Estilos completos para as abas de Mensagens e Disponibilidade.
 */
 
@@ -152,3 +152,74 @@
 .disponibilidade-view .edit-table thead th {
     background-color: var(--cor-fundo);
 }
+
+
+/* --- INÍCIO DA CORREÇÃO --- */
+/* Adiciona responsividade para as tabelas das grades e disponibilidade */
+
+/* Estilos para a tabela da grade (a ser usado em outro arquivo, como grade.css) */
+.grade-table-container {
+    overflow-x: auto; /* Permite rolagem horizontal em último caso */
+}
+
+/* Estilos genéricos para tabelas responsivas */
+.responsive-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+.responsive-table th,
+.responsive-table td {
+    padding: 12px 15px;
+    border: 1px solid var(--cor-borda);
+    text-align: left;
+}
+.responsive-table thead th {
+    background-color: var(--cor-primaria);
+    color: white;
+    font-weight: 600;
+}
+.responsive-table tbody tr:nth-of-type(even) {
+    background-color: var(--cor-fundo-hover);
+}
+
+/* --- Magia da Responsividade --- */
+@media (max-width: 768px) {
+    .responsive-table thead {
+        display: none; /* 1. Esconde o cabeçalho original */
+    }
+
+    .responsive-table,
+    .responsive-table tbody,
+    .responsive-table tr,
+    .responsive-table td {
+        display: block; /* 2. Transforma tudo em blocos empilháveis */
+        width: 100%;
+    }
+
+    .responsive-table tr {
+        margin-bottom: 15px;
+        border: 1px solid var(--cor-borda);
+        border-radius: var(--borda-radius);
+        overflow: hidden;
+    }
+
+    .responsive-table td {
+        text-align: right; /* 3. Alinha o conteúdo à direita */
+        padding-left: 50%; /* Deixa espaço para o título */
+        position: relative;
+        border: none;
+        border-bottom: 1px solid var(--cor-borda);
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label); /* 4. Pega o título do atributo "data-label" */
+        position: absolute;
+        left: 15px;
+        width: calc(50% - 30px);
+        text-align: left;
+        font-weight: 600;
+        color: var(--cor-primaria);
+    }
+}
+/* --- FIM DA CORREÇÃO --- */
