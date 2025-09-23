@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js (CORRIGIDO)
-// Versão: 1.2 (Adiciona footer ao card para estilizar o botão)
+// Versão: 1.3 (Aplica estilos ao container com base nas funções do usuário)
 
 export async function init(db, user, userData) {
     const container = document.getElementById('meu-perfil-container');
@@ -12,7 +12,17 @@ export async function init(db, user, userData) {
     }
 
     let fetchedSupervisors = [];
-    const isAdmin = (userData.funcoes || []).includes('admin');
+    const funcoesUsuario = userData.funcoes || [];
+    const isAdmin = funcoesUsuario.includes('admin');
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Aplica classes ao container com base nas funções
+    if (funcoesUsuario.includes('admin')) {
+        container.classList.add('admin');
+    } else if (funcoesUsuario.includes('supervisor')) {
+        container.classList.add('supervisor');
+    }
+    // --- FIM DA ALTERAÇÃO ---
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
@@ -24,8 +34,6 @@ export async function init(db, user, userData) {
             fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
         }
 
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // A estrutura agora inclui um supervisor-card-footer
         card.innerHTML = `
             <div class="supervisor-card-header">
                 <div class="supervisor-photo-container">
@@ -48,7 +56,6 @@ export async function init(db, user, userData) {
                 <button class="action-button edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
             </div>
         `;
-        // --- FIM DA ALTERAÇÃO ---
 
         return card;
     };
@@ -58,11 +65,10 @@ export async function init(db, user, userData) {
         supervisors.forEach(supervisor => {
             const card = createSupervisorCard(supervisor);
             container.appendChild(card);
-            // O evento de clique é adicionado ao card todo, mas o seletor encontra o botão
             card.querySelector('.edit-btn').addEventListener('click', (e) => {
                 const uid = e.target.dataset.uid;
                 const supervisorData = fetchedSupervisors.find(s => s.uid === uid);
-                if(supervisorData) openEditModal(supervisorData);
+                if (supervisorData) openEditModal(supervisorData);
             });
         });
     };
@@ -138,7 +144,7 @@ export async function init(db, user, userData) {
             supervisaoInfo: fromText(form.elements['supervisaoInfo'].value),
             diasHorarios: horarios
         };
-        
+
         if (isAdmin) {
             dataToUpdate.fotoUrl = form.elements['fotoUrl'].value;
         }
@@ -173,9 +179,9 @@ export async function init(db, user, userData) {
                 query = db.collection('usuarios').where(firebase.firestore.FieldPath.documentId(), '==', user.uid);
             }
             const querySnapshot = await query.get();
-            
+
             fetchedSupervisors = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
-            
+
             if (fetchedSupervisors.length > 0) {
                 renderProfiles(fetchedSupervisors);
             } else {
@@ -183,8 +189,8 @@ export async function init(db, user, userData) {
             }
         } catch (error) {
             console.error("Erro ao carregar perfis:", error);
-            container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao carregar os perfis.</p>';
-        }
+            container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao carregar os perfis
+}
     }
 
     // Adiciona os listeners
