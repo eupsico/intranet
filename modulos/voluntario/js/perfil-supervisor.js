@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor.js (CORRIGIDO)
-// Versão: 2.5 (Resolve conflito de CSS e caminho de imagem)
+// Versão: 2.6 (Sincroniza HTML com supervisao.css e corrige caminho da imagem)
 // Descrição: Controla a visualização e edição de perfis de supervisor.
 
 import { db, collection, query, where, getDocs, doc, updateDoc } from '../../../assets/js/firebase-init.js';
@@ -22,15 +22,12 @@ export function init(db, user, userData) {
         const card = document.createElement('div');
         card.className = 'supervisor-card'; 
         
-        // --- LÓGICA CORRIGIDA PARA O CAMINHO DA FOTO ---
+        // --- LÓGICA CORRIGIDA E DEFINITIVA PARA O CAMINHO DA FOTO ---
         let photoPath = '../../../assets/img/avatar-padrao.png'; // Padrão
         if (supervisor.fotoUrl) {
-            // Verifica se o caminho já está incluído para não duplicar
-            if (supervisor.fotoUrl.includes('assets/img/supervisores')) {
-                photoPath = `../../../${supervisor.fotoUrl}`;
-            } else {
-                photoPath = `../../../assets/img/supervisores/${supervisor.fotoUrl}`;
-            }
+            // Remove qualquer duplicação de caminho que possa existir
+            const cleanPath = supervisor.fotoUrl.replace('assets/img/supervisores/', '');
+            photoPath = `../../../assets/img/supervisores/${cleanPath}`;
         }
 
         const toList = (data) => {
@@ -39,7 +36,7 @@ export function init(db, user, userData) {
             return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
         };
 
-        // --- ESTRUTURA HTML ALINHADA COM O CSS CORRETO ---
+        // --- ESTRUTURA HTML 100% ALINHADA COM O supervisao.css ---
         card.innerHTML = `
             <div class="supervisor-card-header">
                 <div class="supervisor-photo-container">
@@ -49,31 +46,26 @@ export function init(db, user, userData) {
                 <p>${supervisor.titulo || 'Supervisor(a)'}</p>
             </div>
             <div class="supervisor-card-body">
-                <h4>Contato</h4>
-                <p><strong>CRP:</strong> ${supervisor.crp || 'Não informado'}</p>
-                <p><strong>Email:</strong> ${supervisor.email || 'Não informado'}</p>
-                <p><strong>Telefone:</strong> ${supervisor.telefone || 'Não informado'}</p>
-                <hr>
-                <h4>Perfil Profissional</h4>
-                <p><strong>Abordagem:</strong> ${supervisor.abordagem || 'Não informada'}</p>
-                <p><strong>Formação:</strong></p>
-                ${toList(supervisor.formacao)}
-                <p><strong>Especialização:</strong></p>
-                ${toList(supervisor.especializacao)}
-                <p><strong>Áreas de Atuação:</strong></p>
+                <h4>Áreas de Atuação</h4>
                 ${toList(supervisor.atuacao)}
-            </div>
-             <div class="supervisor-card-footer">
-                <button class="action-button edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
             </div>
         `;
         
-        card.querySelector('.edit-btn').addEventListener('click', (e) => {
+        // Adiciona o botão "Editar" que agora será estilizado corretamente
+        const editButton = document.createElement('button');
+        editButton.className = 'action-button edit-btn';
+        editButton.textContent = 'Editar Perfil';
+        editButton.dataset.uid = supervisor.uid;
+        editButton.style.margin = '0 20px 20px 20px'; // Adiciona um espaçamento
+        
+        editButton.addEventListener('click', (e) => {
             e.stopPropagation();
             const uid = e.target.dataset.uid;
             const supervisorData = fetchedSupervisors.find(s => s.uid === uid);
             if(supervisorData) openEditModal(supervisorData);
         });
+
+        card.appendChild(editButton);
         return card;
     };
 
