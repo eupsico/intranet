@@ -1,4 +1,5 @@
 // Arquivo: /modulos/voluntario/js/ver-supervisores.js (CORRIGIDO)
+// Versão: 3.1 (Restaura clique, exibe dados e corrige caminho da foto)
 import { agendamentoController } from './agendamento.js';
 
 let db, user, userData;
@@ -48,16 +49,18 @@ async function loadSupervisores() {
 
         supervisores.forEach(supervisor => {
             const card = document.createElement('div');
-            card.className = 'supervisor-card';
+            card.className = 'supervisor-card'; // Classe principal para o estilo azul
             card.dataset.id = supervisor.id;
 
-            // --- INÍCIO DA CORREÇÃO ---
-            // Constrói o caminho completo da imagem
-            const fotoUrl = supervisor.fotoUrl 
-                ? `../../../assets/img/supervisores/${supervisor.fotoUrl}` 
-                : '../../../assets/img/avatar-padrao.png';
-            // --- FIM DA CORREÇÃO ---
-
+            // --- LÓGICA CORRIGIDA E FINAL PARA O CAMINHO DA FOTO ---
+            let fotoUrl = '../../../assets/img/avatar-padrao.png'; // Padrão
+            if (supervisor.fotoUrl) {
+                // Remove qualquer duplicação de caminho que possa existir no dado do banco
+                const cleanPath = supervisor.fotoUrl.replace('assets/img/supervisores/', '');
+                fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
+            }
+            
+            // --- ESTRUTURA HTML CORRETA E COMPLETA PARA O CARD, ALINHADA COM O CSS ---
             card.innerHTML = `
                 <div class="supervisor-card-header">
                     <div class="supervisor-photo-container">
@@ -68,9 +71,13 @@ async function loadSupervisores() {
                 </div>
                 <div class="supervisor-card-body">
                     <h4>Áreas de Atuação</h4>
-                    <ul>${(supervisor.atuacao && supervisor.atuacao.length > 0) ? supervisor.atuacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>'}</ul>
+                    <ul>
+                        ${(supervisor.atuacao && supervisor.atuacao.length > 0) ? supervisor.atuacao.map(item => `<li>${item}</li>`).join('') : '<li>Não informado</li>'}
+                    </ul>
                 </div>
             `;
+            
+            // --- RESTAURA O EVENTO DE CLIQUE NO CARD INTEIRO ---
             card.addEventListener('click', () => openSupervisorModal(supervisor));
             grid.appendChild(card);
         });
