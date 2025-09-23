@@ -1,5 +1,6 @@
-// Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js
-// Versão: 1.1 
+// Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js (CORRIGIDO)
+// Versão: 1.2 (Adiciona footer ao card para estilizar o botão)
+
 export async function init(db, user, userData) {
     const container = document.getElementById('meu-perfil-container');
     const editModal = document.getElementById('edit-supervisor-profile-modal');
@@ -23,6 +24,8 @@ export async function init(db, user, userData) {
             fotoUrl = `../../../assets/img/supervisores/${cleanPath}`;
         }
 
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // A estrutura agora inclui um supervisor-card-footer
         card.innerHTML = `
             <div class="supervisor-card-header">
                 <div class="supervisor-photo-container">
@@ -41,15 +44,12 @@ export async function init(db, user, userData) {
                     <img src="../../../assets/img/logo-branca.png" alt="Logo EuPsico">
                 </div>
             </div>
+            <div class="supervisor-card-footer">
+                <button class="action-button edit-btn" data-uid="${supervisor.uid}">Editar Perfil</button>
+            </div>
         `;
+        // --- FIM DA ALTERAÇÃO ---
 
-        const editButton = document.createElement('button');
-        editButton.className = 'action-button edit-btn';
-        editButton.textContent = 'Editar Perfil';
-        editButton.dataset.uid = supervisor.uid;
-        editButton.style.margin = '20px';
-
-        card.appendChild(editButton);
         return card;
     };
 
@@ -58,6 +58,7 @@ export async function init(db, user, userData) {
         supervisors.forEach(supervisor => {
             const card = createSupervisorCard(supervisor);
             container.appendChild(card);
+            // O evento de clique é adicionado ao card todo, mas o seletor encontra o botão
             card.querySelector('.edit-btn').addEventListener('click', (e) => {
                 const uid = e.target.dataset.uid;
                 const supervisorData = fetchedSupervisors.find(s => s.uid === uid);
@@ -147,10 +148,8 @@ export async function init(db, user, userData) {
         saveBtn.textContent = 'Salvando...';
 
         try {
-            // --- INÍCIO DA CORREÇÃO (SINTAXE v8) ---
             const userDocRef = db.collection('usuarios').doc(uid);
             await userDocRef.update(dataToUpdate);
-            // --- FIM DA CORREÇÃO ---
 
             alert("Perfil salvo com sucesso!");
             editModal.style.display = 'none';
@@ -167,7 +166,6 @@ export async function init(db, user, userData) {
     async function loadProfiles() {
         container.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // --- INÍCIO DA CORREÇÃO (SINTAXE v8) ---
             let query;
             if (isAdmin) {
                 query = db.collection('usuarios').where('funcoes', 'array-contains', 'supervisor');
@@ -175,7 +173,6 @@ export async function init(db, user, userData) {
                 query = db.collection('usuarios').where(firebase.firestore.FieldPath.documentId(), '==', user.uid);
             }
             const querySnapshot = await query.get();
-            // --- FIM DA CORREÇÃO ---
             
             fetchedSupervisors = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
             
