@@ -1,7 +1,10 @@
 /* --- Grade de Supervisores --- */
 .supervisor-grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    /* --- INÍCIO DA ALTERAÇÃO --- */
+    /* Ajustado para favorecer 4 colunas em telas maiores e 3 em telas menores */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    /* --- FIM DA ALTERAÇÃO --- */
     gap: 30px;
     margin-top: 20px;
 }
@@ -17,7 +20,7 @@
     box-shadow: var(--sombra-suave);
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
-    text-align: center; /* Centraliza todo o texto por padrão */
+    text-align: center;
 }
 
 .supervisor-card:hover {
@@ -26,7 +29,7 @@
 }
 
 .supervisor-card-header {
-    padding: 20px 20px 0 20px; /* Reduz padding inferior */
+    padding: 20px 20px 0 20px;
 }
 
 .supervisor-photo-container {
@@ -50,9 +53,8 @@
     color: #FFFFFF;
 }
 
-/* --- NOVA FAIXA DE TÍTULO --- */
 .title-banner {
-    background-color: #1d70b7; /* Cor solicitada */
+    background-color: #1d70b7;
     color: #FFFFFF;
     padding: 8px 10px;
     font-weight: 600;
@@ -67,7 +69,7 @@
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Alinha o conteúdo */
+    justify-content: space-between;
 }
 
 .supervisor-contact p {
@@ -85,8 +87,7 @@
     opacity: 0.9;
 }
 
-
-/* --- Modal de Detalhes (Sem alterações) --- */
+/* --- Modal de Detalhes --- */
 .modal-overlay {
     position: fixed;
     top: 0;
