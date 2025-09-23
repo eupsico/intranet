@@ -111,16 +111,23 @@ export function init(db, user, userData) {
         let cardsHtml = '';
 
         // Card de Disponibilidade
-        const disponibilidade = userData.horarios && userData.horarios.length > 0 
-            ? `${userData.horarios.length} horários cadastrados.`
-            : 'Nenhuma disponibilidade cadastrada.';
+        let disponibilidadeHtml = '';
+        if (userData.horarios && userData.horarios.length > 0) {
+            const formatHorario = (h) => `${String(h).padStart(2, '0')}:00`;
+            const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+            disponibilidadeHtml = userData.horarios.map(h => 
+                `<li class="disponibilidade-item"><strong>${capitalize(h.dia)} - ${formatHorario(h.horario)}:</strong> ${h.modalidade} (${h.status})</li>`
+            ).join('');
+        } else {
+            disponibilidadeHtml = '<li>Nenhuma disponibilidade cadastrada.</li>';
+        }
+
         cardsHtml += `
             <div class="info-card">
                 <h3>🗓️ Minha Disponibilidade</h3>
-                <ul>
-                    <li>${disponibilidade}</li>
-                    <li><a href="#recursos" data-view="recursos">Atualize sua disponibilidade em Recursos do Voluntário.</a></li>
-                </ul>
+                <ul class="disponibilidade-list">${disponibilidadeHtml}</ul>
+                <a href="#recursos/disponibilidade" class="card-footer-link">Atualize sua disponibilidade em Recursos do Voluntário.</a>
             </div>`;
 
         // Card de Próxima Supervisão (para voluntários)

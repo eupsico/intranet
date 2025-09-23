@@ -69,8 +69,18 @@ export function init(db, user, userData) {
         });
     }
 
-    const activeTab = tabContainer.querySelector('.tab-link.active');
-    if (activeTab) {
-        loadTabModule(activeTab.dataset.tab);
+    // Verifica se uma aba específica deve ser aberta ao carregar a página
+    if (tabToOpen) {
+        const tabButton = tabContainer.querySelector(`.tab-link[data-tab="${tabToOpen}"]`);
+        if (tabButton) {
+            tabButton.click(); // Simula o clique para ativar a aba e carregar seu conteúdo
+        }
+    } else {
+        // Comportamento padrão: carrega a primeira aba ativa
+        const activeTab = tabContainer.querySelector('.tab-link.active');
+        if (activeTab) {
+            loadTabModule(activeTab.dataset.tab);
+        }
     }
+    // --- FIM DA ALTERAÇÃO ---
 }
