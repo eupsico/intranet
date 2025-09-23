@@ -1,6 +1,3 @@
-// Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js (CORRIGIDO)
-// Versão: 1.3 (Aplica estilos ao container com base nas funções do usuário)
-
 export async function init(db, user, userData) {
     const container = document.getElementById('meu-perfil-container');
     const editModal = document.getElementById('edit-supervisor-profile-modal');
@@ -15,14 +12,12 @@ export async function init(db, user, userData) {
     const funcoesUsuario = userData.funcoes || [];
     const isAdmin = funcoesUsuario.includes('admin');
 
-    // --- INÍCIO DA ALTERAÇÃO ---
-    // Aplica classes ao container com base nas funções
+    // Aplica estilos ao container com base nas funções
     if (funcoesUsuario.includes('admin')) {
         container.classList.add('admin');
     } else if (funcoesUsuario.includes('supervisor')) {
         container.classList.add('supervisor');
     }
-    // --- FIM DA ALTERAÇÃO ---
 
     const createSupervisorCard = (supervisor) => {
         const card = document.createElement('div');
@@ -189,8 +184,8 @@ export async function init(db, user, userData) {
             }
         } catch (error) {
             console.error("Erro ao carregar perfis:", error);
-            container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao carregar os perfis
-}
+            container.innerHTML = '<p class="alert alert-error">Ocorreu um erro ao carregar os perfis.</p>';
+        }
     }
 
     // Adiciona os listeners
