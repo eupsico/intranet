@@ -106,3 +106,9 @@
     height: 25px;
     animation: spin 1s linear infinite;
 }
+.info-card .card-footer-link,
+.summary-card .card-footer-link {
+    display: block;
+    margin-top: 15px;
+    font-weight: 500;
+}
