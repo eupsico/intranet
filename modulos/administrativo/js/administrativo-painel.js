@@ -1,10 +1,39 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 1.6
-// Descrição: Adiciona carregamento dinâmico de CSS para as views.
+// Versão: 1.7
+// Descrição: Adiciona a função global showToast para compatibilidade com módulos importados.
 
 export function init(user, db, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
+
+    // ADICIONADO: Definição da função showToast para este painel.
+    window.showToast = function(message, type = 'success') {
+        const container = document.getElementById('toast-container') || document.body;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        toast.style.position = 'fixed';
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.padding = '15px 20px';
+        toast.style.borderRadius = '5px';
+        toast.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
+        toast.style.color = 'white';
+        toast.style.zIndex = '1050';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.4s ease';
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    };
 
     const views = [
         {
@@ -67,11 +96,11 @@ export function init(user, db, userData) {
             if (view.module) {
                 htmlPath = `../../${view.module}/page/${viewId}.html`;
                 jsPath = `../../${view.module}/js/${viewId}.js`;
-                cssPath = `../../${view.module}/css/${viewId}.css`; // Caminho para o CSS externo
+                cssPath = `../../${view.module}/css/${viewId}.css`;
             } else {
                 htmlPath = `./${viewId}.html`;
                 jsPath = `./${viewId}.js`;
-                cssPath = `../css/${viewId}.css`; // Caminho para o CSS interno
+                cssPath = `../css/${viewId}.css`;
             }
 
             const response = await fetch(htmlPath);
@@ -93,7 +122,6 @@ export function init(user, db, userData) {
 
             contentArea.innerHTML = htmlContent;
 
-            // Lógica para carregar o CSS dinamicamente
             document.querySelectorAll('link[data-dynamic-style]').forEach(el => el.remove());
             const link = document.createElement('link');
             link.setAttribute('data-dynamic-style', 'true');
