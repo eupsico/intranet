@@ -13,12 +13,6 @@ export async function init(db, user, userData) {
 
     let fetchedSupervisors = [];
     const isAdmin = (userData.funcoes || []).includes('admin');
-        // Aplica estilos ao container com base nas funções
-    if (funcoesUsuario.includes('admin')) {
-        container.classList.add('admin');
-    } else if (funcoesUsuario.includes('supervisor')) {
-        container.classList.add('supervisor');
-    }
     // Lista de conselhos, baseada no arquivo meu-perfil.js
     const conselhos = ['Nenhum', 'CFP', 'CRM', 'CRESS', 'OAB', 'CFN', 'Outro'];
 
