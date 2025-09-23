@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/agendamento.js (CORRIGIDO)
-// Versão: 1.2 (Salva datas como Timestamps e ajusta botão 'OK')
+// Versão: 1.3 (Controla os botões do rodapé por etapas)
 
 function getNextDates(diaDaSemana, quantidade) {
     const weekMap = { "domingo": 0, "segunda-feira": 1, "terça-feira": 2, "quarta-feira": 3, "quinta-feira": 4, "sexta-feira": 5, "sábado": 6 };
@@ -25,7 +25,6 @@ function calculateCapacity(inicio, fim) {
         return Math.floor(((endH * 60 + endM) - (startH * 60 + startM)) / 30);
     } catch (e) { return 0; }
 }
-
 
 let dbInstance, currentUser, currentUserData;
 const modal = document.getElementById('agendamento-modal');
@@ -71,7 +70,6 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Aguarde...';
 
-    // --- INÍCIO DA CORREÇÃO 1: Salvar datas como Timestamp ---
     const agendamentoData = {
         supervisorUid: currentSupervisorData.uid,
         supervisorNome: currentSupervisorData.nome,
@@ -82,21 +80,18 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
         profissionalTelefone: telefone,
         criadoEm: firebase.firestore.FieldValue.serverTimestamp()
     };
-    // --- FIM DA CORREÇÃO 1 ---
 
     try {
         await db.collection('agendamentos').add(agendamentoData);
         
         modal.querySelector('#agendamento-step-1').style.display = 'none';
-        confirmBtn.style.display = 'none';
         modal.querySelector('#agendamento-step-2').style.display = 'block';
 
-        // --- INÍCIO DA CORREÇÃO 2: Alterar texto do botão Cancelar para OK ---
-        const cancelBtn = modal.querySelector('#agendamento-cancel-btn');
-        if (cancelBtn) {
-            cancelBtn.textContent = 'OK';
-        }
-        // --- FIM DA CORREÇÃO 2 ---
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Esconde os botões da Etapa 1 e mostra os da Etapa 2
+        modal.querySelector('#footer-step-1').style.display = 'none';
+        modal.querySelector('#footer-step-2').style.display = 'block';
+        // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
         console.error("Erro ao agendar:", error);
@@ -116,15 +111,12 @@ async function open(db, user, userData, supervisorData) {
     // Reseta o modal para o estado inicial
     modal.querySelector('#agendamento-step-1').style.display = 'block';
     modal.querySelector('#agendamento-step-2').style.display = 'none';
-    modal.querySelector('#agendamento-confirm-btn').style.display = 'inline-block';
+    
+    // Mostra os botões da Etapa 1 e esconde os da Etapa 2
+    modal.querySelector('#footer-step-1').style.display = 'flex';
+    modal.querySelector('#footer-step-2').style.display = 'none';
+    
     modal.querySelector('#agendamento-supervisor-nome').textContent = supervisorData.nome;
-    
-    // Reseta o texto do botão "Cancelar"
-    const cancelBtn = modal.querySelector('#agendamento-cancel-btn');
-    if (cancelBtn) {
-        cancelBtn.textContent = 'Cancelar';
-    }
-    
     modal.querySelector('#agendamento-profissional-nome').value = userData.nome || '';
     modal.querySelector('#agendamento-profissional-email').value = user.email || '';
     modal.querySelector('#agendamento-profissional-telefone').value = userData.contato || '';
@@ -156,7 +148,6 @@ async function open(db, user, userData, supervisorData) {
 
         const agendamentosRef = db.collection('agendamentos');
         const slotChecks = potentialSlots.map(async slot => {
-            // Compara com Timestamp
             const q = agendamentosRef
                 .where('supervisorUid', '==', supervisorData.uid)
                 .where('dataAgendamento', '==', firebase.firestore.Timestamp.fromDate(slot.date));
@@ -178,6 +169,7 @@ async function open(db, user, userData, supervisorData) {
 if (modal) {
     modal.querySelector('.close-modal-btn').addEventListener('click', () => modal.style.display = 'none');
     modal.querySelector('#agendamento-cancel-btn').addEventListener('click', () => modal.style.display = 'none');
+    modal.querySelector('#agendamento-ok-btn').addEventListener('click', () => modal.style.display = 'none');
 }
 
 export const agendamentoController = {

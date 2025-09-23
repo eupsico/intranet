@@ -23,7 +23,6 @@
     <link rel="stylesheet" href="../css/perfil-supervisor-view.css">
     <link rel="stylesheet" href="../css/meus-supervisionados-view.css">
     <link rel="stylesheet" href="../css/meus-agendamentos-view.css">
- 
 </head>
 <body>
     <div id="app">
@@ -48,7 +47,7 @@
             <nav class="sidebar">
                 <div class="sidebar-content-wrapper">
                     <ul id="sidebar-menu" class="sidebar-menu">
-                        </ul>
+                    </ul>
                 </div>
             </nav>
             <div id="menu-overlay" class="menu-overlay"></div>
@@ -97,18 +96,15 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <!-- Botões do passo 1 -->
-                <div id="footer-step-1">
-                    <button type="button" id="agendamento-cancel-btn" class="action-button" style="background-color: var(--cor-texto-secundario);">Cancelar</button>
+                <div id="footer-step-1" style="display: flex; justify-content: flex-end; gap: 10px; width: 100%;">
+                    <button type="button" id="agendamento-cancel-btn" class="action-button secondary">Cancelar</button>
                     <button type="button" id="agendamento-confirm-btn" class="action-button">Confirmar Agendamento</button>
                 </div>
-
-                <!-- Botão do passo 2 -->
-                <div id="footer-step-2" style="display: none; text-align: center;">
+                <div id="footer-step-2" style="display: none; text-align: center; width: 100%;">
                     <button type="button" id="agendamento-ok-btn" class="action-button">OK</button>
                 </div>
             </div>
-        </div>
+            </div>
     </div>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
