@@ -1,0 +1,52 @@
+/* Arquivo: /modulos/voluntario/css/meus-agendamentos-view.css */
+
+#lista-agendamentos-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.agendamento-item {
+    background-color: var(--cor-surface);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--sombra-suave);
+}
+
+.agendamento-data {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    border-radius: var(--borda-radius);
+    padding: 10px;
+    text-align: center;
+    min-width: 60px;
+}
+
+.agendamento-data .dia {
+    display: block;
+    font-size: 1.8em;
+    font-weight: 700;
+}
+
+.agendamento-data .mes {
+    display: block;
+    font-size: 0.8em;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.agendamento-info h4 {
+    margin: 0 0 5px 0;
+    color: var(--cor-primaria-dark);
+}
+
+.agendamento-info p {
+    margin: 0;
+    font-size: 0.95em;
+    color: var(--cor-texto-secundario);
+}
