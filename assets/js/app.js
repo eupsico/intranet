@@ -53,10 +53,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!loginView || !dashboardView) return;
         dashboardView.style.display = 'none';
         loginView.style.display = 'block';
+
+        // Determina o prefixo correto para o caminho dos assets
+        const isSubPage = window.location.pathname.includes('/modulos/');
+        const pathPrefix = isSubPage ? '../../../' : './';
+
         loginView.innerHTML = `
             <div class="login-container">
                 <div class="login-card">
-                    <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                    <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
                     <h2>Intranet EuPsico</h2>
                     <p>${message}</p>
                     <p class="login-email-info">Utilize seu e-mail @eupsico.org.br para acessar.</p>
