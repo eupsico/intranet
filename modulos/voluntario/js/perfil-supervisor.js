@@ -25,9 +25,9 @@ export function init(db, user, userData) {
         // --- LÓGICA CORRIGIDA E DEFINITIVA PARA O CAMINHO DA FOTO ---
         let photoPath = '../../../assets/img/avatar-padrao.png'; // Padrão
         if (supervisor.fotoUrl) {
-            // Remove qualquer duplicação de caminho que possa existir
-            const cleanPath = supervisor.fotoUrl.replace('assets/img/supervisores/', '');
-            photoPath = `../../../assets/img/supervisores/${cleanPath}`;
+            // Verifica se o caminho já está incluído para não duplicar
+            if (supervisor.fotoUrl.includes('assets/img/supervisores')) {
+                photoPath = `../../${supervisor.fotoUrl}`;
         }
 
         const toList = (data) => {
