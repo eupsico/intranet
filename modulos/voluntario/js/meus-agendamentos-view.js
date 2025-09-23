@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js (CORRIGIDO)
-// Versão: 1.1 (Altera a ordenação para o lado do cliente para contornar erro do SDK)
+// Versão: 1.3 (Lida com datas em formato de texto e Timestamp para exibir a lista)
 // Descrição: Controla a aba "Meus Agendamentos", listando as solicitações recebidas.
 
 export async function init(db, user, userData) {
@@ -9,11 +9,23 @@ export async function init(db, user, userData) {
         return;
     }
 
-    // Formata a data para um formato amigável
-    function formatarData(isoString) {
-        if (!isoString) return 'Data não informada';
-        const data = new Date(isoString);
-        return data.toLocaleDateString('pt-BR', {
+    // --- INÍCIO DA CORREÇÃO ---
+    // Função robusta para converter Timestamp do Firebase OU texto para um objeto Date do Javascript
+    function toDate(dateField) {
+        if (!dateField) return null;
+        // Se for um objeto Timestamp do Firebase, usa o método toDate()
+        if (typeof dateField.toDate === 'function') {
+            return dateField.toDate();
+        }
+        // Se for um texto (string), cria um novo objeto Date a partir dele
+        return new Date(dateField);
+    }
+    // --- FIM DA CORREÇÃO ---
+
+    // Formata um objeto Date para um formato amigável
+    function formatarData(dateObject) {
+        if (!dateObject) return 'Data não informada';
+        return dateObject.toLocaleDateString('pt-BR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -32,12 +44,13 @@ export async function init(db, user, userData) {
         }
 
         agendamentos.forEach(agendamento => {
+            const dataObj = toDate(agendamento.dataAgendamento); // Usa a função auxiliar
             const itemEl = document.createElement('div');
             itemEl.className = 'agendamento-item';
             itemEl.innerHTML = `
                 <div class="agendamento-data">
-                    <span class="dia">${new Date(agendamento.dataAgendamento).getDate()}</span>
-                    <span class="mes">${new Date(agendamento.dataAgendamento).toLocaleString('pt-BR', { month: 'short' }).toUpperCase()}</span>
+                    <span class="dia">${dataObj ? dataObj.getDate() : ''}</span>
+                    <span class="mes">${dataObj ? dataObj.toLocaleString('pt-BR', { month: 'short' }).toUpperCase() : ''}</span>
                 </div>
                 <div class="agendamento-info">
                     <h4>${agendamento.profissionalNome}</h4>
@@ -45,7 +58,7 @@ export async function init(db, user, userData) {
                         <strong>Contato:</strong> ${agendamento.profissionalEmail || 'Não informado'} | 
                         <strong>Telefone:</strong> ${agendamento.profissionalTelefone || 'Não informado'}
                     </p>
-                    <p><strong>Horário Solicitado:</strong> ${formatarData(agendamento.dataAgendamento)}</p>
+                    <p><strong>Horário Solicitado:</strong> ${formatarData(dataObj)}</p>
                 </div>
             `;
             listaContainer.appendChild(itemEl);
@@ -55,18 +68,17 @@ export async function init(db, user, userData) {
     // Inicia o carregamento
     try {
         listaContainer.innerHTML = '<div class="loading-spinner"></div>';
-
-        // --- INÍCIO DA CORREÇÃO ---
-        // 1. Removemos o .orderBy() da consulta ao banco de dados para evitar o erro.
-        const q = db.collection("agendamentos")
-                    .where("supervisorUid", "==", user.uid);
-
+        
+        const q = db.collection("agendamentos").where("supervisorUid", "==", user.uid);
         const querySnapshot = await q.get();
         let agendamentos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // 2. Fazemos a ordenação aqui no Javascript, o que produz o mesmo resultado.
-        agendamentos.sort((a, b) => new Date(b.dataAgendamento) - new Date(a.dataAgendamento));
-        // --- FIM DA CORREÇÃO ---
+        // Ordena a lista usando a função auxiliar que lida com os dois formatos de data
+        agendamentos.sort((a, b) => {
+            const dateA = toDate(a.dataAgendamento);
+            const dateB = toDate(b.dataAgendamento);
+            return (dateB || 0) - (dateA || 0); // Ordena do mais recente para o mais antigo
+        });
         
         renderizarLista(agendamentos);
 
