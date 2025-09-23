@@ -5,13 +5,13 @@
 #meu-perfil-container {
     display: grid;
     grid-template-columns: repeat(4, 1fr); /* Define 4 colunas */
-    gap: 30px; /* Aumenta o espaçamento entre os cards */
+    gap: 10px; /* Aumenta o espaçamento entre os cards */
 }
 
 /* --- Responsividade para telas menores --- */
 @media (max-width: 1200px) {
     #meu-perfil-container {
-        grid-template-columns: repeat(3, 1fr); /* 3 colunas em telas médias */
+        grid-template-columns: repeat(2, 1fr); /* 3 colunas em telas médias */
     }
 }
 
@@ -26,8 +26,6 @@
         grid-template-columns: 1fr; /* 1 coluna em celulares */
     }
 }
-/* --- FIM DA ALTERAÇÃO --- */
-
 
 /* Estilos existentes para o modal de edição */
 #edit-supervisor-profile-modal .modal-body {
