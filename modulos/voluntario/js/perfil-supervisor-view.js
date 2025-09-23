@@ -50,8 +50,7 @@ export async function init(db, user, userData) {
                     <p>${registroCompleto}</p>
                     <p><strong>Telefone:</strong> ${supervisor.contato || 'Não informado'}</p>
                     <p><strong>E-mail:</strong> ${supervisor.email || 'Não informado'}</p>
-                    <p>www.eupsico.org.br</p>
-                    <h3><p><strong>Clique para consultar o currículo.</strong></p></h3>
+                    <p><strong>www.eupsico.org.br</strong></p>
                 </div>
                 <div class="logo-container">
                     <img src="../../../assets/img/logo-branca.png" alt="Logo EuPsico">
