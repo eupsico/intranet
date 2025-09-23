@@ -19,19 +19,11 @@ export function init(db, user, userData) {
     const isAdmin = (userData.funcoes || []).includes('admin');
 
     const createSupervisorCard = (supervisor) => {
+        const photoPath = supervisor.fotoUrl ? pathPrefix + supervisor.fotoUrl : pathPrefix + 'assets/img/default-user.png';
         const card = document.createElement('div');
         card.className = 'supervisor-card'; 
         
-        // --- LÓGICA CORRIGIDA E DEFINITIVA PARA O CAMINHO DA FOTO ---
-        let photoPath = '../../../assets/img/avatar-padrao.png'; // Padrão
-        if (supervisor.fotoUrl) {
-            // Verifica se o caminho já está incluído para não duplicar
-            if (supervisor.fotoUrl.includes('assets/img/supervisores')) {
-                photoPath = `../../${supervisor.fotoUrl}`;
-            } else {
-                photoPath = `../${supervisor.fotoUrl}`;
-            }
-        }
+
 
         const toList = (data) => {
             if (!data || data.length === 0) return '<ul><li>Não informado</li></ul>';
@@ -42,15 +34,10 @@ export function init(db, user, userData) {
         // --- ESTRUTURA HTML 100% ALINHADA COM O supervisao.css ---
         card.innerHTML = `
             <div class="supervisor-card-header">
-                <div class="supervisor-photo-container">
-                    <img src="${photoPath}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
-                </div>
-                <h3>${supervisor.nome || 'Nome não informado'}</h3>
-                <p>${supervisor.titulo || 'Supervisor(a)'}</p>
-            </div>
-            <div class="supervisor-card-body">
-                <h4>Áreas de Atuação</h4>
-                ${toList(supervisor.atuacao)}
+                <div class="supervisor-photo-container"><img src="${photoPath}" alt="Foto de ${supervisor.nome}" class="supervisor-photo" onerror="this.onerror=null;this.src='${pathPrefix}assets/img/avatar-padrao.png';">
+                <div class="supervisor-identity"><h2>${supervisor.nome || 'Nome Indisponível'}</h2><div class="title-box">${titleText}</div></div>
+                <div class="supervisor-contact">${crpHtml}<p><strong>Telefone:</strong> ${supervisor.telefone || 'N/A'}</p><p><strong>Email:</strong> ${supervisor.email || 'N/A'}</p><p>www.eupsico.org.br</p></div>
+                <div class="logo-container"><img src="${pathPrefix}assets/img/logo-branca.png" alt="Logo EuPsico"></div>
             </div>
         `;
         
