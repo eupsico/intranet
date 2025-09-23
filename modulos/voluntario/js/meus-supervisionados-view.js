@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-supervisionados-view.js (CORRIGIDO)
-// Versão: 1.3 (Trava a edição apenas para os campos do supervisor)
+// Versão: 1.4 (Carrega lista de supervisores e gerencia permissões de campo corretamente)
 // Descrição: Controla a aba "Meus Supervisionados", listando as fichas e permitindo a edição.
 
 export async function init(db, user, userData) {
@@ -65,6 +65,24 @@ export async function init(db, user, userData) {
                 const el = document.getElementById(id);
                 if (el) el.value = value || '';
             };
+
+            // --- INÍCIO DA CORREÇÃO 1: Carregar lista de supervisores ---
+            const loadSupervisores = async () => {
+                const select = document.getElementById('supervisor-nome');
+                if (!select) return;
+                try {
+                    const supervisoresSnapshot = await db.collection('usuarios').where('funcoes', 'array-contains', 'supervisor').get();
+                    select.innerHTML = '<option value="">Selecione...</option>';
+                    supervisoresSnapshot.forEach(doc => {
+                        const supervisor = doc.data();
+                        select.innerHTML += `<option value="${doc.id}">${supervisor.nome}</option>`;
+                    });
+                } catch (error) {
+                    console.error("Erro ao carregar supervisores:", error);
+                }
+            };
+            await loadSupervisores();
+            // --- FIM DA CORREÇÃO 1 ---
             
             // Preenche todos os campos para visualização
             setFieldValue('supervisor-nome', data.identificacaoGeral?.supervisorUid);
@@ -97,23 +115,20 @@ export async function init(db, user, userData) {
             setFieldValue('obs-finais-supervisor', data.observacoesFinais?.obsSupervisor);
             setFieldValue('assinatura-supervisor', data.observacoesFinais?.assinaturaSupervisor);
             
-            // --- INÍCIO DA CORREÇÃO ---
-            // Trava todos os campos, exceto os do supervisor
+            // --- INÍCIO DA CORREÇÃO 2: Trava/Destrava campos ---
             const camposEditaveisSupervisor = [
-                'fase1-obs-supervisor',
-                'fase2-obs-supervisor',
-                'fase3-obs-supervisor',
-                'obs-finais-supervisor',
-                'assinatura-supervisor'
+                'fase1-obs-supervisor', 'fase2-obs-supervisor', 'fase3-obs-supervisor',
+                'obs-finais-supervisor', 'assinatura-supervisor'
             ];
-
             const form = formView.querySelector('#form-supervisao');
             form.querySelectorAll('input, textarea, select').forEach(el => {
                 if (!camposEditaveisSupervisor.includes(el.id)) {
-                    el.disabled = true;
+                    el.disabled = true; // Desabilita os campos do psicólogo
+                } else {
+                    el.disabled = false; // Garante que os campos do supervisor estão habilitados
                 }
             });
-            // --- FIM DA CORREÇÃO ---
+            // --- FIM DA CORREÇÃO 2 ---
             
             const backButton = formView.querySelector('#btn-voltar-para-lista');
             if (backButton) {
@@ -123,7 +138,6 @@ export async function init(db, user, userData) {
                     carregarFichas();
                 });
             }
-
             setupAutoSave(docRef);
 
         } catch (error) {
@@ -140,8 +154,8 @@ export async function init(db, user, userData) {
         
         let saveTimeout;
         const handleFormChange = (e) => {
-            // Só ativa o salvamento se o campo alterado for um dos permitidos
-            if (e.target.id.includes('obs-supervisor') || e.target.id.includes('assinatura-supervisor')) {
+            const camposEditaveis = ['fase1-obs-supervisor', 'fase2-obs-supervisor', 'fase3-obs-supervisor', 'obs-finais-supervisor', 'assinatura-supervisor'];
+            if (camposEditaveis.includes(e.target.id)) {
                 clearTimeout(saveTimeout);
                 statusEl.textContent = 'Salvando...';
                 statusEl.style.color = '#007bff';
