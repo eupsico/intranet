@@ -1,5 +1,35 @@
-/* Arquivo: /modulos/voluntario/css/perfil-supervisor-view.css */
+/* Arquivo: /modulos/voluntario/css/perfil-supervisor-view.css (CORRIGIDO) */
+/* Descrição: Adiciona layout em grade para os cards e mantém estilos do modal. */
 
+/* --- INÍCIO DA ALTERAÇÃO: Layout em Grade para a Lista de Perfis --- */
+#meu-perfil-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Define 4 colunas */
+    gap: 30px; /* Aumenta o espaçamento entre os cards */
+}
+
+/* --- Responsividade para telas menores --- */
+@media (max-width: 1200px) {
+    #meu-perfil-container {
+        grid-template-columns: repeat(3, 1fr); /* 3 colunas em telas médias */
+    }
+}
+
+@media (max-width: 992px) {
+    #meu-perfil-container {
+        grid-template-columns: repeat(2, 1fr); /* 2 colunas em tablets */
+    }
+}
+
+@media (max-width: 768px) {
+    #meu-perfil-container {
+        grid-template-columns: 1fr; /* 1 coluna em celulares */
+    }
+}
+/* --- FIM DA ALTERAÇÃO --- */
+
+
+/* Estilos existentes para o modal de edição */
 #edit-supervisor-profile-modal .modal-body {
     max-height: 70vh;
     overflow-y: auto;
