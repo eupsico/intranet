@@ -1,11 +1,11 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 1.1
-// Descrição: Controlador principal do Painel Administrativo, com a Grade de Horários como view padrão.
+// Versão: 1.2
+// Descrição: Adicionada a view de Lançamentos do módulo financeiro.
 
 export function init(user, db, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
-    
+
     // Definição das views (páginas) disponíveis no painel
     const views = [
         {
@@ -13,15 +13,21 @@ export function init(user, db, userData) {
             name: 'Grade de Horários',
             roles: ['admin', 'gestor', 'assistente'],
             icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
+        },
+        // Adicionado novo objeto para Lançamentos
+        {
+            id: 'lancamentos',
+            name: 'Lançamentos',
+            module: 'financeiro', // Especifica o módulo de origem
+            roles: ['admin', 'financeiro', 'assistente'], // Mantém as mesmas roles do financeiro
+            icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`
         }
-        // O Dashboard foi removido, a Grade é a página principal.
     ];
 
     function buildSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = ''; 
+        sidebarMenu.innerHTML = '';
 
-        // Link para voltar à intranet principal
         sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
@@ -47,24 +53,28 @@ export function init(user, db, userData) {
     }
 
     async function loadView(viewId) {
-        if (!viewId) {
-            contentArea.innerHTML = '<h2>Nenhuma view disponível para seu perfil.</h2>';
+        const view = views.find(v => v.id === viewId);
+        if (!view) {
+            contentArea.innerHTML = '<h2>View não encontrada.</h2>';
             return;
         }
 
         sidebarMenu.querySelectorAll('a[data-view]').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
-        
+
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            const response = await fetch(`./${viewId}.html`);
+            // Lógica de carregamento ajustada
+            const modulePath = view.module ? `../${view.module}` : '.';
+            const response = await fetch(`${modulePath}/page/${viewId}.html`);
+
             if (!response.ok) throw new Error(`Arquivo da view não encontrado: ${viewId}.html (Status: ${response.status})`);
-            
+
             contentArea.innerHTML = await response.text();
 
             try {
-                const viewModule = await import(`../js/${viewId}.js`);
+                const viewModule = await import(`../${view.module || 'js'}/${viewId}.js`);
                 if (viewModule && typeof viewModule.init === 'function') {
                     viewModule.init(db, user, userData);
                 }
@@ -96,7 +106,7 @@ export function init(user, db, userData) {
             const viewId = window.location.hash.substring(1);
             const firstValidView = views.find(v => v.roles.some(role => userRoles.includes(role)));
             const defaultViewId = firstValidView ? firstValidView.id : null;
-            
+
             loadView(viewId || defaultViewId);
         };
 
