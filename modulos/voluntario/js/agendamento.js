@@ -1,10 +1,7 @@
 // Arquivo: /modulos/voluntario/js/agendamento.js (CORRIGIDO)
+// Versão: 1.1 (Corrige o escopo do banco de dados no evento de clique)
 
-const modal = document.getElementById('agendamento-modal');
-let currentSupervisorData = null;
-let dbInstance, currentUser, currentUserData;
-
-// Funções de ajuda (cálculo de datas e capacidade)
+// (As funções auxiliares no topo do arquivo permanecem as mesmas)
 function getNextDates(diaDaSemana, quantidade) {
     const weekMap = { "domingo": 0, "segunda-feira": 1, "terça-feira": 2, "quarta-feira": 3, "quinta-feira": 4, "sexta-feira": 5, "sábado": 6 };
     const targetDay = weekMap[diaDaSemana.toLowerCase()];
@@ -17,7 +14,7 @@ function getNextDates(diaDaSemana, quantidade) {
     
     for (let i = 0; i < quantidade; i++) {
         results.push(new Date(date));
-        date.setDate(date.getDate() + 14); // Agendamentos quinzenais
+        date.setDate(date.getDate() + 14);
     }
     return results;
 }
@@ -26,11 +23,14 @@ function calculateCapacity(inicio, fim) {
     try {
         const [startH, startM] = inicio.split(':').map(Number);
         const [endH, endM] = fim.split(':').map(Number);
-        return Math.floor(((endH * 60 + endM) - (startH * 60 + startM)) / 30); // Capacidade baseada em slots de 30min
+        return Math.floor(((endH * 60 + endM) - (startH * 60 + startM)) / 30);
     } catch (e) { return 0; }
 }
 
-// Renderiza as datas disponíveis no modal
+
+let dbInstance, currentUser, currentUserData;
+const modal = document.getElementById('agendamento-modal');
+
 function renderDates(horariosDisponiveis) {
     const datasContainer = modal.querySelector('#datas-disponiveis-container');
     const confirmBtn = modal.querySelector('#agendamento-confirm-btn');
@@ -59,8 +59,8 @@ function renderDates(horariosDisponiveis) {
     if(confirmBtn) confirmBtn.disabled = false;
 }
 
-// Manipula a confirmação do agendamento
-async function handleConfirmAgendamento() {
+// --- INÍCIO DA CORREÇÃO 1: A função agora recebe 'db' como parâmetro ---
+async function handleConfirmAgendamento(db, currentSupervisorData) {
     const nome = modal.querySelector('#agendamento-profissional-nome').value;
     const email = modal.querySelector('#agendamento-profissional-email').value;
     const telefone = modal.querySelector('#agendamento-profissional-telefone').value;
@@ -80,32 +80,31 @@ async function handleConfirmAgendamento() {
         profissionalUid: currentUser.uid,
         profissionalNome: nome,
         profissionalEmail: email,
-        profissionalTelefone: contato,
+        profissionalTelefone: telefone,
         criadoEm: new Date().toISOString()
     };
 
     try {
-        await dbInstance.collection('agendamentos').add(agendamentoData);
+        // Agora 'db' está garantido de ter o valor correto
+        await db.collection('agendamentos').add(agendamentoData);
+        
         modal.querySelector('#agendamento-step-1').style.display = 'none';
         confirmBtn.style.display = 'none';
         modal.querySelector('#agendamento-step-2').style.display = 'block';
     } catch (error) {
         console.error("Erro ao agendar:", error);
-        alert("Não foi possível realizar o agendamento.");
-    } finally {
+        alert("Não foi possível realizar o agendamento. Verifique o console para mais detalhes.");
         confirmBtn.disabled = false;
         confirmBtn.textContent = 'Confirmar Agendamento';
     }
 }
 
-// Inicializa e abre o modal
 async function open(db, user, userData, supervisorData) {
     if (!modal) return;
     
     dbInstance = db;
     currentUser = user;
     currentUserData = userData;
-    currentSupervisorData = supervisorData;
 
     modal.querySelector('#agendamento-step-1').style.display = 'block';
     modal.querySelector('#agendamento-step-2').style.display = 'none';
@@ -117,6 +116,16 @@ async function open(db, user, userData, supervisorData) {
     modal.querySelector('#agendamento-profissional-telefone').value = userData.contato || '';
     
     modal.style.display = 'flex';
+    
+    // --- INÍCIO DA CORREÇÃO 2: Adiciona o listener de clique aqui dentro ---
+    const confirmBtn = modal.querySelector('#agendamento-confirm-btn');
+    // Para evitar múltiplos listeners, clonamos e substituímos o botão
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    // Adicionamos o listener ao novo botão, garantindo o acesso ao 'db'
+    newConfirmBtn.addEventListener('click', () => handleConfirmAgendamento(db, supervisorData));
+    // --- FIM DA CORREÇÃO 2 ---
     
     const datasContainer = modal.querySelector('#datas-disponiveis-container');
     datasContainer.innerHTML = '<div class="loading-spinner"></div>';
@@ -136,8 +145,7 @@ async function open(db, user, userData, supervisorData) {
             });
         }
 
-        // --- INÍCIO DA CORREÇÃO ---
-        const agendamentosRef = dbInstance.collection('agendamentos');
+        const agendamentosRef = db.collection('agendamentos');
         const slotChecks = potentialSlots.map(async slot => {
             const q = agendamentosRef
                 .where('supervisorUid', '==', supervisorData.uid)
@@ -148,7 +156,6 @@ async function open(db, user, userData, supervisorData) {
             slot.capacity = calculateCapacity(slot.horario.inicio, slot.horario.fim);
             return slot;
         });
-        // --- FIM DA CORREÇÃO ---
 
         const finalSlots = await Promise.all(slotChecks);
         renderDates(finalSlots);
@@ -158,11 +165,9 @@ async function open(db, user, userData, supervisorData) {
     }
 }
 
-// Adiciona os listeners aos botões do modal uma única vez
 if (modal) {
     modal.querySelector('.close-modal-btn').addEventListener('click', () => modal.style.display = 'none');
     modal.querySelector('#agendamento-cancel-btn').addEventListener('click', () => modal.style.display = 'none');
-    modal.querySelector('#agendamento-confirm-btn').addEventListener('click', handleConfirmAgendamento);
 }
 
 export const agendamentoController = {
