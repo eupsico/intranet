@@ -1,6 +1,6 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 1.3
-// Descrição: Corrige o carregamento de views de múltiplos módulos.
+// Versão: 1.4
+// Descrição: Corrige o caminho de busca para arquivos HTML de módulos externos.
 
 export function init(user, db, userData) {
     const contentArea = document.getElementById('content-area');
@@ -18,7 +18,7 @@ export function init(user, db, userData) {
             id: 'lancamentos',
             name: 'Lançamentos',
             module: 'financeiro', // Especifica o módulo de origem
-            roles: ['admin', 'financeiro'],
+            roles: ['admin', 'financeiro', 'assistente'],
             icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`
         }
     ];
@@ -64,16 +64,15 @@ export function init(user, db, userData) {
 
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            // CORREÇÃO: Lógica de caminhos para múltiplos módulos
             let htmlPath, jsPath;
             if (view.module) {
-                // View de um módulo externo
-                htmlPath = `../${view.module}/page/${viewId}.html`;   // Caminho a partir de /administrativo/page/
-                jsPath = `../../${view.module}/js/${viewId}.js`;     // Caminho a partir de /administrativo/js/
+                // View de um módulo externo (ex: financeiro)
+                htmlPath = `../../${view.module}/page/${viewId}.html`;   // CORRIGIDO: Caminho relativo da página HTML
+                jsPath = `../../${view.module}/js/${viewId}.js`;     // Caminho relativo do script
             } else {
                 // View do módulo atual (administrativo)
-                htmlPath = `./${viewId}.html`;                       // Caminho a partir de /administrativo/page/
-                jsPath = `./${viewId}.js`;                         // Caminho a partir de /administrativo/js/
+                htmlPath = `./${viewId}.html`;
+                jsPath = `./${viewId}.js`;
             }
 
             const response = await fetch(htmlPath);
