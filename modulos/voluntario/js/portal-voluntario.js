@@ -190,7 +190,7 @@ function initPortal(user, userData) {
         const sidebarMenu = document.getElementById('sidebar-menu');
         if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
         const handleToggle = () => {
-            const isMobile = window.innerWidth <= 768;
+            const isMobile = window.innerWidth <= 375;
             if (isMobile) {
                 sidebar.classList.toggle('is-visible');
                 layoutContainer.classList.toggle('mobile-menu-open');
@@ -200,7 +200,7 @@ function initPortal(user, userData) {
                 toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
             }
         };
-        if (window.innerWidth > 768) {
+        if (window.innerWidth > 375) {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
             toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
@@ -208,7 +208,7 @@ function initPortal(user, userData) {
         toggleButton.addEventListener('click', handleToggle);
         overlay.addEventListener('click', handleToggle);
         sidebarMenu.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 375) {
                 if (e.target.closest('a')) {
                     handleToggle();
                 }

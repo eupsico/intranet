@@ -222,7 +222,7 @@ textarea.form-control {
     to { transform: scale(1); }
 }
 /* Responsividade para telas menores */
-@media (max-width: 768px) {
+@media (max-width: 375px) {
     .form-row.cols-2,
     .form-row.cols-3,
     .form-row.cols-4 {

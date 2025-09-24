@@ -70,7 +70,7 @@
 }
 
 /* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
-@media (max-width: 768px) {
+@media (max-width: 375px) {
     .period-filter-box {
         display: block; /* Ocupa a largura total no mobile */
     }

@@ -44,7 +44,7 @@ export function init(user, db, userData) {
         if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
 
         const handleToggle = () => {
-            const isMobile = window.innerWidth <= 768;
+            const isMobile = window.innerWidth <= 375;
             if (isMobile) {
                 sidebar.classList.toggle('is-visible');
                 layoutContainer.classList.toggle('mobile-menu-open');
@@ -67,7 +67,7 @@ export function init(user, db, userData) {
         const newSidebarMenu = sidebarMenu.cloneNode(true);
         sidebarMenu.parentNode.replaceChild(newSidebarMenu, sidebarMenu);
         newSidebarMenu.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768 && e.target.closest('a')) {
+            if (window.innerWidth <= 375 && e.target.closest('a')) {
                 handleToggle();
             }
         });

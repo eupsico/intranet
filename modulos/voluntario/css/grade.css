@@ -96,7 +96,7 @@
 }
 
 /* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 375px) {
     #grade .grade-table {
         min-width: 100%;
         border: 0;

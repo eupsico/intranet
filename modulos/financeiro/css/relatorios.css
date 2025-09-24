@@ -46,7 +46,7 @@
 }
 
 /* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
-@media (max-width: 768px) {
+@media (max-width: 375px) {
     .report-controls {
         flex-direction: column;
         align-items: stretch; /* Faz os itens ocuparem a largura total */

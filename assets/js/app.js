@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        if (window.innerWidth > 768) {
+        if (window.innerWidth > 375) {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
             toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('click', handleToggle);
 
         sidebarMenu.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 375) {
                 if (e.target.closest('a')) {
                     handleToggle();
                 }

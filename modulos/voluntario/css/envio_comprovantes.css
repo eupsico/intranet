@@ -104,7 +104,7 @@
 }
 
 /* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
-@media (max-width: 768px) {
+@media (max-width: 375px) {
     .button-container {
         flex-direction: column;
     }
