@@ -85,18 +85,27 @@ export function init(db, user, userData) {
 
         horarios.forEach((hora, index) => {
             const row = tbody.insertRow();
-            if (index < 5) row.className = 'periodo-manha';
-            else if (index < 11) row.className = 'periodo-tarde';
-            else row.className = 'periodo-noite';
+            let rowClass = '';
+            if (index < 5) rowClass = 'periodo-manha';
+            else if (index < 11) rowClass = 'periodo-tarde';
+            else rowClass = 'periodo-noite';
+            row.className = rowClass;
             
-            if (index === 0) row.insertCell().outerHTML = `<td class="period-cell" rowspan="5">Manhã</td>`;
-            if (index === 5) row.insertCell().outerHTML = `<td class="period-cell" rowspan="6">Tarde</td>`;
-            if (index === 11) row.insertCell().outerHTML = `<td class="period-cell" rowspan="5">Noite</td>`;
+            // Adicionado data-label para Período
+            if (index === 0) row.insertCell().outerHTML = `<td data-label="Período" class="period-cell" rowspan="5">Manhã</td>`;
+            if (index === 5) row.insertCell().outerHTML = `<td data-label="Período" class="period-cell" rowspan="6">Tarde</td>`;
+            if (index === 11) row.insertCell().outerHTML = `<td data-label="Período" class="period-cell" rowspan="5">Noite</td>`;
             
-            row.insertCell().outerHTML = `<td class="hour-cell">${hora}</td>`;
+            // Adicionado data-label para Horário
+            row.insertCell().outerHTML = `<td data-label="Horário" class="hour-cell">${hora}</td>`;
             
-            for(let i=0; i < (tipo === 'online' ? 6 : colunasPresencial.length); i++) {
+            const colunasParaIterar = tipo === 'online' ? 6 : colunasPresencial.length;
+            for(let i=0; i < colunasParaIterar; i++) {
                 const cell = row.insertCell();
+                // Adicionado data-label para a célula do profissional
+                const headerLabel = tipo === 'online' ? 'Online' : colunasPresencial[i];
+                cell.setAttribute('data-label', headerLabel);
+
                 const dropdown = document.createElement('select');
                 dropdown.innerHTML = createDropdownOptions();
                 const horaFormatadaParaBusca = hora.replace(":", "-");
