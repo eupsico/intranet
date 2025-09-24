@@ -117,9 +117,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const modules = getVisibleModules(userData);
         setupSidebarToggle();
-
+        renderSidebarMenu(modules);
         if (window.location.pathname.includes('painel-financeiro.html')) {
-            renderSidebarMenu(modules);
+            
             const pageTitleContainer = document.getElementById('page-title-container');
             if (pageTitleContainer) {
                 pageTitleContainer.innerHTML = `
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } 
         else if (window.location.pathname.includes('administrativo-painel.html')) {
-            renderSidebarMenu(modules);
+           
             try {
                 const adminModule = await import('../../modulos/administrativo/js/administrativo-painel.js');
                 adminModule.init(user, db, userData);
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         else if (window.location.pathname.includes('servico-social-painel.html')) {
-            renderSidebarMenu(modules);
+           
             try {
                 const adminModule = await import('../../modulos/servico-social/js/servico-social-painel.js');
                 adminModule.init(user, db, userData);
