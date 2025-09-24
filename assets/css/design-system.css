@@ -21,7 +21,7 @@
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
     --cor-fundo-: #f4f7f9;
-    --cor-fundo-box: #e6ecf2; 
+    --cor-fundo-box: #e4f1ff; 
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -311,6 +311,7 @@ table tbody tr:hover { background-color: #e9ecef; }
   display: flex;
   /*flex-direction: column;*/
   gap: 15px;
+  flex-wrap: wrap;
 }
 
 .filter-box label {
@@ -331,7 +332,9 @@ table tbody tr:hover { background-color: #e9ecef; }
   font-size: 0.95em;
   color: var(--cor-texto-principal);
   transition: border-color 0.2s, box-shadow 0.2s;
-  width: 100%;
+    min-width: 120px;
+  max-width: 100%;
+  white-space: normal;
 }
 
 .filter-box input:focus,
@@ -344,5 +347,5 @@ table tbody tr:hover { background-color: #e9ecef; }
 .filter-box .inline {
   display: flex;
   gap: 10px;
- /* flex-wrap: wrap;*/
+  flex-wrap: wrap;
 }
