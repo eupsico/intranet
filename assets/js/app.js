@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
 
         const handleToggle = () => {
-            const isMobile = window.innerWidth <= 768;
+            const isMobile = window.innerWidth <= 375;
             if (isMobile) {
                 sidebar.classList.toggle('is-visible');
                 layoutContainer.classList.toggle('mobile-menu-open');
