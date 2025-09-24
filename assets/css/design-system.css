@@ -109,7 +109,7 @@ a:hover { text-decoration: underline; filter: brightness(0.9); }
 .module-card .card-icon h3 { margin: 0; color: var(--cor-texto-principal); font-size: 1.1em; }
 .module-card .card-content { padding: 20px; flex-grow: 1; }
 .module-card .card-content p { margin: 0; color: var(--cor-texto-secundario); font-size: 0.95em; }
-.main-footer { background-color: var(--cor-primaria); color: var(--cor-texto-inverso); text-align: center; padding: 30px 20px; border-radius: var(--borda-radius); }
+.main-footer { background-color: var(--cor-primaria); color: var(--cor-texto-inverso); text-align: center; padding: 20px 20px; border-radius: var(--borda-radius); }
 .main-footer p { margin: 5px 0; font-size: 0.9em; }
 .main-footer a { color: var(--cor-secundaria); }
 .main-footer a:hover { color: var(--cor-texto-inverso); }
