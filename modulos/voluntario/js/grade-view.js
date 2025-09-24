@@ -1,22 +1,29 @@
 // Arquivo: /modulos/voluntario/js/grade-view.js
-// Versão: 2.1 (Otimização Mobile - Etapa 1: Atributos)
-// Descrição: Adiciona os atributos data-label para preparar a tabela para o CSS responsivo.
+// Versão: 2.2 (Adiciona classes específicas para grades online/presencial)
+// Descrição: Permite a estilização customizada de cada tipo de grade no CSS.
 
 // --- FUNÇÕES AUXILIARES GLOBAIS ---
-function generateColorFromString(str) {
-    if (!str || str.length === 0) return '#ffffff';
+function generateVibrantColorFromString(str) {
+    if (!str || str.length === 0) return '#ff0055'; // cor vibrante padrão
+
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
+
     let color = '#';
     for (let i = 0; i < 3; i++) {
         let value = (hash >> (i * 8)) & 0xFF;
-        value = 120 + (value % 136);
-        color += ('00' + value.toString(16)).substr(-2);
+
+        // Garante que o valor fique entre 160 e 255 (faixa vibrante)
+        value = 160 + (value % 96);
+
+        color += ('00' + value.toString(16)).slice(-2);
     }
+
     return color;
 }
+
 
 function isColorDark(hexColor) {
     if (!hexColor) return false;
@@ -46,7 +53,7 @@ export async function init(db, user, userData, tipoGrade) {
         const tableBodyHtml = horarios.map((hora, index) => {
             const horaFormatada = hora.replace(":", "-");
             let periodoCell = '';
-            // ADICIONADO data-label
+            
             if (index === 0) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Manhã</td>`;
             if (index === 5) periodoCell = `<td data-label="Período" class="period-cell" rowspan="6">Tarde</td>`;
             if (index === 11) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Noite</td>`;
@@ -59,7 +66,6 @@ export async function init(db, user, userData, tipoGrade) {
                 const estilo = nomeDaGrade ? `background-color: ${cor}; color: ${textColor};` : '';
                 const isCurrentUser = nomeDaGrade && (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
                 
-                // ADICIONADO data-label
                 return `<td data-label="${headerLabel}"><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
             }).join('');
             
@@ -69,7 +75,6 @@ export async function init(db, user, userData, tipoGrade) {
             else rowClass = 'periodo-noite';
 
             const horaSimples = hora.replace(':00', 'h');
-            // ADICIONADO data-label
             return `<tr class="${rowClass}">${periodoCell}<td class="hour-cell" data-label="HORAS">${horaSimples}</td>${celulasProfissionais}</tr>`;
         }).join('');
 
@@ -78,7 +83,8 @@ export async function init(db, user, userData, tipoGrade) {
                 ${Object.entries(diasDaSemana).map(([key, nome]) => `<button class="${dia === key ? 'active' : ''}" data-day="${key}">${nome}</button>`).join('')}
             </div>
             <div class="table-wrapper">
-                <table class="grade-table">
+              
+                <table class="grade-table grade-${tipoGrade}">
                     <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
                     <tbody>${tableBodyHtml}</tbody>
                 </table>
