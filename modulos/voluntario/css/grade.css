@@ -1,155 +1,83 @@
 /* Arquivo: /modulos/voluntario/css/grade.css */
-/* Versão: 3.1 (Ajuste de Largura Mínima para Colunas) */
-/* Descrição: Adiciona uma largura mínima para as colunas de profissionais, melhorando a legibilidade. */
+/* Versão: 3.2 (Layout de Card Inteligente para Mobile) */
+/* Descrição: Cria layouts de card diferentes para grade online e presencial. */
 
 .grade-day-tabs-wrapper {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px;
+    -ms-overflow-style: none; scrollbar-width: none;
 }
-.grade-day-tabs-wrapper::-webkit-scrollbar {
-    display: none;
-}
+.grade-day-tabs-wrapper::-webkit-scrollbar { display: none; }
 .grade-day-tabs-wrapper button {
-    background-color: #f0f0f0;
-    color: #333;
-    border: none;
-    padding: 10px 16px;
-    border-radius: var(--borda-radius);
-    cursor: pointer;
-    font-size: 0.9em;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    white-space: nowrap;
+    background-color: #f0f0f0; color: #333; border: none; padding: 10px 16px; border-radius: var(--borda-radius);
+    cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.2s ease; flex-shrink: 0; white-space: nowrap;
 }
-.grade-day-tabs-wrapper button:hover {
-    background-color: #e0e0e0;
-}
-.grade-day-tabs-wrapper button.active {
-    background-color: #1d70b7;
-    color: white;
-}
+.grade-day-tabs-wrapper button:hover { background-color: #e0e0e0; }
+.grade-day-tabs-wrapper button.active { background-color: #1d70b7; color: white; }
 
-.table-wrapper {
-    overflow-x: auto;
-}
-.grade-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85em;
-    table-layout: fixed;
-}
-
-.grade-table th, 
-.grade-table td {
-    border: 1px solid var(--cor-borda);
-    padding: 6px 4px;
-    text-align: center;
-    vertical-align: middle;
-    word-wrap: break-word;
-}
-
-.grade-table thead th {
-    background-color: var(--cor-primaria);
-    color: var(--cor-texto-inverso);
-    padding: 10px 4px;
-    /* --- INÍCIO DA ALTERAÇÃO --- */
-    min-width: 120px; /* Define uma largura mínima para todos os cabeçalhos */
-    white-space: normal; /* Permite que o cabeçalho quebre a linha se necessário */
-    /* --- FIM DA ALTERAÇÃO --- */
-}
-
-/* Define larguras flexíveis para as colunas iniciais */
-.grade-table th:nth-child(1), .grade-table td:nth-child(1) { width: 8%; min-width: 60px; } /* Período */
-.grade-table th:nth-child(2), .grade-table td:nth-child(2) { width: 9%; min-width: 70px; } /* Horas */
-
-
-.grade-table .period-cell {
-    font-weight: 600;
-    background-color: var(--cor-fundo);
-}
-.grade-table .hour-cell {
-    font-weight: 600;
-    background-color: var(--cor-fundo);
-}
-
+.table-wrapper { overflow-x: auto; }
+.grade-table { width: 100%; border-collapse: collapse; font-size: 0.85em; table-layout: fixed; }
+.grade-table th, .grade-table td { border: 1px solid var(--cor-borda); padding: 6px 4px; text-align: center; vertical-align: middle; word-wrap: break-word; }
+.grade-table thead th { background-color: var(--cor-primaria); color: var(--cor-texto-inverso); padding: 10px 4px; min-width: 120px; white-space: normal; }
+.grade-table th:nth-child(1), .grade-table td:nth-child(1) { width: 8%; min-width: 60px; }
+.grade-table th:nth-child(2), .grade-table td:nth-child(2) { width: 9%; min-width: 70px; }
+.grade-table .period-cell, .grade-table .hour-cell { font-weight: 600; background-color: var(--cor-fundo); }
 .grade-table .periodo-manha { background-color: #e3f2fd; }
 .grade-table .periodo-tarde { background-color: #fffde7; }
 .grade-table .periodo-noite { background-color: #f3e5f5; }
+.professional-cell { padding: 6px; margin: 2px; font-weight: 500; border-radius: var(--borda-radius); min-height: 28px; display: flex; align-items: center; justify-content: center; white-space: normal; }
+.professional-cell.user-highlight { box-shadow: 0 0 0 2px var(--cor-secundaria) inset; }
 
-.professional-cell {
-    padding: 6px;
-    margin: 2px;
-    font-weight: 500;
-    border-radius: var(--borda-radius);
-    min-height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    white-space: normal;
-}
-.professional-cell.user-highlight {
-    box-shadow: 0 0 0 2px var(--cor-secundaria) inset;
-}
 
-/* --- OTIMIZAÇÃO PARA CELULAR (Mantida) --- */
+/* --- INÍCIO DA NOVA OTIMIZAÇÃO PARA CELULAR --- */
 @media screen and (max-width: 768px) {
-    .grade-table {
-        table-layout: auto;
-    }
-    .grade-table thead {
-        display: none;
-    }
+    .table-wrapper { overflow-x: hidden; }
+    .grade-table thead, .grade-table .period-cell { display: none; }
+    .grade-table, .grade-table tbody, .grade-table tr, .grade-table td { display: block; width: 100%; }
+
     .grade-table tr {
-        display: block;
-        border: 1px solid var(--cor-borda);
-        border-radius: var(--borda-radius);
-        margin-bottom: 1em;
-        box-shadow: var(--sombra-suave);
+        border: 1px solid var(--cor-borda); border-radius: var(--borda-radius);
+        margin-bottom: 1em; box-shadow: var(--sombra-suave);
     }
-    .grade-table td {
-        display: block;
-        text-align: right;
-        border: none;
-        border-bottom: 1px solid #eee;
-        padding-left: 50%;
-        position: relative;
-    }
-    .grade-table tr td:last-child {
-        border-bottom: none;
-    }
-    .grade-table td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 10px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left;
-        font-weight: 600;
-        color: var(--cor-primaria);
-    }
-    .grade-table td.period-cell {
-        display: none;
-    }
+    
+    .grade-table td { border: none; position: relative; }
+    .grade-table tr td:not(:first-child) { border-top: 1px solid #eee; }
+
+    /* Estilo do Título do Card (Hora) */
     .grade-table .hour-cell {
-        font-size: 1.2em;
-        font-weight: 700;
-        background-color: var(--cor-fundo);
-        text-align: center;
-        padding-left: 0;
+        font-size: 1.3em; font-weight: 700; background-color: var(--cor-fundo); text-align: center;
+        padding: 10px;
     }
-    .grade-table .hour-cell::before {
+    .grade-table .hour-cell::before { display: none; }
+
+    /* Layout da Grade Presencial (2 Colunas) */
+    .grade-presencial td {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 15px; text-align: left;
+    }
+    .grade-presencial td::before {
+        content: attr(data-label);
+        position: static; font-weight: 600; color: var(--cor-texto-principal);
+        white-space: normal; padding-right: 10px;
+    }
+    .grade-presencial td .professional-cell {
+        text-align: right; font-weight: 500; padding: 4px 8px; flex-shrink: 0;
+    }
+    /* Oculta células vazias na grade presencial */
+    .grade-presencial td:has(.professional-cell:empty) {
         display: none;
     }
-    .professional-cell {
-        margin: 0;
-        padding: 8px;
-        min-height: auto;
+
+    /* Layout da Grade Online (1 Coluna) */
+    .grade-online td { padding: 0; }
+    .grade-online td::before { display: none; } /* Esconde o rótulo "Online" */
+    
+    .grade-online .professional-cell {
+        justify-content: center; text-align: center;
+        padding: 10px; font-weight: 500; width: 100%;
+    }
+     /* Oculta células vazias na grade online */
+    .grade-online td:has(.professional-cell:empty) {
+        display: none;
     }
 }
+/* --- FIM DA NOVA OTIMIZAÇÃO --- */
