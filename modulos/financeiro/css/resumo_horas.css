@@ -1,9 +1,9 @@
 /* Arquivo: /modulos/financeiro/css/resumo_horas.css
    Versão: 1.1
    Descrição: Adiciona estilo para o container do filtro de profissional.
-*/
 
-/* Estilo padrão para parágrafos de descrição */
+
+/* Estilo padrão para parágrafos de descrição 
 .description-box {
     background-color: var(--cor-fundo);
     padding: 15px;
@@ -12,7 +12,7 @@
     border-left: 4px solid var(--cor-secundaria);
     font-size: 0.95em;
     color: var(--cor-texto-secundario);
-}
+}*/
 
 /* Estilo padrão para cabeçalhos de tabela no módulo financeiro */
 .table-section thead th {

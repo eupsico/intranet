@@ -5,14 +5,14 @@
 /* --- :root e Reset --- */
 :root {
     --cor-primaria: #04396d;
-    --cor-secundaria: #40b0df;
+    --cor-secundaria: #1d70b7;
     --cor-sucesso: #28a745;
     --cor-alerta: #ffc107;
     --cor-erro: #dc3545;
     --cor-fundo: #f4f7f9;
     --cor-surface: #ffffff;
     --cor-borda: #e0e0e0;
-    --cor-texto-principal: #333333;
+    --cor-texto-principal: #54595f;
     --cor-texto-secundario: #666666;
     --cor-texto-inverso: #ffffff;
     --fonte-principal: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -20,6 +20,7 @@
     --borda-radius: 10px;
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
+    --cor-fundo-card:#b1d4e0;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -284,4 +285,16 @@ table tbody tr:hover { background-color: #e9ecef; }
 
 .login-button:hover {
     filter: brightness(1.2);
+}
+/* --- COMPONENTES DE TEXTO E LAYOUT --- */
+
+.description-box {
+    background-color: var(--cor-fundo-card);
+    border-left: 4px solid var(--cor-secundaria);
+    border-radius: var(--borda-radius);
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.95em;
+    color: var(--cor-texto-secundario);
 }
