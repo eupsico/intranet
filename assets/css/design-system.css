@@ -21,7 +21,7 @@
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
     --cor-fundo-: #f4f7f9;
-    --cor-fundo-box: #deeaf8; 
+    --cor-fundo-box: #e6ecf2; 
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -309,7 +309,7 @@ table tbody tr:hover { background-color: #e9ecef; }
 .filter-box .selectors{
   margin-bottom: 15px;
   display: flex;
-  flex-direction: column;
+  /*flex-direction: column;*/
   gap: 15px;
 }
 
