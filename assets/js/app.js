@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.8.2 (Login Aprimorado e Menu Mobile com Auto-fechamento)
+// Versão: 1.9.0 (Módulo RH integrado)
 
 import { auth, db } from './firebase-init.js';
 
@@ -240,8 +240,8 @@ document.addEventListener('DOMContentLoaded', function() {
             grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
             marketing: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
             rh: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
-            servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
             supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+            servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
         };
         const areas = {
             portal_voluntario: { titulo: 'Portal do Voluntário', descricao: 'Avisos, notícias e ferramentas para todos os voluntários.', url: './modulos/voluntario/page/portal-voluntario.html', roles: ['todos'], icon: icons.intranet },
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
             financeiro: { titulo: 'Financeiro', descricao: 'Acesso ao painel de controle financeiro e relatórios.', url: './modulos/financeiro/page/painel-financeiro.html', roles: ['admin', 'financeiro'], icon: icons.financeiro },
             grupos: { titulo: 'Grupos', descricao: 'Informações e materiais para a equipe de coordenação de grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
             marketing: { titulo: 'Marketing', descricao: 'Acesso aos materiais de marketing e campanhas da EuPsico.', url: '#', roles: ['admin', 'marketing'], icon: icons.marketing },
-            rh: { titulo: 'Recursos Humanos', descricao: 'Informações sobre vagas, comunicados e gestão de voluntários.', url: '#', roles: ['admin', 'rh'], icon: icons.rh },
+            rh: { titulo: 'Recursos Humanos', descricao: 'Informações sobre vagas, comunicados e gestão de voluntários.', url: './modulos/rh/page/rh-painel.html', roles: ['admin', 'rh'], icon: icons.rh },
             servico_social: { titulo: 'Serviço Social', descricao: 'Documentos, orientações e fichas para o serviço social.', url: './modulos/servico-social/page/servico-social-painel.html', roles: ['admin', 'servico_social'], icon: icons.servico_social },
         };
         const userFuncoes = (userData.funcoes || []).map(f => f.toLowerCase());
