@@ -34,7 +34,44 @@ export function init(user, db, userData) {
             setTimeout(() => toast.remove(), 500);
         }, 3000);
     };
+    // -Função para configurar o menu ---
+    function setupSidebarToggle() {
+        const layoutContainer = document.querySelector('.layout-container');
+        const sidebar = document.querySelector('.sidebar');
+        const toggleButton = document.getElementById('sidebar-toggle');
+        const overlay = document.getElementById('menu-overlay');
+        
+        if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
 
+        const handleToggle = () => {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                sidebar.classList.toggle('is-visible');
+                layoutContainer.classList.toggle('mobile-menu-open');
+            } else {
+                const currentlyCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
+                toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
+            }
+        };
+
+        // Garante que o listener não seja adicionado múltiplas vezes
+        const newToggleButton = toggleButton.cloneNode(true);
+        toggleButton.parentNode.replaceChild(newToggleButton, toggleButton);
+        newToggleButton.addEventListener('click', handleToggle);
+
+        const newOverlay = overlay.cloneNode(true);
+        overlay.parentNode.replaceChild(newOverlay, overlay);
+        newOverlay.addEventListener('click', handleToggle);
+
+        const newSidebarMenu = sidebarMenu.cloneNode(true);
+        sidebarMenu.parentNode.replaceChild(newSidebarMenu, sidebarMenu);
+        newSidebarMenu.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && e.target.closest('a')) {
+                handleToggle();
+            }
+        });
+    }
     const views = [
         {
             id: 'grade',
