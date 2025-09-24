@@ -24,13 +24,18 @@ function generateColorFromString(str) {
     return color;
 }
 
-
 function isColorDark(hexColor) {
-    if (!hexColor) return false;
-    const r = parseInt(hexColor.substr(1, 2), 16);
-    const g = parseInt(hexColor.substr(3, 2), 16);
-    const b = parseInt(hexColor.substr(5, 2), 16);
-    return ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.6;
+    if (!hexColor || hexColor.length !== 7) return false;
+
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+
+    // Fórmula de luminosidade perceptual
+    const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    // Novo limiar para cores vibrantes
+    return brightness < 0.5;
 }
 
 // --- FUNÇÃO DE INICIALIZAÇÃO DO MÓDULO ---
@@ -58,17 +63,30 @@ export async function init(db, user, userData, tipoGrade) {
             if (index === 5) periodoCell = `<td data-label="Período" class="period-cell" rowspan="6">Tarde</td>`;
             if (index === 11) periodoCell = `<td data-label="Período" class="period-cell" rowspan="5">Noite</td>`;
 
+            // --- INÍCIO DA CORREÇÃO ---
             const celulasProfissionais = headers.slice(2).map((headerLabel, colIndex) => {
                 const path = `${tipoGrade}.${dia}.${horaFormatada}.col${colIndex}`;
                 const nomeDaGrade = dadosDasGrades[path] || '';
+
+                // Se não houver profissional, retorna uma string vazia para não criar a célula
+                if (!nomeDaGrade) {
+                    return ''; 
+                }
+
                 const cor = coresProfissionais.get(nomeDaGrade) || generateColorFromString(nomeDaGrade);
                 const textColor = isColorDark(cor) ? 'var(--cor-texto-inverso)' : 'var(--cor-texto-principal)';
-                const estilo = nomeDaGrade ? `background-color: ${cor}; color: ${textColor};` : '';
-                const isCurrentUser = nomeDaGrade && (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
+                const estilo = `background-color: ${cor}; color: ${textColor};`;
+                const isCurrentUser = (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
                 
                 return `<td data-label="${headerLabel}"><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
             }).join('');
+            // --- FIM DA CORREÇÃO ---
             
+            // Se não houver nenhuma célula de profissional para esta hora, não renderiza a linha toda
+            if (celulasProfissionais.trim() === '') {
+                return '';
+            }
+
             let rowClass = '';
             if (index < 5) rowClass = 'periodo-manha';
             else if (index < 11) rowClass = 'periodo-tarde';
@@ -83,7 +101,6 @@ export async function init(db, user, userData, tipoGrade) {
                 ${Object.entries(diasDaSemana).map(([key, nome]) => `<button class="${dia === key ? 'active' : ''}" data-day="${key}">${nome}</button>`).join('')}
             </div>
             <div class="table-wrapper">
-              
                 <table class="grade-table grade-${tipoGrade}">
                     <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
                     <tbody>${tableBodyHtml}</tbody>
