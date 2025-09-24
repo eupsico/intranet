@@ -307,10 +307,10 @@ table tbody tr:hover { background-color: #e9ecef; }
   gap: 6px;
 }
 .filter-box .selectors{
-  margin-bottom: 15px;
+ /* margin-bottom: 15px;*/
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  /*flex-direction: column;*/
+  gap: 15px;
 }
 
 .filter-box label {
