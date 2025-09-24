@@ -146,7 +146,7 @@ table tbody tr:hover { background-color: #e9ecef; }
 
 
 /* --- ESTILOS PARA TELAS PEQUENAS (MOBILE) --- */
-@media (max-width: 375px) {
+@media (max-width: 768px) {
     body, html {
         overflow-x: hidden;
     }

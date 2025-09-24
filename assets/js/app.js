@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
 
         const handleToggle = () => {
-            const isMobile = window.innerWidth <= 375;
+            const isMobile = window.innerWidth <= 768;
             if (isMobile) {
                 sidebar.classList.toggle('is-visible');
                 layoutContainer.classList.toggle('mobile-menu-open');
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        if (window.innerWidth > 375) {
+        if (window.innerWidth > 768) {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
             toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('click', handleToggle);
 
         sidebarMenu.addEventListener('click', (e) => {
-            if (window.innerWidth <= 375) {
+            if (window.innerWidth <= 768) {
                 if (e.target.closest('a')) {
                     handleToggle();
                 }
