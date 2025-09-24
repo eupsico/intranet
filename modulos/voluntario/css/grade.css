@@ -1,160 +1,155 @@
 /* Arquivo: /modulos/voluntario/css/grade.css */
-/* Versão: 2.0 (Final - Adiciona CSS Responsivo) */
-/* Descrição: Adiciona o media query para transformar a tabela em cards em telas menores. */
+/* Versão: 3.1 (Ajuste de Largura Mínima para Colunas) */
+/* Descrição: Adiciona uma largura mínima para as colunas de profissionais, melhorando a legibilidade. */
 
-.grade-container {
-    padding: 20px;
-    background-color: var(--cor-fundo-card);
-    border-radius: 8px;
-    box-shadow: var(--sombra-padrao);
+.grade-day-tabs-wrapper {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.grade-day-tabs-wrapper::-webkit-scrollbar {
+    display: none;
+}
+.grade-day-tabs-wrapper button {
+    background-color: #f0f0f0;
+    color: #333;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--borda-radius);
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.grade-day-tabs-wrapper button:hover {
+    background-color: #e0e0e0;
+}
+.grade-day-tabs-wrapper button.active {
+    background-color: #1d70b7;
+    color: white;
 }
 
 .table-wrapper {
-    width: 100%;
-    overflow-x: auto; /* Mantém a rolagem para telas de tablet */
+    overflow-x: auto;
 }
-
 .grade-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9em;
+    font-size: 0.85em;
+    table-layout: fixed;
 }
 
-.grade-table th, .grade-table td {
-    padding: 10px 12px;
-    text-align: center;
+.grade-table th, 
+.grade-table td {
     border: 1px solid var(--cor-borda);
-    white-space: nowrap;
+    padding: 6px 4px;
+    text-align: center;
+    vertical-align: middle;
+    word-wrap: break-word;
 }
 
-.grade-table th {
-    background-color: var(--cor-fundo);
-    color: var(--cor-primaria);
-    font-weight: 600;
+.grade-table thead th {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    padding: 10px 4px;
+    /* --- INÍCIO DA ALTERAÇÃO --- */
+    min-width: 120px; /* Define uma largura mínima para todos os cabeçalhos */
+    white-space: normal; /* Permite que o cabeçalho quebre a linha se necessário */
+    /* --- FIM DA ALTERAÇÃO --- */
 }
 
-.grade-table .hour-cell {
-    font-weight: 500;
-    background-color: var(--cor-fundo);
-    min-width: 80px;
-}
+/* Define larguras flexíveis para as colunas iniciais */
+.grade-table th:nth-child(1), .grade-table td:nth-child(1) { width: 8%; min-width: 60px; } /* Período */
+.grade-table th:nth-child(2), .grade-table td:nth-child(2) { width: 9%; min-width: 70px; } /* Horas */
+
 
 .grade-table .period-cell {
     font-weight: 600;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
     background-color: var(--cor-fundo);
-    color: var(--cor-texto-secundario);
-    text-transform: uppercase;
-    font-size: 0.8em;
-    padding: 10px 5px;
+}
+.grade-table .hour-cell {
+    font-weight: 600;
+    background-color: var(--cor-fundo);
 }
 
+.grade-table .periodo-manha { background-color: #e3f2fd; }
+.grade-table .periodo-tarde { background-color: #fffde7; }
+.grade-table .periodo-noite { background-color: #f3e5f5; }
+
 .professional-cell {
-    padding: 8px;
-    border-radius: 4px;
+    padding: 6px;
+    margin: 2px;
     font-weight: 500;
-    min-height: 38px;
+    border-radius: var(--borda-radius);
+    min-height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
+    white-space: normal;
+}
+.professional-cell.user-highlight {
+    box-shadow: 0 0 0 2px var(--cor-secundaria) inset;
 }
 
-.user-highlight {
-    border: 2px solid var(--cor-destaque);
-    font-weight: 700;
-    box-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
-}
-
-.grade-day-tabs,
-.grade-day-tabs-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.grade-day-tabs button,
-.grade-day-tabs-wrapper button {
-    padding: 8px 15px;
-    border-radius: 20px;
-    border: 1px solid var(--cor-borda);
-    background-color: var(--cor-fundo-card);
-    color: var(--cor-texto-secundario);
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.grade-day-tabs button:hover,
-.grade-day-tabs-wrapper button:hover {
-    background-color: var(--cor-fundo);
-    border-color: var(--cor-secundaria);
-}
-
-.grade-day-tabs button.active,
-.grade-day-tabs-wrapper button.active {
-    background-color: var(--cor-primaria);
-    color: var(--cor-texto-inverso);
-    border-color: var(--cor-primaria);
-    font-weight: 600;
-}
-
-/*  Bloco responsivo adicionado --- */
+/* --- OTIMIZAÇÃO PARA CELULAR (Mantida) --- */
 @media screen and (max-width: 768px) {
-    .table-wrapper {
-        overflow-x: hidden; /* Remove a rolagem horizontal no celular */
+    .grade-table {
+        table-layout: auto;
     }
-
     .grade-table thead {
-        display: none; /* Esconde o cabeçalho original */
+        display: none;
     }
-
-    .grade-table, .grade-table tbody, .grade-table tr, .grade-table td {
-        display: block;
-        width: 100%;
-    }
-
     .grade-table tr {
-        margin-bottom: 15px;
+        display: block;
         border: 1px solid var(--cor-borda);
-        border-radius: 8px;
-        overflow: hidden;
+        border-radius: var(--borda-radius);
+        margin-bottom: 1em;
+        box-shadow: var(--sombra-suave);
     }
-
     .grade-table td {
+        display: block;
         text-align: right;
-        padding-left: 50%; /* Espaço para o rótulo */
-        position: relative;
         border: none;
-        border-bottom: 1px solid var(--cor-borda);
+        border-bottom: 1px solid #eee;
+        padding-left: 50%;
+        position: relative;
     }
-    
     .grade-table tr td:last-child {
         border-bottom: none;
     }
-
     .grade-table td::before {
-        content: attr(data-label); /* Exibe o texto do atributo data-label */
+        content: attr(data-label);
         position: absolute;
         left: 10px;
-        width: calc(50% - 20px);
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
         text-align: left;
         font-weight: 600;
         color: var(--cor-primaria);
-        white-space: normal;
     }
-
-    .grade-table .period-cell,
+    .grade-table td.period-cell {
+        display: none;
+    }
     .grade-table .hour-cell {
+        font-size: 1.2em;
+        font-weight: 700;
         background-color: var(--cor-fundo);
+        text-align: center;
+        padding-left: 0;
     }
-    
-    .grade-table .period-cell {
-        display: none; /* O período não é necessário no formato de card */
+    .grade-table .hour-cell::before {
+        display: none;
     }
-
     .professional-cell {
+        margin: 0;
+        padding: 8px;
         min-height: auto;
     }
 }
