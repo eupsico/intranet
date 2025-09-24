@@ -1,157 +1,160 @@
-/* Arquivo: /modulos/voluntario/css/grade.css
-   Versão: 6.0 (Final com Responsividade)
-   Descrição: Adiciona design responsivo para celulares e implementa melhorias visuais.
-*/
+/* Arquivo: /modulos/voluntario/css/grade.css */
+/* Versão: 2.0 (Final - Adiciona CSS Responsivo) */
+/* Descrição: Adiciona o media query para transformar a tabela em cards em telas menores. */
 
-/* --- Abas dos Dias da Semana (Novo Design) --- */
-/* Remove o container antigo */
-#grade .grade-day-tabs { display: none; } 
-
-/* Novo container para as abas */
-.grade-day-tabs-wrapper {
-    display: flex;
-    gap: 8px; /* Espaçamento entre as abas */
-    margin-bottom: 20px;
-    overflow-x: auto;
-    padding-bottom: 8px; /* Espaço para a barra de rolagem não ficar colada */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-}
-.grade-day-tabs-wrapper::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-}
-.grade-day-tabs-wrapper button {
-    background-color: #f0f0f0; /* Fundo cinza */
-    color: #333; /* Texto escuro */
-    border: none;
-    padding: 10px 16px;
-    border-radius: var(--borda-radius);
-    cursor: pointer;
-    font-size: 0.9em;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-.grade-day-tabs-wrapper button:hover {
-    background-color: #e0e0e0;
-}
-.grade-day-tabs-wrapper button.active {
-    background-color: #1d70b7; /* Cor solicitada */
-    color: white;
+.grade-container {
+    padding: 20px;
+    background-color: var(--cor-fundo-card);
+    border-radius: 8px;
+    box-shadow: var(--sombra-padrao);
 }
 
-/* --- Tabela da Grade (Ajustes Desktop) --- */
-#grade .table-wrapper {
-    overflow-x: auto;
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto; /* Mantém a rolagem para telas de tablet */
 }
-#grade .grade-table {
+
+.grade-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9em;
-    min-width: 900px;
 }
-#grade .grade-table th, 
-#grade .grade-table td {
-    border: 1px solid var(--cor-borda);
-    padding: 5px;
-    text-align: center;
-    vertical-align: middle;
-}
-#grade .grade-table thead th {
-    background-color: var(--cor-primaria);
-    color: var(--cor-texto-inverso);
-    padding: 12px 5px;
-}
-#grade .grade-table .period-cell {
-    font-weight: 600;
-    background-color: var(--cor-fundo);
-    width: 80px; /* Largura reduzida */
-}
-#grade .grade-table .hour-cell {
-    font-weight: 600;
-    background-color: var(--cor-fundo);
-    width: 70px; /* Largura reduzida */
-}
-#grade .grade-table .periodo-manha { background-color: #e3f2fd; }
-#grade .grade-table .periodo-tarde { background-color: #fffde7; }
-#grade .grade-table .periodo-noite { background-color: #f3e5f5; }
 
-/* Célula de profissional (visualização) */
-#grade .professional-cell {
-    padding: 6px;
-    margin: 2px;
+.grade-table th, .grade-table td {
+    padding: 10px 12px;
+    text-align: center;
+    border: 1px solid var(--cor-borda);
+    white-space: nowrap;
+}
+
+.grade-table th {
+    background-color: var(--cor-fundo);
+    color: var(--cor-primaria);
+    font-weight: 600;
+}
+
+.grade-table .hour-cell {
     font-weight: 500;
-    border-radius: var(--borda-radius);
-    color: var(--cor-texto-principal);
-    min-height: 28px;
+    background-color: var(--cor-fundo);
+    min-width: 80px;
+}
+
+.grade-table .period-cell {
+    font-weight: 600;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto-secundario);
+    text-transform: uppercase;
+    font-size: 0.8em;
+    padding: 10px 5px;
+}
+
+.professional-cell {
+    padding: 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    min-height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    white-space: nowrap; /* Evita quebra de linha */
-    text-align: center; /* Centraliza o nome */
-}
-#grade .professional-cell.user-highlight {
-    box-shadow: 0 0 0 2px var(--cor-secundaria) inset;
 }
 
-/* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
+.user-highlight {
+    border: 2px solid var(--cor-destaque);
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
+}
+
+.grade-day-tabs,
+.grade-day-tabs-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.grade-day-tabs button,
+.grade-day-tabs-wrapper button {
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid var(--cor-borda);
+    background-color: var(--cor-fundo-card);
+    color: var(--cor-texto-secundario);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.grade-day-tabs button:hover,
+.grade-day-tabs-wrapper button:hover {
+    background-color: var(--cor-fundo);
+    border-color: var(--cor-secundaria);
+}
+
+.grade-day-tabs button.active,
+.grade-day-tabs-wrapper button.active {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    border-color: var(--cor-primaria);
+    font-weight: 600;
+}
+
+/*  Bloco responsivo adicionado --- */
 @media screen and (max-width: 768px) {
-    #grade .grade-table {
-        min-width: 100%;
-        border: 0;
+    .table-wrapper {
+        overflow-x: hidden; /* Remove a rolagem horizontal no celular */
     }
-    #grade .grade-table thead {
+
+    .grade-table thead {
         display: none; /* Esconde o cabeçalho original */
     }
-    #grade .grade-table tr {
+
+    .grade-table, .grade-table tbody, .grade-table tr, .grade-table td {
         display: block;
+        width: 100%;
+    }
+
+    .grade-table tr {
+        margin-bottom: 15px;
         border: 1px solid var(--cor-borda);
-        border-radius: var(--borda-radius);
-        margin-bottom: 1em;
-        box-shadow: var(--sombra-suave);
+        border-radius: 8px;
+        overflow: hidden;
     }
-    #grade .grade-table td {
-        display: block;
-        text-align: right; /* Alinha o valor à direita */
-        border: none;
-        border-bottom: 1px solid #eee;
-        padding-left: 50%; /* Espaço para o "label" */
+
+    .grade-table td {
+        text-align: right;
+        padding-left: 50%; /* Espaço para o rótulo */
         position: relative;
+        border: none;
+        border-bottom: 1px solid var(--cor-borda);
     }
-    #grade .grade-table td:last-child {
-        border-bottom: 0;
+    
+    .grade-table tr td:last-child {
+        border-bottom: none;
     }
-    #grade .grade-table td::before {
-        content: attr(data-label); /* Pega o texto do cabeçalho */
+
+    .grade-table td::before {
+        content: attr(data-label); /* Exibe o texto do atributo data-label */
         position: absolute;
         left: 10px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left; /* Alinha o "label" à esquerda */
+        width: calc(50% - 20px);
+        text-align: left;
         font-weight: 600;
         color: var(--cor-primaria);
+        white-space: normal;
     }
-    #grade .grade-table td.period-cell,
-    #grade .grade-table .periodo-manha,
-    #grade .grade-table .periodo-tarde,
-    #grade .grade-table .periodo-noite {
-        display: none; /* Esconde a coluna "Período" no celular */
-    }
-    #grade .grade-table .hour-cell {
-        font-size: 1.2em;
-        font-weight: 700;
+
+    .grade-table .period-cell,
+    .grade-table .hour-cell {
         background-color: var(--cor-fundo);
-        text-align: center;
-        padding-left: 0;
     }
-    #grade .grade-table .hour-cell::before {
-        display: none;
+    
+    .grade-table .period-cell {
+        display: none; /* O período não é necessário no formato de card */
     }
-    #grade .professional-cell {
-        margin: 0;
-        padding: 8px;
+
+    .professional-cell {
         min-height: auto;
     }
 }
