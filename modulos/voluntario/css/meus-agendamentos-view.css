@@ -50,3 +50,15 @@
     font-size: 0.95em;
     color: var(--cor-texto-secundario);
 }
+
+/* --- ESTILOS PARA TELAS PEQUENAS (MOBILE) --- */
+@media (max-width: 768px) {
+    body, html {
+        overflow-x: hidden;
+    }
+    .agendamento-item {
+        display: block;
+        height: auto;
+        overflow: visible;
+    }
+}
