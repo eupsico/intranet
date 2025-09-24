@@ -7,35 +7,55 @@
             <h3>Calculadora Interativa</h3>
             <div class="form-group">
                 <label for="renda-input">Informe a Renda do Paciente/Família (R$)</label>
-                <input type="number" id="renda-input" class="form-control" placeholder="Ex: 1850.50">
-            </div>
-            
-            <div id="faixas-container">
-                <div class="form-group">
-                    <label>Selecione a faixa para cálculo:</label>
-                    <div class="faixa-options">
-                        <button class="faixa-btn" data-percent="6.5">Faixa 1 (6,5%)</button>
-                        <button class="faixa-btn" data-percent="8">Faixa 2 (8%)</button>
-                        <button class="faixa-btn" data-percent="9">Faixa 3 (9%)</button>
-                        <button class="faixa-btn" data-percent="10">Faixa 4 (10%)</button>
-                    </div>
-                </div>
-                 <div class="form-group">
-                    <label>Para atendimento familiar, aplique a regra:</label>
-                    <button class="faixa-btn" id="familia-btn" data-percent="40">Acréscimo Familiar (40%)</button>
-                </div>
+                <input type="number" id="renda-input" class="form-control" placeholder="Digite a renda para ver os valores">
             </div>
 
             <div class="resultado-calculo">
-                <h4>Valor da Contribuição Sugerido:</h4>
-                <p id="valor-contribuicao-resultado">R$ 0,00</p>
+                <h4>Valores de Contribuição Sugeridos:</h4>
+                <div class="resultado-grid">
+                    <div class="resultado-item">
+                        <span class="faixa-label">Faixa 1 (6.5%):</span>
+                        <span id="resultado-faixa1" class="valor-resultado">R$ 0,00</span>
+                    </div>
+                    <div class="resultado-item">
+                        <span class="faixa-label">Família para Faixa 1 (+40%):</span>
+                        <span id="resultado-familia1" class="valor-resultado">R$ 0,00</span>
+                    </div>
+
+                    <div class="resultado-item">
+                        <span class="faixa-label">Faixa 2 (8%):</span>
+                        <span id="resultado-faixa2" class="valor-resultado">R$ 0,00</span>
+                    </div>
+                    <div class="resultado-item">
+                        <span class="faixa-label">Família para Faixa 2 (+40%):</span>
+                        <span id="resultado-familia2" class="valor-resultado">R$ 0,00</span>
+                    </div>
+
+                    <div class="resultado-item">
+                        <span class="faixa-label">Faixa 3 (9%):</span>
+                        <span id="resultado-faixa3" class="valor-resultado">R$ 0,00</span>
+                    </div>
+                    <div class="resultado-item">
+                        <span class="faixa-label">Família para Faixa 3 (+40%):</span>
+                        <span id="resultado-familia3" class="valor-resultado">R$ 0,00</span>
+                    </div>
+
+                    <div class="resultado-item">
+                        <span class="faixa-label">Faixa 4 (10%):</span>
+                        <span id="resultado-faixa4" class="valor-resultado">R$ 0,00</span>
+                    </div>
+                     <div class="resultado-item">
+                        <span class="faixa-label">Família para Faixa 4 (+40%):</span>
+                        <span id="resultado-familia4" class="valor-resultado">R$ 0,00</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="criteria-section">
             <h3>Tabela de Critérios</h3>
             <div class="table-section" style="padding: 0; box-shadow: none;">
-                <table>
+                 <table>
                     <thead>
                         <tr>
                             <th>Faixa</th>
