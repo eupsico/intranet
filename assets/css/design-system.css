@@ -21,7 +21,7 @@
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
     --cor-fundo-: #f4f7f9;
-    --cor-fundo-box: #e4f1ff; 
+    --cor-fundo-box: #eaf4ff; 
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
