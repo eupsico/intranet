@@ -1,6 +1,5 @@
 /* Arquivo: /modulos/voluntario/css/grade.css */
-/* Versão: 3.2 (Layout de Card Inteligente para Mobile) */
-/* Descrição: Cria layouts de card diferentes para grade online e presencial. */
+/* Versão: 3.3 (Layout Mobile Personalizado por Tipo de Grade) */
 
 .grade-day-tabs-wrapper {
     display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px;
@@ -40,31 +39,32 @@
     }
     
     .grade-table td { border: none; position: relative; }
-    .grade-table tr td:not(:first-child) { border-top: 1px solid #eee; }
+    .grade-table tr td:not(:first-child) { border-top: 1px solid var(--cor-borda); }
 
-    /* Estilo do Título do Card (Hora) */
     .grade-table .hour-cell {
         font-size: 1.3em; font-weight: 700; background-color: var(--cor-fundo); text-align: center;
         padding: 10px;
     }
     .grade-table .hour-cell::before { display: none; }
 
-    /* Layout da Grade Presencial (2 Colunas) */
+    /* Layout da Grade Presencial (2 Colunas Fixas 50/50) */
     .grade-presencial td {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 8px 15px; text-align: left;
+        display: grid; /* Usa grid para controle preciso */
+        grid-template-columns: 1fr 1fr; /* Duas colunas de tamanho igual */
+        align-items: center;
+        padding: 8px 10px;
+        gap: 10px; /* Espaçamento entre as colunas */
     }
     .grade-presencial td::before {
         content: attr(data-label);
-        position: static; font-weight: 600; color: var(--cor-texto-principal);
-        white-space: normal; padding-right: 10px;
+        position: static;
+        font-weight: 600;
+        color: var(--cor-texto-principal);
+        white-space: normal;
+        text-align: left;
     }
     .grade-presencial td .professional-cell {
-        text-align: right; font-weight: 500; padding: 4px 8px; flex-shrink: 0;
-    }
-    /* Oculta células vazias na grade presencial */
-    .grade-presencial td:has(.professional-cell:empty) {
-        display: none;
+        text-align: center; /* Centraliza o nome do profissional */
     }
 
     /* Layout da Grade Online (1 Coluna) */
@@ -73,11 +73,6 @@
     
     .grade-online .professional-cell {
         justify-content: center; text-align: center;
-        padding: 10px; font-weight: 500; width: 100%;
-    }
-     /* Oculta células vazias na grade online */
-    .grade-online td:has(.professional-cell:empty) {
-        display: none;
+        padding: 10px; width: 100%;
     }
 }
-/* --- FIM DA NOVA OTIMIZAÇÃO --- */
