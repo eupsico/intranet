@@ -1,5 +1,6 @@
 /* Arquivo: /modulos/voluntario/css/grade.css */
-/* Versão: 3.2 (Melhora o Layout de Cards no Celular) */
+/* Versão: 3.1 (Ajuste de Largura Mínima para Colunas) */
+/* Descrição: Adiciona uma largura mínima para as colunas de profissionais, melhorando a legibilidade. */
 
 .grade-day-tabs-wrapper {
     display: flex;
@@ -57,12 +58,16 @@
     background-color: var(--cor-primaria);
     color: var(--cor-texto-inverso);
     padding: 10px 4px;
-    min-width: 120px;
-    white-space: normal;
+    /* --- INÍCIO DA ALTERAÇÃO --- */
+    min-width: 120px; /* Define uma largura mínima para todos os cabeçalhos */
+    white-space: normal; /* Permite que o cabeçalho quebre a linha se necessário */
+    /* --- FIM DA ALTERAÇÃO --- */
 }
 
-.grade-table th:nth-child(1), .grade-table td:nth-child(1) { width: 8%; min-width: 60px; }
-.grade-table th:nth-child(2), .grade-table td:nth-child(2) { width: 9%; min-width: 70px; }
+/* Define larguras flexíveis para as colunas iniciais */
+.grade-table th:nth-child(1), .grade-table td:nth-child(1) { width: 8%; min-width: 60px; } /* Período */
+.grade-table th:nth-child(2), .grade-table td:nth-child(2) { width: 9%; min-width: 70px; } /* Horas */
+
 
 .grade-table .period-cell {
     font-weight: 600;
@@ -92,8 +97,7 @@
     box-shadow: 0 0 0 2px var(--cor-secundaria) inset;
 }
 
-
-/* --- INÍCIO DA CORREÇÃO PARA O LAYOUT MOBILE --- */
+/* --- OTIMIZAÇÃO PARA CELULAR (Mantida) --- */
 @media screen and (max-width: 768px) {
     .grade-table {
         table-layout: auto;
@@ -108,57 +112,44 @@
         margin-bottom: 1em;
         box-shadow: var(--sombra-suave);
     }
-
     .grade-table td {
-        display: flex; /* Usa flexbox para alinhar lado a lado */
-        justify-content: space-between; /* Espaça o rótulo e o valor */
-        align-items: center;
+        display: block;
         text-align: right;
-        padding: 10px 15px; /* Padding uniforme */
-        position: relative;
         border: none;
         border-bottom: 1px solid #eee;
-        min-height: 42px;
+        padding-left: 50%;
+        position: relative;
     }
-    
     .grade-table tr td:last-child {
         border-bottom: none;
     }
-
     .grade-table td::before {
         content: attr(data-label);
-        position: static; /* Remove o posicionamento absoluto */
-        width: auto; /* Largura automática */
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
         text-align: left;
         font-weight: 600;
         color: var(--cor-primaria);
-        white-space: normal; /* Permite que nomes de supervisores longos quebrem */
-        padding-right: 10px; /* Adiciona um espaço entre o rótulo e o valor */
     }
-
+    .grade-table td.period-cell {
+        display: none;
+    }
     .grade-table .hour-cell {
         font-size: 1.2em;
         font-weight: 700;
         background-color: var(--cor-fundo);
         text-align: center;
-        display: block; /* A célula de hora ocupa a linha toda */
+        padding-left: 0;
     }
-    
     .grade-table .hour-cell::before {
-        display: none; /* Esconde o rótulo "Horário" que é desnecessário */
-    }
-
-    .grade-table td.period-cell {
         display: none;
     }
-    
     .professional-cell {
         margin: 0;
-        padding: 0; /* Remove padding extra pois já está na célula */
-        background-color: transparent !important; /* Remove cores de fundo para não poluir */
-        color: var(--cor-texto-principal) !important; /* Garante a cor do texto */
-        font-weight: 500;
-        text-align: right;
+        padding: 8px;
+        min-height: auto;
     }
 }
-/* --- FIM DA CORREÇÃO --- */
