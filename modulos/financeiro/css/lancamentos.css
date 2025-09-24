@@ -114,7 +114,7 @@
 }
 
 /* --- OTIMIZAÇÃO PARA CELULAR (Responsividade) --- */
-@media (max-width: 375px) {
+@media (max-width: 768px) {
     .lancamentos-filters {
         flex-direction: column;
         align-items: stretch;

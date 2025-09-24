@@ -184,7 +184,7 @@
 }
 
 /* --- Magia da Responsividade --- */
-@media (max-width: 375px) {
+@media (max-width: 768px) {
     .responsive-table thead {
         display: none; /* 1. Esconde o cabeçalho original */
     }

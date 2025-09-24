@@ -27,7 +27,7 @@
     }
 }
 
-@media (max-width: 375px) {
+@media (max-width: 768px) {
     #meu-perfil-container {
         grid-template-columns: 1fr; /* 1 coluna em celulares */
     }
