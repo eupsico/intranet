@@ -344,5 +344,5 @@ table tbody tr:hover { background-color: #e9ecef; }
 .filter-box .inline {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+ /* flex-wrap: wrap;*/
 }
