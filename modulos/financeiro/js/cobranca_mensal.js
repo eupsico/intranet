@@ -53,7 +53,7 @@ export function init(db, user, userData) {
         
         // ALTERAÇÃO: Novo layout para o seletor de período.
         let selectorHtml = `
-            <div class="period-filter-box">
+            <div class="filter-box">
                 <h4>Selecionar Período:</h4>
                 <div class="selectors">
                     <select id="cobranca-mes-selector">${meses.map((m, i) => `<option value="${i}" ${i === mesIndex ? 'selected' : ''}>${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('')}</select>
