@@ -1,7 +1,7 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
 // Versão: 2.0 (Refatorado para alinhar com a arquitetura padrão da intranet)
 
-export function init(db, user, userData) {
+export function init(user, db, userData) {
     console.log("✔️ [DEBUG] Módulo Serviço Social iniciado.");
 
     const contentArea = document.getElementById('content-area');
