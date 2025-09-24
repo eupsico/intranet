@@ -28,7 +28,10 @@
 }
 
 @media (max-width: 768px) {
-    #meu-perfil-container {
+    #meu-perfil-container.supervisor {
+        grid-template-columns: 1fr; /* 1 coluna em celulares */
+    }
+    #meu-perfil-container.admin {
         grid-template-columns: 1fr; /* 1 coluna em celulares */
     }
 }
