@@ -3,7 +3,7 @@
 // Descrição: Permite a estilização customizada de cada tipo de grade no CSS.
 
 // --- FUNÇÕES AUXILIARES GLOBAIS ---
-function generateVibrantColorFromString(str) {
+function generateColorFromString(str) {
     if (!str || str.length === 0) return '#ff0055'; // cor vibrante padrão
 
     let hash = 0;
