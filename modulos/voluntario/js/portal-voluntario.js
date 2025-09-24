@@ -59,7 +59,7 @@ function initPortal(user, userData) {
         { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: icons.comprovantes },
         { id: 'recursos', name: 'Recursos do Voluntário', icon: icons.recursos },
         { id: 'solicitacoes', name: 'Solicitações', icon: icons.solicitacoes },
-        { id: 'plantao', name: 'Guia do Plantão', icon: icons.plantao },
+        { id: 'plantao-psicologico', name: 'Guia do Plantão', icon: icons.plantao },
         { id: 'gestao', name: 'Nossa Gestão', icon: icons.gestao },
     ];
 
