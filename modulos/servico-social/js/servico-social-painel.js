@@ -1,7 +1,10 @@
-import { auth, db } from '../../../assets/js/firebase-init.js';
+// Arquivo: /modulos/servico-social/js/servico-social-painel.js
+// Versão: 1.1 (Corrigido para evitar loop de inicialização)
 
-// Função principal que é chamada pelo app.js quando o usuário acessa o painel
-export function init(user, userData) {
+// A inicialização do Firebase (db, user, userData) agora é recebida diretamente.
+export function init(db, user, userData) {
+    console.log("✔️ [DEBUG] Módulo Serviço Social iniciado.");
+
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
@@ -12,10 +15,10 @@ export function init(user, userData) {
         { id: 'calculo-contribuicao', name: 'Cálculo de Contribuição' },
         { id: 'disponibilidade-assistente', name: 'Minha Disponibilidade' },
         { id: 'script-triagem', name: 'Script da Triagem' },
-        { id: 'drive', name: 'Acesso ao Drive', url: 'https://drive.google.com/drive/folders/12345' } // Substituir pelo link real
+        { id: 'drive', name: 'Acesso ao Drive', url: 'https://link.do.seu.drive.aqui', isExternal: true }
     ];
 
-    // Constrói o menu lateral
+    // Constrói o menu lateral específico deste painel
     function buildSidebarMenu() {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = `
@@ -27,13 +30,14 @@ export function init(user, userData) {
             <li class="menu-separator"></li>
         `;
         views.forEach(view => {
-            const link = view.url ? `href="${view.url}" target="_blank"` : `href="#${view.id}" data-view="${view.id}"`;
+            const link = view.isExternal ? `href="${view.url}" target="_blank"` : `href="#${view.id}" data-view="${view.id}"`;
             sidebarMenu.innerHTML += `<li><a ${link}><span>${view.name}</span></a></li>`;
         });
     }
 
     // Carrega o conteúdo de uma aba (HTML e o script JS correspondente)
     async function loadView(viewId) {
+        // Atualiza a aba ativa no menu
         sidebarMenu.querySelectorAll('a').forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewId);
         });
@@ -41,18 +45,19 @@ export function init(user, userData) {
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         
         try {
+            // Carrega o HTML da aba
             const htmlResponse = await fetch(`../page/${viewId}.html`);
-            if (!htmlResponse.ok) throw new Error(`Arquivo HTML não encontrado para a view: ${viewId}`);
+            if (!htmlResponse.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
             contentArea.innerHTML = await htmlResponse.text();
 
-            // Carrega o módulo JS da view
+            // Importa e executa o JavaScript da aba
             const viewModule = await import(`../js/${viewId}.js`);
             if (viewModule && typeof viewModule.init === 'function') {
                 viewModule.init(db, user, userData);
             }
         } catch (error) {
             console.error(`Erro ao carregar a view ${viewId}:`, error);
-            contentArea.innerHTML = `<p class="alert alert-error">Não foi possível carregar a seção. Verifique o console para mais detalhes.</p>`;
+            contentArea.innerHTML = `<p class="alert alert-error">Não foi possível carregar a seção.</p>`;
         }
     }
 
@@ -60,16 +65,16 @@ export function init(user, userData) {
     function start() {
         buildSidebarMenu();
 
-        // Lida com a navegação por hash (links diretos para abas)
         const handleHashChange = () => {
             const viewId = window.location.hash.substring(1) || views[0].id;
-            if (views.find(v => v.id === viewId && !v.url)) {
+            const view = views.find(v => v.id === viewId);
+            if (view && !view.isExternal) {
                 loadView(viewId);
             }
         };
 
         window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Carrega a view inicial
+        handleHashChange(); // Carrega a view inicial ou a definida no hash
     }
 
     start();
