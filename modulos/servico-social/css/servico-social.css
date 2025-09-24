@@ -1,0 +1,62 @@
+/* Arquivo: /modulos/servico-social/css/servico-social.css */
+
+/* Layout principal da tela de triagem */
+.triagem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr; /* Coluna da esquerda menor que a da direita */
+    gap: 30px;
+}
+
+/* Coluna da esquerda para dados do paciente */
+.patient-data-column {
+    background-color: var(--cor-fundo);
+    padding: 20px;
+    border-radius: var(--borda-radius);
+    border: 1px solid var(--cor-borda);
+}
+
+.patient-data-column h3, .triagem-form-column h3 {
+    font-size: 1.3em;
+    color: var(--cor-primaria);
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.patient-info-group {
+    margin-bottom: 15px;
+}
+
+.patient-info-group strong {
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--cor-texto-secundario);
+    display: block;
+}
+
+.patient-info-group p {
+    margin: 2px 0 0 0;
+    font-size: 1em;
+}
+
+/* Coluna da direita para o formulário */
+.triagem-form-column {
+    background-color: var(--cor-surface);
+    padding: 20px;
+    border-radius: var(--borda-radius);
+    box-shadow: var(--sombra-suave);
+}
+
+.conditional-fields {
+    border-left: 3px solid var(--cor-secundaria);
+    padding-left: 20px;
+    margin-top: 20px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 992px) {
+    .triagem-grid {
+        grid-template-columns: 1fr; /* Empilha as colunas */
+    }
+}
