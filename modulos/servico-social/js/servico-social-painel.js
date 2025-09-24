@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
-// Versão: 2.0 (Refatorado para alinhar com a arquitetura padrão da intranet)
+// Versão: 2.2 (Corrigido e alinhado com a arquitetura padrão da intranet)
 
 export function init(user, db, userData) {
     console.log("✔️ [DEBUG] Módulo Serviço Social iniciado.");
@@ -17,13 +17,25 @@ export function init(user, db, userData) {
         { id: 'drive', name: 'Acesso ao Drive', url: 'https://link.do.seu.drive.aqui', isExternal: true }
     ];
 
-    // ATENÇÃO: A função buildSidebarMenu foi removida. O app.js agora é responsável por isso.
+    // Constrói o menu lateral específico deste painel
+    function buildSidebarMenu() {
+        if (!sidebarMenu) return;
+        sidebarMenu.innerHTML = `
+            <li>
+                <a href="../../../index.html" class="back-link">
+                    <span>&larr; Voltar à Intranet</span>
+                </a>
+            </li>
+            <li class="menu-separator"></li>
+        `;
+        views.forEach(view => {
+            const link = view.isExternal ? `href="${view.url}" target="_blank"` : `href="#${view.id}" data-view="${view.id}"`;
+            sidebarMenu.innerHTML += `<li><a ${link}><span>${view.name}</span></a></li>`;
+        });
+    }
 
     // Carrega o conteúdo de uma aba (HTML e o script JS correspondente)
     async function loadView(viewId) {
-        // A lógica de atualizar a aba ativa no menu lateral já é feita pelo app.js
-        // Aqui, focamos apenas em carregar o conteúdo na área principal.
-        
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         
         try {
@@ -35,6 +47,7 @@ export function init(user, db, userData) {
             // Importa e executa o JavaScript da aba
             const viewModule = await import(`../js/${viewId}.js`);
             if (viewModule && typeof viewModule.init === 'function') {
+                // Passa os parâmetros na ordem correta que os submódulos esperam (db, user, userData)
                 viewModule.init(db, user, userData);
             }
         } catch (error) {
@@ -45,7 +58,7 @@ export function init(user, db, userData) {
 
     // Ponto de partida do painel
     function start() {
-        // A construção do menu é removida, pois o app.js cuidará disso.
+        buildSidebarMenu(); // Garante que o menu correto seja exibido
 
         const handleHashChange = () => {
             const viewId = window.location.hash.substring(1) || views[0].id;
