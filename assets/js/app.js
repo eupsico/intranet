@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
             grupos: { titulo: 'Grupos', descricao: 'Informações e materiais para a equipe de coordenação de grupos.', url: '#', roles: ['admin', 'grupos'], icon: icons.grupos },
             marketing: { titulo: 'Marketing', descricao: 'Acesso aos materiais de marketing e campanhas da EuPsico.', url: '#', roles: ['admin', 'marketing'], icon: icons.marketing },
             rh: { titulo: 'Recursos Humanos', descricao: 'Informações sobre vagas, comunicados e gestão de voluntários.', url: '#', roles: ['admin', 'rh'], icon: icons.rh },
-            servico_social: { titulo: 'Serviço Social', descricao: 'Documentos, orientações e fichas para o serviço social.', url: '#', roles: ['admin', 'servico_social'], icon: icons.servico_social },
+            servico_social: { titulo: 'Serviço Social', descricao: 'Documentos, orientações e fichas para o serviço social.', url: './modulos/servico-social/page/servico-social-painel.html', roles: ['admin', 'servico_social'], icon: icons.servico_social },
         };
         const userFuncoes = (userData.funcoes || []).map(f => f.toLowerCase());
         let modulesToShow = [];
