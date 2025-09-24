@@ -1,7 +1,6 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
-// Versão: 1.1 (Corrigido para evitar loop de inicialização)
+// Versão: 2.0 (Refatorado para alinhar com a arquitetura padrão da intranet)
 
-// A inicialização do Firebase (db, user, userData) agora é recebida diretamente.
 export function init(db, user, userData) {
     console.log("✔️ [DEBUG] Módulo Serviço Social iniciado.");
 
@@ -18,30 +17,13 @@ export function init(db, user, userData) {
         { id: 'drive', name: 'Acesso ao Drive', url: 'https://link.do.seu.drive.aqui', isExternal: true }
     ];
 
-    // Constrói o menu lateral específico deste painel
-    function buildSidebarMenu() {
-        if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = `
-            <li>
-                <a href="../../../index.html" class="back-link">
-                    <span>&larr; Voltar à Intranet</span>
-                </a>
-            </li>
-            <li class="menu-separator"></li>
-        `;
-        views.forEach(view => {
-            const link = view.isExternal ? `href="${view.url}" target="_blank"` : `href="#${view.id}" data-view="${view.id}"`;
-            sidebarMenu.innerHTML += `<li><a ${link}><span>${view.name}</span></a></li>`;
-        });
-    }
+    // ATENÇÃO: A função buildSidebarMenu foi removida. O app.js agora é responsável por isso.
 
     // Carrega o conteúdo de uma aba (HTML e o script JS correspondente)
     async function loadView(viewId) {
-        // Atualiza a aba ativa no menu
-        sidebarMenu.querySelectorAll('a').forEach(link => {
-            link.classList.toggle('active', link.dataset.view === viewId);
-        });
-
+        // A lógica de atualizar a aba ativa no menu lateral já é feita pelo app.js
+        // Aqui, focamos apenas em carregar o conteúdo na área principal.
+        
         contentArea.innerHTML = '<div class="loading-spinner"></div>';
         
         try {
@@ -63,12 +45,18 @@ export function init(db, user, userData) {
 
     // Ponto de partida do painel
     function start() {
-        buildSidebarMenu();
+        // A construção do menu é removida, pois o app.js cuidará disso.
 
         const handleHashChange = () => {
             const viewId = window.location.hash.substring(1) || views[0].id;
             const view = views.find(v => v.id === viewId);
             if (view && !view.isExternal) {
+                // Atualiza o link ativo no menu lateral
+                if (sidebarMenu) {
+                    sidebarMenu.querySelectorAll('a').forEach(link => {
+                        link.classList.toggle('active', link.dataset.view === viewId);
+                    });
+                }
                 loadView(viewId);
             }
         };
