@@ -292,9 +292,9 @@ table tbody tr:hover { background-color: #e9ecef; }
     background-color: var(--cor-fundo);
     border-left: 4px solid var(--cor-secundaria);
     border-radius: var(--borda-radius);
-    padding: 15px 20px;
-    margin-bottom: 25px;
-    border-radius: 0 8px 8px 0;
+    padding: 15px;
+    margin-bottom: 30px;
+   /* border-radius: 0 8px 8px 0;*/
     font-size: 0.95em;
     color: var(--cor-texto-secundario);
 }
