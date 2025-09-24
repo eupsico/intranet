@@ -20,7 +20,7 @@
     --borda-radius: 10px;
     --sidebar-width-expanded: 250px;
     --sidebar-width-collapsed: 80px;
-    --cor-fundo-card:#b1d4e0;
+    
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -289,7 +289,7 @@ table tbody tr:hover { background-color: #e9ecef; }
 /* --- COMPONENTES DE TEXTO E LAYOUT --- */
 
 .description-box {
-    background-color: var(--cor-fundo-card);
+    background-color: var(--cor-fundo);
     border-left: 4px solid var(--cor-secundaria);
     border-radius: var(--borda-radius);
     padding: 15px 20px;
