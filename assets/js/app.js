@@ -144,6 +144,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel administrativo.</h2>";
             }
         }
+        else if (window.location.pathname.includes('servico-social-painel.html')) {
+            try {
+                const adminModule = await import('../../modulos/servico-social/js/servico-social-painel.js');
+                adminModule.init(user, db, userData);
+            } catch (error) {
+                console.error("Erro ao carregar o módulo Serviço Social:", error);
+                document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel serviço social.</h2>";
+            }
+        }
         else {
             const pageTitleContainer = document.getElementById('page-title-container');
             if(pageTitleContainer) {
