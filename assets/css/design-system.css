@@ -298,3 +298,44 @@ table tbody tr:hover { background-color: #e9ecef; }
     font-size: 0.95em;
     color: var(--cor-texto-secundario);
 }
+
+.filter-box {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-box label {
+  font-weight: 500;
+  color: var(--cor-texto-principal);
+  font-size: 0.9em;
+}
+
+.filter-box input[type="text"],
+.filter-box input[type="number"],
+.filter-box input[type="date"],
+.filter-box select {
+  padding: 8px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--borda-radius);
+  background-color: var(--cor-surface);
+  font-family: var(--fonte-principal);
+  font-size: 0.95em;
+  color: var(--cor-texto-principal);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.filter-box input:focus,
+.filter-box select:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px rgba(4, 57, 109, 0.1);
+}
+
+.filter-box .inline {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

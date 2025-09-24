@@ -22,13 +22,13 @@
 }
 
 /* --- Container para o filtro --- */
-.filter-box {
+/*.filter-box {
     background-color: var(--cor-fundo);
     padding: 20px;
     border-radius: var(--borda-radius);
     margin-bottom: 20px;
     border: 1px solid var(--cor-borda);
-    display: inline-block; /* Faz a caixa se ajustar ao conteúdo */
+    display: inline-block; /* Faz a caixa se ajustar ao conteúdo 
 }
 
 .filter-box label {
@@ -37,4 +37,4 @@
     font-weight: 600;
     font-size: 1em;
     color: var(--cor-texto-principal);
-}
+}*/
