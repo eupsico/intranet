@@ -67,26 +67,19 @@ export async function init(db, user, userData, tipoGrade) {
             const celulasProfissionais = headers.slice(2).map((headerLabel, colIndex) => {
                 const path = `${tipoGrade}.${dia}.${horaFormatada}.col${colIndex}`;
                 const nomeDaGrade = dadosDasGrades[path] || '';
-
-                // Se não houver profissional, retorna uma string vazia para não criar a célula
-                if (!nomeDaGrade) {
-                    return ''; 
-                }
+                
+                const isEmpty = !nomeDaGrade;
+                const cellClass = isEmpty ? 'cell-empty' : '';
 
                 const cor = coresProfissionais.get(nomeDaGrade) || generateColorFromString(nomeDaGrade);
                 const textColor = isColorDark(cor) ? 'var(--cor-texto-inverso)' : 'var(--cor-texto-principal)';
-                const estilo = `background-color: ${cor}; color: ${textColor};`;
-                const isCurrentUser = (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
+                const estilo = !isEmpty ? `background-color: ${cor}; color: ${textColor};` : '';
+                const isCurrentUser = !isEmpty && (nomeDaGrade === userData.username || nomeDaGrade === userData.name);
                 
-                return `<td data-label="${headerLabel}"><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
+                return `<td data-label="${headerLabel}" class="${cellClass}"><div class="professional-cell ${isCurrentUser ? 'user-highlight' : ''}" style="${estilo}">${nomeDaGrade}</div></td>`;
             }).join('');
             // --- FIM DA CORREÇÃO ---
             
-            // Se não houver nenhuma célula de profissional para esta hora, não renderiza a linha toda
-            if (celulasProfissionais.trim() === '') {
-                return '';
-            }
-
             let rowClass = '';
             if (index < 5) rowClass = 'periodo-manha';
             else if (index < 11) rowClass = 'periodo-tarde';
