@@ -161,3 +161,11 @@
 .secao-conteudo p {
     margin: 6px 0;
 }
+
+
+.checkbox-item input[type="checkbox"]:disabled + label {
+    cursor: not-allowed;
+    text-decoration: line-through;
+    color: var(--cor-texto-secundario);
+    opacity: 0.6;
+}
