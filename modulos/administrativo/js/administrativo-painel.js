@@ -2,7 +2,7 @@
 // Versão: 1.7
 // Descrição: Adiciona a função global showToast para compatibilidade com módulos importados.
 
-export function init(user, db, userData) {
+export function initadministrativoPanel(user, db, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 

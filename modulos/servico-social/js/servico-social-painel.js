@@ -1,7 +1,7 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
 // Versão: 2.3 (Adiciona ícones ao menu lateral para consistência visual)
 
-export function initsocialModule(user, db, userData) {
+export function initsocialPanel(user, db, userData) {
 
         window.db = db;
     
