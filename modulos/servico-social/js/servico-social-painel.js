@@ -76,16 +76,12 @@ export function initsocialPanel(user, db, userData) {
         
         views.forEach(view => {
             const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
-                if (hasPermission) {
-                    if (view.isExternal) {
-                    link.href = view.url; // URL externa real
-                    link.target = "_blank"; // Abrir em nova aba
-                    link.rel = "noopener noreferrer";
-                } else {
-                    link.href = `#${view.id}`; // Link interno (hash)
-                    link.dataset.view = view.id;
-                }
-                    // 2. Adicionar o ícone ao lado do nome
+            if (hasPermission) {
+                const menuItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `#${view.id}`;
+                link.dataset.view = view.id;
+                // 2. Adicionar o ícone ao lado do nome
                 link.innerHTML = `${view.icon}<span>${view.name}</span>`;
                 menuItem.appendChild(link);
                 sidebarMenu.appendChild(menuItem);
