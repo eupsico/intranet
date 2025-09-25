@@ -50,7 +50,7 @@ export function initsocialPanel(user, db, userData) {
         { id: 'calculo-contribuicao', name: 'Cálculo de Contribuição', roles: ['admin', 'servico_social'], icon: icons.calculo },
         { id: 'disponibilidade-assistente', name: 'Minha Disponibilidade', roles: ['admin', 'servico_social'], icon: icons.disponibilidade },
         { id: 'script-triagem', name: 'Script da Triagem', roles: ['admin', 'servico_social'], icon: icons.script },
-        { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'servico_social'], url: 'https://docs.google.com/spreadsheets/d/1_9236__9I_tj_Jc_3__-g2B_ut2_o5sE/edit?usp=sharing&ouid=103986289297204994247&rtpof=true&sd=true', isExternal: true, icon: icons.drive }
+        { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'servico_social'], url: 'https://drive.google.com/drive/u/1/folders/0AONLPOTn6ns3Uk9PVA', isExternal: true, icon: icons.drive }
     ];
 
     function buildSocialSidebarMenu(userRoles = []) {
