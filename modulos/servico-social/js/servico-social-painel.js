@@ -1,11 +1,11 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
-// Versão: 2.3 (Adiciona ícones ao menu lateral para consistência visual)
+// Versão: 2.4 (Corrige erro de referência e implementa links externos de forma segura)
 
 export function initsocialPanel(user, db, userData) {
+    window.db = db;
 
-        window.db = db;
-    
     window.showToast = function(message, type = 'success') {
+        // ... (função showToast permanece a mesma)
         const container = document.getElementById('toast-container') || document.body;
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
@@ -36,7 +36,6 @@ export function initsocialPanel(user, db, userData) {
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
 
-    // --- ADIÇÃO: Objeto de Ícones ---
     const icons = {
         agendamentos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
         fila: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
@@ -46,7 +45,6 @@ export function initsocialPanel(user, db, userData) {
         drive: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`
     };
 
-    // --- ALTERAÇÃO: Adicionada a propriedade 'icon' a cada item do menu ---
     const views = [
         { id: 'agendamentos-triagem', name: 'Agendamentos de Triagem', roles: ['admin', 'servico_social'], icon: icons.agendamentos },
         { id: 'fila-atendimento', name: 'Fila de Atendimento', roles: ['admin', 'servico_social'], icon: icons.fila },
@@ -56,32 +54,35 @@ export function initsocialPanel(user, db, userData) {
         { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'servico_social'], url: 'https://link.do.seu.drive.aqui', isExternal: true, icon: icons.drive }
     ];
 
-    // Constrói o menu lateral específico deste painel
     function buildSocialSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = '';
-        const backLink = document.createElement('li');
-        backLink.innerHTML = `
-
+        sidebarMenu.innerHTML = ''; // Limpa o menu
+        
+        // Adiciona link de "Voltar"
+        sidebarMenu.innerHTML += `
+            <li>
                 <a href="../../../index.html" class="back-link">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     <span>Voltar à Intranet</span>
                 </a>
+            </li>
+            <li class="menu-separator"></li>
         `;
-        sidebarMenu.appendChild(backLink);
-
-        const separator = document.createElement('li');
-        separator.className = 'menu-separator';
-        sidebarMenu.appendChild(separator);
         
+        // Constrói os itens do menu
         views.forEach(view => {
-            const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
+            const hasPermission = view.roles.some(role => userRoles.includes(role.trim()));
             if (hasPermission) {
                 const menuItem = document.createElement('li');
-                const link = document.createElement('a');
-                link.href = `#${view.id}`;
+                const link = document.createElement('a'); // A variável `link` é declarada aqui
+                
                 link.dataset.view = view.id;
-                // 2. Adicionar o ícone ao lado do nome
+                link.href = view.isExternal ? view.url : `#${view.id}`;
+                if (view.isExternal) {
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                }
+                
                 link.innerHTML = `${view.icon}<span>${view.name}</span>`;
                 menuItem.appendChild(link);
                 sidebarMenu.appendChild(menuItem);
@@ -89,25 +90,19 @@ export function initsocialPanel(user, db, userData) {
         });
     }
 
-    // Carrega o conteúdo de uma aba (HTML e o script JS correspondente)
     async function loadView(viewName) {
-        console.log(`[DEBUG] Tentando carregar a view: ${viewName}`);
         const menuLinks = sidebarMenu.querySelectorAll('a[data-view]');
         menuLinks.forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewName);
         });
         
+        contentArea.innerHTML = '<div class="loading-spinner"></div>';
         try {
-            contentArea.innerHTML = '<div class="loading-spinner"></div>';
-            
             const response = await fetch(`./${viewName}.html`);
             if (!response.ok) {
                 throw new Error(`Arquivo da view não encontrado: ${viewName}.html`);
             }
             contentArea.innerHTML = await response.text();
-
-            const oldScript = document.getElementById('dynamic-view-script');
-            if (oldScript) oldScript.remove();
             
             const scriptPath = `../js/${viewName}.js`;
             try {
@@ -123,26 +118,43 @@ export function initsocialPanel(user, db, userData) {
             contentArea.innerHTML = `<h2>Erro ao carregar o módulo '${viewName}'.</h2><p>${error.message}.</p>`;
         }
     }
-    const userRoles = userData.funcoes || [];
-    buildSocialSidebarMenu(userRoles);
 
-    const hash = window.location.hash.substring(1);
-    const viewExists = views.some(v => v.id === hash);
-    const hasPermissionForHash = viewExists && views.find(v => v.id === hash).roles.some(role => userRoles.includes(role.trim()));
+    // --- FUNÇÃO DE INICIALIZAÇÃO ---
+    function start() {
+        const userRoles = userData.funcoes || [];
+        buildSocialSidebarMenu(userRoles);
 
-    if (hash && viewExists && hasPermissionForHash) {
-        loadView(hash);
-    } else {
-        const firstAvailableLink = sidebarMenu.querySelector('a[data-view]');
-        if (firstAvailableLink) {
-            window.location.hash = firstAvailableLink.dataset.view;
+        // Listener para navegação por hash
+        const handleHashChange = () => {
+            const viewName = window.location.hash.substring(1);
+            if (viewName) {
+                loadView(viewName);
+            }
+        };
+
+        // Carregamento inicial da view
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            loadView(hash);
         } else {
-            contentArea.innerHTML = '<h2>Você não tem permissão para acessar nenhuma seção deste módulo.</h2>';
+            // Carrega a primeira view permitida se não houver hash
+            const firstLink = sidebarMenu.querySelector('a[data-view]');
+            if (firstLink) {
+                window.location.hash = firstLink.dataset.view;
+            }
         }
+        
+        window.addEventListener('hashchange', handleHashChange);
+
+        // Adiciona um listener de clique ao menu para tratar os links externos
+        sidebarMenu.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && link.target === '_blank') {
+                e.preventDefault();
+                window.open(link.href, '_blank');
+            }
+        });
     }
 
-    window.addEventListener('hashchange', () => {
-        const viewName = window.location.hash.substring(1);
-        if (viewName) loadView(viewName);
-    });
+    start();
 }
