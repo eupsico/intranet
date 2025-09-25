@@ -1,6 +1,6 @@
 <div class="view-container">
     <h1>Minha Disponibilidade</h1>
-    <p class="description-box">Informe seus horários disponíveis para realizar triagens e reavaliações. Esta informação será usada para montar a agenda de agendamentos para os pacientes.</p>
+    <p class="description-box">Informe seus horários para triagens e reavaliações. A agenda de agendamentos será montada com base nestas informações.</p>
 
     <div class="form-container" id="disponibilidade-form-container">
         <form id="disponibilidade-form">
@@ -9,20 +9,43 @@
                 <input type="text" id="assistente-nome" class="form-control" readonly>
             </div>
 
-            <h3 class="form-section-title">Disponibilidade para Triagem/Reavaliação Online</h3>
+            <h3 class="form-section-title">Disponibilidade para Triagem</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="tipo-atendimento-triagem">Deseja informar horário para atendimento:</label>
+                    <select id="tipo-atendimento-triagem" class="form-control">
+                        <option value="Online">Online</option>
+                        <option value="Presencial">Presencial</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="mes-triagem">Escolha o mês que deseja informar:</label>
+                    <select id="mes-triagem" class="form-control"></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="hora-inicio-triagem">Horário da primeira triagem:</label>
+                    <select id="hora-inicio-triagem" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label for="hora-fim-triagem">Horário da última triagem:</label>
+                    <select id="hora-fim-triagem" class="form-control"></select>
+                </div>
+            </div>
             <div class="form-group">
-                <label for="horarios-online">Selecione os dias e horários para atendimento ONLINE:</label>
-                <textarea id="horarios-online" name="horarios-online" rows="5" class="form-control" placeholder="Ex: 01/10 - segunda-feira - das 09h às 12h&#10;03/10 - quarta-feira - das 14h às 18h"></textarea>
-                <p>Por favor, coloque cada dia e intervalo em uma nova linha.</p>
+                <label>Selecione os dias disponíveis para Triagem no mês selecionado:</label>
+                <div id="datas-container-triagem" class="datas-container">
+                    <p>Selecione um mês para ver os dias.</p>
+                </div>
             </div>
 
-            <h3 class="form-section-title">Disponibilidade para Reavaliação Presencial</h3>
-             <div class="form-group">
-                <label for="horarios-presencial">Selecione os dias e horários para atendimento PRESENCIAL:</label>
-                <textarea id="horarios-presencial" name="horarios-presencial" rows="5" class="form-control" placeholder="Ex: 02/10 - terça-feira - das 10h às 13h"></textarea>
-                <p>Certifique-se de que não há conflito com os horários online.</p>
+            <h3 class="form-section-title">Disponibilidade para Reavaliação</h3>
+            <p>Selecione os dias disponíveis para Reavaliação. Os dias já marcados para triagem não aparecerão aqui.</p>
+            <div id="datas-container-reavaliacao" class="datas-container">
+                 <p>Selecione um mês para ver os dias.</p>
             </div>
-
+            
             <div class="button-bar">
                 <button type="submit" class="action-button">Salvar Disponibilidade</button>
             </div>

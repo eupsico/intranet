@@ -1,58 +1,92 @@
-// Arquivo: /modulos/servico-social/js/disponibilidade-assistente.js
-// Descrição: Controla o formulário de disponibilidade da assistente social.
-
+// Substituir o conteúdo de /modulos/servico-social/js/disponibilidade-assistente.js
 export function init(db, user, userData) {
+    if (!document.getElementById('disponibilidade-form')) return;
+
+    // Mapeamento de Elementos
     const form = document.getElementById('disponibilidade-form');
-    const assistenteNomeInput = document.getElementById('assistente-nome');
-    const horariosOnlineTextarea = document.getElementById('horarios-online');
-    const horariosPresencialTextarea = document.getElementById('horarios-presencial');
+    const nomeInput = document.getElementById('assistente-nome');
+    const mesTriagemSelect = document.getElementById('mes-triagem');
+    const horaInicioSelect = document.getElementById('hora-inicio-triagem');
+    const horaFimSelect = document.getElementById('hora-fim-triagem');
+    const datasTriagemContainer = document.getElementById('datas-container-triagem');
+    const datasReavaliacaoContainer = document.getElementById('datas-container-reavaliacao');
 
-    if (!form) return;
+    // Preenche o nome do assistente
+    nomeInput.value = userData.nome || 'Não identificado';
 
-    // Preenche o nome da assistente social logada
-    assistenteNomeInput.value = userData.nome || 'Não identificado';
-
-    // Carrega a disponibilidade salva anteriormente
-    async function carregarDisponibilidade() {
-        const docRef = db.collection('disponibilidadeAssistentes').doc(user.uid);
-        try {
-            const doc = await docRef.get();
-            if (doc.exists) {
-                const data = doc.data();
-                horariosOnlineTextarea.value = data.online || '';
-                horariosPresencialTextarea.value = data.presencial || '';
-            }
-        } catch (error) {
-            console.error("Erro ao carregar disponibilidade:", error);
-            alert("Não foi possível carregar sua disponibilidade salva.");
+    // Popula os seletores de hora
+    function popularHoras(selectElement) {
+        for (let i = 8; i <= 22; i++) {
+            const hora = `${String(i).padStart(2, '0')}:00`;
+            selectElement.innerHTML += `<option value="${hora}">${hora}</option>`;
         }
     }
+    popularHoras(horaInicioSelect);
+    popularHoras(horaFimSelect);
 
-    // Salva a disponibilidade no Firestore
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveButton = form.querySelector('button[type="submit"]');
-        saveButton.disabled = true;
-        saveButton.textContent = 'Salvando...';
-
-        const dataToSave = {
-            assistenteNome: userData.nome,
-            online: horariosOnlineTextarea.value.trim(),
-            presencial: horariosPresencialTextarea.value.trim(),
-            atualizadoEm: new Date()
-        };
-
-        try {
-            await db.collection('disponibilidadeAssistentes').doc(user.uid).set(dataToSave, { merge: true });
-            alert("Disponibilidade salva com sucesso!");
-        } catch (error) {
-            console.error("Erro ao salvar disponibilidade:", error);
-            alert("Ocorreu um erro ao salvar. Tente novamente.");
-        } finally {
-            saveButton.disabled = false;
-            saveButton.textContent = 'Salvar Disponibilidade';
+    // Popula o seletor de meses restantes
+    function popularMeses() {
+        const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const mesAtual = new Date().getMonth();
+        mesTriagemSelect.innerHTML = '<option value="">Selecione...</option>';
+        for (let i = mesAtual; i < 12; i++) {
+            mesTriagemSelect.innerHTML += `<option value="${i}">${meses[i]}</option>`;
         }
+    }
+    popularMeses();
+
+    // Gera os checkboxes de dias para um dado mês e ano
+    function gerarDiasDoMes(mes, ano) {
+        datasTriagemContainer.innerHTML = '';
+        datasReavaliacaoContainer.innerHTML = '';
+        if (mes === "") return;
+
+        const diasNoMes = new Date(ano, parseInt(mes) + 1, 0).getDate();
+        const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+        let diasHtml = '';
+        
+        for (let dia = 1; dia <= diasNoMes; dia++) {
+            const data = new Date(ano, mes, dia);
+            const diaDaSemanaNome = diasSemana[data.getDay()];
+            const diaFormatado = `${String(dia).padStart(2, '0')}/${String(parseInt(mes) + 1).padStart(2, '0')}`;
+            
+            diasHtml += `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="dia-${dia}" name="dias_disponiveis" value="${data.toISOString()}">
+                    <label for="dia-${dia}">${diaFormatado} - ${diaDaSemanaNome}</label>
+                </div>`;
+        }
+        datasTriagemContainer.innerHTML = diasHtml;
+        datasReavaliacaoContainer.innerHTML = diasHtml; // Popula ambos inicialmente
+    }
+    
+    // Atualiza a lista de dias quando o mês muda
+    mesTriagemSelect.addEventListener('change', () => {
+        const anoAtual = new Date().getFullYear();
+        gerarDiasDoMes(mesTriagemSelect.value, anoAtual);
+    });
+    
+    // Esconde dias selecionados para triagem da lista de reavaliação
+    datasTriagemContainer.addEventListener('change', () => {
+        const diasTriagemSelecionados = new Set();
+        datasTriagemContainer.querySelectorAll('input:checked').forEach(input => {
+            diasTriagemSelecionados.add(input.value);
+        });
+
+        datasReavaliacaoContainer.querySelectorAll('.checkbox-item').forEach(item => {
+            const input = item.querySelector('input');
+            if (diasTriagemSelecionados.has(input.value)) {
+                item.style.display = 'none';
+            } else {
+                item.style.display = 'flex';
+            }
+        });
     });
 
-    carregarDisponibilidade();
+    // Salva os dados no Firestore
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // Lógica de salvamento e a pergunta de confirmação
+        alert('Lógica de salvamento e a pergunta de confirmação seriam implementadas aqui.');
+    });
 }
