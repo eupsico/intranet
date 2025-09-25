@@ -5,7 +5,6 @@ export function initsocialPanel(user, db, userData) {
     window.db = db;
 
     window.showToast = function(message, type = 'success') {
-        // ... (função showToast permanece a mesma)
         const container = document.getElementById('toast-container') || document.body;
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
@@ -51,14 +50,13 @@ export function initsocialPanel(user, db, userData) {
         { id: 'calculo-contribuicao', name: 'Cálculo de Contribuição', roles: ['admin', 'servico_social'], icon: icons.calculo },
         { id: 'disponibilidade-assistente', name: 'Minha Disponibilidade', roles: ['admin', 'servico_social'], icon: icons.disponibilidade },
         { id: 'script-triagem', name: 'Script da Triagem', roles: ['admin', 'servico_social'], icon: icons.script },
-        { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'servico_social'], url: 'https://link.do.seu.drive.aqui', isExternal: true, icon: icons.drive }
+        { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'servico_social'], url: 'https://docs.google.com/spreadsheets/d/1_9236__9I_tj_Jc_3__-g2B_ut2_o5sE/edit?usp=sharing&ouid=103986289297204994247&rtpof=true&sd=true', isExternal: true, icon: icons.drive }
     ];
 
     function buildSocialSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = ''; // Limpa o menu
+        sidebarMenu.innerHTML = ''; 
         
-        // Adiciona link de "Voltar"
         sidebarMenu.innerHTML += `
             <li>
                 <a href="../../../index.html" class="back-link">
@@ -69,12 +67,11 @@ export function initsocialPanel(user, db, userData) {
             <li class="menu-separator"></li>
         `;
         
-        // Constrói os itens do menu
         views.forEach(view => {
             const hasPermission = view.roles.some(role => userRoles.includes(role.trim()));
             if (hasPermission) {
                 const menuItem = document.createElement('li');
-                const link = document.createElement('a'); // A variável `link` é declarada aqui
+                const link = document.createElement('a');
                 
                 link.dataset.view = view.id;
                 link.href = view.isExternal ? view.url : `#${view.id}`;
@@ -91,6 +88,12 @@ export function initsocialPanel(user, db, userData) {
     }
 
     async function loadView(viewName) {
+        // Encontra a view para verificar se é externa. Se for, não faz nada.
+        const viewData = views.find(v => v.id === viewName);
+        if (viewData && viewData.isExternal) {
+            return; // Impede o carregamento de views para links externos
+        }
+
         const menuLinks = sidebarMenu.querySelectorAll('a[data-view]');
         menuLinks.forEach(link => {
             link.classList.toggle('active', link.dataset.view === viewName);
@@ -119,12 +122,10 @@ export function initsocialPanel(user, db, userData) {
         }
     }
 
-    // --- FUNÇÃO DE INICIALIZAÇÃO ---
     function start() {
         const userRoles = userData.funcoes || [];
         buildSocialSidebarMenu(userRoles);
 
-        // Listener para navegação por hash
         const handleHashChange = () => {
             const viewName = window.location.hash.substring(1);
             if (viewName) {
@@ -132,28 +133,17 @@ export function initsocialPanel(user, db, userData) {
             }
         };
 
-        // Carregamento inicial da view
-        const hash = window.location.hash.substring(1);
-        if (hash) {
-            loadView(hash);
+        const initialHash = window.location.hash.substring(1);
+        if (initialHash) {
+            loadView(initialHash);
         } else {
-            // Carrega a primeira view permitida se não houver hash
-            const firstLink = sidebarMenu.querySelector('a[data-view]');
+            const firstLink = sidebarMenu.querySelector('a[data-view]:not([target="_blank"])');
             if (firstLink) {
                 window.location.hash = firstLink.dataset.view;
             }
         }
         
         window.addEventListener('hashchange', handleHashChange);
-
-        // Adiciona um listener de clique ao menu para tratar os links externos
-        sidebarMenu.addEventListener('click', (e) => {
-            const link = e.target.closest('a');
-            if (link && link.target === '_blank') {
-                e.preventDefault();
-                window.open(link.href, '_blank');
-            }
-        });
     }
 
     start();
