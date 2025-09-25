@@ -43,9 +43,9 @@ export function initrhPanel(user, db, userData) {
         comunicados: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2z"></path></svg>`
     }
     const views = [
-        {id: 'gestao_profissionais', name: 'Gestão de Profissionais', icon: icons.gestao_profissionais},
-        {id: 'gestao_vagas', name: 'Gestão de Vagas', icon: icons.gestao_vagas}, // Futuras telas de RH podem ser adicionadas aqui
-        {id: 'comunicados', name: 'Comunicados', icon: icons.comunicados}        
+        {id: 'gestao_profissionais', name: 'Gestão de Profissionais',  roles: ['admin', 'rh'],  icon: icons.gestao_profissionais},
+        {id: 'gestao_vagas', name: 'Gestão de Vagas', roles: ['admin', 'rh'], icon: icons.gestao_vagas}, // Futuras telas de RH podem ser adicionadas aqui
+        {id: 'comunicados', name: 'Comunicados', roles: ['admin', 'rh'], icon: icons.comunicados}        
         // Futuras telas de RH podem ser adicionadas aqui
     ];
 
@@ -60,6 +60,7 @@ export function initrhPanel(user, db, userData) {
             </li>
             <li class="menu-separator"></li>
         `;
+        const backLink = document.createElement('li');
         sidebarMenu.appendChild(backLink);
 
         views.forEach(view => {
