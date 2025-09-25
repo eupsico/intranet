@@ -48,12 +48,12 @@ export function initsocialPanel(user, db, userData) {
 
     // --- ALTERAÇÃO: Adicionada a propriedade 'icon' a cada item do menu ---
     const views = [
-        { id: 'agendamentos-triagem', name: 'Agendamentos de Triagem', roles: ['admin', 'rh'], icon: icons.agendamentos },
-        { id: 'fila-atendimento', name: 'Fila de Atendimento', roles: ['admin', 'rh'], icon: icons.fila },
-        { id: 'calculo-contribuicao', name: 'Cálculo de Contribuição', roles: ['admin', 'rh'], icon: icons.calculo },
-        { id: 'disponibilidade-assistente', name: 'Minha Disponibilidade', roles: ['admin', 'rh'], icon: icons.disponibilidade },
-        { id: 'script-triagem', name: 'Script da Triagem', roles: ['admin', 'rh'], icon: icons.script },
-        { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'rh'], url: 'https://link.do.seu.drive.aqui', isExternal: true, icon: icons.drive }
+        { id: 'agendamentos-triagem', name: 'Agendamentos de Triagem', roles: ['admin', 'servico_social'], icon: icons.agendamentos },
+        { id: 'fila-atendimento', name: 'Fila de Atendimento', roles: ['admin', 'servico_social'], icon: icons.fila },
+        { id: 'calculo-contribuicao', name: 'Cálculo de Contribuição', roles: ['admin', 'servico_social'], icon: icons.calculo },
+        { id: 'disponibilidade-assistente', name: 'Minha Disponibilidade', roles: ['admin', 'servico_social'], icon: icons.disponibilidade },
+        { id: 'script-triagem', name: 'Script da Triagem', roles: ['admin', 'servico_social'], icon: icons.script },
+        { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'servico_social'], url: 'https://link.do.seu.drive.aqui', isExternal: true, icon: icons.drive }
     ];
 
     // Constrói o menu lateral específico deste painel
