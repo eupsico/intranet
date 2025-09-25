@@ -60,3 +60,30 @@
         grid-template-columns: 1fr; /* Empilha as colunas */
     }
 }
+/* Adicionar ao final de /modulos/servico-social/css/servico-social.css */
+.resultado-calculo {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: var(--cor-fundo);
+    border-radius: var(--borda-radius);
+}
+.resultado-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+.resultado-coluna h4 {
+    color: var(--cor-primaria);
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--cor-borda);
+}
+.resultado-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 1.05em;
+}
+.valor-resultado {
+    font-weight: 600;
+}
