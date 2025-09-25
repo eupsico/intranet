@@ -3,6 +3,7 @@
 // Descrição: Arquivo principal para o Painel de Recursos Humanos.
 
 export function initrhPanel(user, db, userData) {
+    console.log("🔹 Iniciando painel de RH...");
 
     window.db = db;
     

@@ -48,27 +48,31 @@ export function initsocialPanel(user, db, userData) {
 
     // --- ALTERAÇÃO: Adicionada a propriedade 'icon' a cada item do menu ---
     const views = [
-        { id: 'agendamentos-triagem', name: 'Agendamentos de Triagem', icon: icons.agendamentos },
-        { id: 'fila-atendimento', name: 'Fila de Atendimento', icon: icons.fila },
-        { id: 'calculo-contribuicao', name: 'Cálculo de Contribuição', icon: icons.calculo },
-        { id: 'disponibilidade-assistente', name: 'Minha Disponibilidade', icon: icons.disponibilidade },
-        { id: 'script-triagem', name: 'Script da Triagem', icon: icons.script },
-        { id: 'drive', name: 'Acesso ao Drive', url: 'https://link.do.seu.drive.aqui', isExternal: true, icon: icons.drive }
+        { id: 'agendamentos-triagem', name: 'Agendamentos de Triagem', roles: ['admin', 'rh'], icon: icons.agendamentos },
+        { id: 'fila-atendimento', name: 'Fila de Atendimento', roles: ['admin', 'rh'], icon: icons.fila },
+        { id: 'calculo-contribuicao', name: 'Cálculo de Contribuição', roles: ['admin', 'rh'], icon: icons.calculo },
+        { id: 'disponibilidade-assistente', name: 'Minha Disponibilidade', roles: ['admin', 'rh'], icon: icons.disponibilidade },
+        { id: 'script-triagem', name: 'Script da Triagem', roles: ['admin', 'rh'], icon: icons.script },
+        { id: 'drive', name: 'Acesso ao Drive', roles: ['admin', 'rh'], url: 'https://link.do.seu.drive.aqui', isExternal: true, icon: icons.drive }
     ];
 
     // Constrói o menu lateral específico deste painel
-    function buildSocialSidebarMenu() {
+    function buildSocialSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = `
-            <li>
+        sidebarMenu.innerHTML = '';
+        const backLink = document.createElement('li');
+        backLink.innerHTML = `
+
                 <a href="../../../index.html" class="back-link">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     <span>Voltar à Intranet</span>
                 </a>
-            </li>
-            <li class="menu-separator"></li>
         `;
         sidebarMenu.appendChild(backLink);
+
+        const separator = document.createElement('li');
+        separator.className = 'menu-separator';
+        sidebarMenu.appendChild(separator);
         
         views.forEach(view => {
             const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
