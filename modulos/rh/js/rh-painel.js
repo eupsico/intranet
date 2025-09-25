@@ -49,36 +49,37 @@ export function initrhPanel(user, db, userData) {
         // Futuras telas de RH podem ser adicionadas aqui
     ];
 
-    function buildRHSidebarMenu(userRoles = []) {
+        function buildRHSidebarMenu(userRoles = []) {
         if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = ''; 
+        sidebarMenu.innerHTML = '';
+
         const backLink = document.createElement('li');
         backLink.innerHTML = `
-            <li>
-                <a href="../../../index.html" class="back-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    <span>Voltar à Intranet</span>
-                </a>
-            </li>
-            <li class="menu-separator"></li>
-        `;
-        
-        sidebarMenu.appendChild(backLink);
+            <a href="../../../index.html" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Voltar à Intranet</span>
+            </a>`;
+    sidebarMenu.appendChild(backLink);
 
-        views.forEach(view => {
-            const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
-            if (hasPermission) {
-                const menuItem = document.createElement('li');
-                const link = document.createElement('a');
-                link.href = `#${view.id}`;
-                link.dataset.view = view.id;
-                // 2. Adicionar o ícone ao lado do nome
-                link.innerHTML = `${view.icon}<span>${view.name}</span>`;
-                menuItem.appendChild(link);
-                sidebarMenu.appendChild(menuItem);
-            }
-        });
-    }
+    const separator = document.createElement('li');
+    separator.className = 'menu-separator';
+    sidebarMenu.appendChild(separator);
+
+     views.forEach(view => {
+      const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
+      if (hasPermission) {
+        const menuItem = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = `#${view.id}`;
+        link.dataset.view = view.id;
+        link.innerHTML = `${view.icon}<span>${view.name}</span>`;
+        menuItem.appendChild(link);
+        sidebarMenu.appendChild(menuItem);
+      }
+    });
+  }
 
      async function loadView(viewName) {
         console.log(`[DEBUG] Tentando carregar a view: ${viewName}`);
