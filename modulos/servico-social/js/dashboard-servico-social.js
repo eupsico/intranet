@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/dashboard-servico-social.js
-// Descrição: Controla o novo dashboard do Serviço Social.
+// Versão: 1.2 (Sintaxe do Firebase v9 corrigida)
 
 export function init(db, user, userData) {
     const summaryContainer = document.getElementById('summary-panel-container');
@@ -15,6 +15,7 @@ export function init(db, user, userData) {
             let onlineHtml = '<li>Nenhum horário online informado.</li>';
             let presencialHtml = '<li>Nenhum horário presencial informado.</li>';
 
+            // A verificação correta para a v9 é com parênteses: .exists()
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 if (data.online) {
