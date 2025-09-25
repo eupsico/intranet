@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel serviço social.</h2>";
             }
         }
-         else if (window.location.pathname.includes('rh-painel.html.html')) {
+         else if (window.location.pathname.includes('rh-painel.html')) {
            const pageTitleContainer = document.getElementById('page-title-container');
             if (pageTitleContainer) {
                 pageTitleContainer.innerHTML = `
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
 			}
             try {
-                const rhModule = await import('../../modulos/rh/js/rh-painel.html.js');
+                const rhModule = await import('../../modulos/rh/js/rh-painel.js');
                 rhModule.initrhPanel(user, db, userData);
             } catch (error) { 
                 console.error("Erro ao carregar o módulo de Recursos Humanos:", error);
