@@ -111,3 +111,42 @@
     align-items: center;
     gap: 8px;
 }
+/* Estilos para o Acordeão do Script da Triagem */
+.accordion-plantao .accordion-header {
+    padding: 20px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--cor-primaria);
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.accordion-plantao .accordion-header:hover {
+    background-color: var(--cor-fundo);
+}
+
+.accordion-plantao .accordion-header.active {
+    background-color: var(--cor-fundo-box);
+}
+
+.accordion-plantao .accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+}
+
+.accordion-plantao .accordion-content {
+    padding: 20px;
+    background-color: var(--cor-fundo);
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.accordion-plantao .info-card-about {
+    margin-bottom: 20px;
+    background-color: var(--cor-surface); /* Fundo branco para os cards internos */
+}
+
+.accordion-plantao .info-card-about:last-child {
+    margin-bottom: 0;
+}
