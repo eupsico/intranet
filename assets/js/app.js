@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 1.9.0 (Módulo RH integrado)
+// Versão: 1.9.0 
 
 import { auth, db } from './firebase-init.js';
 
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleAuth() {
-        auth.onAuthStateChanged(async (user) => {
+        auth.onAuthStateChanged(async (user) => { 
             try {
                 if (user) {
                     const userDoc = await db.collection("usuarios").doc(user.uid).get();
@@ -137,31 +137,59 @@ document.addEventListener('DOMContentLoaded', function() {
         } 
         else if (window.location.pathname.includes('administrativo-painel.html')) {
            
+            const pageTitleContainer = document.getElementById('page-title-container');
+            if (pageTitleContainer) {
+                pageTitleContainer.innerHTML = `
+                    <h2>Painel Administrativo</h2>
+                    <p>Gestão de configurações e dados dos usuários.</p>
+                `;
+            }
             try {
-                const adminModule = await import('../../modulos/administrativo/js/administrativo-painel.js');
-                adminModule.init(user, db, userData);
+                const administrativoModule = await import('../../modulos/administrativo/js/administrativo-painel.js');
+                administrativoModule.initadministrativoPanel(user, db, userData);
             } catch (error) {
                 console.error("Erro ao carregar o módulo administrativo:", error);
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel administrativo.</h2>";
             }
         }
         else if (window.location.pathname.includes('servico-social-painel.html')) {
-           
+            const pageTitleContainer = document.getElementById('page-title-container');
+            if (pageTitleContainer) {
+                pageTitleContainer.innerHTML = `
+                    <h2>Serviço Social</h2>
+                    <p>Gestão de triagens, reavaliações.</p>
+                `;
+            }
             try {
-                const adminModule = await import('../../modulos/servico-social/js/servico-social-painel.js');
-                adminModule.init(user, db, userData);
+                const socialModule = await import('../../modulos/servico-social/js/servico-social-painel.js');
+                socialModule.initsocialPanel(user, db, userData);
             } catch (error) {
                 console.error("Erro ao carregar o módulo Serviço Social:", error);
                 document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel serviço social.</h2>";
             }
         }
-        else {
+         else if (window.location.pathname.includes('rh-painel.html.html')) {
+           const pageTitleContainer = document.getElementById('page-title-container');
+            if (pageTitleContainer) {
+                pageTitleContainer.innerHTML = `
+                    <h2>Recursos Humanos</h2>
+                    <p>Gestão de profissionais, vagas e comunicados.</p>
+                `;
+			}
+            try {
+                const rhModule = await import('../../modulos/rh/js/rh-painel.html.js');
+                rhModule.initrhPanel(user, db, userData);
+            } catch (error) { 
+                console.error("Erro ao carregar o módulo de Recursos Humanos:", error);
+                document.getElementById('content-area').innerHTML = "<h2>Falha ao carregar o painel R.H.</h2>";
+            }
+        }
+        else {      
             const pageTitleContainer = document.getElementById('page-title-container');
             if(pageTitleContainer) {
                 pageTitleContainer.innerHTML = '<h1>Intranet EuPsico</h1>';
             }
             renderSidebarMenu(modules);
-            renderModuleCards(modules);
         }
     }
     

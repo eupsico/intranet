@@ -1,8 +1,37 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
 // Versão: 2.3 (Adiciona ícones ao menu lateral para consistência visual)
 
-export function init(user, db, userData) {
-    console.log("✔️ [DEBUG] Módulo Serviço Social iniciado.");
+export function initsocialModule(user, db, userData) {
+
+        window.db = db;
+    
+    window.showToast = function(message, type = 'success') {
+        const container = document.getElementById('toast-container') || document.body;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        toast.style.position = 'fixed';
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.padding = '15px 20px';
+        toast.style.borderRadius = '5px';
+        toast.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
+        toast.style.color = 'white';
+        toast.style.zIndex = '1050';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.4s ease';
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    };
 
     const contentArea = document.getElementById('content-area');
     const sidebarMenu = document.getElementById('sidebar-menu');
@@ -28,7 +57,7 @@ export function init(user, db, userData) {
     ];
 
     // Constrói o menu lateral específico deste painel
-    function buildSidebarMenu() {
+    function buildSocialSidebarMenu() {
         if (!sidebarMenu) return;
         sidebarMenu.innerHTML = `
             <li>
@@ -39,52 +68,77 @@ export function init(user, db, userData) {
             </li>
             <li class="menu-separator"></li>
         `;
+        sidebarMenu.appendChild(backLink);
+        
         views.forEach(view => {
-            const linkAttrs = view.isExternal ? `href="${view.url}" target="_blank"` : `href="#${view.id}" data-view="${view.id}"`;
-            // --- ALTERAÇÃO: Adiciona o ícone ao lado do texto do menu ---
-            sidebarMenu.innerHTML += `<li><a ${linkAttrs}>${view.icon}<span>${view.name}</span></a></li>`;
+            const hasPermission = view.roles.length === 0 || view.roles.some(role => userRoles.includes(role.trim()));
+            if (hasPermission) {
+                const menuItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `#${view.id}`;
+                link.dataset.view = view.id;
+                // 2. Adicionar o ícone ao lado do nome
+                link.innerHTML = `${view.icon}<span>${view.name}</span>`;
+                menuItem.appendChild(link);
+                sidebarMenu.appendChild(menuItem);
+            }
         });
     }
 
     // Carrega o conteúdo de uma aba (HTML e o script JS correspondente)
-    async function loadView(viewId) {
-        contentArea.innerHTML = '<div class="loading-spinner"></div>';
+    async function loadView(viewName) {
+        console.log(`[DEBUG] Tentando carregar a view: ${viewName}`);
+        const menuLinks = sidebarMenu.querySelectorAll('a[data-view]');
+        menuLinks.forEach(link => {
+            link.classList.toggle('active', link.dataset.view === viewName);
+        });
         
         try {
-            const htmlResponse = await fetch(`../page/${viewId}.html`);
-            if (!htmlResponse.ok) throw new Error(`Arquivo HTML não encontrado: ${viewId}.html`);
-            contentArea.innerHTML = await htmlResponse.text();
+            contentArea.innerHTML = '<div class="loading-spinner"></div>';
+            
+            const response = await fetch(`./${viewName}.html`);
+            if (!response.ok) {
+                throw new Error(`Arquivo da view não encontrado: ${viewName}.html`);
+            }
+            contentArea.innerHTML = await response.text();
 
-            const viewModule = await import(`../js/${viewId}.js`);
-            if (viewModule && typeof viewModule.init === 'function') {
-                viewModule.init(db, user, userData);
+            const oldScript = document.getElementById('dynamic-view-script');
+            if (oldScript) oldScript.remove();
+            
+            const scriptPath = `../js/${viewName}.js`;
+            try {
+                const viewModule = await import(scriptPath);
+                if (viewModule && typeof viewModule.init === 'function') {
+                    viewModule.init(db, user, userData);
+                }
+            } catch (e) {
+                console.log(`Nenhum script de inicialização para a view '${viewName}'.`, e);
             }
         } catch (error) {
-            console.error(`Erro ao carregar a view ${viewId}:`, error);
-            contentArea.innerHTML = `<p class="alert alert-error">Não foi possível carregar a seção.</p>`;
+            console.error(`Erro ao carregar a view ${viewName}:`, error);
+            contentArea.innerHTML = `<h2>Erro ao carregar o módulo '${viewName}'.</h2><p>${error.message}.</p>`;
+        }
+    }
+    const userRoles = userData.funcoes || [];
+    buildSocialSidebarMenu(userRoles);
+
+    const hash = window.location.hash.substring(1);
+    const viewExists = views.some(v => v.id === hash);
+    const hasPermissionForHash = viewExists && views.find(v => v.id === hash).roles.some(role => userRoles.includes(role.trim()));
+
+    if (hash && viewExists && hasPermissionForHash) {
+        loadView(hash);
+    } else {
+        const firstAvailableLink = sidebarMenu.querySelector('a[data-view]');
+        if (firstAvailableLink) {
+            window.location.hash = firstAvailableLink.dataset.view;
+        } else {
+            contentArea.innerHTML = '<h2>Você não tem permissão para acessar nenhuma seção deste módulo.</h2>';
         }
     }
 
-    // Ponto de partida do painel
-    function start() {
-        buildSidebarMenu();
-
-        const handleHashChange = () => {
-            const viewId = window.location.hash.substring(1) || views[0].id;
-            const view = views.find(v => v.id === viewId);
-            if (view && !view.isExternal) {
-                if (sidebarMenu) {
-                    sidebarMenu.querySelectorAll('a').forEach(link => {
-                        link.classList.toggle('active', link.dataset.view === viewId);
-                    });
-                }
-                loadView(viewId);
-            }
-        };
-
-        window.addEventListener('hashchange', handleHashChange);
-        handleHashChange();
-    }
-
-    start();
+    window.addEventListener('hashchange', () => {
+        const viewName = window.location.hash.substring(1);
+        if (viewName) loadView(viewName);
+    });
 }
