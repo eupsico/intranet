@@ -431,4 +431,9 @@ table tbody tr:hover { background-color: #e9ecef; }
     align-items: center;
     gap: 8px;
 }
-/* --- FIM: ESTILOS PARA MODAL --- */
+
+
+.sidebar-content-wrapper {
+    overflow-y: auto; /* Permite a rolagem vertical quando necessário */
+    height: 100%;     /* Garante que o wrapper ocupe toda a altura da sidebar */
+}
