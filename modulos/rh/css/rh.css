@@ -12,3 +12,7 @@
 .modal-content {
     max-width: 600px;
 }
+/* Adicione este bloco de código NO FINAL do seu arquivo */
+.table-section table {
+    min-width: 800px; /* Força a tabela a ter uma largura mínima, ativando a rolagem do container */
+}
