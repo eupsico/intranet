@@ -1,5 +1,5 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Completa, com validação de CPF e ordem de campos corrigida.
+// Versão Final: Implementada a lógica de envio para o Firestore.
 
 import { db } from "./firebase-init.js";
 
@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const responsavelCpfInput = document.getElementById("responsavel-cpf");
 
-  let pacienteExistente = null;
+  let pacienteExistenteId = null; // Armazena o ID do documento para atualização
 
   // --- Validação de CPF ---
   function validarCPF(cpf) {
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Verificação de CPF (no banco) ---
   cpfInput.addEventListener("blur", async () => {
-    const cpf = cpfInput.value;
+    const cpf = cpfInput.value.replace(/\D/g, "");
     cpfError.style.display = "none";
 
     if (!validarCPF(cpf)) {
@@ -56,11 +56,12 @@ document.addEventListener("DOMContentLoaded", () => {
         .limit(1)
         .get();
       if (!snapshot.empty) {
-        pacienteExistente = snapshot.docs[0].data();
-        const nome = pacienteExistente.nomeCompleto || "Nome não encontrado";
+        pacienteExistenteId = snapshot.docs[0].id;
+        const pacienteData = snapshot.docs[0].data();
+        const nome = pacienteData.nomeCompleto || "Nome não encontrado";
         if (
           confirm(
-            `Já existe um cadastro para ${nome}. Deseja apenas atualizar as informações socioeconômicas?`
+            `Já existe um cadastro para ${nome}. Deseja apenas atualizar as informações socioeconômicas e de contato?`
           )
         ) {
           formBody.classList.remove("hidden-section");
@@ -70,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
           resetForm(true);
         }
       } else {
-        pacienteExistente = null;
+        pacienteExistenteId = null;
         formBody.classList.remove("hidden-section");
         updateSection.classList.add("hidden-section");
         newRegisterSection.classList.remove("hidden-section");
@@ -109,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       const tempId = `TEMP-${Date.now()}`;
       cpfInput.value = tempId;
-      cpfInput.readOnly = true; // Bloqueia para evitar edição acidental
+      cpfInput.readOnly = true;
       alert(
         `O CPF do paciente foi substituído por um código de identificação: ${tempId}. Guarde este código para futuras consultas.`
       );
@@ -120,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
   cepInput.addEventListener("blur", async () => {
     const cep = cepInput.value.replace(/\D/g, "");
     if (cep.length !== 8) return;
-
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const data = await response.json();
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("rua").value = data.logradouro;
         document.getElementById("bairro").value = data.bairro;
         document.getElementById("cidade").value = data.localidade;
-        document.getElementById("numero-casa").focus(); // Foca no campo de número
+        document.getElementById("numero-casa").focus();
       }
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
@@ -179,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = html + `</div>`;
   }
 
-  // --- Funções Auxiliares ---
   function resetForm(keepCpf = false) {
     const cpfValue = cpfInput.value;
     form.reset();
@@ -187,11 +186,97 @@ document.addEventListener("DOMContentLoaded", () => {
     if (keepCpf) cpfInput.value = cpfValue;
   }
 
-  // --- Lógica de Envio ---
+  // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    alert(
-      "Formulário pronto para envio! A lógica final para coletar os dados e salvar no Firestore deve ser implementada aqui."
-    );
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = "Enviando...";
+
+    try {
+      if (pacienteExistenteId) {
+        // MODO ATUALIZAÇÃO
+        const dadosParaAtualizar = {
+          endereco: document.getElementById("update-endereco").value,
+          pessoasMoradia: document.getElementById("update-pessoas-moradia")
+            .value,
+          casaPropria: document.getElementById("update-casa-propria").value,
+          valorAluguel:
+            document.getElementById("update-valor-aluguel").value || 0,
+          rendaMensal: document.getElementById("update-renda-mensal").value,
+          rendaFamiliar: document.getElementById("update-renda-familiar").value,
+          lastUpdated: new Date(),
+        };
+        await db
+          .collection("inscricoes")
+          .doc(pacienteExistenteId)
+          .update(dadosParaAtualizar);
+        alert("Cadastro atualizado com sucesso!");
+      } else {
+        // MODO NOVO CADASTRO
+        const horariosSelecionados = Array.from(
+          document.querySelectorAll('input[name="horario-especifico"]:checked')
+        ).map((cb) => cb.value);
+
+        const novoCadastro = {
+          // Dados Pessoais e Responsável
+          cpf: document.getElementById("cpf").value,
+          dataNascimento: document.getElementById("data-nascimento").value,
+          nomeCompleto: document.getElementById("nome-completo").value,
+          rg: document.getElementById("rg").value,
+          genero: document.getElementById("genero").value,
+          estadoCivil: document.getElementById("estado-civil").value,
+          escolaridade: document.getElementById("escolaridade").value,
+          responsavel: {
+            nome: document.getElementById("responsavel-nome").value,
+            cpf: document.getElementById("responsavel-cpf").value,
+            parentesco: document.getElementById("responsavel-parentesco").value,
+            contato: document.getElementById("responsavel-contato").value,
+          },
+          // Contato e Endereço
+          telefoneCelular: document.getElementById("telefone-celular").value,
+          email: document.getElementById("email").value,
+          cep: document.getElementById("cep").value,
+          cidade: document.getElementById("cidade").value,
+          rua: document.getElementById("rua").value,
+          numeroCasa: document.getElementById("numero-casa").value,
+          bairro: document.getElementById("bairro").value,
+          complemento: document.getElementById("complemento").value,
+          // Sociodemográficos
+          pessoasMoradia: document.getElementById("pessoas-moradia").value,
+          tipoMoradia: document.getElementById("tipo-moradia").value,
+          casaPropria: document.getElementById("casa-propria").value,
+          valorAluguel: document.getElementById("valor-aluguel").value || 0,
+          rendaMensal: document.getElementById("renda-mensal").value,
+          rendaFamiliar: document.getElementById("renda-familiar").value,
+          beneficioSocial: document.getElementById("beneficio-social").value,
+          comoConheceu: document.getElementById("como-conheceu").value,
+          // Queixa e Disponibilidade
+          tratamentoAnterior: document.getElementById("tratamento-anterior")
+            .value,
+          motivoBusca: document.getElementById("motivo-busca").value,
+          disponibilidadeGeral: Array.from(
+            document.querySelectorAll('input[name="horario"]:checked')
+          ).map((cb) => cb.nextSibling.textContent.trim()),
+          disponibilidadeEspecifica: horariosSelecionados,
+          // Metadados
+          timestamp: new Date(),
+          status: "aguardando_documentos", // Status inicial
+        };
+        await db.collection("inscricoes").add(novoCadastro);
+        alert(
+          "Inscrição realizada com sucesso! Por favor, siga os próximos passos informados no início da página."
+        );
+      }
+      resetForm();
+    } catch (error) {
+      console.error("Erro ao salvar inscrição:", error);
+      alert(
+        "Ocorreu um erro ao enviar sua inscrição. Por favor, tente novamente."
+      );
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "Enviar Inscrição";
+    }
   });
 });
