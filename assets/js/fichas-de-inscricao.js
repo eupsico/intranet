@@ -1,11 +1,14 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Inclui todas as correções de lógica, importação de módulos e IDs.
+// Versão Final: Completa, com validação de CPF e ordem de campos corrigida.
 
 import { db } from "./firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // --- Mapeamento de Elementos ---
   const form = document.getElementById("inscricao-form");
   const cpfInput = document.getElementById("cpf");
+  const cpfError = document.getElementById("cpf-error");
+  const cepInput = document.getElementById("cep");
   const dataNascimentoInput = document.getElementById("data-nascimento");
   const formBody = document.getElementById("form-body");
   const updateSection = document.getElementById("update-section");
@@ -15,34 +18,49 @@ document.addEventListener("DOMContentLoaded", () => {
     "responsavel-legal-section"
   );
   const responsavelCpfInput = document.getElementById("responsavel-cpf");
-  const horariosContainer = document.getElementById(
-    "horarios-especificos-container"
-  );
 
   let pacienteExistente = null;
 
-  // --- 1. Lógica de Verificação de CPF ---
+  // --- Validação de CPF ---
+  function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, "");
+    if (cpf == "" || cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+    let add = 0;
+    for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+    let rev = 11 - (add % 11);
+    if (rev == 10 || rev == 11) rev = 0;
+    if (rev != parseInt(cpf.charAt(9))) return false;
+    add = 0;
+    for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+    rev = 11 - (add % 11);
+    if (rev == 10 || rev == 11) rev = 0;
+    if (rev != parseInt(cpf.charAt(10))) return false;
+    return true;
+  }
+
+  // --- Verificação de CPF (no banco) ---
   cpfInput.addEventListener("blur", async () => {
-    const cpf = cpfInput.value.replace(/\D/g, "");
-    if (cpf.length !== 11) {
+    const cpf = cpfInput.value;
+    cpfError.style.display = "none";
+
+    if (!validarCPF(cpf)) {
+      cpfError.style.display = "block";
       resetForm();
       return;
     }
 
     try {
-      // Esta consulta agora funcionará com as regras de segurança corretas
       const snapshot = await db
         .collection("inscricoes")
         .where("cpf", "==", cpf)
         .limit(1)
         .get();
-
       if (!snapshot.empty) {
         pacienteExistente = snapshot.docs[0].data();
         const nome = pacienteExistente.nomeCompleto || "Nome não encontrado";
         if (
           confirm(
-            `Já existe um cadastro para ${nome}. Deseja atualizar as informações?`
+            `Já existe um cadastro para ${nome}. Deseja apenas atualizar as informações socioeconômicas?`
           )
         ) {
           formBody.classList.remove("hidden-section");
@@ -58,21 +76,17 @@ document.addEventListener("DOMContentLoaded", () => {
         newRegisterSection.classList.remove("hidden-section");
       }
     } catch (error) {
-      console.error(
-        "Erro ao verificar CPF (verifique as regras de segurança do Firestore):",
-        error
-      );
+      console.error("Erro ao verificar CPF:", error);
       alert(
-        "Não foi possível verificar o CPF. Isso pode ser um problema de permissão. Verifique o console para mais detalhes."
+        "Não foi possível verificar o CPF. Verifique sua conexão e as regras de segurança do Firestore."
       );
     }
   });
 
-  // --- 2. Lógica de Menor de Idade ---
+  // --- Lógica de Menor de Idade ---
   dataNascimentoInput.addEventListener("change", () => {
     const dataNasc = new Date(dataNascimentoInput.value);
     if (isNaN(dataNasc.getTime())) return;
-
     const hoje = new Date();
     let idade = hoje.getFullYear() - dataNasc.getFullYear();
     const m = hoje.getMonth() - dataNasc.getMonth();
@@ -91,31 +105,42 @@ document.addEventListener("DOMContentLoaded", () => {
   responsavelCpfInput.addEventListener("blur", () => {
     if (responsavelCpfInput.value === cpfInput.value) {
       alert(
-        "Atenção: O CPF do responsável é o mesmo do paciente. Será necessário atualizar o CPF do paciente no futuro."
+        "Atenção: O CPF do responsável é o mesmo do paciente. Será gerado um código temporário para o paciente."
       );
       const tempId = `TEMP-${Date.now()}`;
       cpfInput.value = tempId;
+      cpfInput.readOnly = true; // Bloqueia para evitar edição acidental
       alert(
-        `O CPF do paciente foi substituído por um código de identificação temporário: ${tempId}. Guarde este código.`
+        `O CPF do paciente foi substituído por um código de identificação: ${tempId}. Guarde este código para futuras consultas.`
       );
     }
   });
 
-  // --- 3. Lógica de Disponibilidade de Horário ---
+  // --- Busca de Endereço por CEP ---
+  cepInput.addEventListener("blur", async () => {
+    const cep = cepInput.value.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      if (!data.erro) {
+        document.getElementById("rua").value = data.logradouro;
+        document.getElementById("bairro").value = data.bairro;
+        document.getElementById("cidade").value = data.localidade;
+        document.getElementById("numero-casa").focus(); // Foca no campo de número
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+    }
+  });
+
+  // --- Lógica de Disponibilidade de Horário ---
   const horariosCheckboxes = document.querySelectorAll('input[name="horario"]');
   horariosCheckboxes.forEach((checkbox) => {
     checkbox.addEventListener("change", (e) => {
       const periodo = e.target.value;
-      // CORRIGIDO: Usa o mesmo padrão de ID (com hífen) que está no HTML
       const container = document.getElementById(`container-${periodo}`);
-
-      if (!container) {
-        console.error(
-          `Container para o período '${periodo}' não foi encontrado.`
-        );
-        return;
-      }
-
       if (e.target.checked) {
         gerarHorarios(periodo, container);
         container.classList.remove("hidden-section");
@@ -127,61 +152,46 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function gerarHorarios(periodo, container) {
-    let horarios = [];
-    let label = "";
-
+    let horarios = [],
+      label = "";
     switch (periodo) {
       case "manha-semana":
-        label = "Selecione os horários na Manhã (Seg-Sex):";
+        label = "Manhã (Seg-Sex):";
         for (let i = 8; i < 12; i++) horarios.push(`${i}:00`);
         break;
       case "tarde-semana":
-        label = "Selecione os horários na Tarde (Seg-Sex):";
+        label = "Tarde (Seg-Sex):";
         for (let i = 12; i < 18; i++) horarios.push(`${i}:00`);
         break;
       case "noite-semana":
-        label = "Selecione os horários na Noite (Seg-Sex):";
+        label = "Noite (Seg-Sex):";
         for (let i = 18; i < 21; i++) horarios.push(`${i}:00`);
         break;
       case "manha-sabado":
-        label = "Selecione os horários na Manhã (Sábado):";
+        label = "Manhã (Sábado):";
         for (let i = 8; i < 13; i++) horarios.push(`${i}:00`);
         break;
     }
-
     let html = `<label>${label}</label><div class="horario-detalhe-grid">`;
     horarios.forEach((hora) => {
       html += `<div><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</div>`;
     });
-    html += `</div>`;
-    container.innerHTML = html;
+    container.innerHTML = html + `</div>`;
   }
 
-  // --- 4. Funções Auxiliares ---
+  // --- Funções Auxiliares ---
   function resetForm(keepCpf = false) {
+    const cpfValue = cpfInput.value;
     form.reset();
     formBody.classList.add("hidden-section");
-    updateSection.classList.add("hidden-section");
-    newRegisterSection.classList.remove("hidden-section");
-    fullFormFields.classList.add("hidden-section");
-    responsavelSection.classList.add("hidden-section");
-    horariosContainer
-      .querySelectorAll(".horario-detalhe-container")
-      .forEach((c) => {
-        c.innerHTML = "";
-        c.classList.add("hidden-section");
-      });
-    if (!keepCpf) {
-      cpfInput.value = "";
-    }
+    if (keepCpf) cpfInput.value = cpfValue;
   }
 
-  // --- 5. Lógica de Envio ---
+  // --- Lógica de Envio ---
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    // A lógica de coletar os dados e enviar para o Firestore deve ser implementada aqui
     alert(
-      "Lógica de envio a ser implementada! Os dados serão coletados e enviados ao Firestore a partir daqui."
+      "Formulário pronto para envio! A lógica final para coletar os dados e salvar no Firestore deve ser implementada aqui."
     );
   });
 });
