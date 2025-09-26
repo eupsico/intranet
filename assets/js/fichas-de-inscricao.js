@@ -1,7 +1,8 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
+// Versão 1.1: Corrigido para importar 'db' como um módulo.
 
-// Inicializa o app do Firebase
-const db = firebase.firestore();
+// ALTERADO: Importa a variável 'db' do firebase-init.js
+import { db } from './firebase-init.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('inscricao-form');
@@ -32,16 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 pacienteExistente = snapshot.docs[0].data();
                 const nome = pacienteExistente.nomeCompleto || 'Nome não encontrado';
                 if (confirm(`Já existe um cadastro para ${nome}. Deseja atualizar as informações?`)) {
-                    // Modo de Atualização
                     formBody.classList.remove('hidden-section');
                     updateSection.classList.remove('hidden-section');
                     newRegisterSection.classList.add('hidden-section');
-                    // Preencher campos de atualização aqui se necessário
                 } else {
                     resetForm(true);
                 }
             } else {
-                // Modo de Novo Cadastro
                 pacienteExistente = null;
                 formBody.classList.remove('hidden-section');
                 updateSection.classList.add('hidden-section');
@@ -65,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             idade--;
         }
         
-        fullFormFields.classList.remove('hidden-section'); // Mostra o resto do formulário
+        fullFormFields.classList.remove('hidden-section');
         if (idade < 18) {
             responsavelSection.classList.remove('hidden-section');
         } else {
@@ -129,8 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = html;
     }
 
-
-    // --- 4. Funções Auxiliares ---
     function resetForm(keepCpf = false) {
         form.reset();
         formBody.classList.add('hidden-section');
@@ -147,11 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- 5. Lógica de Envio do Formulário ---
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // Aqui vai a lógica para coletar todos os dados (seja de atualização ou novo) e enviar para o Firestore.
-        // Esta parte precisa ser implementada de acordo com a sua estrutura de dados final no banco.
         alert("Lógica de envio a ser implementada!");
     });
 });
