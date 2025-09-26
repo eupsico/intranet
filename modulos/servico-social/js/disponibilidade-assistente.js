@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/disponibilidade-assistente.js
-// Versão: 2.1 (Corrige a estrutura de salvamento no Firestore para objetos aninhados)
+// Versão: 3.0 (Layout e Lógica Simplificados)
 
 export function init(db, user, userData) {
     const form = document.getElementById('disponibilidade-form');
@@ -7,18 +7,17 @@ export function init(db, user, userData) {
 
     // --- Mapeamento de Elementos ---
     const nomeInput = document.getElementById('assistente-nome');
-    const tipoAtendimentoSelect = document.getElementById('tipo-atendimento-triagem');
-    const mesSelect = document.getElementById('mes-triagem');
-    const horaInicioSelect = document.getElementById('hora-inicio-triagem');
-    const horaFimSelect = document.getElementById('hora-fim-triagem');
-    const datasTriagemContainer = document.getElementById('datas-container-triagem');
-    const datasReavaliacaoContainer = document.getElementById('datas-container-reavaliacao');
+    const mesSelect = document.getElementById('mes-disponibilidade');
+    const horaInicioSelect = document.getElementById('hora-inicio-disponibilidade');
+    const horaFimSelect = document.getElementById('hora-fim-disponibilidade');
+    const datasOnlineContainer = document.getElementById('datas-container-online');
+    const datasPresencialContainer = document.getElementById('datas-container-presencial');
 
     // --- Funções de Inicialização ---
     nomeInput.value = userData.nome || 'Não identificado';
 
     function popularHoras(selectElement) {
-        selectElement.innerHTML = ''; // Limpa antes de popular
+        selectElement.innerHTML = '';
         for (let i = 8; i <= 22; i++) {
             const hora = `${String(i).padStart(2, '0')}:00`;
             selectElement.innerHTML += `<option value="${hora}">${hora}</option>`;
@@ -36,34 +35,34 @@ export function init(db, user, userData) {
 
     // --- Lógica de Geração e Exclusão Mútua ---
     function gerarDiasDoMes(mes, ano) {
-        datasTriagemContainer.innerHTML = '';
-        datasReavaliacaoContainer.innerHTML = '';
+        datasOnlineContainer.innerHTML = '';
+        datasPresencialContainer.innerHTML = '';
         if (mes === "") return;
 
         const diasNoMes = new Date(ano, parseInt(mes) + 1, 0).getDate();
         const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-        let diasHtmlTriagem = '';
-        let diasHtmlReavaliacao = '';
+        let diasHtmlOnline = '';
+        let diasHtmlPresencial = '';
         
         for (let dia = 1; dia <= diasNoMes; dia++) {
             const data = new Date(ano, mes, dia);
             const diaDaSemanaNome = diasSemana[data.getDay()];
             const diaFormatado = `${String(dia).padStart(2, '0')}/${String(parseInt(mes) + 1).padStart(2, '0')}`;
-            const dataValue = data.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            const dataValue = data.toISOString().split('T')[0];
 
-            diasHtmlTriagem += `
+            diasHtmlOnline += `
                 <div class="checkbox-item">
-                    <input type="checkbox" id="triagem-dia-${dia}" name="dias_triagem" value="${dataValue}">
-                    <label for="triagem-dia-${dia}">${diaFormatado} - ${diaDaSemanaNome}</label>
+                    <input type="checkbox" id="online-dia-${dia}" name="dias_online" value="${dataValue}">
+                    <label for="online-dia-${dia}">${diaFormatado} - ${diaDaSemanaNome}</label>
                 </div>`;
-            diasHtmlReavaliacao += `
+            diasHtmlPresencial += `
                 <div class="checkbox-item">
-                    <input type="checkbox" id="reav-dia-${dia}" name="dias_reavaliacao" value="${dataValue}">
-                    <label for="reav-dia-${dia}">${diaFormatado} - ${diaDaSemanaNome}</label>
+                    <input type="checkbox" id="presencial-dia-${dia}" name="dias_presencial" value="${dataValue}">
+                    <label for="presencial-dia-${dia}">${diaFormatado} - ${diaDaSemanaNome}</label>
                 </div>`;
         }
-        datasTriagemContainer.innerHTML = diasHtmlTriagem;
-        datasReavaliacaoContainer.innerHTML = diasHtmlReavaliacao;
+        datasOnlineContainer.innerHTML = diasHtmlOnline;
+        datasPresencialContainer.innerHTML = diasHtmlPresencial;
     }
 
     mesSelect.addEventListener('change', () => {
@@ -71,24 +70,22 @@ export function init(db, user, userData) {
         gerarDiasDoMes(mesSelect.value, anoAtual);
     });
 
-    // Listener para o container de Triagem
-    datasTriagemContainer.addEventListener('change', (e) => {
+    datasOnlineContainer.addEventListener('change', (e) => {
         if (e.target.type === 'checkbox') {
-            const reavaliacaoCheckbox = datasReavaliacaoContainer.querySelector(`input[value="${e.target.value}"]`);
-            if (reavaliacaoCheckbox) {
-                reavaliacaoCheckbox.disabled = e.target.checked;
-                if(e.target.checked) reavaliacaoCheckbox.checked = false;
+            const presencialCheckbox = datasPresencialContainer.querySelector(`input[value="${e.target.value}"]`);
+            if (presencialCheckbox) {
+                presencialCheckbox.disabled = e.target.checked;
+                if(e.target.checked) presencialCheckbox.checked = false;
             }
         }
     });
 
-    // Listener para o container de Reavaliação
-    datasReavaliacaoContainer.addEventListener('change', (e) => {
+    datasPresencialContainer.addEventListener('change', (e) => {
         if (e.target.type === 'checkbox') {
-            const triagemCheckbox = datasTriagemContainer.querySelector(`input[value="${e.target.value}"]`);
-            if (triagemCheckbox) {
-                triagemCheckbox.disabled = e.target.checked;
-                if(e.target.checked) triagemCheckbox.checked = false;
+            const onlineCheckbox = datasOnlineContainer.querySelector(`input[value="${e.target.value}"]`);
+            if (onlineCheckbox) {
+                onlineCheckbox.disabled = e.target.checked;
+                if(e.target.checked) onlineCheckbox.checked = false;
             }
         }
     });
@@ -98,16 +95,15 @@ export function init(db, user, userData) {
         e.preventDefault();
         const saveButton = form.querySelector('button[type="submit"]');
         
-        const tipoAtendimento = tipoAtendimentoSelect.value;
         const mes = mesSelect.value;
         const ano = new Date().getFullYear();
         const horaInicio = horaInicioSelect.value;
         const horaFim = horaFimSelect.value;
-        const diasTriagem = Array.from(datasTriagemContainer.querySelectorAll('input:checked')).map(input => input.value);
-        const diasReavaliacao = Array.from(datasReavaliacaoContainer.querySelectorAll('input:checked')).map(input => input.value);
+        const diasOnline = Array.from(datasOnlineContainer.querySelectorAll('input:checked')).map(input => input.value);
+        const diasPresencial = Array.from(datasPresencialContainer.querySelectorAll('input:checked')).map(input => input.value);
 
-        if (mes === "" || (diasTriagem.length === 0 && diasReavaliacao.length === 0)) {
-            alert("Selecione um mês e pelo menos um dia para salvar.");
+        if (mes === "" || (diasOnline.length === 0 && diasPresencial.length === 0)) {
+            alert("Selecione um mês e pelo menos um dia (Online ou Presencial) para salvar.");
             return;
         }
 
@@ -115,47 +111,32 @@ export function init(db, user, userData) {
         saveButton.textContent = 'Salvando...';
 
         const docRef = db.collection('disponibilidadeAssistentes').doc(user.uid);
-
         const mesKey = `${ano}-${String(parseInt(mes) + 1).padStart(2, '0')}`;
-        const modalidadeKey = tipoAtendimento.toLowerCase();
 
-        // ALTERADO: Estrutura de objeto aninhado para salvamento correto no Firestore
         const dadosParaSalvar = {
             assistenteNome: userData.nome,
             atualizadoEm: new Date(),
             disponibilidade: {
                 [mesKey]: {
-                    [modalidadeKey]: {
-                        triagem: {
-                            dias: diasTriagem,
-                            inicio: horaInicio,
-                            fim: horaFim
-                        },
-                        reavaliacao: {
-                            dias: diasReavaliacao
-                        }
+                    online: {
+                        triagem: { dias: diasOnline, inicio: horaInicio, fim: horaFim },
+                        reavaliacao: { dias: diasOnline }
+                    },
+                    presencial: {
+                        triagem: { dias: diasPresencial, inicio: horaInicio, fim: horaFim },
+                        reavaliacao: { dias: diasPresencial }
                     }
                 }
             }
         };
 
         try {
-            // A função set com merge: true vai criar ou mesclar os dados corretamente
             await docRef.set(dadosParaSalvar, { merge: true });
-
-            // Lógica de confirmação
-            const tipoOposto = tipoAtendimento === 'Online' ? 'Presencial' : 'Online';
-            if (confirm(`Disponibilidade ${tipoAtendimento} salva com sucesso! Deseja informar agora os horários para atendimento ${tipoOposto}?`)) {
-                // Prepara para o próximo preenchimento
-                tipoAtendimentoSelect.value = tipoOposto;
-                gerarDiasDoMes(mes, ano); // Limpa as seleções
-            } else {
-                form.reset();
-                popularMeses();
-                datasTriagemContainer.innerHTML = '<p>Selecione um mês para ver os dias.</p>';
-                datasReavaliacaoContainer.innerHTML = '<p>Selecione um mês para ver os dias.</p>';
-            }
-
+            alert("Disponibilidade salva com sucesso!");
+            form.reset();
+            popularMeses();
+            datasOnlineContainer.innerHTML = '<p>Selecione um mês para ver os dias.</p>';
+            datasPresencialContainer.innerHTML = '<p>Selecione um mês para ver os dias.</p>';
         } catch (error) {
             console.error("Erro ao salvar disponibilidade:", error);
             alert("Ocorreu um erro ao salvar. Tente novamente.");
