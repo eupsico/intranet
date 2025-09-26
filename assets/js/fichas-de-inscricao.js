@@ -1,150 +1,199 @@
-// Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão 1.1: Corrigido para importar 'db' como um módulo.
-
-// ALTERADO: Importa a variável 'db' do firebase-init.js
-import { db } from './firebase-init.js';
-
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('inscricao-form');
-    const cpfInput = document.getElementById('cpf');
-    const dataNascimentoInput = document.getElementById('data-nascimento');
-    const formBody = document.getElementById('form-body');
-    const updateSection = document.getElementById('update-section');
-    const newRegisterSection = document.getElementById('new-register-section');
-    const fullFormFields = document.getElementById('full-form-fields');
-    const responsavelSection = document.getElementById('responsavel-legal-section');
-    const responsavelCpfInput = document.getElementById('responsavel-cpf');
-    const horariosContainer = document.getElementById('horarios-especificos-container');
-    
-    let pacienteExistente = null;
-
-    // --- 1. Lógica de Verificação de CPF ---
-    cpfInput.addEventListener('blur', async () => {
-        const cpf = cpfInput.value.replace(/\D/g, '');
-        if (cpf.length !== 11) {
-            resetForm();
-            return;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Inscrição - EuPsico</title>
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <style>
+        body {
+            background-color: var(--cor-fundo);
+            font-family: var(--fonte-principal);
+            color: var(--cor-texto-principal);
         }
+        .form-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: var(--cor-surface);
+            padding: 30px 40px;
+            border-radius: var(--borda-radius);
+            box-shadow: var(--sombra-padrao);
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-header img {
+            max-width: 150px;
+            margin-bottom: 15px;
+        }
+        .instrucoes {
+            background-color: var(--cor-fundo-box);
+            padding: 25px;
+            border-radius: var(--borda-radius);
+            margin-bottom: 30px;
+            border-left: 5px solid var(--cor-primaria);
+        }
+        .instrucoes-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .instrucoes-header h4 {
+            font-size: 1.4em;
+            color: var(--cor-texto-principal);
+            margin-bottom: 5px;
+        }
+        .instrucoes-passos {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .passo {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .passo-numero {
+            flex-shrink: 0;
+            width: 35px;
+            height: 35px;
+            background-color: var(--cor-primaria);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .passo-texto {
+            line-height: 1.6;
+        }
+        .passo-texto ul {
+            padding-left: 20px;
+            margin-top: 10px;
+            list-style-type: '✓ ';
+            color: var(--cor-texto-secundario);
+        }
+        .form-section-title {
+            font-size: 1.5em;
+            color: var(--cor-primaria);
+            margin-top: 30px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--cor-secundaria);
+            padding-bottom: 10px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .form-group p {
+            font-size: 0.85em;
+            color: var(--cor-texto-secundario);
+            margin-top: 5px;
+        }
+        .required-asterisk {
+            color: var(--cor-erro);
+        }
+        .hidden-section {
+            display: none;
+        }
+        .horarios-options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .horario-detalhe-container {
+            background-color: var(--cor-fundo-box);
+            padding: 15px;
+            border-radius: var(--borda-radius);
+            margin-top: 10px;
+        }
+        .horario-detalhe-container label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .horario-detalhe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
 
-        try {
-            const snapshot = await db.collection('inscricoes').where('cpf', '==', cpf).limit(1).get();
+    <div class="form-container">
+        <div class="form-header">
+            <img src="../assets/img/logo-eupsico.png" alt="Logo EuPsico">
+            <h2>Ficha de Inscrição</h2>
+        </div>
+
+        <div class="instrucoes">
+            <div class="instrucoes-header">
+                <h4>Seja bem-vindo(a) à EuPsico!</h4>
+                <p>Para cuidar da sua saúde mental conosco, siga os passos abaixo:</p>
+            </div>
+            <div class="instrucoes-passos">
+                <div class="passo">
+                    <div class="passo-numero">1</div>
+                    <div class="passo-texto"><strong>Preencha este formulário</strong> com atenção e informações corretas.</div>
+                </div>
+                <div class="passo">
+                    <div class="passo-numero">2</div>
+                    <div class="passo-texto">
+                        <strong>Envie seus documentos</strong> pelo nosso WhatsApp:
+                        <ul>
+                            <li>RG e CPF (do paciente e/ou responsável);</li>
+                            <li>Comprovante de renda atualizado;</li>
+                            <li>Comprovante de endereço com CEP.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="passo">
+                    <div class="passo-numero">3</div>
+                    <div class="passo-texto"><strong>Realize a contribuição de R$30,00</strong>, referente à triagem, após o envio dos documentos.</div>
+                </div>
+                <div class="passo">
+                    <div class="passo-numero">4</div>
+                    <div class="passo-texto"><strong>Aguarde o agendamento da sua Triagem</strong>, onde faremos uma avaliação socioeconômica para definir os valores da terapia.</div>
+                </div>
+                 <div class="passo">
+                    <div class="passo-numero">5</div>
+                    <div class="passo-texto"><strong>Participe do Acolhimento</strong> (mínimo de 4 encontros) para entendermos sua demanda e realizarmos o melhor encaminhamento.</div>
+                </div>
+            </div>
+        </div>
+
+        <form id="inscricao-form">
+            <h3 class="form-section-title">Identificação</h3>
             
-            if (!snapshot.empty) {
-                pacienteExistente = snapshot.docs[0].data();
-                const nome = pacienteExistente.nomeCompleto || 'Nome não encontrado';
-                if (confirm(`Já existe um cadastro para ${nome}. Deseja atualizar as informações?`)) {
-                    formBody.classList.remove('hidden-section');
-                    updateSection.classList.remove('hidden-section');
-                    newRegisterSection.classList.add('hidden-section');
-                } else {
-                    resetForm(true);
-                }
-            } else {
-                pacienteExistente = null;
-                formBody.classList.remove('hidden-section');
-                updateSection.classList.add('hidden-section');
-                newRegisterSection.classList.remove('hidden-section');
-            }
-        } catch (error) {
-            console.error("Erro ao verificar CPF:", error);
-            alert("Não foi possível verificar o CPF. Tente novamente.");
-        }
-    });
+            <div class="form-group">
+                <label for="cpf">Informe o CPF da pessoa que será atendida: <span class="required-asterisk">*</span></label>
+                <input type="text" id="cpf" name="cpf" class="form-control" placeholder="Digite o CPF para iniciar" required>
+            </div>
+            
+            <div id="form-body" class="hidden-section">
 
-    // --- 2. Lógica de Menor de Idade ---
-    dataNascimentoInput.addEventListener('change', () => {
-        const dataNasc = new Date(dataNascimentoInput.value);
-        if (isNaN(dataNasc.getTime())) return;
+                <div id="update-section" class="hidden-section">
+                    </div>
 
-        const hoje = new Date();
-        let idade = hoje.getFullYear() - dataNasc.getFullYear();
-        const m = hoje.getMonth() - dataNasc.getMonth();
-        if (m < 0 || (m === 0 && hoje.getDate() < dataNasc.getDate())) {
-            idade--;
-        }
-        
-        fullFormFields.classList.remove('hidden-section');
-        if (idade < 18) {
-            responsavelSection.classList.remove('hidden-section');
-        } else {
-            responsavelSection.classList.add('hidden-section');
-        }
-    });
+                <div id="new-register-section">
+                    </div>
 
-    responsavelCpfInput.addEventListener('blur', () => {
-        if (responsavelCpfInput.value === cpfInput.value) {
-            alert("Atenção: O CPF do responsável é o mesmo do paciente. Será necessário atualizar o CPF do paciente no futuro.");
-            const tempId = `TEMP-${Date.now()}`;
-            cpfInput.value = tempId;
-            alert(`O CPF do paciente foi substituído por um código de identificação temporário: ${tempId}. Guarde este código.`);
-        }
-    });
+                <h3 class="form-section-title">Disponibilidade de Horário</h3>
+                </div>
+        </form>
+    </div>
 
-    // --- 3. Lógica de Disponibilidade de Horário ---
-    const horariosCheckboxes = document.querySelectorAll('input[name="horario"]');
-    horariosCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
-            const periodo = e.target.value;
-            const container = document.getElementById(`container-${periodo}`);
-            if (e.target.checked) {
-                gerarHorarios(periodo, container);
-                container.classList.remove('hidden-section');
-            } else {
-                container.innerHTML = '';
-                container.classList.add('hidden-section');
-            }
-        });
-    });
-
-    function gerarHorarios(periodo, container) {
-        let horarios = [];
-        let label = '';
-
-        switch(periodo) {
-            case 'manha-semana':
-                label = 'Selecione os horários na Manhã (Seg-Sex):';
-                for(let i = 8; i < 12; i++) horarios.push(`${i}:00`);
-                break;
-            case 'tarde-semana':
-                label = 'Selecione os horários na Tarde (Seg-Sex):';
-                for(let i = 12; i < 18; i++) horarios.push(`${i}:00`);
-                break;
-            case 'noite-semana':
-                label = 'Selecione os horários na Noite (Seg-Sex):';
-                for(let i = 18; i < 21; i++) horarios.push(`${i}:00`);
-                break;
-            case 'manha-sabado':
-                label = 'Selecione os horários na Manhã (Sábado):';
-                for(let i = 8; i < 13; i++) horarios.push(`${i}:00`);
-                break;
-        }
-
-        let html = `<label>${label}</label><div class="horario-detalhe-grid">`;
-        horarios.forEach(hora => {
-            html += `<div><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</div>`;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
-    }
-
-    function resetForm(keepCpf = false) {
-        form.reset();
-        formBody.classList.add('hidden-section');
-        updateSection.classList.add('hidden-section');
-        newRegisterSection.classList.remove('hidden-section');
-        fullFormFields.classList.add('hidden-section');
-        responsavelSection.classList.add('hidden-section');
-        horariosContainer.querySelectorAll('.horario-detalhe-container').forEach(c => {
-            c.innerHTML = '';
-            c.classList.add('hidden-section');
-        });
-        if (!keepCpf) {
-            cpfInput.value = '';
-        }
-    }
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        alert("Lógica de envio a ser implementada!");
-    });
-});
+    <script type="module" src="../assets/js/firebase-init.js"></script>
+    <script type="module" src="../assets/js/fichas-de-inscricao.js"></script>
+
+</body>
+</html>
