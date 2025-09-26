@@ -27,8 +27,6 @@
             max-width: 150px;
             margin-bottom: 15px;
         }
-        
-        /* NOVO ESTILO AMIGÁVEL PARA AS INSTRUÇÕES */
         .instrucoes {
             background-color: var(--cor-fundo-box);
             padding: 25px;
@@ -77,8 +75,6 @@
             list-style-type: '✓ ';
             color: var(--cor-texto-secundario);
         }
-        /* FIM DO NOVO ESTILO */
-
         .form-section-title {
             font-size: 1.5em;
             color: var(--cor-primaria);
@@ -173,7 +169,7 @@
         </div>
 
         <form id="inscricao-form">
-            <h3 class="form-section-title">Identificação</h3>
+            <h3 class="form-section-title">Identificação Inicial</h3>
             
             <div class="form-group">
                 <label for="cpf">Informe o CPF da pessoa que será atendida: <span class="required-asterisk">*</span></label>
@@ -249,7 +245,8 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+
+                        </div>
                 </div>
 
                 <h3 class="form-section-title">Disponibilidade de Horário</h3>
@@ -278,7 +275,9 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    
     <script type="module" src="../assets/js/firebase-init.js"></script>
     <script type="module" src="../assets/js/fichas-de-inscricao.js"></script>
 
