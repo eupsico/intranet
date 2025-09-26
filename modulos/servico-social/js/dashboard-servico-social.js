@@ -8,27 +8,67 @@ export function init(db, user, userData) {
     if (!summaryContainer || !agendamentosContainer) return;
 
     // --- 1. Lógica do Card de Disponibilidade ---
+// --- 1. Lógica do Card de Disponibilidade ---
     async function renderDisponibilidade() {
         try {
             const docRef = db.collection('disponibilidadeAssistentes').doc(user.uid);
             const docSnap = await docRef.get();
+
+            // NOVO: Pega o mês e ano atuais para buscar os dados corretos
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0'); // Garante formato "09"
+            const mesKey = `${ano}-${mes}`;
+            const nomeMes = hoje.toLocaleString('pt-BR', { month: 'long' });
+            const nomeMesCapitalizado = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+
             let onlineHtml = '<li>Nenhum horário online informado.</li>';
             let presencialHtml = '<li>Nenhum horário presencial informado.</li>';
 
-            // A verificação correta para a v9 é com parênteses: .exists()
+            // ALTERADO: Função interna para formatar os dados de disponibilidade
+            const formatarDetalhes = (dadosModalidade) => {
+                if (!dadosModalidade || (!dadosModalidade.triagem?.dias?.length && !dadosModalidade.reavaliacao?.dias?.length)) {
+                    return null; // Retorna nulo se não houver dados
+                }
+                
+                let html = '';
+                const { triagem, reavaliacao } = dadosModalidade;
+
+                if (triagem?.dias?.length > 0) {
+                    const diasFormatados = triagem.dias.map(d => d.split('-')[2]).join(', ');
+                    html += `<li><strong>Triagem:</strong> Dias ${diasFormatados} (das ${triagem.inicio} às ${triagem.fim})</li>`;
+                }
+
+                if (reavaliacao?.dias?.length > 0) {
+                    const diasFormatados = reavaliacao.dias.map(d => d.split('-')[2]).join(', ');
+                    html += `<li><strong>Reavaliação:</strong> Dias ${diasFormatados}</li>`;
+                }
+                
+                return html;
+            };
+
             if (docSnap.exists) {
                 const data = docSnap.data();
-                if (data.online) {
-                    onlineHtml = data.online.split('\n').map(item => `<li>${item}</li>`).join('');
-                }
-                if (data.presencial) {
-                    presencialHtml = data.presencial.split('\n').map(item => `<li>${item}</li>`).join('');
+                // ALTERADO: Acessa a estrutura de dados aninhada corretamente
+                const disponibilidadeDoMes = data.disponibilidade?.[mesKey];
+
+                if (disponibilidadeDoMes) {
+                    const detalhesOnline = formatarDetalhes(disponibilidadeDoMes.online);
+                    if (detalhesOnline) {
+                        onlineHtml = detalhesOnline;
+                    }
+
+                    const detalhesPresencial = formatarDetalhes(disponibilidadeDoMes.presencial);
+                    if (detalhesPresencial) {
+                        presencialHtml = detalhesPresencial;
+                    }
                 }
             }
             
+            // ALTERADO: Título do card agora é dinâmico com o mês atual
             summaryContainer.innerHTML = `
                 <div class="summary-card">
-                    <h4>🗓️ Minha Disponibilidade</h4>
+                    <h4>🗓️ Minha Disponibilidade (${nomeMesCapitalizado})</h4>
                     <strong>Online:</strong>
                     <ul>${onlineHtml}</ul>
                     <hr style="margin: 15px 0;">
@@ -42,7 +82,6 @@ export function init(db, user, userData) {
             summaryContainer.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Não foi possível carregar a disponibilidade.</div>`;
         }
     }
-
     // --- 2. Lógica do Card de Agendamentos ---
     async function renderAgendamentos() {
         try {
