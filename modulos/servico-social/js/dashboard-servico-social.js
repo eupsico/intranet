@@ -16,7 +16,7 @@ export function init(db, user, userData) {
             let presencialHtml = '<li>Nenhum horário presencial informado.</li>';
 
             // A verificação correta para a v9 é com parênteses: .exists()
-            if (docSnap.exists()) {
+            if (docSnap.exists) {
                 const data = docSnap.data();
                 if (data.online) {
                     onlineHtml = data.online.split('\n').map(item => `<li>${item}</li>`).join('');
