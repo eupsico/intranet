@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/disponibilidade-assistente.js
-// Versão: 2.0 (Corrige bug de seleção e implementa salvamento no Firestore)
+// Versão: 2.1 (Corrige a estrutura de salvamento no Firestore para objetos aninhados)
 
 export function init(db, user, userData) {
     const form = document.getElementById('disponibilidade-form');
@@ -116,22 +116,31 @@ export function init(db, user, userData) {
 
         const docRef = db.collection('disponibilidadeAssistentes').doc(user.uid);
 
+        const mesKey = `${ano}-${String(parseInt(mes) + 1).padStart(2, '0')}`;
+        const modalidadeKey = tipoAtendimento.toLowerCase();
+
+        // ALTERADO: Estrutura de objeto aninhado para salvamento correto no Firestore
         const dadosParaSalvar = {
             assistenteNome: userData.nome,
-            [`disponibilidade.${ano}-${String(parseInt(mes) + 1).padStart(2, '0')}.${tipoAtendimento.toLowerCase()}`]: {
-                triagem: {
-                    dias: diasTriagem,
-                    inicio: horaInicio,
-                    fim: horaFim
-                },
-                reavaliacao: {
-                    dias: diasReavaliacao
+            atualizadoEm: new Date(),
+            disponibilidade: {
+                [mesKey]: {
+                    [modalidadeKey]: {
+                        triagem: {
+                            dias: diasTriagem,
+                            inicio: horaInicio,
+                            fim: horaFim
+                        },
+                        reavaliacao: {
+                            dias: diasReavaliacao
+                        }
+                    }
                 }
-            },
-            atualizadoEm: new Date()
+            }
         };
 
         try {
+            // A função set com merge: true vai criar ou mesclar os dados corretamente
             await docRef.set(dadosParaSalvar, { merge: true });
 
             // Lógica de confirmação
