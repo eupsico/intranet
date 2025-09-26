@@ -103,8 +103,6 @@
     background-color: var(--cor-fundo);
     padding: 15px;
     border-radius: var(--borda-radius);
-    max-height: 250px;
-    overflow-y: auto;
 }
 .checkbox-item {
     display: flex;
