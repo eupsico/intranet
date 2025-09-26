@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/dashboard-servico-social.js
-// Versão: 2.1 (Lê a estrutura de dados simplificada)
+// Versão: 2.2 (Corrige o filtro de data para incluir o mês corrente)
 
 export function init(db, user, userData) {
     const summaryContainer = document.getElementById('summary-panel-container');
@@ -7,7 +7,7 @@ export function init(db, user, userData) {
 
     if (!summaryContainer || !agendamentosContainer) return;
 
-    // --- 1. Lógica do Card de Disponibilidade (MODIFICADO) ---
+    // --- 1. Lógica do Card de Disponibilidade ---
     async function renderDisponibilidade() {
         try {
             const docRef = db.collection('disponibilidadeAssistentes').doc(user.uid);
@@ -21,21 +21,22 @@ export function init(db, user, userData) {
 
                 if (disponibilidadeMap && Object.keys(disponibilidadeMap).length > 0) {
                     
+                    // CORRIGIDO: Zera a hora para garantir que o mês corrente seja incluído na comparação
                     const hoje = new Date();
                     hoje.setDate(1);
+                    hoje.setHours(0, 0, 0, 0); // Garante que a comparação seja feita a partir da meia-noite
                     
                     const mesesOrdenados = Object.keys(disponibilidadeMap)
                         .filter(mesKey => {
                             const [ano, mes] = mesKey.split('-');
                             const dataKey = new Date(ano, parseInt(mes) - 1, 1);
-                            return dataKey >= hoje;
+                            return dataKey >= hoje; // Agora a comparação funciona para o mês corrente
                         })
                         .sort();
 
                     if (mesesOrdenados.length > 0) {
                         disponibilidadeHtml = '';
                         
-                        // ALTERADO: Função de formatação simplificada
                         const formatarModalidade = (dados) => {
                             if (!dados?.dias || dados.dias.length === 0) {
                                 return '<li>Nenhum horário informado.</li>';
@@ -75,7 +76,8 @@ export function init(db, user, userData) {
                     <a href="#disponibilidade-assistente" class="card-footer-link">Clique aqui para modificar</a>
                 </div>`;
 
-        } catch (error) {
+        } catch (error)
+ {
             console.error("Erro ao carregar disponibilidade:", error);
             summaryContainer.innerHTML = `<div class="info-card" style="border-left-color: var(--cor-erro);">Não foi possível carregar a disponibilidade.</div>`;
         }
@@ -113,7 +115,7 @@ export function init(db, user, userData) {
         }
     }
 
-    // --- CSS Adicional para o novo layout ---
+    // --- CSS Adicional ---
     const style = document.createElement('style');
     style.textContent = `
         .disponibilidade-mes {
@@ -132,7 +134,6 @@ export function init(db, user, userData) {
         }
     `;
     document.head.appendChild(style);
-
 
     // --- Inicialização ---
     renderDisponibilidade();
