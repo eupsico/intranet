@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/disponibilidade-assistente.js
-// Versão: 3.0 (Layout e Lógica Simplificados)
+// Versão: 3.1 (Salva a estrutura de dados simplificada)
 
 export function init(db, user, userData) {
     const form = document.getElementById('disponibilidade-form');
@@ -102,8 +102,8 @@ export function init(db, user, userData) {
         const diasOnline = Array.from(datasOnlineContainer.querySelectorAll('input:checked')).map(input => input.value);
         const diasPresencial = Array.from(datasPresencialContainer.querySelectorAll('input:checked')).map(input => input.value);
 
-        if (mes === "" || (diasOnline.length === 0 && diasPresencial.length === 0)) {
-            alert("Selecione um mês e pelo menos um dia (Online ou Presencial) para salvar.");
+        if (mes === "") {
+            alert("Por favor, selecione um mês para salvar.");
             return;
         }
 
@@ -113,18 +113,21 @@ export function init(db, user, userData) {
         const docRef = db.collection('disponibilidadeAssistentes').doc(user.uid);
         const mesKey = `${ano}-${String(parseInt(mes) + 1).padStart(2, '0')}`;
 
+        // ALTERADO: Estrutura simplificada sem "triagem" e "reavaliação"
         const dadosParaSalvar = {
             assistenteNome: userData.nome,
             atualizadoEm: new Date(),
             disponibilidade: {
                 [mesKey]: {
                     online: {
-                        triagem: { dias: diasOnline, inicio: horaInicio, fim: horaFim },
-                        reavaliacao: { dias: diasOnline }
+                        dias: diasOnline,
+                        inicio: horaInicio,
+                        fim: horaFim
                     },
                     presencial: {
-                        triagem: { dias: diasPresencial, inicio: horaInicio, fim: horaFim },
-                        reavaliacao: { dias: diasPresencial }
+                        dias: diasPresencial,
+                        inicio: horaInicio,
+                        fim: horaFim
                     }
                 }
             }
