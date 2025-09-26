@@ -169,6 +169,7 @@
         </div>
 
         <form id="inscricao-form">
+
             <h3 class="form-section-title">Identificação Inicial</h3>
             
             <div class="form-group">
@@ -179,8 +180,8 @@
             <div id="form-body" class="hidden-section">
 
                 <div id="update-section" class="hidden-section">
-                    <h3 class="form-section-title" style="color: var(--cor-aviso);">Atualização de Cadastro</h3>
-                    <p class="instrucoes" style="border-left: 5px solid var(--cor-aviso);">Verificamos que já existe um cadastro para este CPF. Por favor, confirme ou atualize as informações abaixo.</p>
+                    <h3 class="form-section-title" style="color: #ffc107;">Atualização de Cadastro</h3>
+                    <p class="instrucoes" style="border-left-color: #ffc107;">Verificamos que já existe um cadastro para este CPF. Por favor, confirme ou atualize as informações abaixo.</p>
                     
                     <div class="form-group">
                         <label for="update-endereco">Endereço Completo (Rua, Nº, Bairro, Cidade, CEP): <span class="required-asterisk">*</span></label>
@@ -232,6 +233,18 @@
                             <input type="text" id="nome-completo" name="nome-completo" class="form-control" required>
                         </div>
                         
+                        <div class="form-group">
+                            <label for="genero">Gênero: <span class="required-asterisk">*</span></label>
+                            <select id="genero" name="genero" class="form-control" required>
+                                <option value="">Selecione...</option>
+                                <option value="Feminino">Feminino</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Nao-binario">Não-binário</option>
+                                <option value="Outro">Outro</option>
+                                <option value="Prefiro nao informar">Prefiro não informar</option>
+                            </select>
+                        </div>
+
                         <div id="responsavel-legal-section" class="hidden-section">
                             <h3 class="form-section-title">Dados do Responsável Legal</h3>
                             <div class="form-row">
@@ -246,7 +259,12 @@
                             </div>
                         </div>
 
+                        <h3 class="form-section-title">Queixa</h3>
+                        <div class="form-group">
+                            <label for="motivo-busca">Qual o motivo de ter buscado ajuda na EuPsico? <span class="required-asterisk">*</span></label>
+                            <textarea id="motivo-busca" name="motivo-busca" rows="4" class="form-control" required></textarea>
                         </div>
+                    </div>
                 </div>
 
                 <h3 class="form-section-title">Disponibilidade de Horário</h3>
