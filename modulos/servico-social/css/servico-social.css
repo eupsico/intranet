@@ -169,3 +169,10 @@
     color: var(--cor-texto-secundario);
     opacity: 0.6;
 }
+/* Adicionado para o layout de filtros da disponibilidade */
+.disponibilidade-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-end;
+}
