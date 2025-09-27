@@ -245,3 +245,40 @@ exports.verificarCpfExistente = functions.https.onRequest((req, res) => {
     }
   });
 });
+// Adicione este código ao final do seu arquivo functions/index.js
+
+// -------------------------------------------------------------------
+// Função para criar um card na Trilha do Paciente após nova inscrição
+// -------------------------------------------------------------------
+exports.criarCardTrilhaPaciente = functions.firestore
+  .document("inscricoes/{inscricaoId}")
+  .onCreate(async (snap, context) => {
+    const inscricaoData = snap.data();
+
+    // Dados que serão copiados para o card do Kanban
+    const cardData = {
+      inscricaoId: context.params.inscricaoId,
+      nomeCompleto: inscricaoData.nomeCompleto || "",
+      cpf: inscricaoData.cpf || "",
+      dataNascimento: inscricaoData.dataNascimento || "",
+      telefoneCelular: inscricaoData.telefoneCelular || "",
+      email: inscricaoData.email || "",
+      responsavel: inscricaoData.responsavel || {},
+      disponibilidadeGeral: inscricaoData.disponibilidadeGeral || [],
+      disponibilidadeEspecifica: inscricaoData.disponibilidadeEspecifica || [],
+      timestamp: new Date(),
+      status: "inscricao_documentos", // Status inicial do Kanban
+    };
+
+    try {
+      // Cria o novo documento na coleção trilhaPaciente
+      await db.collection("trilhaPaciente").add(cardData);
+      console.log(
+        `Card criado com sucesso na Trilha do Paciente para CPF: ${cardData.cpf}`
+      );
+      return null;
+    } catch (error) {
+      console.error("Erro ao criar card na Trilha do Paciente:", error);
+      return null;
+    }
+  });
