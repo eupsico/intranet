@@ -77,11 +77,26 @@
                 <div id="update-section" class="hidden-section">
                     <h3 class="form-section-title" style="color: #ffc107;">Atualização de Cadastro</h3>
                     <p class="instrucoes" style="border-left-color: #ffc107;">Verificamos que já existe um cadastro para este CPF. Por favor, confirme ou atualize as informações abaixo para a reavaliação.</p>
+                    
                     <div class="form-group">
-                        <label for="update-endereco">Endereço Completo Atual (Rua, Nº, Bairro, Cidade, CEP): <span class="required-asterisk">*</span></label>
-                        <input type="text" id="update-endereco" name="update-endereco" class="form-control">
+                        <label for="update-nome-completo">Nome Completo:</label>
+                        <input type="text" id="update-nome-completo" name="update-nome-completo" class="form-control" disabled>
                     </div>
-                    <div class="form-row">
+
+                    <div id="endereco-bloqueado-section">
+                        <div class="form-row">
+                            <div class="form-group" style="grid-column: 1 / 3;"><label for="update-rua">Rua:</label><input type="text" id="update-rua" name="update-rua" class="form-control" disabled></div>
+                            <div class="form-group"><label for="update-numero">Nº:</label><input type="text" id="update-numero" name="update-numero" class="form-control" disabled></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="update-bairro">Bairro:</label><input type="text" id="update-bairro" name="update-bairro" class="form-control" disabled></div>
+                            <div class="form-group"><label for="update-cidade">Cidade:</label><input type="text" id="update-cidade" name="update-cidade" class="form-control" disabled></div>
+                            <div class="form-group"><label for="update-cep">CEP:</label><input type="text" id="update-cep" name="update-cep" class="form-control" disabled></div>
+                        </div>
+                        <button type="button" id="btn-alterar-endereco" class="action-button">Deseja alterar o endereço?</button>
+                    </div>
+
+                    <div class="form-row" style="margin-top: 20px;">
                         <div class="form-group">
                             <label for="update-pessoas-moradia">Quantas pessoas moram com você atualmente? <span class="required-asterisk">*</span></label>
                             <input type="number" id="update-pessoas-moradia" name="update-pessoas-moradia" class="form-control">
