@@ -165,15 +165,33 @@
                                 <div class="form-group"><label for="responsavel-cpf">CPF do Responsável: <span class="required-asterisk">*</span></label><input type="text" id="responsavel-cpf" name="responsavel-cpf" class="form-control"></div>
                             </div>
                             <div class="form-row">
-                                <div class="form-group"><label for="responsavel-parentesco">Selecione qual o parentesco com o paciente: <span class="required-asterisk">*</span></label><input type="text" id="responsavel-parentesco" name="responsavel-parentesco" class="form-control"></div>
-                                <div class="form-group"><label for="responsavel-contato">Telefone de Contato do Responsável: <span class="required-asterisk">*</span></label><input type="tel" id="responsavel-contato" name="responsavel-contato" class="form-control"></div>
+                                <div class="form-group">
+                                    <label for="responsavel-parentesco">Selecione qual o parentesco com o paciente: <span class="required-asterisk">*</span></label>
+                                    <select id="responsavel-parentesco" name="responsavel-parentesco" class="form-control">
+                                        <option value="">Selecione...</option>
+                                        <option value="Pai">Pai</option>
+                                        <option value="Mãe">Mãe</option>
+                                        <option value="Avô">Avô</option>
+                                        <option value="Avó">Avó</option>
+                                        <option value="Tio(a)">Tio(a)</option>
+                                        <option value="Outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="form-group hidden-section" id="outro-parentesco-container">
+                                    <label for="responsavel-parentesco-outro">Qual o parentesco? <span class="required-asterisk">*</span></label>
+                                    <input type="text" id="responsavel-parentesco-outro" name="responsavel-parentesco-outro" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="responsavel-contato">Telefone de Contato do Responsável: <span class="required-asterisk">*</span></label>
+                                    <input type="tel" id="responsavel-contato" name="responsavel-contato" class="form-control" placeholder="(XX) XXXXX-XXXX">
+                                </div>
                             </div>
                         </div>
 
                         <h3 class="form-section-title">Contato</h3>
                         <div class="form-row">
                             <div class="form-group"><label for="telefone-celular">Telefone celular: <span class="required-asterisk">*</span></label><input type="tel" id="telefone-celular" name="telefone-celular" class="form-control" placeholder="(XX) XXXXX-XXXX" required></div>
-                            <div class="form-group"><label for="telefone-fixo">Telefone Fixo:</label><input type="tel" id="telefone-fixo" name="telefone-fixo" class="form-control"></div>
+                            <div class="form-group"><label for="telefone-fixo">Telefone Fixo:</label><input type="tel" id="telefone-fixo" name="telefone-fixo" class="form-control" placeholder="(XX) XXXX-XXXX"></div>
                             <div class="form-group"><label for="email">Informe o seu melhor e-mail: <span class="required-asterisk">*</span></label><input type="email" id="email" name="email" class="form-control" required></div>
                         </div>
                         

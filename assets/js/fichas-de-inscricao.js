@@ -1,5 +1,5 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Completa, com novo fluxo, pré-preenchimento, formatação de moeda, validação de CPF e lógica de envio completa.
+// Versão Final: Completa, com novo fluxo, pré-preenchimento, formatação de moeda e telefone, validação de CPF e lógica de envio completa.
 
 import { db } from "./firebase-init.js";
 
@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("inscricao-form");
   const cpfInput = document.getElementById("cpf");
   const cpfError = document.getElementById("cpf-error");
-  const nomeCompletoInput = document.getElementById("nome-completo");
   const dataNascimentoInput = document.getElementById("data-nascimento");
   const initialFieldsContainer = document.getElementById("initial-fields");
   const formBody = document.getElementById("form-body");
@@ -20,10 +19,29 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const responsavelCpfInput = document.getElementById("responsavel-cpf");
   const cepInput = document.getElementById("cep");
+  const parentescoSelect = document.getElementById("responsavel-parentesco");
+  const outroParentescoContainer = document.getElementById(
+    "outro-parentesco-container"
+  );
 
   let pacienteExistenteData = null;
 
   // --- FUNÇÕES DE FORMATAÇÃO E VALIDAÇÃO ---
+
+  function formatarTelefone(input) {
+    let value = input.value.replace(/\D/g, "");
+    value = value.substring(0, 11);
+    if (value.length > 10) {
+      value = value.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
+    } else if (value.length > 5) {
+      value = value.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+    } else if (value.length > 2) {
+      value = value.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2");
+    } else {
+      value = value.replace(/^(\d*)/, "($1");
+    }
+    input.value = value;
+  }
 
   function formatarMoeda(input) {
     let value = input.value.replace(/\D/g, "");
@@ -44,6 +62,12 @@ document.addEventListener("DOMContentLoaded", () => {
     )
     .forEach((input) => {
       input.addEventListener("input", () => formatarMoeda(input));
+    });
+
+  document
+    .querySelectorAll("#telefone-celular, #telefone-fixo, #responsavel-contato")
+    .forEach((input) => {
+      input.addEventListener("input", () => formatarTelefone(input));
     });
 
   function validarCPF(cpf) {
@@ -85,14 +109,11 @@ document.addEventListener("DOMContentLoaded", () => {
         pacienteExistenteData = snapshot.docs[0].data();
         pacienteExistenteData.id = snapshot.docs[0].id;
 
-        // --- ALTERAÇÕES AQUI ---
-        // Remove o confirm e abre a seção de atualização diretamente
         initialFieldsContainer.classList.add("hidden-section");
         formBody.classList.remove("hidden-section");
         updateSection.classList.remove("hidden-section");
         newRegisterSection.classList.add("hidden-section");
 
-        // Preenche os campos bloqueados
         document.getElementById("update-nome-completo").value =
           pacienteExistenteData.nomeCompleto || "";
         document.getElementById("update-rua").value =
@@ -106,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("update-cep").value =
           pacienteExistenteData.cep || "";
 
-        // Limpa os campos socioeconômicos para reavaliação
         document.getElementById("update-pessoas-moradia").value = "";
         document.getElementById("update-casa-propria").value = "";
         document.getElementById("update-valor-aluguel").value = "";
@@ -114,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("update-renda-familiar").value = "";
       } else {
         pacienteExistenteData = null;
-        // Se não existe, aguarda o preenchimento da data de nascimento para continuar
       }
     } catch (error) {
       console.error("Erro ao verificar CPF:", error);
@@ -124,7 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Listener para o botão de alterar endereço
   document
     .getElementById("btn-alterar-endereco")
     .addEventListener("click", () => {
@@ -164,6 +182,15 @@ document.addEventListener("DOMContentLoaded", () => {
       responsavelSection.classList.remove("hidden-section");
     } else {
       responsavelSection.classList.add("hidden-section");
+    }
+  });
+
+  // --- LÓGICA DO PARENTESCO ---
+  parentescoSelect.addEventListener("change", () => {
+    if (parentescoSelect.value === "Outro") {
+      outroParentescoContainer.classList.remove("hidden-section");
+    } else {
+      outroParentescoContainer.classList.add("hidden-section");
     }
   });
 
@@ -253,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- LÓGICA DE ENVIO DO FORMULÁRIO (COMPLETA) ---
+  // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const submitButton = form.querySelector('button[type="submit"]');
@@ -288,6 +315,15 @@ document.addEventListener("DOMContentLoaded", () => {
           document.querySelectorAll('input[name="horario-especifico"]:checked')
         ).map((cb) => cb.value);
 
+        let parentescoFinal = document.getElementById(
+          "responsavel-parentesco"
+        ).value;
+        if (parentescoFinal === "Outro") {
+          parentescoFinal = document.getElementById(
+            "responsavel-parentesco-outro"
+          ).value;
+        }
+
         const novoCadastro = {
           cpf: document.getElementById("cpf").value,
           nomeCompleto: document.getElementById("nome-completo").value,
@@ -299,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
           responsavel: {
             nome: document.getElementById("responsavel-nome").value,
             cpf: document.getElementById("responsavel-cpf").value,
-            parentesco: document.getElementById("responsavel-parentesco").value,
+            parentesco: parentescoFinal,
             contato: document.getElementById("responsavel-contato").value,
           },
           telefoneCelular: document.getElementById("telefone-celular").value,
