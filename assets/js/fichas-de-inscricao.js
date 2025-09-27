@@ -84,35 +84,37 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!snapshot.empty) {
         pacienteExistenteData = snapshot.docs[0].data();
         pacienteExistenteData.id = snapshot.docs[0].id;
-        const nome =
-          pacienteExistenteData.nomeCompleto || "Nome não encontrado";
 
-        if (
-          confirm(
-            `Já existe um cadastro para ${nome}. Deseja apenas atualizar as informações socioeconômicas e de contato?`
-          )
-        ) {
-          initialFieldsContainer.classList.add("hidden-section");
-          formBody.classList.remove("hidden-section");
-          updateSection.classList.remove("hidden-section");
-          newRegisterSection.classList.add("hidden-section");
+        // --- ALTERAÇÕES AQUI ---
+        // Remove o confirm e abre a seção de atualização diretamente
+        initialFieldsContainer.classList.add("hidden-section");
+        formBody.classList.remove("hidden-section");
+        updateSection.classList.remove("hidden-section");
+        newRegisterSection.classList.add("hidden-section");
 
-          const enderecoCompleto = `${pacienteExistenteData.rua || ""}, ${
-            pacienteExistenteData.numeroCasa || ""
-          } - ${pacienteExistenteData.bairro || ""}, ${
-            pacienteExistenteData.cidade || ""
-          } - CEP: ${pacienteExistenteData.cep || ""}`;
-          document.getElementById("update-endereco").value =
-            enderecoCompleto.trim();
-          document.getElementById("update-renda-mensal").value = "";
-          document.getElementById("update-renda-familiar").value = "";
-          document.getElementById("update-valor-aluguel").value = "";
-        } else {
-          resetForm(true);
-        }
+        // Preenche os campos bloqueados
+        document.getElementById("update-nome-completo").value =
+          pacienteExistenteData.nomeCompleto || "";
+        document.getElementById("update-rua").value =
+          pacienteExistenteData.rua || "";
+        document.getElementById("update-numero").value =
+          pacienteExistenteData.numeroCasa || "";
+        document.getElementById("update-bairro").value =
+          pacienteExistenteData.bairro || "";
+        document.getElementById("update-cidade").value =
+          pacienteExistenteData.cidade || "";
+        document.getElementById("update-cep").value =
+          pacienteExistenteData.cep || "";
+
+        // Limpa os campos socioeconômicos para reavaliação
+        document.getElementById("update-pessoas-moradia").value = "";
+        document.getElementById("update-casa-propria").value = "";
+        document.getElementById("update-valor-aluguel").value = "";
+        document.getElementById("update-renda-mensal").value = "";
+        document.getElementById("update-renda-familiar").value = "";
       } else {
         pacienteExistenteData = null;
-        // Aguarda o preenchimento da data de nascimento para continuar
+        // Se não existe, aguarda o preenchimento da data de nascimento para continuar
       }
     } catch (error) {
       console.error("Erro ao verificar CPF:", error);
@@ -121,6 +123,24 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   });
+
+  // Listener para o botão de alterar endereço
+  document
+    .getElementById("btn-alterar-endereco")
+    .addEventListener("click", () => {
+      const camposEndereco = [
+        "update-rua",
+        "update-numero",
+        "update-bairro",
+        "update-cidade",
+        "update-cep",
+      ];
+      camposEndereco.forEach((id) => {
+        const campo = document.getElementById(id);
+        campo.disabled = false;
+      });
+      alert("Os campos de endereço foram desbloqueados para alteração.");
+    });
 
   dataNascimentoInput.addEventListener("change", () => {
     const dataNasc = new Date(dataNascimentoInput.value);
@@ -244,7 +264,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (pacienteExistenteData) {
         // MODO ATUALIZAÇÃO
         const dadosParaAtualizar = {
-          enderecoCompleto: document.getElementById("update-endereco").value,
+          rua: document.getElementById("update-rua").value,
+          numeroCasa: document.getElementById("update-numero").value,
+          bairro: document.getElementById("update-bairro").value,
+          cidade: document.getElementById("update-cidade").value,
+          cep: document.getElementById("update-cep").value,
           pessoasMoradia: document.getElementById("update-pessoas-moradia")
             .value,
           casaPropria: document.getElementById("update-casa-propria").value,
