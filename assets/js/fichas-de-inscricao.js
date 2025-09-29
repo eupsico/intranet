@@ -1,5 +1,5 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Completa, com fluxo de agendamento corrigido e mantendo todas as validações originais.
+// Versão Final: Completa, com Agendamento ao Final do Formulário
 
 import { db, functions } from "./firebase-init.js";
 
@@ -29,8 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let horariosDisponiveis = [];
   let horarioAgendado = null;
-  let pacienteExistenteData = null; // --- FUNÇÕES DE FORMATAÇÃO E VALIDAÇÃO ---
+  let pacienteExistenteData = null;
 
+  // --- FUNÇÕES DE FORMATAÇÃO E VALIDAÇÃO (sem alterações) ---
   function formatarTelefone(input) {
     let value = input.value.replace(/\D/g, "");
     value = value.substring(0, 11);
@@ -89,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   }
 
-  // --- LÓGICA DE AGENDAMENTO ---
+  // --- LÓGICA DE AGENDAMENTO (sem alterações na lógica interna) ---
   async function verificarDisponibilidadeTriagem() {
     try {
       const getHorarios = functions.httpsCallable("getHorariosTriagem");
@@ -186,7 +187,12 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("agendamento-step-2").style.display = "none";
       document.getElementById("footer-step-2").style.display = "none";
       document.getElementById("agendamento-confirm-btn").disabled = true;
-    }); // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
+
+      // Após confirmar, envia o formulário
+      enviarFormulario();
+    });
+
+  // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
 
   cpfInput.addEventListener("blur", async () => {
     const cpf = cpfInput.value;
@@ -254,22 +260,16 @@ document.addEventListener("DOMContentLoaded", () => {
         "update-cep",
       ];
       camposEndereco.forEach((id) => {
-        const campo = document.getElementById(id);
-        campo.disabled = false;
+        document.getElementById(id).disabled = false;
       });
       alert("Os campos de endereço foram desbloqueados para alteração.");
     });
 
+  // **ALTERAÇÃO**: Abertura do modal foi removida daqui
   dataNascimentoInput.addEventListener("change", () => {
     const dataNasc = new Date(dataNascimentoInput.value);
-    const nome = document.getElementById("nome-completo").value;
-
-    if (isNaN(dataNasc.getTime()) || pacienteExistenteData || !nome) {
+    if (isNaN(dataNasc.getTime()) || pacienteExistenteData) {
       return;
-    }
-
-    if (!horarioAgendado) {
-      abrirModalAgendamento();
     }
 
     formBody.classList.remove("hidden-section");
@@ -289,14 +289,13 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       responsavelSection.classList.add("hidden-section");
     }
-  }); // --- LÓGICA DO PARENTESCO ---
+  });
 
   parentescoSelect.addEventListener("change", () => {
-    if (parentescoSelect.value === "Outro") {
-      outroParentescoContainer.classList.remove("hidden-section");
-    } else {
-      outroParentescoContainer.classList.add("hidden-section");
-    }
+    outroParentescoContainer.classList.toggle(
+      "hidden-section",
+      parentescoSelect.value !== "Outro"
+    );
   });
 
   responsavelCpfInput.addEventListener("blur", () => {
@@ -330,6 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // **ALTERAÇÃO**: Adiciona o texto informativo sobre a disponibilidade
   const disponibilidadeSection = document.getElementById(
     "disponibilidade-section"
   );
@@ -337,7 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const infoText = document.createElement("p");
     infoText.className = "info-note";
     infoText.textContent =
-      "Esta disponibilidade refere-se aos seus horários para as sessões de PSICOTERAPIA, não para a triagem inicial.";
+      "Esta disponibilidade refere-se aos seus horários para as sessões de PSICOTERAPIA, não para a triagem inicial que será agendada ao final.";
     const h3 = disponibilidadeSection.querySelector("h3");
     if (h3) h3.insertAdjacentElement("afterend", infoText);
   }
@@ -396,18 +396,27 @@ document.addEventListener("DOMContentLoaded", () => {
       cpfInput.value = cpfValue;
     }
     horarioAgendado = null;
-  } // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
+  }
 
-  form.addEventListener("submit", async (e) => {
+  // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
-    if (!horarioAgendado) {
+
+    // **ALTERAÇÃO**: A submissão do formulário agora abre o modal de agendamento
+    // Valida se o formulário está preenchido antes de abrir a agenda
+    if (!form.checkValidity()) {
+      form.reportValidity();
       alert(
-        "Por favor, selecione sua disponibilidade e agende um horário para a triagem antes de continuar."
+        "Por favor, preencha todos os campos obrigatórios (*) antes de prosseguir para o agendamento."
       );
-      abrirModalAgendamento();
       return;
     }
 
+    abrirModalAgendamento();
+  });
+
+  // **NOVA FUNÇÃO**: Lida com o envio dos dados APÓS o agendamento
+  async function enviarFormulario() {
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     submitButton.textContent = "Enviando...";
@@ -438,7 +447,6 @@ document.addEventListener("DOMContentLoaded", () => {
           .collection("inscricoes")
           .doc(pacienteExistenteData.id)
           .update(dadosParaAtualizar);
-        alert("Cadastro atualizado e triagem agendada com sucesso!");
       } else {
         // MODO NOVO CADASTRO
         const horariosSelecionados = Array.from(
@@ -500,9 +508,6 @@ document.addEventListener("DOMContentLoaded", () => {
           status: "triagem_agendada",
         };
         await db.collection("inscricoes").add(novoCadastro);
-        alert(
-          "Inscrição e agendamento realizados com sucesso! Por favor, siga os próximos passos informados no início da página."
-        );
       }
       form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada!</h2><p>Sua triagem foi agendada para <strong>${new Date(
         horarioAgendado.data + "T03:00:00"
@@ -514,11 +519,10 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(
         "Ocorreu um erro ao enviar sua inscrição. Por favor, tente novamente."
       );
-    } finally {
       submitButton.disabled = false;
       submitButton.textContent = "Enviar Inscrição";
     }
-  });
+  }
 
   verificarDisponibilidadeTriagem();
 });
