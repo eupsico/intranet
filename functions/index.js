@@ -3,6 +3,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const cors = require("cors")({ origin: true });
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -210,3 +211,103 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
   }
 );
+exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
+  try {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0); // Zera o horário para comparar apenas a data
+
+    // Define o período de busca: da data atual até o final da próxima semana
+    const fimDaProximaSemana = new Date(hoje);
+    fimDaProximaSemana.setDate(hoje.getDate() + (13 - hoje.getDay())); // Vai até o próximo sábado
+
+    // 1. Buscar todas as assistentes sociais ativas
+    const assistentesSnapshot = await db
+      .collection("usuarios")
+      .where("funcoes", "array-contains", "servico_social")
+      .where("inativo", "==", false)
+      .get();
+
+    if (assistentesSnapshot.empty) {
+      return { horarios: [] };
+    }
+
+    const assistentesIds = assistentesSnapshot.docs.map((doc) => doc.id);
+
+    // 2. Buscar a disponibilidade de todas as assistentes de uma vez
+    const disponibilidadesSnapshot = await db
+      .collection("disponibilidade")
+      .where("userId", "in", assistentesIds)
+      .get();
+
+    const disponibilidadesPorUsuario = {};
+    disponibilidadesSnapshot.forEach((doc) => {
+      disponibilidadesPorUsuario[doc.data().userId] = doc.data().slots;
+    });
+
+    // 3. Buscar agendamentos existentes no período
+    const agendamentosSnapshot = await db
+      .collection("trilhaPaciente")
+      .where("status", "==", "triagem_agendada")
+      .get();
+
+    const agendamentosExistentes = new Set();
+    agendamentosSnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Cria uma chave única para cada agendamento: "YYYY-MM-DDTHH:MM"
+      if (data.dataTriagem && data.horaTriagem) {
+        agendamentosExistentes.add(`${data.dataTriagem}T${data.horaTriagem}`);
+      }
+    });
+
+    // 4. Processar e gerar os horários livres
+    let horariosDisponiveis = [];
+    assistentesSnapshot.docs.forEach((assistenteDoc) => {
+      const assistente = assistenteDoc.data();
+      const slots = disponibilidadesPorUsuario[assistenteDoc.id];
+
+      if (slots) {
+        for (const diaSemana in slots) {
+          const horarios = slots[diaSemana];
+          horarios.forEach((hora) => {
+            // Calcula a data real para cada dia da semana no período
+            for (let i = 0; i < 14; i++) {
+              const dataAtual = new Date(hoje);
+              dataAtual.setDate(hoje.getDate() + i);
+
+              if (
+                dataAtual.getDay() === parseInt(diaSemana) &&
+                dataAtual <= fimDaProximaSemana
+              ) {
+                const dataISO = dataAtual.toISOString().split("T")[0];
+                const chaveAgendamento = `${dataISO}T${hora}`;
+
+                if (!agendamentosExistentes.has(chaveAgendamento)) {
+                  horariosDisponiveis.push({
+                    data: dataISO,
+                    hora: hora,
+                    assistenteNome: assistente.nome,
+                    assistenteId: assistenteDoc.id,
+                  });
+                }
+              }
+            }
+          });
+        }
+      }
+    });
+
+    // Ordena os horários para exibição
+    horariosDisponiveis.sort((a, b) => {
+      if (a.data < b.data) return -1;
+      if (a.data > b.data) return 1;
+      if (a.hora < b.hora) return -1;
+      if (a.hora > b.hora) return 1;
+      return 0;
+    });
+
+    return { horarios: horariosDisponiveis };
+  } catch (error) {
+    console.error("Erro ao buscar horários de triagem:", error);
+    throw new HttpsError("internal", "Não foi possível buscar os horários.");
+  }
+});
