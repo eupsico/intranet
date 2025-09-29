@@ -210,6 +210,7 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
   }
 );
+
 // FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
 // -------------------------------------------------------------------
 exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
@@ -218,9 +219,9 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     hoje.setHours(0, 0, 0, 0);
 
     const fimDaProximaSemana = new Date(hoje);
-    fimDaProximaSemana.setDate(hoje.getDate() + 14); // Limita a busca aos próximos 14 dias
+    fimDaProximaSemana.setDate(hoje.getDate() + 7);
 
-    // 1. Buscar todas as assistentes sociais ativas
+    // 1. Buscar assistentes sociais ativas
     const assistentesSnapshot = await db
       .collection("usuarios")
       .where("funcoes", "array-contains", "servico_social")
@@ -236,7 +237,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       assistentesSnapshot.docs.map((doc) => [doc.id, doc.data()])
     );
 
-    // 2. Buscar a disponibilidade de todas as assistentes
+    // 2. Buscar disponibilidades
     const disponibilidadesSnapshot = await db
       .collection("disponibilidadeAssistentes")
       .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
@@ -264,10 +265,8 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       const dispoData = doc.data().disponibilidade;
 
       if (assistente && dispoData) {
-        // Itera sobre os meses disponíveis (ex: "2025-10")
         for (const mesKey in dispoData) {
           const dadosDoMes = dispoData[mesKey];
-
           ["online", "presencial"].forEach((modalidade) => {
             const dispoModalidade = dadosDoMes[modalidade];
             if (dispoModalidade && dispoModalidade.dias) {
@@ -275,25 +274,32 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
               const horaFim = parseInt(dispoModalidade.fim.split(":")[0]);
 
               dispoModalidade.dias.forEach((diaISO) => {
-                const dataDisponivel = new Date(diaISO + "T03:00:00"); // Adiciona fuso para evitar problemas de dia
+                const dataDisponivel = new Date(diaISO + "T03:00:00");
 
-                // Verifica se a data está dentro do período de busca
                 if (
                   dataDisponivel >= hoje &&
                   dataDisponivel <= fimDaProximaSemana
                 ) {
-                  // Gera os slots de hora em hora
-                  for (let h = horaInicio; h < horaFim; h++) {
-                    const horaSlot = `${String(h).padStart(2, "0")}:00`;
-                    const chaveAgendamento = `${diaISO}T${horaSlot}`;
+                  // **AQUI ESTÁ A ALTERAÇÃO PRINCIPAL**
+                  // Gera os slots de 30 em 30 minutos
+                  for (let h = horaInicio; h <= horaFim; h++) {
+                    for (let m = 0; m < 60; m += 30) {
+                      // Condição para não ultrapassar o horário final
+                      if (h === horaFim && m > 0) continue;
 
-                    if (!agendamentosExistentes.has(chaveAgendamento)) {
-                      horariosDisponiveis.push({
-                        data: diaISO,
-                        hora: horaSlot,
-                        assistenteNome: assistente.nome,
-                        assistenteId: userId,
-                      });
+                      const horaSlot = `${String(h).padStart(2, "0")}:${String(
+                        m
+                      ).padStart(2, "0")}`;
+                      const chaveAgendamento = `${diaISO}T${horaSlot}`;
+
+                      if (!agendamentosExistentes.has(chaveAgendamento)) {
+                        horariosDisponiveis.push({
+                          data: diaISO,
+                          hora: horaSlot,
+                          assistenteNome: assistente.nome,
+                          assistenteId: userId,
+                        });
+                      }
                     }
                   }
                 }
