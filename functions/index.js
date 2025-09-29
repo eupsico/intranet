@@ -180,7 +180,7 @@ exports.verificarCpfExistente = functions.https.onRequest((req, res) => {
 });
 
 // -------------------------------------------------------------------
-// Função para criar um card na Trilha do Paciente (VERSÃO CORRETA)
+// FUNÇÃO ATUALIZADA: Cria o card diretamente na coluna correta
 // -------------------------------------------------------------------
 exports.criarCardTrilhaPaciente = onDocumentCreated(
   "inscricoes/{inscricaoId}",
@@ -192,18 +192,30 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
     const inscricaoData = snap.data();
 
-    // Esta linha garante que TODOS os campos da inscrição original sejam copiados
+    // **AQUI ESTÁ A ALTERAÇÃO PRINCIPAL**
+    // Verifica se a inscrição já contém os dados da triagem agendada
+    const triagemJaAgendada =
+      inscricaoData.dataTriagem &&
+      inscricaoData.horaTriagem &&
+      inscricaoData.assistenteSocialNome;
+
+    // Define o status inicial com base na verificação
+    const statusInicial = triagemJaAgendada
+      ? "triagem_agendada"
+      : "inscricao_documentos";
+
+    // Copia todos os campos da inscrição para o card.
     const cardData = {
       ...inscricaoData,
       inscricaoId: event.params.inscricaoId,
       timestamp: new Date(),
-      status: "inscricao_documentos", // Define o status inicial
+      status: statusInicial, // Usa o status definido pela lógica acima
     };
 
     try {
       await db.collection("trilhaPaciente").add(cardData);
       console.log(
-        `(v2) Card criado com sucesso na Trilha do Paciente para CPF: ${cardData.cpf}`
+        `(v2) Card criado com sucesso na Trilha do Paciente para CPF: ${cardData.cpf} com status: ${statusInicial}`
       );
     } catch (error) {
       console.error("(v2) Erro ao criar card na Trilha do Paciente:", error);
