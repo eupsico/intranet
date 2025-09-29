@@ -10,20 +10,19 @@ const firebaseConfig = {
   projectId: "eupsico-agendamentos-d2048",
   storageBucket: "eupsico-agendamentos-d2048.firebasestorage.app",
   messagingSenderId: "1041518416343",
-  appId: "1:1041518416343:web:087006662ffcfa12d7bb92"
+  appId: "1:1041518416343:web:087006662ffcfa12d7bb92",
 };
-
 
 // --- INICIALIZAÇÃO E EXPORTAÇÃO ---
 // Garante que o Firebase seja inicializado apenas uma vez
 if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
 }
 
 // Exporta as instâncias de autenticação e banco de dados para serem usadas em outros arquivos
 const auth = firebase.auth();
 const db = firebase.firestore();
-
+const functions = firebase.functions();
 // A inicialização e exportação do 'storage' foram removidas.
 
-export { auth, db };
+export { auth, db, functions };
