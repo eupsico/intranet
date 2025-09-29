@@ -10,11 +10,20 @@ export function render(modalBody, cardData, db) {
       ? `Responsável: ${cardData.responsavel.nome}`
       : "";
 
+  // Converte a data de nascimento para o formato brasileiro dd/mm/yyyy
+  const dataNascimentoFormatada = cardData.dataNascimento
+    ? new Date(cardData.dataNascimento + "T03:00:00").toLocaleDateString(
+        "pt-BR"
+      )
+    : "Não informada";
+
   modalBody.innerHTML = `
         <h3 class="form-section-title">Confirmação de Dados</h3>
         <div class="confirmation-box" id="confirmation-text">
+Por favor, confirme se os dados abaixo estão corretos:
+
 Nome: ${cardData.nomeCompleto}
-Data de Nascimento: ${cardData.dataNascimento}
+Data de Nascimento: ${dataNascimentoFormatada}
 ${responsavelInfo}
 Telefone: ${cardData.telefoneCelular}
 CPF: ${cardData.cpf}
@@ -24,35 +33,38 @@ E-mail: ${cardData.email}
 
         <h3 class="form-section-title">Checklist para Agendar Triagem</h3>
         <div class="checklist-group">
-            <div class="form-group">
-                <input type="checkbox" id="chk-docs" name="checklist">
-                <label for="chk-docs">Enviou os documentos (CPF, RG, Comprovante de Endereço, etc.)</label>
+            <div class="form-grid-2-col">
+                 <div class="form-group">
+                    <input type="checkbox" id="chk-docs" name="checklist">
+                    <label for="chk-docs">Enviou os documentos</label>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="chk-confirmou" name="checklist">
+                    <label for="chk-confirmou">Confirmou os dados</label>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="chk-pasta" name="checklist">
+                    <label for="chk-pasta">Criou Pasta no Drive</label>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="chk-pagamento" name="checklist">
+                    <label for="chk-pagamento">Efetuou o pagamento</label>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="chk-isento" name="checklist">
+                    <label for="chk-isento">Isento da triagem</label>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="chk-desistiu" name="checklist">
+                    <label for="chk-desistiu">Desistiu do processo</label>
+                </div>
             </div>
-            <div class="form-group">
-                <input type="checkbox" id="chk-confirmou" name="checklist">
-                <label for="chk-confirmou">Confirmou os dados</label>
-            </div>
-            <div class="form-group">
-                <input type="checkbox" id="chk-pasta" name="checklist">
-                <label for="chk-pasta">Criou Pasta no Drive do Serviço Social</label>
-            </div>
-            <div class="form-group">
-                <input type="checkbox" id="chk-pagamento" name="checklist">
-                <label for="chk-pagamento">Efetuou o pagamento da triagem</label>
-            </div>
-            <div class="form-group">
-                <input type="checkbox" id="chk-isento" name="checklist">
-                <label for="chk-isento">Isento da triagem</label>
-            </div>
+           
              <div id="isento-motivo-section" class="form-group hidden-section">
                 <label for="isento-motivo">Informe o motivo da isenção:</label>
                 <textarea id="isento-motivo" class="form-control"></textarea>
             </div>
-            <hr>
-            <div class="form-group">
-                <input type="checkbox" id="chk-desistiu" name="checklist">
-                <label for="chk-desistiu">Desistiu do processo</label>
-            </div>
+            
             <div id="desistencia-motivo-section" class="form-group hidden-section">
                 <label for="desistencia-motivo">Informe o motivo da desistência:</label>
                 <textarea id="desistencia-motivo" class="form-control"></textarea>
@@ -61,7 +73,7 @@ E-mail: ${cardData.email}
 
         <div id="agendamento-section">
             <h3 class="form-section-title">Agendamento da Triagem</h3>
-            <div class="form-grid">
+            <div class="form-grid-2-col">
                 <div class="form-group">
                     <label for="assistente-social">Nome da Assistente Social</label>
                     <select id="assistente-social" class="form-control">
@@ -72,6 +84,8 @@ E-mail: ${cardData.email}
                     <label for="assistente-email">E-mail da Assistente Social</label>
                     <input type="email" id="assistente-email" class="form-control" disabled>
                 </div>
+            </div>
+            <div class="form-grid-3-col">
                 <div class="form-group">
                     <label for="tipo-triagem">Tipo de Triagem</label>
                     <select id="tipo-triagem" class="form-control">
@@ -148,34 +162,61 @@ async function loadAssistentesSociais(db) {
  * Adiciona os listeners para os checkboxes com lógica condicional.
  */
 function setupEventListeners() {
+  const chkPagamento = document.getElementById("chk-pagamento");
   const chkIsento = document.getElementById("chk-isento");
   const chkDesistiu = document.getElementById("chk-desistiu");
   const isentoSection = document.getElementById("isento-motivo-section");
   const desistiuSection = document.getElementById("desistencia-motivo-section");
   const agendamentoSection = document.getElementById("agendamento-section");
-  const checklist = document.querySelectorAll('input[name="checklist"]');
+  const allCheckboxes = document.querySelectorAll('input[name="checklist"]');
 
+  // Lógica para o checkbox de ISENÇÃO
   chkIsento.addEventListener("change", () => {
     isentoSection.classList.toggle("hidden-section", !chkIsento.checked);
     if (chkIsento.checked) {
-      document.getElementById("chk-pagamento").checked = false;
-      document.getElementById("chk-pagamento").disabled = true;
+      chkPagamento.checked = false;
+      chkPagamento.disabled = true;
+      chkDesistiu.checked = false; // Desmarca desistiu se marcar isento
+      chkDesistiu.disabled = true;
+      desistiuSection.classList.add("hidden-section");
+      agendamentoSection.style.display = "block";
     } else {
-      document.getElementById("chk-pagamento").disabled = false;
+      chkPagamento.disabled = false;
+      chkDesistiu.disabled = false;
     }
   });
 
+  // Lógica para o checkbox de PAGAMENTO
+  chkPagamento.addEventListener("change", () => {
+    if (chkPagamento.checked) {
+      chkIsento.checked = false;
+      chkIsento.disabled = true;
+      chkDesistiu.checked = false;
+      chkDesistiu.disabled = true;
+      isentoSection.classList.add("hidden-section");
+      desistiuSection.classList.add("hidden-section");
+      agendamentoSection.style.display = "block";
+    } else {
+      chkIsento.disabled = false;
+      chkDesistiu.disabled = false;
+    }
+  });
+
+  // Lógica para o checkbox de DESISTÊNCIA
   chkDesistiu.addEventListener("change", () => {
     const isDesistente = chkDesistiu.checked;
     desistiuSection.classList.toggle("hidden-section", !isDesistente);
     agendamentoSection.style.display = isDesistente ? "none" : "block";
 
-    checklist.forEach((chk) => {
+    allCheckboxes.forEach((chk) => {
       if (chk.id !== "chk-desistiu") {
         chk.disabled = isDesistente;
-        if (isDesistente) chk.checked = false;
+        if (isDesistente) {
+          chk.checked = false;
+        }
       }
     });
+    // Garante que outras seções de motivo sejam escondidas
     isentoSection.classList.add("hidden-section");
   });
 }
@@ -217,6 +258,7 @@ async function save(cardId, db) {
       "data-triagem": "Informar a data da triagem",
       "hora-triagem": "Informar o horário da triagem",
     };
+
     if (!isento) {
       camposObrigatorios["chk-pagamento"] = "Confirmar o pagamento";
     }
@@ -254,10 +296,7 @@ async function save(cardId, db) {
     await db.collection("trilhaPaciente").doc(cardId).update(dataToUpdate);
 
     alert(
-      `Paciente movido para a etapa "${newStatus.replace(
-        "_",
-        " "
-      )}" com sucesso!`
+      `Paciente movido para a etapa "${COLUMNS_CONFIG[newStatus]}" com sucesso!`
     );
     document.getElementById("close-modal-btn").click(); // Fecha o modal
   } catch (error) {
@@ -265,7 +304,10 @@ async function save(cardId, db) {
     alert("Ocorreu um erro ao salvar as informações. Tente novamente.");
   } finally {
     const saveButton = document.getElementById("modal-save-btn");
-    saveButton.textContent = "Salvar";
-    saveButton.disabled = false;
+    if (saveButton) {
+      // Adiciona verificação caso o modal já tenha fechado
+      saveButton.textContent = "Salvar";
+      saveButton.disabled = false;
+    }
   }
 }
