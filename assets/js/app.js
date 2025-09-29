@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 2.0.2 (Correção na chamada e caminho do módulo Trilha do Paciente)
+// Versão: 2.0.3 (Adicionado carregamento do módulo Trilha do Paciente)
 
 import { auth, db } from "./firebase-init.js";
 
@@ -57,15 +57,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const pathPrefix = isSubPage ? "../../../" : "./";
 
     loginView.innerHTML = `
-            <div class="login-container">
-                <div class="login-card">
-                    <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
-                    <h2>Intranet EuPsico</h2>
-                    <p>${message}</p>
-                    <p class="login-email-info">Utilize seu e-mail @eupsico.org.br para acessar.</p>
-                    <button id="login-button" class="login-button">Login com Google</button>
-                </div>
-            </div>`;
+              <div class="login-container">
+                  <div class="login-card">
+                      <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                      <h2>Intranet EuPsico</h2>
+                      <p>${message}</p>
+                      <p class="login-email-info">Utilize seu e-mail @eupsico.org.br para acessar.</p>
+                      <button id="login-button" class="login-button">Login com Google</button>
+                  </div>
+              </div>`;
     document.getElementById("login-button").addEventListener("click", () => {
       loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -133,9 +133,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                    <h1>Painel Financeiro</h1>
-                    <p>Gestão de pagamentos, cobranças e relatórios.</p>
-                `;
+                      <h1>Painel Financeiro</h1>
+                      <p>Gestão de pagamentos, cobranças e relatórios.</p>
+                  `;
       }
       try {
         const financeModule = await import(
@@ -155,9 +155,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                    <h2>Painel Administrativo</h2>
-                    <p>Gestão de configurações e dados dos usuários.</p>
-                `;
+                      <h2>Painel Administrativo</h2>
+                      <p>Gestão de configurações e dados dos usuários.</p>
+                  `;
       }
       try {
         const administrativoModule = await import(
@@ -177,9 +177,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                    <h2>Trilha do Paciente</h2>
-                    <p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>
-                `;
+                      <h2>Trilha do Paciente</h2>
+                      <p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>
+                  `;
       }
       try {
         const trilhaModule = await import(
@@ -199,9 +199,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                    <h2>Serviço Social</h2>
-                    <p>Gestão de triagens, reavaliações.</p>
-                `;
+                      <h2>Serviço Social</h2>
+                      <p>Gestão de triagens, reavaliações.</p>
+                  `;
       }
       try {
         const socialModule = await import(
@@ -219,9 +219,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                    <h2>Recursos Humanos</h2>
-                    <p>Gestão de profissionais, vagas e comunicados.</p>
-                `;
+                      <h2>Recursos Humanos</h2>
+                      <p>Gestão de profissionais, vagas e comunicados.</p>
+                  `;
       }
       try {
         const rhModule = await import("../../modulos/rh/js/rh-painel.js");
@@ -312,21 +312,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function renderModuleCards(modules) {
-    const navLinks = document.getElementById("nav-links");
-    if (!navLinks) return;
-    navLinks.innerHTML = "";
-    modules.forEach((config) => {
-      const card = document.createElement("a");
-      card.href = config.url;
-      card.className = "module-card";
-      card.innerHTML = `<div class="card-icon">${config.icon || ""}<h3>${
-        config.titulo
-      }</h3></div><div class="card-content"><p>${config.descricao}</p></div>`;
-      navLinks.appendChild(card);
-    });
-  }
-
   function getVisibleModules(userData) {
     const icons = {
       intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
@@ -360,7 +345,7 @@ document.addEventListener("DOMContentLoaded", function () {
         descricao:
           "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
         url: "./modulos/trilha-paciente/page/painel-trilha-paciente.html",
-        roles: ["admin"],
+        roles: ["admin", "servico_social"], // Permitido para admin e serviço social
         icon: icons.trilha_paciente,
       },
       captacao: {
