@@ -357,7 +357,7 @@ document.addEventListener("DOMContentLoaded", function () {
         titulo: "Trilha do Paciente",
         descricao:
           "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
-        url: "./modulos/administrativo/page/trilha-paciente.html",
+        url: "./modulos/trilha-paciente/page/trilha-paciente.html",
         roles: ["admin"],
         icon: icons.trilha_paciente,
       },
