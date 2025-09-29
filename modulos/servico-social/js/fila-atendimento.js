@@ -38,6 +38,37 @@ export function init(db, user, userData, inscricaoId) {
     formatarMoeda(valorContribuicaoInput)
   );
 
+  // --- FUNÇÃO PARA FORMATAR A DISPONIBILIDADE ESPECÍFICA ---
+  function formatarDisponibilidadeEspecifica(disponibilidade) {
+    if (!disponibilidade || disponibilidade.length === 0) {
+      return "Nenhum horário detalhado informado.";
+    }
+
+    const dias = {
+      "manha-semana": { label: "Manhã (Semana)", horarios: [] },
+      "tarde-semana": { label: "Tarde (Semana)", horarios: [] },
+      "noite-semana": { label: "Noite (Semana)", horarios: [] },
+      "manha-sabado": { label: "Manhã (Sábado)", horarios: [] },
+    };
+
+    disponibilidade.forEach((item) => {
+      const [periodo, hora] = item.split("_");
+      if (dias[periodo]) {
+        dias[periodo].horarios.push(hora);
+      }
+    });
+
+    let html = "";
+    for (const key in dias) {
+      if (dias[key].horarios.length > 0) {
+        html += `<strong>${dias[key].label}:</strong> ${dias[key].horarios.join(
+          ", "
+        )}<br>`;
+      }
+    }
+    return html || "Nenhum horário detalhado informado.";
+  }
+
   // --- FUNÇÃO PARA CARREGAR DADOS ---
   async function carregarDadosPaciente() {
     patientDetailsContainer.innerHTML = '<div class="loading-spinner"></div>';
@@ -60,7 +91,8 @@ export function init(db, user, userData, inscricaoId) {
         dateStr
           ? new Date(dateStr + "T03:00:00").toLocaleDateString("pt-BR")
           : "Não informado";
-
+      const formatArray = (arr) =>
+        arr && arr.length > 0 ? arr.join(", ") : "N/A";
       // **CORREÇÃO**: Carrega todos os dados da ficha
       patientDetailsContainer.innerHTML = `
                 <div class="patient-info-group"><strong>Nome:</strong><p>${
@@ -86,8 +118,7 @@ export function init(db, user, userData, inscricaoId) {
                 }</p></div>
                 <div class="patient-info-group"><strong>Contato Responsável:</strong><p>${
                   data.responsavel.contato || "N/A"
-                }</p></div>
-                `
+                }</p></div>`
                     : ""
                 }
                 <hr>
@@ -113,22 +144,23 @@ export function init(db, user, userData, inscricaoId) {
                   data.pessoasMoradia || "N/A"
                 }</p></div>
                 <hr>
-                <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${
-                  (data.disponibilidadeGeral || []).join(", ") || "N/A"
-                }</p></div>
+                <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${formatArray(
+                  data.disponibilidadeGeral
+                )}</p></div>
+                <div class="patient-info-group"><strong>Disponibilidade (Específica):</strong><p>${formatarDisponibilidadeEspecifica(
+                  data.disponibilidadeEspecifica
+                )}</p></div>
                 <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
                   data.motivoBusca || "N/A"
                 }</p></div>
             `;
 
-      // Pré-preenche a queixa no formulário
       document.getElementById("queixa-paciente").value = data.motivoBusca || "";
     } catch (error) {
       console.error("Erro ao carregar dados do paciente:", error);
       patientDetailsContainer.innerHTML = `<p class="error-message">Erro ao carregar dados: ${error.message}</p>`;
     }
   }
-
   // --- LISTENERS DE EVENTOS ---
   statusSelect.addEventListener("change", () => {
     const selectedValue = statusSelect.value;
