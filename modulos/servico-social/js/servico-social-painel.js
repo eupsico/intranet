@@ -58,7 +58,7 @@ export function initsocialPanel(user, db, userData) {
       id: "drive",
       name: "Acesso ao Drive",
       roles: ["admin", "servico_social"],
-      url: "https://docs.google.com/spreadsheets/d/1_9236__9I_tj_Jc_3__-g2B_ut2_o5sE/edit?usp=sharing&ouid=103986289297204994247&rtpof=true&sd=true",
+      url: "https://drive.google.com/drive/u/1/folders/0AONLPOTn6ns3Uk9PVA",
       isExternal: true,
       icon: icons.drive,
     },
