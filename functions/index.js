@@ -180,7 +180,7 @@ exports.verificarCpfExistente = functions.https.onRequest((req, res) => {
 });
 
 // -------------------------------------------------------------------
-// Função para criar um card na Trilha do Paciente (SINTAXE V2)
+// Função para criar um card na Trilha do Paciente (VERSÃO CORRETA)
 // -------------------------------------------------------------------
 exports.criarCardTrilhaPaciente = onDocumentCreated(
   "inscricoes/{inscricaoId}",
@@ -192,9 +192,9 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
     const inscricaoData = snap.data();
 
-    // **CORREÇÃO**: Copia TODOS os campos da inscrição para o card.
+    // Esta linha garante que TODOS os campos da inscrição original sejam copiados
     const cardData = {
-      ...inscricaoData, // Copia todos os campos existentes
+      ...inscricaoData,
       inscricaoId: event.params.inscricaoId,
       timestamp: new Date(),
       status: "inscricao_documentos", // Define o status inicial
