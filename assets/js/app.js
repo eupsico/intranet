@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       try {
         const trilhaModule = await import(
-          "../../modulos/administrativo/js/trilha-paciente.js"
+          "../../modulos/trilha-paciente/js/trilha-paciente.js"
         );
         trilhaModule.init(user, db, userData);
       } catch (error) {
