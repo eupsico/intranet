@@ -176,14 +176,14 @@ function setupEventListeners() {
     if (chkIsento.checked) {
       chkPagamento.checked = false;
       chkPagamento.disabled = true;
-      chkDesistiu.checked = false; // Desmarca desistiu se marcar isento
+      chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
-      desistiuSection.classList.add("hidden-section");
-      agendamentoSection.style.display = "block";
     } else {
       chkPagamento.disabled = false;
       chkDesistiu.disabled = false;
     }
+    // Garante que a outra caixa de motivo esteja oculta
+    desistiuSection.classList.add("hidden-section");
   });
 
   // Lógica para o checkbox de PAGAMENTO
@@ -193,9 +193,6 @@ function setupEventListeners() {
       chkIsento.disabled = true;
       chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
-      isentoSection.classList.add("hidden-section");
-      desistiuSection.classList.add("hidden-section");
-      agendamentoSection.style.display = "block";
     } else {
       chkIsento.disabled = false;
       chkDesistiu.disabled = false;
@@ -216,8 +213,12 @@ function setupEventListeners() {
         }
       }
     });
-    // Garante que outras seções de motivo sejam escondidas
-    isentoSection.classList.add("hidden-section");
+
+    // Garante que a outra caixa de motivo e suas dependências sejam resetadas/ocultas
+    if (isDesistente) {
+      chkIsento.checked = false;
+      isentoSection.classList.add("hidden-section");
+    }
   });
 }
 
@@ -295,6 +296,7 @@ async function save(cardId, db) {
 
     await db.collection("trilhaPaciente").doc(cardId).update(dataToUpdate);
 
+    // Usamos a constante global das colunas para a mensagem
     alert(
       `Paciente movido para a etapa "${COLUMNS_CONFIG[newStatus]}" com sucesso!`
     );
