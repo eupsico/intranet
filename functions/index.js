@@ -192,18 +192,12 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
     const inscricaoData = snap.data();
 
+    // **CORREÇÃO**: Copia TODOS os campos da inscrição para o card.
     const cardData = {
+      ...inscricaoData, // Copia todos os campos existentes
       inscricaoId: event.params.inscricaoId,
-      nomeCompleto: inscricaoData.nomeCompleto || "",
-      cpf: inscricaoData.cpf || "",
-      dataNascimento: inscricaoData.dataNascimento || "",
-      telefoneCelular: inscricaoData.telefoneCelular || "",
-      email: inscricaoData.email || "",
-      responsavel: inscricaoData.responsavel || {},
-      disponibilidadeGeral: inscricaoData.disponibilidadeGeral || [],
-      disponibilidadeEspecifica: inscricaoData.disponibilidadeEspecifica || [],
       timestamp: new Date(),
-      status: "inscricao_documentos",
+      status: "inscricao_documentos", // Define o status inicial
     };
 
     try {
