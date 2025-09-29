@@ -210,14 +210,15 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
   }
 );
+// FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
+// -------------------------------------------------------------------
 exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
   try {
     const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0); // Zera o horário para comparar apenas a data
+    hoje.setHours(0, 0, 0, 0);
 
-    // Define o período de busca: da data atual até o final da próxima semana
     const fimDaProximaSemana = new Date(hoje);
-    fimDaProximaSemana.setDate(hoje.getDate() + (13 - hoje.getDay())); // Vai até o próximo sábado
+    fimDaProximaSemana.setDate(hoje.getDate() + 14); // Limita a busca aos próximos 14 dias
 
     // 1. Buscar todas as assistentes sociais ativas
     const assistentesSnapshot = await db
@@ -231,19 +232,17 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     }
 
     const assistentesIds = assistentesSnapshot.docs.map((doc) => doc.id);
+    const assistentesMap = new Map(
+      assistentesSnapshot.docs.map((doc) => [doc.id, doc.data()])
+    );
 
-    // 2. Buscar a disponibilidade de todas as assistentes de uma vez
+    // 2. Buscar a disponibilidade de todas as assistentes
     const disponibilidadesSnapshot = await db
-      .collection("disponibilidade")
-      .where("userId", "in", assistentesIds)
+      .collection("disponibilidadeAssistentes")
+      .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
       .get();
 
-    const disponibilidadesPorUsuario = {};
-    disponibilidadesSnapshot.forEach((doc) => {
-      disponibilidadesPorUsuario[doc.data().userId] = doc.data().slots;
-    });
-
-    // 3. Buscar agendamentos existentes no período
+    // 3. Buscar agendamentos existentes
     const agendamentosSnapshot = await db
       .collection("trilhaPaciente")
       .where("status", "==", "triagem_agendada")
@@ -252,7 +251,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     const agendamentosExistentes = new Set();
     agendamentosSnapshot.forEach((doc) => {
       const data = doc.data();
-      // Cria uma chave única para cada agendamento: "YYYY-MM-DDTHH:MM"
       if (data.dataTriagem && data.horaTriagem) {
         agendamentosExistentes.add(`${data.dataTriagem}T${data.horaTriagem}`);
       }
@@ -260,49 +258,57 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
 
     // 4. Processar e gerar os horários livres
     const horariosDisponiveis = [];
-    assistentesSnapshot.docs.forEach((assistenteDoc) => {
-      const assistente = assistenteDoc.data();
-      const slots = disponibilidadesPorUsuario[assistenteDoc.id];
+    disponibilidadesSnapshot.forEach((doc) => {
+      const userId = doc.id;
+      const assistente = assistentesMap.get(userId);
+      const dispoData = doc.data().disponibilidade;
 
-      if (slots) {
-        for (const diaSemana in slots) {
-          const horarios = slots[diaSemana];
-          horarios.forEach((hora) => {
-            // Calcula a data real para cada dia da semana no período
-            for (let i = 0; i < 14; i++) {
-              const dataAtual = new Date(hoje);
-              dataAtual.setDate(hoje.getDate() + i);
+      if (assistente && dispoData) {
+        // Itera sobre os meses disponíveis (ex: "2025-10")
+        for (const mesKey in dispoData) {
+          const dadosDoMes = dispoData[mesKey];
 
-              if (
-                dataAtual.getDay() === parseInt(diaSemana) &&
-                dataAtual <= fimDaProximaSemana
-              ) {
-                const dataISO = dataAtual.toISOString().split("T")[0];
-                const chaveAgendamento = `${dataISO}T${hora}`;
+          ["online", "presencial"].forEach((modalidade) => {
+            const dispoModalidade = dadosDoMes[modalidade];
+            if (dispoModalidade && dispoModalidade.dias) {
+              const horaInicio = parseInt(dispoModalidade.inicio.split(":")[0]);
+              const horaFim = parseInt(dispoModalidade.fim.split(":")[0]);
 
-                if (!agendamentosExistentes.has(chaveAgendamento)) {
-                  horariosDisponiveis.push({
-                    data: dataISO,
-                    hora: hora,
-                    assistenteNome: assistente.nome,
-                    assistenteId: assistenteDoc.id,
-                  });
+              dispoModalidade.dias.forEach((diaISO) => {
+                const dataDisponivel = new Date(diaISO + "T03:00:00"); // Adiciona fuso para evitar problemas de dia
+
+                // Verifica se a data está dentro do período de busca
+                if (
+                  dataDisponivel >= hoje &&
+                  dataDisponivel <= fimDaProximaSemana
+                ) {
+                  // Gera os slots de hora em hora
+                  for (let h = horaInicio; h < horaFim; h++) {
+                    const horaSlot = `${String(h).padStart(2, "0")}:00`;
+                    const chaveAgendamento = `${diaISO}T${horaSlot}`;
+
+                    if (!agendamentosExistentes.has(chaveAgendamento)) {
+                      horariosDisponiveis.push({
+                        data: diaISO,
+                        hora: horaSlot,
+                        assistenteNome: assistente.nome,
+                        assistenteId: userId,
+                      });
+                    }
+                  }
                 }
-              }
+              });
             }
           });
         }
       }
     });
 
-    // Ordena os horários para exibição
-    horariosDisponiveis.sort((a, b) => {
-      if (a.data < b.data) return -1;
-      if (a.data > b.data) return 1;
-      if (a.hora < b.hora) return -1;
-      if (a.hora > b.hora) return 1;
-      return 0;
-    });
+    // Ordena os horários
+    horariosDisponiveis.sort(
+      (a, b) =>
+        new Date(`${a.data}T${a.hora}`) - new Date(`${b.data}T${b.hora}`)
+    );
 
     return { horarios: horariosDisponiveis };
   } catch (error) {
