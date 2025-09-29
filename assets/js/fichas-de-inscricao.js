@@ -1,7 +1,7 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão: Final com Agendamento Integrado (Completo)
+// Versão Final: Completa, com fluxo de agendamento corrigido e mantendo todas as validações originais.
 
-import { db, functions } from "./firebase-init.js"; // Linha 4: ALTERADA
+import { db, functions } from "./firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // --- Mapeamento de Elementos ---
@@ -23,17 +23,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const outroParentescoContainer = document.getElementById(
     "outro-parentesco-container"
   );
-
-  // LINHAS 26-31: ADICIONADAS
   const semAgendaAviso = document.getElementById("sem-agenda-aviso");
   const loadingContainer = document.getElementById("loading-container");
   const formContent = document.getElementById("form-content");
+
   let horariosDisponiveis = [];
-  let horarioAgendado = null; // Armazena o horário selecionado
-
-  let pacienteExistenteData = null;
-
-  // --- FUNÇÕES DE FORMATAÇÃO E VALIDAÇÃO ---
+  let horarioAgendado = null;
+  let pacienteExistenteData = null; // --- FUNÇÕES DE FORMATAÇÃO E VALIDAÇÃO ---
 
   function formatarTelefone(input) {
     let value = input.value.replace(/\D/g, "");
@@ -93,8 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   }
 
-  // --- LÓGICA DE AGENDAMENTO (NOVO BLOCO) ---
-  // LINHAS 110-203: ADICIONADAS
+  // --- LÓGICA DE AGENDAMENTO ---
   async function verificarDisponibilidadeTriagem() {
     try {
       const getHorarios = functions.httpsCallable("getHorariosTriagem");
@@ -122,41 +117,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("datas-disponiveis-container");
     container.innerHTML = '<div class="loading-spinner"></div>';
     modal.style.display = "flex";
-
-    const disponibilidadesSelecionadas = Array.from(
-      document.querySelectorAll('input[name="horario"]:checked')
-    ).map((cb) => cb.value);
-
-    const horariosFiltrados = horariosDisponiveis.filter((horario) => {
-      const data = new Date(horario.data + "T00:00:00-03:00");
-      const diaDaSemana = data.getDay();
-      const horaNum = parseInt(horario.hora.split(":")[0]);
-
-      if (diaDaSemana === 6) {
-        // Sábado
-        return (
-          disponibilidadesSelecionadas.includes("manha-sabado") && horaNum < 12
-        );
-      } else {
-        // Semana
-        if (horaNum < 12)
-          return disponibilidadesSelecionadas.includes("manha-semana");
-        if (horaNum >= 12 && horaNum < 18)
-          return disponibilidadesSelecionadas.includes("tarde-semana");
-        if (horaNum >= 18)
-          return disponibilidadesSelecionadas.includes("noite-semana");
-      }
-      return false;
-    });
-
-    renderizarHorarios(horariosFiltrados);
+    renderizarHorarios(horariosDisponiveis);
   }
 
   function renderizarHorarios(horarios) {
     const container = document.getElementById("datas-disponiveis-container");
     if (horarios.length === 0) {
       container.innerHTML =
-        "<p>Não há horários específicos disponíveis para os períodos que você selecionou. Por favor, tente outros períodos de disponibilidade geral ou retorne mais tarde.</p>";
+        "<p>Não há horários de triagem disponíveis no momento.</p>";
       document.getElementById("agendamento-confirm-btn").disabled = true;
       return;
     }
@@ -218,9 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("agendamento-step-2").style.display = "none";
       document.getElementById("footer-step-2").style.display = "none";
       document.getElementById("agendamento-confirm-btn").disabled = true;
-    });
-
-  // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
+    }); // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
 
   cpfInput.addEventListener("blur", async () => {
     const cpf = cpfInput.value;
@@ -296,8 +262,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dataNascimentoInput.addEventListener("change", () => {
     const dataNasc = new Date(dataNascimentoInput.value);
-    if (isNaN(dataNasc.getTime()) || pacienteExistenteData) {
+    const nome = document.getElementById("nome-completo").value;
+
+    if (isNaN(dataNasc.getTime()) || pacienteExistenteData || !nome) {
       return;
+    }
+
+    if (!horarioAgendado) {
+      abrirModalAgendamento();
     }
 
     formBody.classList.remove("hidden-section");
@@ -317,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       responsavelSection.classList.add("hidden-section");
     }
-  });
+  }); // --- LÓGICA DO PARENTESCO ---
 
   parentescoSelect.addEventListener("change", () => {
     if (parentescoSelect.value === "Outro") {
@@ -358,23 +330,60 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // LINHA 388: ALTERADA
+  const disponibilidadeSection = document.getElementById(
+    "disponibilidade-section"
+  );
+  if (disponibilidadeSection) {
+    const infoText = document.createElement("p");
+    infoText.className = "info-note";
+    infoText.textContent =
+      "Esta disponibilidade refere-se aos seus horários para as sessões de PSICOTERAPIA, não para a triagem inicial.";
+    const h3 = disponibilidadeSection.querySelector("h3");
+    if (h3) h3.insertAdjacentElement("afterend", infoText);
+  }
+
   const horariosCheckboxes = document.querySelectorAll('input[name="horario"]');
   horariosCheckboxes.forEach((checkbox) => {
-    checkbox.addEventListener("change", () => {
-      // A lógica de gerar horários é removida daqui, pois agora é feita pelo modal.
-      // A principal função agora é abrir o modal se um horário ainda não foi agendado.
-      const algumSelecionado = Array.from(horariosCheckboxes).some(
-        (cb) => cb.checked
-      );
-      if (algumSelecionado && !horarioAgendado) {
-        abrirModalAgendamento();
+    checkbox.addEventListener("change", (e) => {
+      const periodo = e.target.value;
+      const container = document.getElementById(`container-${periodo}`);
+      if (e.target.checked) {
+        gerarHorarios(periodo, container);
+        container.classList.remove("hidden-section");
+      } else {
+        container.innerHTML = "";
+        container.classList.add("hidden-section");
       }
     });
   });
 
-  // LINHAS 401-427: REMOVIDAS
-  // A função 'gerarHorarios' foi completamente removida.
+  function gerarHorarios(periodo, container) {
+    let horarios = [],
+      label = "";
+    switch (periodo) {
+      case "manha-semana":
+        label = "Manhã (Seg-Sex):";
+        for (let i = 8; i < 12; i++) horarios.push(`${i}:00`);
+        break;
+      case "tarde-semana":
+        label = "Tarde (Seg-Sex):";
+        for (let i = 12; i < 18; i++) horarios.push(`${i}:00`);
+        break;
+      case "noite-semana":
+        label = "Noite (Seg-Sex):";
+        for (let i = 18; i < 21; i++) horarios.push(`${i}:00`);
+        break;
+      case "manha-sabado":
+        label = "Manhã (Sábado):";
+        for (let i = 8; i < 13; i++) horarios.push(`${i}:00`);
+        break;
+    }
+    let html = `<label>${label}</label><div class="horario-detalhe-grid">`;
+    horarios.forEach((hora) => {
+      html += `<div><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</div>`;
+    });
+    container.innerHTML = html + `</div>`;
+  }
 
   function resetForm(keepCpf = false) {
     const cpfValue = cpfInput.value;
@@ -386,15 +395,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (keepCpf) {
       cpfInput.value = cpfValue;
     }
-    // LINHA 437: ADICIONADA
-    horarioAgendado = null; // Reseta o agendamento
-  }
+    horarioAgendado = null;
+  } // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
 
-  // --- LÓGICA DE ENVIO DO FORMULÁRIO (ALTERADA) ---
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    // LINHA 444-449: ADICIONADAS
     if (!horarioAgendado) {
       alert(
         "Por favor, selecione sua disponibilidade e agende um horário para a triagem antes de continuar."
@@ -423,7 +428,6 @@ document.addEventListener("DOMContentLoaded", () => {
           rendaMensal: document.getElementById("update-renda-mensal").value,
           rendaFamiliar: document.getElementById("update-renda-familiar").value,
           lastUpdated: new Date(),
-          // LINHAS 476-480: ADICIONADAS
           dataTriagem: horarioAgendado.data,
           horaTriagem: horarioAgendado.hora,
           assistenteSocialNome: horarioAgendado.assistenteNome,
@@ -487,23 +491,19 @@ document.addEventListener("DOMContentLoaded", () => {
           disponibilidadeGeral: Array.from(
             document.querySelectorAll('input[name="horario"]:checked')
           ).map((cb) => cb.nextSibling.textContent.trim()),
-          disponibilidadeEspecifica: horariosSelecionados, // Mantido para referência
+          disponibilidadeEspecifica: horariosSelecionados,
           timestamp: new Date(),
-          // LINHAS 551-555: ADICIONADAS
           dataTriagem: horarioAgendado.data,
           horaTriagem: horarioAgendado.hora,
           assistenteSocialNome: horarioAgendado.assistenteNome,
           assistenteSocialId: horarioAgendado.assistenteId,
-          // LINHA 556: ALTERADA
           status: "triagem_agendada",
         };
         await db.collection("inscricoes").add(novoCadastro);
-        // LINHA 560: ALTERADA
         alert(
           "Inscrição e agendamento realizados com sucesso! Por favor, siga os próximos passos informados no início da página."
         );
       }
-      // LINHA 563: ALTERADA
       form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada!</h2><p>Sua triagem foi agendada para <strong>${new Date(
         horarioAgendado.data + "T03:00:00"
       ).toLocaleDateString("pt-BR")} às ${
@@ -520,6 +520,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // LINHA 576: ADICIONADA
-  verificarDisponibilidadeTriagem(); // Inicia o processo
+  verificarDisponibilidadeTriagem();
 });
