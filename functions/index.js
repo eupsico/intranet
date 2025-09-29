@@ -245,7 +245,6 @@ exports.verificarCpfExistente = functions.https.onRequest((req, res) => {
     }
   });
 });
-// Adicione este código ao final do seu arquivo functions/index.js
 
 // -------------------------------------------------------------------
 // Função para criar um card na Trilha do Paciente após nova inscrição
