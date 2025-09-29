@@ -31,7 +31,8 @@ export async function init(
   user,
   userData,
   container,
-  columnFilter
+  columnFilter,
+  activeView
 ) {
   db = firestoreDb;
   currentColumnFilter = columnFilter;
@@ -53,9 +54,40 @@ export async function init(
 /**
  * Cria as colunas do Kanban no DOM com base no filtro ativo.
  */
-function setupColumns() {
+function setupColumns(activeView) {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
+  let columnsHtml = "";
+  if (activeView === "entrada") {
+    columnsHtml += `
+            <div class="kanban-column" id="column-inscricao_documentos" data-status="inscricao_documentos">
+                <div class="kanban-column-header">
+                    <h3 class="kanban-column-title">${COLUMNS_CONFIG["inscricao_documentos"]}</h3>
+                </div>
+                <div class="column-static-info">
+                    <p>A assistente social deve solicitar os documentos do paciente (RG, CPF, comprovante de endereço, comprovante de renda) e salvar no Drive do Serviço Social.</p>
+                </div>
+            </div>
+        `;
+    // Renderiza as outras colunas com base no filtro
+    columnsHtml += currentColumnFilter
+      .map(
+        (statusKey) => `
+        <div class="kanban-column" id="column-${statusKey}" data-status="${statusKey}">
+            <div class="kanban-column-header">
+                <h3 class="kanban-column-title">
+                    ${COLUMNS_CONFIG[statusKey]}
+                    <span class="kanban-column-count" id="count-${statusKey}">0</span>
+                </h3>
+            </div>
+            <div class="kanban-cards-container" id="cards-${statusKey}"></div>
+        </div>
+    `
+      )
+      .join("");
+
+    kanbanBoard.innerHTML = columnsHtml;
+  }
 
   // Filtra as colunas a serem exibidas
   kanbanBoard.innerHTML = currentColumnFilter

@@ -1,7 +1,7 @@
 import { init as initKanban } from "./trilha-paciente.js";
 
 const menuFilters = {
-  entrada: ["inscricao_documentos", "triagem_agendada"],
+  entrada: ["triagem_agendada"],
   plantao: ["encaminhar_para_plantao", "em_atendimento_plantao"],
   pb: [
     "encaminhar_para_pb",
@@ -85,7 +85,7 @@ async function loadView(view) {
     if (!filter)
       throw new Error(`Filtro de visão não encontrado para: ${view}`);
 
-    await initKanban(db, user, userData, moduleContentArea, filter);
+    await initKanban(db, user, userData, moduleContentArea, filter, view);
   } catch (error) {
     console.error(`Erro ao carregar a visão ${view}:`, error);
     moduleContentArea.innerHTML = `<div class="error-message">Ocorreu um erro.</div>`;
