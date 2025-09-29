@@ -1,7 +1,7 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Completa, com novo fluxo, pré-preenchimento, formatação de moeda e telefone, validação de CPF e lógica de envio completa.
+// Versão: Final com Agendamento Integrado (Completo)
 
-import { db } from "./firebase-init.js";
+import { db, functions } from "./firebase-init.js"; // Linha 4: ALTERADA
 
 document.addEventListener("DOMContentLoaded", () => {
   // --- Mapeamento de Elementos ---
@@ -23,6 +23,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const outroParentescoContainer = document.getElementById(
     "outro-parentesco-container"
   );
+
+  // LINHAS 26-31: ADICIONADAS
+  const semAgendaAviso = document.getElementById("sem-agenda-aviso");
+  const loadingContainer = document.getElementById("loading-container");
+  const formContent = document.getElementById("form-content");
+  let horariosDisponiveis = [];
+  let horarioAgendado = null; // Armazena o horário selecionado
 
   let pacienteExistenteData = null;
 
@@ -85,6 +92,133 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rev !== parseInt(cpf.charAt(10))) return false;
     return true;
   }
+
+  // --- LÓGICA DE AGENDAMENTO (NOVO BLOCO) ---
+  // LINHAS 110-203: ADICIONADAS
+  async function verificarDisponibilidadeTriagem() {
+    try {
+      const getHorarios = functions.httpsCallable("getHorariosTriagem");
+      const result = await getHorarios();
+      horariosDisponiveis = result.data.horarios;
+
+      if (horariosDisponiveis && horariosDisponiveis.length > 0) {
+        loadingContainer.style.display = "none";
+        formContent.style.display = "block";
+      } else {
+        loadingContainer.style.display = "none";
+        semAgendaAviso.style.display = "block";
+      }
+    } catch (error) {
+      console.error("Erro ao verificar disponibilidade:", error);
+      loadingContainer.style.display = "none";
+      semAgendaAviso.querySelector("p").textContent =
+        "Ocorreu um erro ao verificar as agendas. Por favor, tente novamente mais tarde.";
+      semAgendaAviso.style.display = "block";
+    }
+  }
+
+  function abrirModalAgendamento() {
+    const modal = document.getElementById("agendamento-modal");
+    const container = document.getElementById("datas-disponiveis-container");
+    container.innerHTML = '<div class="loading-spinner"></div>';
+    modal.style.display = "flex";
+
+    const disponibilidadesSelecionadas = Array.from(
+      document.querySelectorAll('input[name="horario"]:checked')
+    ).map((cb) => cb.value);
+
+    const horariosFiltrados = horariosDisponiveis.filter((horario) => {
+      const data = new Date(horario.data + "T00:00:00-03:00");
+      const diaDaSemana = data.getDay();
+      const horaNum = parseInt(horario.hora.split(":")[0]);
+
+      if (diaDaSemana === 6) {
+        // Sábado
+        return (
+          disponibilidadesSelecionadas.includes("manha-sabado") && horaNum < 12
+        );
+      } else {
+        // Semana
+        if (horaNum < 12)
+          return disponibilidadesSelecionadas.includes("manha-semana");
+        if (horaNum >= 12 && horaNum < 18)
+          return disponibilidadesSelecionadas.includes("tarde-semana");
+        if (horaNum >= 18)
+          return disponibilidadesSelecionadas.includes("noite-semana");
+      }
+      return false;
+    });
+
+    renderizarHorarios(horariosFiltrados);
+  }
+
+  function renderizarHorarios(horarios) {
+    const container = document.getElementById("datas-disponiveis-container");
+    if (horarios.length === 0) {
+      container.innerHTML =
+        "<p>Não há horários específicos disponíveis para os períodos que você selecionou. Por favor, tente outros períodos de disponibilidade geral ou retorne mais tarde.</p>";
+      document.getElementById("agendamento-confirm-btn").disabled = true;
+      return;
+    }
+
+    const horariosAgrupados = horarios.reduce((acc, horario) => {
+      const dataFormatada = new Date(
+        horario.data + "T03:00:00"
+      ).toLocaleDateString("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+      });
+      if (!acc[dataFormatada]) acc[dataFormatada] = [];
+      acc[dataFormatada].push(horario);
+      return acc;
+    }, {});
+
+    let html = "";
+    for (const data in horariosAgrupados) {
+      html += `<div class="data-grupo"><h4>${data}</h4><div class="horarios-botoes">`;
+      horariosAgrupados[data].forEach((horario) => {
+        const horarioData = JSON.stringify(horario).replace(/'/g, "&apos;");
+        html += `<button type="button" class="horario-btn" data-horario='${horarioData}'>${horario.hora}</button>`;
+      });
+      html += `</div></div>`;
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll(".horario-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        container
+          .querySelectorAll(".horario-btn")
+          .forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        document.getElementById("agendamento-confirm-btn").disabled = false;
+      });
+    });
+  }
+
+  document
+    .getElementById("agendamento-confirm-btn")
+    .addEventListener("click", () => {
+      const selectedBtn = document.querySelector(".horario-btn.selected");
+      if (selectedBtn) {
+        horarioAgendado = JSON.parse(selectedBtn.dataset.horario);
+        document.getElementById("agendamento-step-1").style.display = "none";
+        document.getElementById("footer-step-1").style.display = "none";
+        document.getElementById("agendamento-step-2").style.display = "block";
+        document.getElementById("footer-step-2").style.display = "block";
+      }
+    });
+
+  document
+    .getElementById("agendamento-ok-btn")
+    .addEventListener("click", () => {
+      document.getElementById("agendamento-modal").style.display = "none";
+      document.getElementById("agendamento-step-1").style.display = "block";
+      document.getElementById("footer-step-1").style.display = "flex";
+      document.getElementById("agendamento-step-2").style.display = "none";
+      document.getElementById("footer-step-2").style.display = "none";
+      document.getElementById("agendamento-confirm-btn").disabled = true;
+    });
 
   // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
 
@@ -185,7 +319,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // --- LÓGICA DO PARENTESCO ---
   parentescoSelect.addEventListener("change", () => {
     if (parentescoSelect.value === "Outro") {
       outroParentescoContainer.classList.remove("hidden-section");
@@ -225,48 +358,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // LINHA 388: ALTERADA
   const horariosCheckboxes = document.querySelectorAll('input[name="horario"]');
   horariosCheckboxes.forEach((checkbox) => {
-    checkbox.addEventListener("change", (e) => {
-      const periodo = e.target.value;
-      const container = document.getElementById(`container-${periodo}`);
-      if (e.target.checked) {
-        gerarHorarios(periodo, container);
-        container.classList.remove("hidden-section");
-      } else {
-        container.innerHTML = "";
-        container.classList.add("hidden-section");
+    checkbox.addEventListener("change", () => {
+      // A lógica de gerar horários é removida daqui, pois agora é feita pelo modal.
+      // A principal função agora é abrir o modal se um horário ainda não foi agendado.
+      const algumSelecionado = Array.from(horariosCheckboxes).some(
+        (cb) => cb.checked
+      );
+      if (algumSelecionado && !horarioAgendado) {
+        abrirModalAgendamento();
       }
     });
   });
 
-  function gerarHorarios(periodo, container) {
-    let horarios = [],
-      label = "";
-    switch (periodo) {
-      case "manha-semana":
-        label = "Manhã (Seg-Sex):";
-        for (let i = 8; i < 12; i++) horarios.push(`${i}:00`);
-        break;
-      case "tarde-semana":
-        label = "Tarde (Seg-Sex):";
-        for (let i = 12; i < 18; i++) horarios.push(`${i}:00`);
-        break;
-      case "noite-semana":
-        label = "Noite (Seg-Sex):";
-        for (let i = 18; i < 21; i++) horarios.push(`${i}:00`);
-        break;
-      case "manha-sabado":
-        label = "Manhã (Sábado):";
-        for (let i = 8; i < 13; i++) horarios.push(`${i}:00`);
-        break;
-    }
-    let html = `<label>${label}</label><div class="horario-detalhe-grid">`;
-    horarios.forEach((hora) => {
-      html += `<div><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</div>`;
-    });
-    container.innerHTML = html + `</div>`;
-  }
+  // LINHAS 401-427: REMOVIDAS
+  // A função 'gerarHorarios' foi completamente removida.
 
   function resetForm(keepCpf = false) {
     const cpfValue = cpfInput.value;
@@ -278,11 +386,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (keepCpf) {
       cpfInput.value = cpfValue;
     }
+    // LINHA 437: ADICIONADA
+    horarioAgendado = null; // Reseta o agendamento
   }
 
-  // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
+  // --- LÓGICA DE ENVIO DO FORMULÁRIO (ALTERADA) ---
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    // LINHA 444-449: ADICIONADAS
+    if (!horarioAgendado) {
+      alert(
+        "Por favor, selecione sua disponibilidade e agende um horário para a triagem antes de continuar."
+      );
+      abrirModalAgendamento();
+      return;
+    }
+
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     submitButton.textContent = "Enviando...";
@@ -303,12 +423,18 @@ document.addEventListener("DOMContentLoaded", () => {
           rendaMensal: document.getElementById("update-renda-mensal").value,
           rendaFamiliar: document.getElementById("update-renda-familiar").value,
           lastUpdated: new Date(),
+          // LINHAS 476-480: ADICIONADAS
+          dataTriagem: horarioAgendado.data,
+          horaTriagem: horarioAgendado.hora,
+          assistenteSocialNome: horarioAgendado.assistenteNome,
+          assistenteSocialId: horarioAgendado.assistenteId,
+          status: "triagem_agendada",
         };
         await db
           .collection("inscricoes")
           .doc(pacienteExistenteData.id)
           .update(dadosParaAtualizar);
-        alert("Cadastro atualizado com sucesso!");
+        alert("Cadastro atualizado e triagem agendada com sucesso!");
       } else {
         // MODO NOVO CADASTRO
         const horariosSelecionados = Array.from(
@@ -361,16 +487,28 @@ document.addEventListener("DOMContentLoaded", () => {
           disponibilidadeGeral: Array.from(
             document.querySelectorAll('input[name="horario"]:checked')
           ).map((cb) => cb.nextSibling.textContent.trim()),
-          disponibilidadeEspecifica: horariosSelecionados,
+          disponibilidadeEspecifica: horariosSelecionados, // Mantido para referência
           timestamp: new Date(),
-          status: "aguardando_documentos",
+          // LINHAS 551-555: ADICIONADAS
+          dataTriagem: horarioAgendado.data,
+          horaTriagem: horarioAgendado.hora,
+          assistenteSocialNome: horarioAgendado.assistenteNome,
+          assistenteSocialId: horarioAgendado.assistenteId,
+          // LINHA 556: ALTERADA
+          status: "triagem_agendada",
         };
         await db.collection("inscricoes").add(novoCadastro);
+        // LINHA 560: ALTERADA
         alert(
-          "Inscrição realizada com sucesso! Por favor, siga os próximos passos informados no início da página."
+          "Inscrição e agendamento realizados com sucesso! Por favor, siga os próximos passos informados no início da página."
         );
       }
-      resetForm();
+      // LINHA 563: ALTERADA
+      form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada!</h2><p>Sua triagem foi agendada para <strong>${new Date(
+        horarioAgendado.data + "T03:00:00"
+      ).toLocaleDateString("pt-BR")} às ${
+        horarioAgendado.hora
+      }</strong>. Em breve, nossa equipe entrará em contato.</p></div>`;
     } catch (error) {
       console.error("Erro ao salvar inscrição:", error);
       alert(
@@ -381,4 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
       submitButton.textContent = "Enviar Inscrição";
     }
   });
+
+  // LINHA 576: ADICIONADA
+  verificarDisponibilidadeTriagem(); // Inicia o processo
 });
