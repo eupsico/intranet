@@ -233,3 +233,12 @@
         white-space: nowrap;
     }
 }
+/* Adicionar ao final de trilha-paciente.css */
+.column-static-info {
+    padding: 15px;
+    font-size: 0.9em;
+    color: var(--cor-texto-secundario);
+    background-color: var(--cor-fundo);
+    height: 100%;
+    border-radius: 0 0 var(--borda-radius) var(--borda-radius);
+}
