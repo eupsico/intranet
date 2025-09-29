@@ -1,7 +1,7 @@
 // Arquivo: modulos/trilha-paciente/js/trilha-paciente.js
 // Versão: 3.0.1 (Refatorado com arquivos de stages separados - Completo)
 
-export function trilhaModuleinit(db, user, userData) {
+export function init(db, user, userData) {
   const board = document.getElementById("kanban-board");
   const modal = document.getElementById("card-modal");
   const modalContent = document.getElementById("modal-body-content");
