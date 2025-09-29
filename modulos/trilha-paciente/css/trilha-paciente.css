@@ -163,3 +163,73 @@
         grid-template-columns: 1fr;
     }
 }
+/* --- ESTILOS PARA O NOVO PAINEL COM SUBMENU --- */
+
+.module-panel-container {
+    display: grid;
+    grid-template-columns: 220px 1fr; /* Coluna do menu e área de conteúdo */
+    gap: 20px;
+    height: calc(100vh - 70px); /* 70px é a altura do header */
+}
+
+.module-submenu {
+    background-color: var(--cor-surface);
+    padding: 15px;
+    border-right: 1px solid var(--cor-borda);
+    overflow-y: auto;
+}
+
+.module-submenu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.module-submenu a {
+    display: block;
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    color: var(--cor-texto-secundario);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.module-submenu a:hover {
+    background-color: var(--cor-fundo);
+    color: var(--cor-primaria);
+}
+
+.module-submenu a.active {
+    background-color: var(--cor-primaria);
+    color: var(--cor-texto-inverso);
+    font-weight: 600;
+}
+
+.module-content {
+    overflow: hidden; /* Garante que o conteúdo não ultrapasse a área */
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Responsividade para o painel --- */
+@media (max-width: 992px) {
+    .module-panel-container {
+        grid-template-columns: 1fr; /* Empilha o menu e o conteúdo */
+        height: auto;
+    }
+    .module-submenu {
+        border-right: none;
+        border-bottom: 1px solid var(--cor-borda);
+        margin-bottom: 20px;
+    }
+    .module-submenu ul {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+    }
+     .module-submenu ul li a {
+        white-space: nowrap;
+    }
+}
