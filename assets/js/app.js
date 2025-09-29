@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", function () {
         descricao:
           "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
         url: "/modulos/trilha-paciente/page/trilha-paciente-painel.html",
-        roles: ["admin", "servico_social", "assistente"],
+        roles: ["admin", "assistente"],
         icon: icons.trilha_paciente,
       },
       captacao: {
