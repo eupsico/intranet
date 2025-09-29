@@ -1,137 +1,130 @@
-/* Arquivo: modulos/administrativo/css/trilha-paciente.css */
-
-.kanban-container {
+/* Container principal do quadro Kanban */
+.kanban-board-container {
     display: flex;
-    width: 100%;
     overflow-x: auto; /* Permite rolagem horizontal */
-    padding: 20px;
-    background-color: var(--cor-fundo);
+    padding: 20px 10px;
+    background-color: #f4f7fa;
+    min-height: calc(100vh - 100px); /* Ajusta a altura mínima */
 }
 
+/* Quadro Kanban */
 .kanban-board {
     display: flex;
-    gap: 15px;
-    min-width: max-content; /* Garante que o conteúdo não quebre a linha */
+    gap: 15px; /* Espaçamento entre as colunas */
+    flex-grow: 1;
 }
 
+/* Colunas do Kanban */
 .kanban-column {
-    flex: 0 0 300px; /* Impede que a coluna encolha ou estique */
-    width: 300px;
-    background-color: var(--cor-surface);
-    border-radius: var(--borda-radius);
-    box-shadow: var(--sombra-padrao);
+    flex: 0 0 300px; /* Largura fixa para cada coluna */
     display: flex;
     flex-direction: column;
+    background-color: #e9edf2;
+    border-radius: 8px;
+    max-height: calc(100vh - 140px); /* Altura máxima da coluna */
 }
 
-.column-header {
+.kanban-column-header {
     padding: 15px;
-    border-bottom: 1px solid var(--cor-borda);
-    background-color: var(--cor-primaria-dark);
-    color: white;
-    border-top-left-radius: var(--borda-radius);
-    border-top-right-radius: var(--borda-radius);
+    border-bottom: 2px solid #d8dde4;
 }
 
-.column-header h3 {
+.kanban-column-title {
     margin: 0;
-    font-size: 1.1em;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.column-cards {
+.kanban-column-count {
+    background-color: #d1d9e4;
+    color: #4a5568;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.kanban-cards-container {
     padding: 10px;
+    overflow-y: auto; /* Rolagem vertical para os cards */
     flex-grow: 1;
-    min-height: 200px;
-    overflow-y: auto;
 }
 
+/* Estilo dos Cards */
 .kanban-card {
-    background-color: white;
+    background-color: #ffffff;
+    border-radius: 6px;
     padding: 15px;
-    border-radius: var(--borda-radius);
     margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
     cursor: pointer;
-    border-left: 5px solid var(--cor-secundaria);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .kanban-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
-    transition: all 0.2s ease;
 }
 
-.card-title {
-    font-weight: bold;
+.kanban-card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #2d3748;
+}
+
+.kanban-card .card-patient-name {
+    font-weight: 600;
     margin-bottom: 5px;
 }
 
-.card-info {
-    font-size: 0.9em;
-    color: var(--cor-texto-secundario);
+.kanban-card .card-patient-cpf {
+    font-size: 0.8rem;
+    color: #718096;
 }
 
-/* Estilos do Modal */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+/* Estilos para o Modal */
+.modal-body .form-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-top: 20px;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e2e8f0;
 }
 
-.modal-content {
-    background-color: white;
-    padding: 25px;
-    border-radius: var(--borda-radius);
-    box-shadow: var(--sombra-elevada);
-    width: 90%;
-    max-width: 700px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--cor-borda);
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-}
-
-.modal-close-btn {
-    background: none;
-    border: none;
-    font-size: 2em;
-    cursor: pointer;
-}
-
-.info-copy-box {
-    background-color: var(--cor-fundo-box);
+.modal-body .confirmation-box {
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
     padding: 15px;
-    border-radius: var(--borda-radius);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
     margin-bottom: 20px;
-    border: 1px dashed var(--cor-borda);
 }
 
-.upload-area {
-    margin-top: 10px;
-    padding: 10px;
-    border: 2px dashed var(--cor-borda);
-    border-radius: var(--borda-radius);
-}
-
-.upload-area .file-list-item {
+.modal-body .checklist-group .form-group {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 5px;
-    background-color: var(--cor-fundo-box);
-    margin-top: 5px;
+    margin-bottom: 12px;
+}
+
+.modal-body .checklist-group input[type="checkbox"] {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+.modal-body .upload-area {
+    margin-top: 15px;
+}
+
+.hidden-section {
+    display: none;
 }
