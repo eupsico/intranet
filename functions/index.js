@@ -3,7 +3,6 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const cors = require("cors")({ origin: true });
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -260,7 +259,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     });
 
     // 4. Processar e gerar os horários livres
-    let horariosDisponiveis = [];
+    const horariosDisponiveis = [];
     assistentesSnapshot.docs.forEach((assistenteDoc) => {
       const assistente = assistenteDoc.data();
       const slots = disponibilidadesPorUsuario[assistenteDoc.id];
