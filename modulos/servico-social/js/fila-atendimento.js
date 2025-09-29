@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/fila-atendimento.js
-// Versão: 2.0 (Corrige ReferenceError e integra com a Trilha do Paciente)
+// Versão: 2.1 (Carrega dados completos da trilha, formata moeda e ajusta validações)
 
 export function init(db, user, userData, inscricaoId) {
   const patientDetailsContainer = document.getElementById(
@@ -10,6 +10,7 @@ export function init(db, user, userData, inscricaoId) {
   const camposEncaminhado = document.getElementById("campos-encaminhado");
   const camposObservacao = document.getElementById("campos-observacao");
   const btnVoltar = document.getElementById("btn-voltar-lista");
+  const valorContribuicaoInput = document.getElementById("valor-contribuicao");
 
   if (!inscricaoId) {
     patientDetailsContainer.innerHTML =
@@ -17,12 +18,30 @@ export function init(db, user, userData, inscricaoId) {
     return;
   }
 
-  let trilhaDocRef = null; // Guardará a referência ao documento na trilha do paciente
+  let trilhaDocRef = null;
 
+  // --- FUNÇÃO DE FORMATAÇÃO DE MOEDA ---
+  function formatarMoeda(input) {
+    let value = input.value.replace(/\D/g, "");
+    if (value === "") {
+      input.value = "";
+      return;
+    }
+    value = (parseInt(value) / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    input.value = value;
+  }
+
+  valorContribuicaoInput.addEventListener("input", () =>
+    formatarMoeda(valorContribuicaoInput)
+  );
+
+  // --- FUNÇÃO PARA CARREGAR DADOS ---
   async function carregarDadosPaciente() {
     patientDetailsContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
-      // **CORREÇÃO 2**: Busca na coleção 'trilhaPaciente' usando o 'inscricaoId'
       const trilhaQuery = await db
         .collection("trilhaPaciente")
         .where("inscricaoId", "==", inscricaoId)
@@ -30,98 +49,155 @@ export function init(db, user, userData, inscricaoId) {
         .get();
 
       if (trilhaQuery.empty) {
-        throw new Error(
-          "Paciente não encontrado na trilha. A inscrição pode não ter sido processada ainda."
-        );
+        throw new Error("Paciente não encontrado na trilha.");
       }
 
       const trilhaDoc = trilhaQuery.docs[0];
-      trilhaDocRef = trilhaDoc.ref; // Armazena a referência para salvar depois
-
+      trilhaDocRef = trilhaDoc.ref;
       const data = trilhaDoc.data();
 
+      const formatDate = (dateStr) =>
+        dateStr
+          ? new Date(dateStr + "T03:00:00").toLocaleDateString("pt-BR")
+          : "Não informado";
+
+      // **CORREÇÃO**: Carrega todos os dados da ficha
       patientDetailsContainer.innerHTML = `
-                <div class="patient-info-group">
-                    <strong>Nome:</strong>
-                    <p>${data.nomeCompleto || "Não informado"}</p>
-                </div>
-                <div class="patient-info-group">
-                    <strong>Telefone:</strong>
-                    <p>${data.telefoneCelular || "Não informado"}</p>
-                </div>
-                <div class="patient-info-group">
-                    <strong>Email:</strong>
-                    <p>${data.email || "Não informado"}</p>
-                </div>
-                <div class="patient-info-group">
-                    <strong>Data de Nascimento:</strong>
-                    <p>${
-                      new Date(
-                        data.dataNascimento + "T03:00:00"
-                      ).toLocaleDateString("pt-BR") || "Não informado"
-                    }</p>
-                </div>
-                <div class="patient-info-group">
-                    <strong>Disponibilidade (Inscrição):</strong>
-                    <p>${
-                      (data.disponibilidadeGeral || []).join(", ") ||
-                      "Não informado"
-                    }</p>
-                </div>
+                <div class="patient-info-group"><strong>Nome:</strong><p>${
+                  data.nomeCompleto || "N/A"
+                }</p></div>
+                <div class="patient-info-group"><strong>CPF:</strong><p>${
+                  data.cpf || "N/A"
+                }</p></div>
+                <div class="patient-info-group"><strong>Data de Nasc.:</strong><p>${formatDate(
+                  data.dataNascimento
+                )}</p></div>
+                <div class="patient-info-group"><strong>Telefone:</strong><p>${
+                  data.telefoneCelular || "N/A"
+                }</p></div>
+                <div class="patient-info-group"><strong>Email:</strong><p>${
+                  data.email || "N/A"
+                }</p></div>
+                ${
+                  data.responsavel?.nome
+                    ? `
+                <div class="patient-info-group"><strong>Responsável:</strong><p>${
+                  data.responsavel.nome
+                }</p></div>
+                <div class="patient-info-group"><strong>Contato Responsável:</strong><p>${
+                  data.responsavel.contato || "N/A"
+                }</p></div>
+                `
+                    : ""
+                }
+                <hr>
+                <div class="patient-info-group"><strong>Endereço:</strong><p>${
+                  data.rua || "N/A"
+                }, ${data.numeroCasa || "S/N"} - ${data.bairro || "N/A"}, ${
+        data.cidade || "N/A"
+      }</p></div>
+                <div class="patient-info-group"><strong>CEP:</strong><p>${
+                  data.cep || "N/A"
+                }</p></div>
+                <hr>
+                <div class="patient-info-group"><strong>Renda Individual:</strong><p>${
+                  data.rendaMensal || "N/A"
+                }</p></div>
+                <div class="patient-info-group"><strong>Renda Familiar:</strong><p>${
+                  data.rendaFamiliar || "N/A"
+                }</p></div>
+                <div class="patient-info-group"><strong>Moradia:</strong><p>${
+                  data.casaPropria || "N/A"
+                }</p></div>
+                <div class="patient-info-group"><strong>Pessoas na Moradia:</strong><p>${
+                  data.pessoasMoradia || "N/A"
+                }</p></div>
+                <hr>
+                <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${
+                  (data.disponibilidadeGeral || []).join(", ") || "N/A"
+                }</p></div>
+                <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
+                  data.motivoBusca || "N/A"
+                }</p></div>
             `;
+
+      // Pré-preenche a queixa no formulário
+      document.getElementById("queixa-paciente").value = data.motivoBusca || "";
     } catch (error) {
-      console.error("Erro ao carregar dados do paciente da trilha:", error);
+      console.error("Erro ao carregar dados do paciente:", error);
       patientDetailsContainer.innerHTML = `<p class="error-message">Erro ao carregar dados: ${error.message}</p>`;
     }
   }
 
+  // --- LISTENERS DE EVENTOS ---
   statusSelect.addEventListener("change", () => {
     const selectedValue = statusSelect.value;
+    const criteriosTextarea = document.getElementById("criterios-valor");
+
     camposEncaminhado.style.display =
       selectedValue === "encaminhado" ? "block" : "none";
     camposObservacao.style.display =
       selectedValue === "nao_realizada" || selectedValue === "desistiu"
         ? "block"
         : "none";
+
+    // Torna os campos obrigatórios apenas se a seção estiver visível
+    valorContribuicaoInput.required = selectedValue === "encaminhado";
+    criteriosTextarea.required = selectedValue === "encaminhado";
+    document.getElementById("observacao-geral").required =
+      selectedValue === "nao_realizada" || selectedValue === "desistiu";
   });
 
-  btnVoltar.addEventListener("click", () => {
-    window.location.hash = "#agendamentos-triagem";
-  });
+  btnVoltar.addEventListener(
+    "click",
+    () => (window.location.hash = "#agendamentos-triagem")
+  );
 
+  // --- LÓGICA DE SALVAMENTO ---
   triagemForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    // **CORREÇÃO**: Validação manual antes de prosseguir
+    if (statusSelect.value === "encaminhado") {
+      if (
+        !valorContribuicaoInput.value ||
+        !document.getElementById("criterios-valor").value.trim()
+      ) {
+        alert(
+          'Os campos "Valor da contribuição" e "Critérios" são obrigatórios.'
+        );
+        return;
+      }
+    } else if (
+      statusSelect.value === "nao_realizada" ||
+      statusSelect.value === "desistiu"
+    ) {
+      if (!document.getElementById("observacao-geral").value.trim()) {
+        alert('O campo "Observação" é obrigatório para este status.');
+        return;
+      }
+    }
+
     const saveButton = triagemForm.querySelector('button[type="submit"]');
     saveButton.disabled = true;
     saveButton.textContent = "Salvando...";
 
     try {
-      if (!trilhaDocRef) {
-        throw new Error(
-          "Referência do documento do paciente na trilha não encontrada."
-        );
-      }
+      if (!trilhaDocRef)
+        throw new Error("Referência do documento não encontrada.");
 
       const status = statusSelect.value;
       let dadosParaSalvar = {
         lastUpdate: new Date(),
-        assistenteSocialTriagem: {
-          uid: user.uid,
-          nome: userData.nome,
-        },
+        assistenteSocialTriagem: { uid: user.uid, nome: userData.nome },
       };
-      let newStatus = "";
 
       if (status === "encaminhado") {
-        newStatus = "encaminhar_para_plantao";
         dadosParaSalvar = {
           ...dadosParaSalvar,
-          status: newStatus,
-          valorContribuicao:
-            document.getElementById("valor-contribuicao").value ||
-            "Não definido",
+          status: "encaminhar_para_plantao",
+          valorContribuicao: valorContribuicaoInput.value, // Salva o valor formatado
           criteriosValor: document.getElementById("criterios-valor").value,
-          infoIsencao: document.getElementById("info-isencao").value,
           modalidadeAtendimento: document.getElementById(
             "modalidade-atendimento"
           ).value,
@@ -130,17 +206,15 @@ export function init(db, user, userData, inscricaoId) {
           queixaPrincipal: document.getElementById("queixa-paciente").value,
         };
       } else if (status === "desistiu") {
-        newStatus = "desistencia";
         dadosParaSalvar = {
           ...dadosParaSalvar,
-          status: newStatus,
+          status: "desistencia",
           desistenciaMotivo: `Desistiu na etapa de triagem. Motivo: ${
             document.getElementById("observacao-geral").value
           }`,
         };
       } else {
-        // 'nao_realizada' ou outro status
-        // Neste caso, o card não muda de status, apenas adiciona uma observação.
+        dadosParaSalvar.statusTriagem = status; // Status intermediário, não muda de coluna
         dadosParaSalvar.observacoesTriagem =
           document.getElementById("observacao-geral").value;
       }
@@ -148,7 +222,7 @@ export function init(db, user, userData, inscricaoId) {
       await trilhaDocRef.update(dadosParaSalvar);
 
       alert(
-        "Ficha de triagem salva com sucesso! O paciente foi movido na Trilha do Paciente."
+        "Ficha de triagem salva com sucesso! O paciente foi atualizado na Trilha do Paciente."
       );
       window.location.hash = "#agendamentos-triagem";
     } catch (error) {
