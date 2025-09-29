@@ -1,199 +1,271 @@
-// Arquivo: modulos/trilha-paciente/js/stages/1-inscricao-documentos.js
+/**
+ * Renderiza o conteúdo do modal para a etapa "Inscrição e Documentos".
+ * @param {HTMLElement} modalBody - O corpo do modal onde o conteúdo será inserido.
+ * @param {object} cardData - Os dados do card do paciente.
+ * @param {object} db - A instância do Firestore.
+ */
+export function render(modalBody, cardData, db) {
+  const responsavelInfo =
+    cardData.responsavel && cardData.responsavel.nome
+      ? `Responsável: ${cardData.responsavel.nome}`
+      : "";
 
-let assistentesSociais = [];
+  modalBody.innerHTML = `
+        <h3 class="form-section-title">Confirmação de Dados</h3>
+        <div class="confirmation-box" id="confirmation-text">
+Nome: ${cardData.nomeCompleto}
+Data de Nascimento: ${cardData.dataNascimento}
+${responsavelInfo}
+Telefone: ${cardData.telefoneCelular}
+CPF: ${cardData.cpf}
+E-mail: ${cardData.email}
+        </div>
+        <p>Copie o texto acima e envie para o paciente para confirmação.</p>
 
-async function fetchDependencies(context) {
-  if (assistentesSociais.length > 0) return;
+        <h3 class="form-section-title">Checklist para Agendar Triagem</h3>
+        <div class="checklist-group">
+            <div class="form-group">
+                <input type="checkbox" id="chk-docs" name="checklist">
+                <label for="chk-docs">Enviou os documentos (CPF, RG, Comprovante de Endereço, etc.)</label>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="chk-confirmou" name="checklist">
+                <label for="chk-confirmou">Confirmou os dados</label>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="chk-pasta" name="checklist">
+                <label for="chk-pasta">Criou Pasta no Drive do Serviço Social</label>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="chk-pagamento" name="checklist">
+                <label for="chk-pagamento">Efetuou o pagamento da triagem</label>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="chk-isento" name="checklist">
+                <label for="chk-isento">Isento da triagem</label>
+            </div>
+             <div id="isento-motivo-section" class="form-group hidden-section">
+                <label for="isento-motivo">Informe o motivo da isenção:</label>
+                <textarea id="isento-motivo" class="form-control"></textarea>
+            </div>
+            <hr>
+            <div class="form-group">
+                <input type="checkbox" id="chk-desistiu" name="checklist">
+                <label for="chk-desistiu">Desistiu do processo</label>
+            </div>
+            <div id="desistencia-motivo-section" class="form-group hidden-section">
+                <label for="desistencia-motivo">Informe o motivo da desistência:</label>
+                <textarea id="desistencia-motivo" class="form-control"></textarea>
+            </div>
+        </div>
+
+        <div id="agendamento-section">
+            <h3 class="form-section-title">Agendamento da Triagem</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="assistente-social">Nome da Assistente Social</label>
+                    <select id="assistente-social" class="form-control">
+                        <option value="">Carregando...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="assistente-email">E-mail da Assistente Social</label>
+                    <input type="email" id="assistente-email" class="form-control" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="tipo-triagem">Tipo de Triagem</label>
+                    <select id="tipo-triagem" class="form-control">
+                        <option value="">Selecione...</option>
+                        <option value="Online">Online</option>
+                        <option value="Presencial">Presencial</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="data-triagem">Data da Triagem</label>
+                    <input type="date" id="data-triagem" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="hora-triagem">Horário da Triagem</label>
+                    <input type="time" id="hora-triagem" class="form-control">
+                </div>
+            </div>
+        </div>
+    `;
+
+  // Após renderizar, busca os dados e adiciona os eventos
+  loadAssistentesSociais(db);
+  setupEventListeners();
+
+  // Configura o botão Salvar do modal para esta etapa
+  const saveButton = document.getElementById("modal-save-btn");
+  saveButton.onclick = () => save(cardData.id, db);
+}
+
+/**
+ * Busca as assistentes sociais ativas no Firestore e popula o select.
+ * @param {object} db - A instância do Firestore.
+ */
+async function loadAssistentesSociais(db) {
+  const select = document.getElementById("assistente-social");
+  const emailInput = document.getElementById("assistente-email");
   try {
-    const snapshot = await context.db
+    const snapshot = await db
       .collection("usuarios")
       .where("funcoes", "array-contains", "servico_social")
       .where("inativo", "==", false)
       .get();
-    assistentesSociais = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+
+    select.innerHTML = '<option value="">Selecione...</option>';
+    const assistentes = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      assistentes.push({ id: doc.id, nome: data.nome, email: data.email });
+    });
+
+    // Ordena por nome
+    assistentes.sort((a, b) => a.nome.localeCompare(b.nome));
+
+    assistentes.forEach((assistente) => {
+      const option = document.createElement("option");
+      option.value = assistente.nome; // Salva o nome
+      option.textContent = assistente.nome;
+      option.dataset.email = assistente.email; // Armazena o email no dataset
+      select.appendChild(option);
+    });
+
+    // Evento para preencher o e-mail
+    select.addEventListener("change", (e) => {
+      const selectedOption = e.target.options[e.target.selectedIndex];
+      emailInput.value = selectedOption.dataset.email || "";
+    });
   } catch (error) {
-    console.error("Erro ao buscar assistentes sociais:", error);
+    console.error("Erro ao carregar assistentes sociais:", error);
+    select.innerHTML = '<option value="">Erro ao carregar</option>';
   }
 }
 
-export async function render(cardData, modalContent, context) {
-  await fetchDependencies(context);
-  const responsavelInfo =
-    cardData.responsavel && cardData.responsavel.nome
-      ? `<strong>Responsável:</strong> ${cardData.responsavel.nome}<br>`
-      : "";
+/**
+ * Adiciona os listeners para os checkboxes com lógica condicional.
+ */
+function setupEventListeners() {
+  const chkIsento = document.getElementById("chk-isento");
+  const chkDesistiu = document.getElementById("chk-desistiu");
+  const isentoSection = document.getElementById("isento-motivo-section");
+  const desistiuSection = document.getElementById("desistencia-motivo-section");
+  const agendamentoSection = document.getElementById("agendamento-section");
+  const checklist = document.querySelectorAll('input[name="checklist"]');
 
-  modalContent.innerHTML = `
-        <div class="info-copy-box">
-            <h4>Preciso que você me confirme se os dados do paciente estão corretos:</h4>
-            <p>
-                <strong>Nome:</strong> ${cardData.nomeCompleto}<br>
-                <strong>Data de nascimento:</strong> ${new Date(
-                  cardData.dataNascimento + "T00:00:00"
-                ).toLocaleDateString("pt-BR")}<br>
-                ${responsavelInfo}
-                <strong>Telefone de contato:</strong> ${
-                  cardData.telefoneCelular
-                }<br>
-                <strong>CPF:</strong> ${cardData.cpf}<br>
-                <strong>E-mail:</strong> ${cardData.email}
-            </p>
-        </div>
-        <h4>Checklist para agendar triagem:</h4>
-        <form id="form-etapa1">
-            <div class="form-group">
-                <label><input type="checkbox" id="chk-dados" required> Confirmou os dados</label>
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="chk-pagamento" required> Efetuou o pagamento</label>
-            </div>
-            <div class="form-group">
-                 <label><input type="checkbox" id="chk-isento"> Isento da triagem</label>
-            </div>
-            <div id="motivo-isencao-container" class="form-group" style="display:none;">
-                <label for="motivo-isencao">Informe o motivo da isenção:</label>
-                <textarea id="motivo-isencao" class="form-control"></textarea>
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="chk-desistiu"> Desistiu</label>
-            </div>
-             <div id="motivo-desistencia-container" class="form-group" style="display:none;">
-                <label for="motivo-desistencia">Informe o motivo da desistência:</label>
-                <textarea id="motivo-desistencia" class="form-control"></textarea>
-            </div>
-            <hr>
-            <div id="triagem-fields">
-                <div class="form-group">
-                    <label>Enviou os documentos (RG, CPF, Comp. Endereço, Comp. Renda):</label>
-                    <p style="font-size: 0.8em; color: #666;">Funcionalidade de upload em desenvolvimento.</p>
-                    <div class="upload-area">
-                        <input type="file" id="doc-upload" multiple disabled>
-                        <div id="file-list"></div>
-                    </div>
-                </div>
-                 <div class="form-group">
-                    <label><input type="checkbox" id="chk-drive" required> Criar Pasta no Drive do serviço social</label>
-                </div>
-                <div class="form-group">
-                    <label for="assistente-social">Nome Assistente Social:</label>
-                    <select id="assistente-social" class="form-control" required></select>
-                </div>
-                <div class="form-group">
-                    <label for="assistente-email">E-mail Assistente Social:</label>
-                    <input type="email" id="assistente-email" class="form-control" readonly>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="tipo-triagem">Tipo de triagem:</label>
-                        <select id="tipo-triagem" class="form-control" required>
-                            <option value="Online">Online</option>
-                            <option value="Presencial">Presencial</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="data-triagem">Data da triagem:</label>
-                        <input type="date" id="data-triagem" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="hora-triagem">Horário da triagem:</label>
-                        <input type="time" id="hora-triagem" class="form-control" required>
-                    </div>
-                </div>
-            </div>
-            <div class="button-bar">
-                <button type="submit" class="action-button">Salvar e Mover</button>
-            </div>
-        </form>
-    `;
+  chkIsento.addEventListener("change", () => {
+    isentoSection.classList.toggle("hidden-section", !chkIsento.checked);
+    if (chkIsento.checked) {
+      document.getElementById("chk-pagamento").checked = false;
+      document.getElementById("chk-pagamento").disabled = true;
+    } else {
+      document.getElementById("chk-pagamento").disabled = false;
+    }
+  });
 
-  const selectAssistente = modalContent.querySelector("#assistente-social");
-  selectAssistente.innerHTML = '<option value="">Selecione...</option>';
-  assistentesSociais.forEach((as) => {
-    selectAssistente.innerHTML += `<option value="${as.id}">${as.nome}</option>`;
+  chkDesistiu.addEventListener("change", () => {
+    const isDesistente = chkDesistiu.checked;
+    desistiuSection.classList.toggle("hidden-section", !isDesistente);
+    agendamentoSection.style.display = isDesistente ? "none" : "block";
+
+    checklist.forEach((chk) => {
+      if (chk.id !== "chk-desistiu") {
+        chk.disabled = isDesistente;
+        if (isDesistente) chk.checked = false;
+      }
+    });
+    isentoSection.classList.add("hidden-section");
   });
 }
 
-export function initListeners(cardData, modalContent, context) {
-  const form = modalContent.querySelector("#form-etapa1");
-  const chkIsento = form.querySelector("#chk-isento");
-  const chkDesistiu = form.querySelector("#chk-desistiu");
-  const motivoIsencaoContainer = form.querySelector(
-    "#motivo-isencao-container"
-  );
-  const motivoDesistenciaContainer = form.querySelector(
-    "#motivo-desistencia-container"
-  );
-  const triagemFields = form.querySelector("#triagem-fields");
-  const selectAssistente = form.querySelector("#assistente-social");
-  const emailAssistenteInput = form.querySelector("#assistente-email");
+/**
+ * Salva os dados do formulário no Firestore.
+ * @param {string} cardId - O ID do documento do card.
+ * @param {object} db - A instância do Firestore.
+ */
+async function save(cardId, db) {
+  const chkDesistiu = document.getElementById("chk-desistiu").checked;
+  const desistiuMotivo = document
+    .getElementById("desistencia-motivo")
+    .value.trim();
 
-  chkIsento.addEventListener("change", (e) => {
-    motivoIsencaoContainer.style.display = e.target.checked ? "block" : "none";
-  });
+  let dataToUpdate = {};
+  let newStatus = "";
 
-  chkDesistiu.addEventListener("change", (e) => {
-    const isChecked = e.target.checked;
-    motivoDesistenciaContainer.style.display = isChecked ? "block" : "none";
-    triagemFields.style.display = isChecked ? "none" : "block";
-    triagemFields.querySelectorAll("input, select").forEach((el) => {
-      if (el.type !== "checkbox") el.required = !isChecked;
-    });
-  });
-
-  selectAssistente.addEventListener("change", () => {
-    const selectedId = selectAssistente.value;
-    const assistente = assistentesSociais.find((as) => as.id === selectedId);
-    emailAssistenteInput.value = assistente ? assistente.email : "";
-  });
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const desistiu = chkDesistiu.checked;
-
-    if (desistiu) {
-      const motivo = motivoDesistenciaContainer.querySelector(
-        "#motivo-desistencia"
-      ).value;
-      if (!motivo) {
-        alert("Por favor, informe o motivo da desistência.");
-        return;
-      }
-      await context.updateCard(cardData.id, {
-        status: "desistencia",
-        motivoDesistencia: motivo,
-      });
-    } else {
-      if (!form.checkValidity()) {
-        alert("Por favor, preencha todos os campos obrigatórios.");
-        form.reportValidity();
-        return;
-      }
-      const isento = chkIsento.checked;
-      const motivoIsencao =
-        motivoIsencaoContainer.querySelector("#motivo-isencao").value;
-      if (isento && !motivoIsencao) {
-        alert("Por favor, informe o motivo da isenção.");
-        return;
-      }
-
-      const dataToSave = {
-        status: "triagem_agendada",
-        dadosConfirmados: form.querySelector("#chk-dados").checked,
-        pagamentoEfetuado: form.querySelector("#chk-pagamento").checked,
-        isentoTriagem: isento,
-        motivoIsencao: motivoIsencao,
-        pastaDriveCriada: form.querySelector("#chk-drive").checked,
-        assistenteSocialId: selectAssistente.value,
-        assistenteSocialNome:
-          selectAssistente.options[selectAssistente.selectedIndex].text,
-        tipoTriagem: form.querySelector("#tipo-triagem").value,
-        dataTriagem: form.querySelector("#data-triagem").value,
-        horaTriagem: form.querySelector("#hora-triagem").value,
-      };
-      await context.updateCard(cardData.id, dataToSave);
+  if (chkDesistiu) {
+    if (!desistiuMotivo) {
+      alert("Por favor, informe o motivo da desistência.");
+      return;
     }
-  });
+    dataToUpdate = {
+      status: "desistencia",
+      desistenciaMotivo: desistiuMotivo,
+      lastUpdate: new Date(),
+    };
+    newStatus = "desistencia";
+  } else {
+    // Validação dos campos obrigatórios
+    const isento = document.getElementById("chk-isento").checked;
+    const camposObrigatorios = {
+      "chk-docs": "Enviar os documentos",
+      "chk-confirmou": "Confirmar os dados",
+      "chk-pasta": "Criar a pasta no Drive",
+      "assistente-social": "Selecionar a assistente social",
+      "tipo-triagem": "Selecionar o tipo de triagem",
+      "data-triagem": "Informar a data da triagem",
+      "hora-triagem": "Informar o horário da triagem",
+    };
+    if (!isento) {
+      camposObrigatorios["chk-pagamento"] = "Confirmar o pagamento";
+    }
+
+    for (const [id, nome] of Object.entries(camposObrigatorios)) {
+      const element = document.getElementById(id);
+      if (
+        (element.type === "checkbox" && !element.checked) ||
+        (element.type !== "checkbox" && !element.value)
+      ) {
+        alert(`Campo obrigatório não preenchido: ${nome}`);
+        return;
+      }
+    }
+
+    dataToUpdate = {
+      status: "triagem_agendada",
+      isentoTriagem: isento,
+      motivoIsencao: document.getElementById("isento-motivo").value.trim(),
+      assistenteSocialNome: document.getElementById("assistente-social").value,
+      assistenteSocialEmail: document.getElementById("assistente-email").value,
+      tipoTriagem: document.getElementById("tipo-triagem").value,
+      dataTriagem: document.getElementById("data-triagem").value,
+      horaTriagem: document.getElementById("hora-triagem").value,
+      lastUpdate: new Date(),
+    };
+    newStatus = "triagem_agendada";
+  }
+
+  try {
+    const saveButton = document.getElementById("modal-save-btn");
+    saveButton.textContent = "Salvando...";
+    saveButton.disabled = true;
+
+    await db.collection("trilhaPaciente").doc(cardId).update(dataToUpdate);
+
+    alert(
+      `Paciente movido para a etapa "${newStatus.replace(
+        "_",
+        " "
+      )}" com sucesso!`
+    );
+    document.getElementById("close-modal-btn").click(); // Fecha o modal
+  } catch (error) {
+    console.error("Erro ao salvar dados do card:", error);
+    alert("Ocorreu um erro ao salvar as informações. Tente novamente.");
+  } finally {
+    const saveButton = document.getElementById("modal-save-btn");
+    saveButton.textContent = "Salvar";
+    saveButton.disabled = false;
+  }
 }
