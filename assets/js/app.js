@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 2.0.0 (com Trilha do Paciente)
+// Versão: 2.0.2 (Correção na chamada e caminho do módulo Trilha do Paciente)
 
 import { auth, db } from "./firebase-init.js";
 
@@ -183,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const trilhaModule = await import(
           "../../modulos/trilha-paciente/js/trilha-paciente.js"
         );
-        trilhaModule.init(user, db, userData);
+        trilhaModule.init(db, user, userData);
       } catch (error) {
         console.error("Erro ao carregar o módulo Trilha do Paciente:", error);
         document.getElementById("content-area").innerHTML =
