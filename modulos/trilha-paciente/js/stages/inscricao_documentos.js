@@ -106,19 +106,13 @@ E-mail: ${cardData.email}
         </div>
     `;
 
-  // Após renderizar, busca os dados e adiciona os eventos
   loadAssistentesSociais(db);
   setupEventListeners();
 
-  // Configura o botão Salvar do modal para esta etapa
   const saveButton = document.getElementById("modal-save-btn");
   saveButton.onclick = () => save(cardData.id, db);
 }
 
-/**
- * Busca as assistentes sociais ativas no Firestore e popula o select.
- * @param {object} db - A instância do Firestore.
- */
 async function loadAssistentesSociais(db) {
   const select = document.getElementById("assistente-social");
   const emailInput = document.getElementById("assistente-email");
@@ -136,18 +130,16 @@ async function loadAssistentesSociais(db) {
       assistentes.push({ id: doc.id, nome: data.nome, email: data.email });
     });
 
-    // Ordena por nome
     assistentes.sort((a, b) => a.nome.localeCompare(b.nome));
 
     assistentes.forEach((assistente) => {
       const option = document.createElement("option");
-      option.value = assistente.nome; // Salva o nome
+      option.value = assistente.nome;
       option.textContent = assistente.nome;
-      option.dataset.email = assistente.email; // Armazena o email no dataset
+      option.dataset.email = assistente.email;
       select.appendChild(option);
     });
 
-    // Evento para preencher o e-mail
     select.addEventListener("change", (e) => {
       const selectedOption = e.target.options[e.target.selectedIndex];
       emailInput.value = selectedOption.dataset.email || "";
@@ -158,9 +150,6 @@ async function loadAssistentesSociais(db) {
   }
 }
 
-/**
- * Adiciona os listeners para os checkboxes com lógica condicional.
- */
 function setupEventListeners() {
   const chkPagamento = document.getElementById("chk-pagamento");
   const chkIsento = document.getElementById("chk-isento");
@@ -170,38 +159,36 @@ function setupEventListeners() {
   const agendamentoSection = document.getElementById("agendamento-section");
   const allCheckboxes = document.querySelectorAll('input[name="checklist"]');
 
-  // Lógica para o checkbox de ISENÇÃO
-  chkIsento.addEventListener("change", () => {
-    isentoSection.classList.toggle("hidden-section", !chkIsento.checked);
-    if (chkIsento.checked) {
+  chkIsento.addEventListener("change", function () {
+    isentoSection.classList.toggle("hidden-section", !this.checked);
+    if (this.checked) {
       chkPagamento.checked = false;
       chkPagamento.disabled = true;
       chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
+      desistiuSection.classList.add("hidden-section");
     } else {
       chkPagamento.disabled = false;
       chkDesistiu.disabled = false;
     }
-    // Garante que a outra caixa de motivo esteja oculta
-    desistiuSection.classList.add("hidden-section");
   });
 
-  // Lógica para o checkbox de PAGAMENTO
-  chkPagamento.addEventListener("change", () => {
-    if (chkPagamento.checked) {
+  chkPagamento.addEventListener("change", function () {
+    if (this.checked) {
       chkIsento.checked = false;
       chkIsento.disabled = true;
       chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
+      isentoSection.classList.add("hidden-section");
+      desistiuSection.classList.add("hidden-section");
     } else {
       chkIsento.disabled = false;
       chkDesistiu.disabled = false;
     }
   });
 
-  // Lógica para o checkbox de DESISTÊNCIA
-  chkDesistiu.addEventListener("change", () => {
-    const isDesistente = chkDesistiu.checked;
+  chkDesistiu.addEventListener("change", function () {
+    const isDesistente = this.checked;
     desistiuSection.classList.toggle("hidden-section", !isDesistente);
     agendamentoSection.style.display = isDesistente ? "none" : "block";
 
@@ -214,19 +201,12 @@ function setupEventListeners() {
       }
     });
 
-    // Garante que a outra caixa de motivo e suas dependências sejam resetadas/ocultas
     if (isDesistente) {
-      chkIsento.checked = false;
       isentoSection.classList.add("hidden-section");
     }
   });
 }
 
-/**
- * Salva os dados do formulário no Firestore.
- * @param {string} cardId - O ID do documento do card.
- * @param {object} db - A instância do Firestore.
- */
 async function save(cardId, db) {
   const chkDesistiu = document.getElementById("chk-desistiu").checked;
   const desistiuMotivo = document
@@ -248,7 +228,6 @@ async function save(cardId, db) {
     };
     newStatus = "desistencia";
   } else {
-    // Validação dos campos obrigatórios
     const isento = document.getElementById("chk-isento").checked;
     const camposObrigatorios = {
       "chk-docs": "Enviar os documentos",
@@ -296,18 +275,15 @@ async function save(cardId, db) {
 
     await db.collection("trilhaPaciente").doc(cardId).update(dataToUpdate);
 
-    // Usamos a constante global das colunas para a mensagem
-    alert(
-      `Paciente movido para a etapa "${COLUMNS_CONFIG[newStatus]}" com sucesso!`
-    );
-    document.getElementById("close-modal-btn").click(); // Fecha o modal
+    const friendlyStatus = COLUMNS_CONFIG[newStatus] || newStatus;
+    alert(`Paciente movido para a etapa "${friendlyStatus}" com sucesso!`);
+    document.getElementById("close-modal-btn").click();
   } catch (error) {
     console.error("Erro ao salvar dados do card:", error);
     alert("Ocorreu um erro ao salvar as informações. Tente novamente.");
   } finally {
     const saveButton = document.getElementById("modal-save-btn");
     if (saveButton) {
-      // Adiciona verificação caso o modal já tenha fechado
       saveButton.textContent = "Salvar";
       saveButton.disabled = false;
     }
