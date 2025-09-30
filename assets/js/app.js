@@ -183,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       try {
         const trilhaModule = await import(
-          "../../modulos/trilha-paciente/js/trilha-paciente.js"
+          "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
         );
         trilhaModule.init(db, user, userData);
       } catch (error) {
