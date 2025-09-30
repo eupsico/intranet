@@ -143,9 +143,8 @@ exports.criarNovoProfissional = onCall(async (request) => {
 });
 
 // -----------------------------
-// Função verificarCpfExistente (HTTP v1)
+// Função verificarCpfExistente
 // -----------------------------
-// Nova versão da função usando o formato onCall (v2)
 exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
   const cpf = request.data.cpf;
   if (!cpf || cpf.length < 11) {
@@ -180,7 +179,7 @@ exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
 });
 
 // -------------------------------------------------------------------
-// Função para criar um card na Trilha do Paciente (SINTAXE V2 CORRIGIDA)
+// Função para criar um card na Trilha do Paciente
 // -------------------------------------------------------------------
 exports.criarCardTrilhaPaciente = onDocumentCreated(
   "inscricoes/{inscricaoId}",
@@ -223,8 +222,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
   try {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-
-    // Limite de busca de horários (ex: próximos 14 dias)
     const dataLimite = new Date(hoje);
     dataLimite.setDate(hoje.getDate() + 14);
 
@@ -276,10 +273,19 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
         for (const mesKey in dispoData) {
           const dadosDoMes = dispoData[mesKey];
 
-          // **ALTERAÇÃO AQUI**
-          ["Online", "Presencial"].forEach((modalidade) => {
-            const dispoModalidade = dadosDoMes[modalidade.toLowerCase()];
-            if (dispoModalidade && dispoModalidade.dias) {
+          // ############# INÍCIO DA CORREÇÃO #############
+          // Itera sobre as chaves que realmente existem no objeto (ex: 'online', 'presencial')
+          for (const modalidadeKey in dadosDoMes) {
+            // modalidadeKey será 'online' ou 'presencial'
+            const dispoModalidade = dadosDoMes[modalidadeKey];
+            const modalidadeNome =
+              modalidadeKey.charAt(0).toUpperCase() + modalidadeKey.slice(1); // Converte 'online' -> 'Online'
+
+            if (
+              dispoModalidade &&
+              dispoModalidade.dias &&
+              Array.isArray(dispoModalidade.dias)
+            ) {
               dispoModalidade.dias.forEach((diaISO) => {
                 const dataDisponivel = new Date(diaISO + "T03:00:00");
 
@@ -305,12 +311,11 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
                       horariosDisponiveis.push({
                         data: diaISO,
                         hora: horaSlot,
-                        modalidade: modalidade, // <-- INFORMAÇÃO ADICIONADA
+                        modalidade: modalidadeNome, // Usa o nome formatado
                         assistenteNome: assistente.nome,
                         assistenteId: userId,
                       });
                     }
-
                     m += 30;
                     if (m >= 60) {
                       h++;
@@ -320,7 +325,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
                 }
               });
             }
-          });
+          }
         }
       }
     });
