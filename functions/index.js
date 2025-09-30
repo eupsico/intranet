@@ -450,7 +450,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     );
   }
 });
-// Adicione esta nova função ao final do seu arquivo functions/index.js
 
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
@@ -472,7 +471,7 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
         .get();
 
       if (assistentesSnapshot.empty) {
-        return []; // Retorna um array vazio se não houver assistentes
+        return [];
       }
 
       const assistentesIds = assistentesSnapshot.docs.map((doc) => doc.id);
@@ -490,7 +489,10 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
       const todasDisponibilidades = [];
       disponibilidadesSnapshot.forEach((doc) => {
         const assistenteInfo = assistentesMap.get(doc.id);
-        if (assistenteInfo) {
+
+        // ### CORREÇÃO ADICIONADA AQUI ###
+        // Verifica se o documento de disponibilidade existe E se possui o campo 'disponibilidade'
+        if (assistenteInfo && doc.exists && doc.data().disponibilidade) {
           todasDisponibilidades.push({
             nome: assistenteInfo.nome,
             disponibilidade: doc.data().disponibilidade,
