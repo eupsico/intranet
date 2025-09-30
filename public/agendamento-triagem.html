@@ -7,89 +7,37 @@
     <link rel="stylesheet" href="../assets/css/design-system.css">
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        /* Seus estilos CSS permanecem aqui */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Comfortaa', sans-serif;
-            background-color: #003366;
+        /* Estilos Gerais */
+        body { font-family: 'Comfortaa', sans-serif; background-color: #003366; color: #FFFFFF; text-align: center; margin: 0; padding: 0 10px; }
+        .container { max-width: 800px; margin: 20px auto; padding: 20px; text-align: left; }
+        h1, .subtitle { text-align: center; }
+        .image-container { width: 100%; display: flex; justify-content: center; margin: 20px 0; }
+        .image-container img { max-width: 100%; height: auto; border-radius: 8px; }
+        .text-content p { margin-bottom: 10px; }
+
+        /* Estilos da Seção de Agendamento */
+        #agendamento-section h2 { text-align: center; }
+        .horarios-container { text-align: left; margin-top: 20px; }
+        .modalidade-titulo {
+            font-size: 1.5em;
             color: #FFFFFF;
-            text-align: center;
-            overflow-x: hidden;
-        }
-        .container {
-            width: 95%;
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            background: #003366;
-            border-radius: 8px;
-            color: #FFFFFF;
-        }
-        h1 {
-            font-size: 28px;
-            color: #FFFFFF;
-            margin-bottom: 15px;
-        }
-        .image-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
-        .image-container img {
-            width: 100%;
-            max-width: 600px;
-            height: auto;
-            border-radius: 8px;
-        }
-        .text-content {
-            text-align: left;
-            margin: auto;
-            max-width: 700px;
-        }
-        .subtitle {
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-        /* Estilos adicionais para a seção de agendamento */
-        #agendamento-section h2 {
             margin-top: 30px;
-        }
-        .data-grupo {
-            margin-top: 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-        }
-        .data-grupo h4 {
-            text-align: left;
-            border-bottom: 1px solid #fff;
-            padding-bottom: 10px;
             margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .horarios-botoes {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
-        }
-        .horario-btn {
-            background-color: #FFFFFF;
-            color: #003366;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-        }
-        .horario-btn:hover {
-            background-color: #f0f0f0;
-        }
+        .data-grupo { margin-top: 15px; }
+        .data-grupo h4 { font-size: 1.1em; margin-bottom: 10px; }
+        .horarios-botoes { display: flex; flex-wrap: wrap; gap: 10px; }
+        .horario-btn { background-color: #FFFFFF; color: #003366; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
+        .horario-btn:hover { background-color: #e0e0e0; }
+
+        /* Estilos do Modal (já existentes no design-system.css, mas com ajustes) */
+        #agendamento-modal .modal-content { max-width: 500px; }
+        #cpf-feedback { font-size: 0.9em; margin-top: 5px; min-height: 1.2em; }
+
+        /* Seção de Confirmação */
+        #confirmacao-section { text-align: center; padding: 20px; background-color: #e8f5e9; color: #2e7d32; border-radius: 8px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -119,16 +67,46 @@
             <h2>Escolha um Horário para sua Triagem</h2>
             <div id="horarios-container">
                 <div class="loading-spinner" style="border-top-color: white;"></div>
-                <p>Carregando horários disponíveis...</p>
+                <p style="text-align: center;">Carregando horários disponíveis...</p>
             </div>
         </div>
 
-        <div id="confirmacao-section" style="display: none; text-align: center; padding: 20px; background-color: #e8f5e9; color: #2e7d32; border-radius: 8px; margin-top: 20px;">
+        <div id="confirmacao-section" style="display: none;">
             <h2>Agendamento Confirmado!</h2>
-            <p>Sua triagem foi agendada com sucesso. Em breve, nossa equipe entrará em contato com mais detalhes.</p>
+            <p>Sua triagem foi agendada com sucesso. Em breve, nossa equipe entrará em contato.</p>
+            <p><strong>Paciente:</strong> <span id="confirm-paciente-nome"></span></p>
             <p><strong>Assistente Social:</strong> <span id="confirm-assistente"></span></p>
             <p><strong>Data:</strong> <span id="confirm-data"></span></p>
             <p><strong>Horário:</strong> <span id="confirm-horario"></span></p>
+        </div>
+    </div>
+
+    <div id="agendamento-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="agendamento-modal-title">Confirmar Agendamento</h2>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Você selecionou o horário das <strong id="modal-horario-selecionado"></strong>. Para continuar, por favor, informe os dados do paciente.</p>
+                <div class="form-group">
+                    <label for="paciente-cpf">CPF do Paciente <span class="required-asterisk">*</span></label>
+                    <input type="text" id="paciente-cpf" class="form-control" placeholder="Digite apenas números e aguarde" required>
+                    <div id="cpf-feedback"></div>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-nome">Nome Completo do Paciente <span class="required-asterisk">*</span></label>
+                    <input type="text" id="paciente-nome" class="form-control" placeholder="Será preenchido ou digite aqui" required>
+                </div>
+                 <div class="form-group">
+                    <label for="paciente-telefone">Telefone de Contato (com DDD) <span class="required-asterisk">*</span></label>
+                    <input type="tel" id="paciente-telefone" class="form-control" placeholder="(xx) xxxxx-xxxx" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-button secondary-button" id="modal-cancel-btn">Cancelar</button>
+                <button type="button" id="modal-confirm-agendamento-btn" class="action-button">Confirmar Agendamento</button>
+            </div>
         </div>
     </div>
 
@@ -139,5 +117,5 @@
     
     <script type="module" src="../assets/js/firebase-init.js"></script>
     <script type="module" src="../modulos/servico-social/js/agendamento-publico.js"></script>
-    </body>
+</body>
 </html>
