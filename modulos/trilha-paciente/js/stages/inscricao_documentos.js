@@ -20,13 +20,12 @@ export function render(modalBody, cardData, db) {
         <h3 class="form-section-title">Confirmação de Dados</h3>
         <div class="confirmation-box" id="confirmation-text">
 Por favor, confirme se os dados abaixo estão corretos:
-
 Nome: ${cardData.nomeCompleto}
 Data de Nascimento: ${dataNascimentoFormatada}
-${responsavelInfo}
 Telefone: ${cardData.telefoneCelular}
 CPF: ${cardData.cpf}
 E-mail: ${cardData.email}
+Responsável: ${responsavelInfo}
         </div>
         <p>Copie o texto acima e envie para o paciente para confirmação.</p>
 
