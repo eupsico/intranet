@@ -218,14 +218,18 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
 
 // FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
 // -------------------------------------------------------------------
-
 exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
+  // ### LOG PODEROSO - INÍCIO DO BLOCO TRY/CATCH ###
+  // Este bloco irá capturar qualquer erro que acontecer na função
+  // e irá logar o erro completo no console do Firebase.
   try {
+    console.log("[LOG INICIAL] Função getHorariosTriagem iniciada.");
+
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
     const dataLimite = new Date(hoje);
-    dataLimite.setDate(hoje.getDate() + 7); // AJUSTADO PARA 7 DIAS
+    dataLimite.setDate(hoje.getDate() + 7); // Ajustado para 7 dias
 
     const assistentesSnapshot = await db
       .collection("usuarios")
@@ -234,6 +238,9 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       .get();
 
     if (assistentesSnapshot.empty) {
+      console.log(
+        "[LOG] Nenhum assistente social ativo encontrado. Retornando vazio."
+      );
       return { horarios: [] };
     }
 
@@ -241,6 +248,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     const assistentesMap = new Map(
       assistentesSnapshot.docs.map((doc) => [doc.id, doc.data()])
     );
+    console.log(`[LOG] Encontrados ${assistentesIds.length} assistentes.`);
 
     const disponibilidadesSnapshot = await db
       .collection("disponibilidadeAssistentes")
@@ -264,6 +272,9 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
         agendamentosExistentes.add(`${data.dataTriagem}T${data.horaTriagem}`);
       }
     });
+    console.log(
+      `[LOG] ${agendamentosExistentes.size} agendamentos existentes no período.`
+    );
 
     const horariosDisponiveis = [];
     disponibilidadesSnapshot.forEach((doc) => {
@@ -271,70 +282,91 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       const assistente = assistentesMap.get(userId);
       const dispoData = doc.data().disponibilidade;
 
+      // ### LOG PODEROSO - DADOS DO ASSISTENTE ###
+      console.log(
+        `[LOG] Processando assistente: ${assistente.nome} (ID: ${userId})`
+      );
+
       if (assistente && dispoData) {
         for (const mesKey in dispoData) {
+          // ### LOG PODEROSO - DADOS DO MÊS ###
+          console.log(`  [LOG] Mês: ${mesKey}`);
           const dadosDoMes = dispoData[mesKey];
           for (const modalidadeKey in dadosDoMes) {
+            // ### LOG PODEROSO - DADOS DA MODALIDADE ###
+            console.log(`    [LOG] Modalidade: ${modalidadeKey}`);
             const modalidadeNome =
               modalidadeKey.charAt(0).toUpperCase() + modalidadeKey.slice(1);
             const dispoModalidade = dadosDoMes[modalidadeKey];
 
-            // ### NOVA VERIFICAÇÃO DE ROBUSTEZ ###
-            // Garante que todos os campos necessários existem antes de prosseguir
+            // ### LOG PODEROSO - DADOS COMPLETOS DA DISPONIBILIDADE ###
+            // Este é o log mais importante. Ele mostrará o objeto exato que pode estar causando o erro.
+            console.log(
+              `      [LOG] Dados da Disponibilidade:`,
+              JSON.stringify(dispoModalidade)
+            );
+
+            // ### CORREÇÃO DEFINITIVA E ROBUSTEZ ###
+            // Verifica se 'inicio' e 'fim' são strings e se contêm o formato "HH:mm"
+            const inicioParts = dispoModalidade.inicio
+              ? dispoModalidade.inicio.split(":")
+              : [];
+            const fimParts = dispoModalidade.fim
+              ? dispoModalidade.fim.split(":")
+              : [];
+
             if (
               dispoModalidade &&
               dispoModalidade.dias &&
               Array.isArray(dispoModalidade.dias) &&
-              typeof dispoModalidade.inicio === "string" && // Verifica se 'inicio' é uma string
-              typeof dispoModalidade.fim === "string" // Verifica se 'fim' é uma string
+              inicioParts.length === 2 && // Garante que tem hora e minuto
+              fimParts.length === 2 // Garante que tem hora e minuto
             ) {
+              const horaInicio = parseInt(inicioParts[0]);
+              const minutoInicio = parseInt(inicioParts[1]);
+              const horaFim = parseInt(fimParts[0]);
+
+              // Validação final para evitar NaN (Not-a-Number) que causa o loop infinito
+              if (isNaN(horaInicio) || isNaN(minutoInicio) || isNaN(horaFim)) {
+                console.warn(
+                  `      [AVISO] Formato de hora inválido para ${assistente.nome}, modalidade ${modalidadeKey}. Pulando.`
+                );
+                continue; // Pula para a próxima modalidade
+              }
+
               dispoModalidade.dias.forEach((diaISO) => {
                 const dataDisponivel = new Date(diaISO + "T03:00:00");
-
                 if (dataDisponivel >= hoje && dataDisponivel <= dataLimite) {
-                  try {
-                    const horaInicio = parseInt(
-                      dispoModalidade.inicio.split(":")[0]
-                    );
-                    const minutoInicio = parseInt(
-                      dispoModalidade.inicio.split(":")[1]
-                    );
-                    const horaFim = parseInt(dispoModalidade.fim.split(":")[0]);
-
-                    let h = horaInicio;
-                    let m = minutoInicio;
-
-                    while (h < horaFim) {
-                      const horaSlot = `${String(h).padStart(2, "0")}:${String(
-                        m
-                      ).padStart(2, "0")}`;
-                      const chaveAgendamento = `${diaISO}T${horaSlot}`;
-
-                      if (!agendamentosExistentes.has(chaveAgendamento)) {
-                        horariosDisponiveis.push({
-                          data: diaISO,
-                          hora: horaSlot,
-                          modalidade: modalidadeNome,
-                          assistenteNome: assistente.nome,
-                          assistenteId: userId,
-                        });
-                      }
-                      m += 30;
-                      if (m >= 60) {
-                        h++;
-                        m = 0;
-                      }
+                  let h = horaInicio;
+                  let m = minutoInicio;
+                  while (h < horaFim) {
+                    const horaSlot = `${String(h).padStart(2, "0")}:${String(
+                      m
+                    ).padStart(2, "0")}`;
+                    const chaveAgendamento = `${diaISO}T${horaSlot}`;
+                    if (!agendamentosExistentes.has(chaveAgendamento)) {
+                      horariosDisponiveis.push({
+                        data: diaISO,
+                        hora: horaSlot,
+                        modalidade: modalidadeNome,
+                        assistenteNome: assistente.nome,
+                        assistenteId: userId,
+                      });
                     }
-                  } catch (e) {
-                    console.warn(
-                      `Ignorando horário malformado para ${assistente.nome} no dia ${diaISO}:`,
-                      e
-                    );
+                    m += 30;
+                    if (m >= 60) {
+                      h++;
+                      m = 0;
+                    }
                   }
                 }
               });
+            } else {
+              // ### LOG PODEROSO - AVISA SOBRE DADOS INVÁLIDOS ###
+              console.warn(
+                `      [AVISO] Dados de disponibilidade malformados para ${assistente.nome}, modalidade ${modalidadeKey}. Pulando.`
+              );
             }
-            // ### FIM DA VERIFICAÇÃO ###
           }
         }
       }
@@ -344,10 +376,19 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       (a, b) =>
         new Date(`${a.data}T${a.hora}`) - new Date(`${b.data}T${b.hora}`)
     );
-
+    console.log(
+      `[LOG FINAL] Função concluída. ${horariosDisponiveis.length} horários encontrados.`
+    );
     return { horarios: horariosDisponiveis };
   } catch (error) {
-    console.error("Erro grave ao buscar horários de triagem:", error);
-    throw new HttpsError("internal", "Não foi possível buscar os horários.");
+    // ### LOG PODEROSO - CAPTURA DE ERRO ###
+    // Se a função falhar, este log vai mostrar o erro exato no console do Firebase.
+    console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
+    // Re-lança o erro para o cliente receber a resposta de falha.
+    throw new HttpsError(
+      "internal",
+      "Ocorreu um erro inesperado ao processar os horários. Verifique os logs da função no Firebase.",
+      error.message
+    );
   }
 });
