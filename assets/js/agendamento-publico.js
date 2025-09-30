@@ -1,7 +1,8 @@
 // Arquivo: /modulos/servico-social/js/agendamento-publico.js
-// Versão 2.1: Utiliza a Cloud Function existente 'verificarCpfExistente' para segurança.
+// Versão 3.0: Utiliza a Cloud Function 'agendarTriagemPublico' para salvar o agendamento de forma segura.
 
-import { db, functions } from "../../../assets/js/firebase-init.js";
+import { functions } from "../../../assets/js/firebase-init.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // --- Mapeamento de Elementos ---
@@ -22,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function carregarHorarios() {
     try {
-      const getHorarios = functions.httpsCallable("getHorariosTriagem");
+      const getHorarios = httpsCallable(functions, "getHorariosTriagem");
       const result = await getHorarios();
       const horarios = result.data.horarios;
 
@@ -110,17 +111,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // **** INÍCIO DA CORREÇÃO ****
-      // Chamando a Cloud Function CORRETA e JÁ EXISTENTE
-      const verificarCpf = functions.httpsCallable("verificarCpfExistente");
+      const verificarCpf = httpsCallable(functions, "verificarCpfExistente");
       const result = await verificarCpf({ cpf: cpf });
       const data = result.data;
-      // **** FIM DA CORREÇÃO ****
 
       if (data.exists) {
         pacienteExistenteId = data.docId;
 
-        // A função 'verificarCpfExistente' retorna 'dados'
         const paciente = data.dados;
         nomeInput.value = paciente.nomeCompleto;
         nomeInput.readOnly = true;
@@ -140,6 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // **** INÍCIO DA ALTERAÇÃO ****
+  // Esta função foi modificada para chamar a Cloud Function 'agendarTriagemPublico'
   async function handleAgendamento() {
     if (!horarioSelecionado) return;
 
@@ -160,36 +159,23 @@ document.addEventListener("DOMContentLoaded", () => {
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = "Salvando...";
 
-    try {
-      const dadosAgendamento = {
-        status: "triagem_agendada",
-        dataTriagem: horarioSelecionado.data,
-        horaTriagem: horarioSelecionado.hora,
-        modalidadeTriagem: horarioSelecionado.modalidade,
-        assistenteSocialNome: horarioSelecionado.assistenteNome,
-        assistenteSocialId: horarioSelecionado.assistenteId,
-        lastUpdate: new Date(),
-      };
+    // Prepara o objeto de dados para enviar para a Cloud Function
+    const dadosParaAgendamento = {
+      cpf: cpf,
+      nome: nome,
+      telefone: telefone,
+      horarioSelecionado: horarioSelecionado,
+      pacienteExistenteId: pacienteExistenteId, // Será null se for um novo paciente
+    };
 
-      if (pacienteExistenteId) {
-        // Atualiza um paciente existente
-        const docRef = db.collection("trilhaPaciente").doc(pacienteExistenteId);
-        await docRef.update(dadosAgendamento);
-      } else {
-        // Cria um novo paciente na trilha
-        const novoPaciente = {
-          ...dadosAgendamento,
-          nomeCompleto: nome,
-          cpf: cpf,
-          telefoneCelular: telefone,
-          timestamp: new Date(),
-        };
-        await db.collection("trilhaPaciente").add(novoPaciente);
-      }
+    try {
+      // Chama a Cloud Function segura para salvar os dados
+      const agendarTriagem = httpsCallable(functions, "agendarTriagemPublico");
+      await agendarTriagem(dadosParaAgendamento);
 
       exibirConfirmacaoFinal(nome);
     } catch (error) {
-      console.error("Erro ao salvar agendamento:", error);
+      console.error("Erro ao salvar agendamento via Cloud Function:", error);
       alert(
         "Não foi possível salvar seu agendamento. Por favor, tente novamente."
       );
@@ -199,6 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.style.display = "none";
     }
   }
+  // **** FIM DA ALTERAÇÃO ****
 
   function exibirConfirmacaoFinal(nomePaciente) {
     document.getElementById("confirm-paciente-nome").textContent = nomePaciente;
