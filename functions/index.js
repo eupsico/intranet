@@ -450,3 +450,64 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     );
   }
 });
+// Adicione esta nova função ao final do seu arquivo functions/index.js
+
+exports.getTodasDisponibilidadesAssistentes = onCall(
+  { cors: true },
+  async (request) => {
+    // Passo de segurança: Verifica se o usuário que chama a função é um admin
+    if (!request.auth || !request.auth.token.funcoes?.includes("admin")) {
+      throw new HttpsError(
+        "permission-denied",
+        "Você não tem permissão para acessar estes dados."
+      );
+    }
+
+    try {
+      // 1. Busca todas as assistentes sociais ativas
+      const assistentesSnapshot = await db
+        .collection("usuarios")
+        .where("funcoes", "array-contains", "servico_social")
+        .where("inativo", "==", false)
+        .get();
+
+      if (assistentesSnapshot.empty) {
+        return []; // Retorna um array vazio se não houver assistentes
+      }
+
+      const assistentesIds = assistentesSnapshot.docs.map((doc) => doc.id);
+      const assistentesMap = new Map(
+        assistentesSnapshot.docs.map((doc) => [doc.id, doc.data()])
+      );
+
+      // 2. Busca os documentos de disponibilidade para essas assistentes
+      const disponibilidadesSnapshot = await db
+        .collection("disponibilidadeAssistentes")
+        .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
+        .get();
+
+      // 3. Formata os dados para enviar ao frontend
+      const todasDisponibilidades = [];
+      disponibilidadesSnapshot.forEach((doc) => {
+        const assistenteInfo = assistentesMap.get(doc.id);
+        if (assistenteInfo) {
+          todasDisponibilidades.push({
+            nome: assistenteInfo.nome,
+            disponibilidade: doc.data().disponibilidade,
+          });
+        }
+      });
+
+      return todasDisponibilidades;
+    } catch (error) {
+      console.error(
+        "Erro ao buscar todas as disponibilidades de assistentes:",
+        error
+      );
+      throw new HttpsError(
+        "internal",
+        "Não foi possível buscar as disponibilidades."
+      );
+    }
+  }
+);
