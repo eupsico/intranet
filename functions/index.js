@@ -248,9 +248,14 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
       .get();
 
+    const hojeISO = hoje.toISOString().split("T")[0];
+    const dataLimiteISO = dataLimite.toISOString().split("T")[0];
+
     const agendamentosSnapshot = await db
       .collection("trilhaPaciente")
       .where("status", "==", "triagem_agendada")
+      .where("dataTriagem", ">=", hojeISO)
+      .where("dataTriagem", "<=", dataLimiteISO)
       .get();
 
     const agendamentosExistentes = new Set();
