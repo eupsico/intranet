@@ -222,6 +222,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
   try {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
+
     const dataLimite = new Date(hoje);
     dataLimite.setDate(hoje.getDate() + 14);
 
@@ -245,6 +246,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
       .get();
 
+    // CORREÇÃO 1: Consulta otimizada para buscar apenas agendamentos futuros.
     const hojeISO = hoje.toISOString().split("T")[0];
     const dataLimiteISO = dataLimite.toISOString().split("T")[0];
 
@@ -273,13 +275,11 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
         for (const mesKey in dispoData) {
           const dadosDoMes = dispoData[mesKey];
 
-          // ############# INÍCIO DA CORREÇÃO #############
-          // Itera sobre as chaves que realmente existem no objeto (ex: 'online', 'presencial')
+          // ############# CORREÇÃO 2: Loop ajustado para a estrutura de dados correta #############
           for (const modalidadeKey in dadosDoMes) {
-            // modalidadeKey será 'online' ou 'presencial'
-            const dispoModalidade = dadosDoMes[modalidadeKey];
             const modalidadeNome =
-              modalidadeKey.charAt(0).toUpperCase() + modalidadeKey.slice(1); // Converte 'online' -> 'Online'
+              modalidadeKey.charAt(0).toUpperCase() + modalidadeKey.slice(1);
+            const dispoModalidade = dadosDoMes[modalidadeKey];
 
             if (
               dispoModalidade &&
@@ -311,7 +311,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
                       horariosDisponiveis.push({
                         data: diaISO,
                         hora: horaSlot,
-                        modalidade: modalidadeNome, // Usa o nome formatado
+                        modalidade: modalidadeNome,
                         assistenteNome: assistente.nome,
                         assistenteId: userId,
                       });
@@ -326,6 +326,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
               });
             }
           }
+          // ############# FIM DA CORREÇÃO #############
         }
       }
     });
