@@ -1,4 +1,6 @@
 // Arquivo: /modulos/servico-social/js/agendamento-publico.js
+// Versão 2.1: Utiliza a Cloud Function existente 'verificarCpfExistente' para segurança.
+
 import { db, functions } from "../../../assets/js/firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -96,29 +98,34 @@ document.addEventListener("DOMContentLoaded", () => {
   async function buscarPacientePorCPF() {
     const cpf = cpfInput.value.replace(/\D/g, "");
     cpfFeedback.textContent = "Verificando...";
+    cpfFeedback.style.color = "gray";
     nomeInput.value = "";
     nomeInput.readOnly = false;
     pacienteExistenteId = null;
 
     if (cpf.length !== 11) {
       cpfFeedback.textContent = "CPF inválido.";
+      cpfFeedback.style.color = "red";
       return;
     }
 
     try {
-      const q = db
-        .collection("trilhaPaciente")
-        .where("cpf", "==", cpf)
-        .limit(1);
-      const querySnapshot = await q.get();
+      // **** INÍCIO DA CORREÇÃO ****
+      // Chamando a Cloud Function CORRETA e JÁ EXISTENTE
+      const verificarCpf = functions.httpsCallable("verificarCpfExistente");
+      const result = await verificarCpf({ cpf: cpf });
+      const data = result.data;
+      // **** FIM DA CORREÇÃO ****
 
-      if (!querySnapshot.empty) {
-        const paciente = querySnapshot.docs[0].data();
-        pacienteExistenteId = querySnapshot.docs[0].id;
+      if (data.exists) {
+        pacienteExistenteId = data.docId;
 
+        // A função 'verificarCpfExistente' retorna 'dados'
+        const paciente = data.dados;
         nomeInput.value = paciente.nomeCompleto;
         nomeInput.readOnly = true;
         telefoneInput.value = paciente.telefoneCelular || "";
+
         cpfFeedback.textContent = `Paciente encontrado: ${paciente.nomeCompleto}. Confirme seus dados.`;
         cpfFeedback.style.color = "green";
       } else {
@@ -127,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cpfFeedback.style.color = "orange";
       }
     } catch (error) {
-      console.error("Erro ao buscar CPF:", error);
+      console.error("Erro ao chamar a função verificarCpfExistente:", error);
       cpfFeedback.textContent = "Erro ao verificar o CPF. Tente novamente.";
       cpfFeedback.style.color = "red";
     }
