@@ -1,6 +1,5 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 1.2
-// Descrição: Remove a inicialização do Firebase Storage, que não é utilizado.
+// Versão: 1.4 (Final para compatibilidade)
 
 // --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
 const firebaseConfig = {
@@ -15,14 +14,14 @@ const firebaseConfig = {
 
 // --- INICIALIZAÇÃO E EXPORTAÇÃO ---
 // Garante que o Firebase seja inicializado apenas uma vez
+// A variável 'firebase' agora existe globalmente, carregada pelo script no HTML.
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// Exporta as instâncias de autenticação e banco de dados para serem usadas em outros arquivos
+// Exporta as instâncias dos serviços usando a sintaxe de compatibilidade
 const auth = firebase.auth();
 const db = firebase.firestore();
 const functions = firebase.functions();
-// A inicialização e exportação do 'storage' foram removidas.
 
 export { auth, db, functions };
