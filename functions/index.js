@@ -218,13 +218,14 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
 
 // FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
 // -------------------------------------------------------------------
+
 exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
   try {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
     const dataLimite = new Date(hoje);
-    dataLimite.setDate(hoje.getDate() + 14);
+    dataLimite.setDate(hoje.getDate() + 7); // AJUSTADO PARA 7 DIAS
 
     const assistentesSnapshot = await db
       .collection("usuarios")
@@ -246,7 +247,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
       .get();
 
-    // CORREÇÃO 1: Consulta otimizada para buscar apenas agendamentos futuros.
     const hojeISO = hoje.toISOString().split("T")[0];
     const dataLimiteISO = dataLimite.toISOString().split("T")[0];
 
@@ -274,59 +274,68 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       if (assistente && dispoData) {
         for (const mesKey in dispoData) {
           const dadosDoMes = dispoData[mesKey];
-
-          // ############# CORREÇÃO 2: Loop ajustado para a estrutura de dados correta #############
           for (const modalidadeKey in dadosDoMes) {
             const modalidadeNome =
               modalidadeKey.charAt(0).toUpperCase() + modalidadeKey.slice(1);
             const dispoModalidade = dadosDoMes[modalidadeKey];
 
+            // ### NOVA VERIFICAÇÃO DE ROBUSTEZ ###
+            // Garante que todos os campos necessários existem antes de prosseguir
             if (
               dispoModalidade &&
               dispoModalidade.dias &&
-              Array.isArray(dispoModalidade.dias)
+              Array.isArray(dispoModalidade.dias) &&
+              typeof dispoModalidade.inicio === "string" && // Verifica se 'inicio' é uma string
+              typeof dispoModalidade.fim === "string" // Verifica se 'fim' é uma string
             ) {
               dispoModalidade.dias.forEach((diaISO) => {
                 const dataDisponivel = new Date(diaISO + "T03:00:00");
 
                 if (dataDisponivel >= hoje && dataDisponivel <= dataLimite) {
-                  const horaInicio = parseInt(
-                    dispoModalidade.inicio.split(":")[0]
-                  );
-                  const minutoInicio = parseInt(
-                    dispoModalidade.inicio.split(":")[1]
-                  );
-                  const horaFim = parseInt(dispoModalidade.fim.split(":")[0]);
+                  try {
+                    const horaInicio = parseInt(
+                      dispoModalidade.inicio.split(":")[0]
+                    );
+                    const minutoInicio = parseInt(
+                      dispoModalidade.inicio.split(":")[1]
+                    );
+                    const horaFim = parseInt(dispoModalidade.fim.split(":")[0]);
 
-                  let h = horaInicio;
-                  let m = minutoInicio;
+                    let h = horaInicio;
+                    let m = minutoInicio;
 
-                  while (h < horaFim) {
-                    const horaSlot = `${String(h).padStart(2, "0")}:${String(
-                      m
-                    ).padStart(2, "0")}`;
-                    const chaveAgendamento = `${diaISO}T${horaSlot}`;
+                    while (h < horaFim) {
+                      const horaSlot = `${String(h).padStart(2, "0")}:${String(
+                        m
+                      ).padStart(2, "0")}`;
+                      const chaveAgendamento = `${diaISO}T${horaSlot}`;
 
-                    if (!agendamentosExistentes.has(chaveAgendamento)) {
-                      horariosDisponiveis.push({
-                        data: diaISO,
-                        hora: horaSlot,
-                        modalidade: modalidadeNome,
-                        assistenteNome: assistente.nome,
-                        assistenteId: userId,
-                      });
+                      if (!agendamentosExistentes.has(chaveAgendamento)) {
+                        horariosDisponiveis.push({
+                          data: diaISO,
+                          hora: horaSlot,
+                          modalidade: modalidadeNome,
+                          assistenteNome: assistente.nome,
+                          assistenteId: userId,
+                        });
+                      }
+                      m += 30;
+                      if (m >= 60) {
+                        h++;
+                        m = 0;
+                      }
                     }
-                    m += 30;
-                    if (m >= 60) {
-                      h++;
-                      m = 0;
-                    }
+                  } catch (e) {
+                    console.warn(
+                      `Ignorando horário malformado para ${assistente.nome} no dia ${diaISO}:`,
+                      e
+                    );
                   }
                 }
               });
             }
+            // ### FIM DA VERIFICAÇÃO ###
           }
-          // ############# FIM DA CORREÇÃO #############
         }
       }
     });
@@ -338,7 +347,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
 
     return { horarios: horariosDisponiveis };
   } catch (error) {
-    console.error("Erro ao buscar horários de triagem:", error);
+    console.error("Erro grave ao buscar horários de triagem:", error);
     throw new HttpsError("internal", "Não foi possível buscar os horários.");
   }
 });
