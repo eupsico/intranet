@@ -392,3 +392,47 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     );
   }
 });
+exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
+  const dados = request.data;
+
+  // Validação básica dos dados recebidos do formulário
+  if (!dados.inscricaoId || !dados.dataTriagem || !dados.horaTriagem) {
+    console.error("Tentativa de agendamento com dados incompletos:", dados);
+    throw new HttpsError(
+      "invalid-argument",
+      "Dados do agendamento estão incompletos."
+    );
+  }
+
+  try {
+    const docRef = db.collection("trilhaPaciente").doc(dados.inscricaoId);
+
+    // Dados que serão salvos no Firestore
+    const dadosParaSalvar = {
+      status: "triagem_agendada",
+      dataTriagem: dados.dataTriagem,
+      horaTriagem: dados.horaTriagem,
+      modalidadeTriagem: dados.modalidade,
+      assistenteId: dados.assistenteId,
+      assistenteNome: dados.assistenteNome,
+      nome: dados.nome,
+      telefone: dados.telefone,
+      // Adicione quaisquer outros campos que você precise salvar
+    };
+
+    // Usamos 'set' com 'merge: true' para criar ou atualizar o documento
+    await docRef.set(dadosParaSalvar, { merge: true });
+
+    console.log(
+      `Agendamento realizado com sucesso para a inscrição: ${dados.inscricaoId}`
+    );
+    return { success: true, message: "Agendamento confirmado!" };
+  } catch (error) {
+    console.error("Erro ao salvar agendamento via função:", error);
+    throw new HttpsError(
+      "internal",
+      "Não foi possível salvar o agendamento.",
+      error
+    );
+  }
+});
