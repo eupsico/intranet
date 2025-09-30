@@ -1,7 +1,7 @@
-// Arquivo: /modulos/servico-social/js/agendamento-publico.js
-// Versão 3.0: Utiliza a Cloud Function 'agendarTriagemPublico' para salvar o agendamento de forma segura.
+// Arquivo: /assets/js/agendamento-publico.js
+// Versão Final: Chama a Cloud Function 'agendarTriagemPublico' com os dados corretos.
 
-import { functions } from "../../../assets/js/firebase-init.js";
+import { db, functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -42,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderizarHorarios(horarios) {
-    // Agrupar por modalidade e data
     const horariosAgrupados = horarios.reduce((acc, horario) => {
       const modalidade = horario.modalidade || "Online";
       const dataFormatada = new Date(
@@ -137,8 +136,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // **** INÍCIO DA ALTERAÇÃO ****
-  // Esta função foi modificada para chamar a Cloud Function 'agendarTriagemPublico'
   async function handleAgendamento() {
     if (!horarioSelecionado) return;
 
@@ -159,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = "Salvando...";
 
-    // Prepara o objeto de dados para enviar para a Cloud Function
+    // Objeto de dados COMPLETO para enviar para a Cloud Function
     const dadosParaAgendamento = {
       cpf: cpf,
       nome: nome,
@@ -185,7 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.style.display = "none";
     }
   }
-  // **** FIM DA ALTERAÇÃO ****
 
   function exibirConfirmacaoFinal(nomePaciente) {
     document.getElementById("confirm-paciente-nome").textContent = nomePaciente;
