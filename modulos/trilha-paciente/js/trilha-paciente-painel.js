@@ -13,12 +13,12 @@ const menuFilters = {
   encerramento: ["desistencia", "alta"],
 };
 
-let db, user, userData;
+let firestoreDb, authUser, authUserData;
 
 export function init(db, user, userData) {
-  db = firestoreDb;
-  user = authUser;
-  userData = authUserData;
+  firestoreDb = db;
+  authUser = user;
+  authUserData = userData;
 
   // **CORREÇÃO PRINCIPAL**: Altera os seletores para usar os elementos GLOBAIS da página
   const sidebarMenu = document.getElementById("sidebar-menu");
