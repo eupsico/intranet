@@ -180,16 +180,20 @@ exports.verificarCpfExistente = functions.https.onRequest((req, res) => {
 });
 
 // -------------------------------------------------------------------
-// Função para criar um card na Trilha do Paciente após nova inscrição
+// Função para criar um card na Trilha do Paciente (SINTAXE V2 CORRIGIDA)
 // -------------------------------------------------------------------
-exports.criarCardTrilhaPaciente = functions.firestore
-  .document("inscricoes/{inscricaoId}")
-  .onCreate(async (snap, context) => {
+exports.criarCardTrilhaPaciente = onDocumentCreated(
+  "inscricoes/{inscricaoId}",
+  async (event) => {
+    const snap = event.data;
+    if (!snap) {
+      console.log("Nenhum dado associado ao evento.");
+      return;
+    }
     const inscricaoData = snap.data();
 
-    // Dados que serão copiados para o card do Kanban
     const cardData = {
-      inscricaoId: context.params.inscricaoId,
+      inscricaoId: event.params.inscricaoId,
       nomeCompleto: inscricaoData.nomeCompleto || "",
       cpf: inscricaoData.cpf || "",
       dataNascimento: inscricaoData.dataNascimento || "",
@@ -199,21 +203,19 @@ exports.criarCardTrilhaPaciente = functions.firestore
       disponibilidadeGeral: inscricaoData.disponibilidadeGeral || [],
       disponibilidadeEspecifica: inscricaoData.disponibilidadeEspecifica || [],
       timestamp: new Date(),
-      status: "inscricao_documentos", // Status inicial do Kanban
+      status: "inscricao_documentos",
     };
 
     try {
-      // Cria o novo documento na coleção trilhaPaciente
       await db.collection("trilhaPaciente").add(cardData);
       console.log(
-        `Card criado com sucesso na Trilha do Paciente para CPF: ${cardData.cpf}`
+        `(v2) Card criado com sucesso na Trilha do Paciente para CPF: ${cardData.cpf}`
       );
-      return null;
     } catch (error) {
-      console.error("Erro ao criar card na Trilha do Paciente:", error);
-      return null;
+      console.error("(v2) Erro ao criar card na Trilha do Paciente:", error);
     }
-  });
+  }
+);
 
 // FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
 // -------------------------------------------------------------------
