@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
-// Versão: 2.6 (Corrige o carregamento de views com parâmetros na URL)
+// Versão: 2.7 (Adiciona a view de Disponibilidade de Agendamentos)
 
 export function initsocialPanel(user, db, userData) {
   window.db = db;
@@ -47,6 +47,12 @@ export function initsocialPanel(user, db, userData) {
       name: "Minha Disponibilidade",
       roles: ["admin", "servico_social"],
       icon: icons.disponibilidade,
+    },
+    {
+      id: "disponibilidade-agendamentos",
+      name: "Disponibilidade de Agendamentos",
+      roles: ["admin", "servico_social"],
+      icon: icons.agendamentos,
     },
     {
       id: "script-triagem",
