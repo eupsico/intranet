@@ -180,48 +180,40 @@ exports.verificarCpfExistente = functions.https.onRequest((req, res) => {
 });
 
 // -------------------------------------------------------------------
-// FUNÇÃO ATUALIZADA: Cria o card diretamente na coluna correta
+// Função para criar um card na Trilha do Paciente após nova inscrição
 // -------------------------------------------------------------------
-exports.criarCardTrilhaPaciente = onDocumentCreated(
-  "inscricoes/{inscricaoId}",
-  async (event) => {
-    const snap = event.data;
-    if (!snap) {
-      console.log("Nenhum dado associado ao evento.");
-      return;
-    }
+exports.criarCardTrilhaPaciente = functions.firestore
+  .document("inscricoes/{inscricaoId}")
+  .onCreate(async (snap, context) => {
     const inscricaoData = snap.data();
 
-    // **AQUI ESTÁ A ALTERAÇÃO PRINCIPAL**
-    // Verifica se a inscrição já contém os dados da triagem agendada
-    const triagemJaAgendada =
-      inscricaoData.dataTriagem &&
-      inscricaoData.horaTriagem &&
-      inscricaoData.assistenteSocialNome;
-
-    // Define o status inicial com base na verificação
-    const statusInicial = triagemJaAgendada
-      ? "triagem_agendada"
-      : "inscricao_documentos";
-
-    // Copia todos os campos da inscrição para o card.
+    // Dados que serão copiados para o card do Kanban
     const cardData = {
-      ...inscricaoData,
-      inscricaoId: event.params.inscricaoId,
+      inscricaoId: context.params.inscricaoId,
+      nomeCompleto: inscricaoData.nomeCompleto || "",
+      cpf: inscricaoData.cpf || "",
+      dataNascimento: inscricaoData.dataNascimento || "",
+      telefoneCelular: inscricaoData.telefoneCelular || "",
+      email: inscricaoData.email || "",
+      responsavel: inscricaoData.responsavel || {},
+      disponibilidadeGeral: inscricaoData.disponibilidadeGeral || [],
+      disponibilidadeEspecifica: inscricaoData.disponibilidadeEspecifica || [],
       timestamp: new Date(),
-      status: statusInicial, // Usa o status definido pela lógica acima
+      status: "inscricao_documentos", // Status inicial do Kanban
     };
 
     try {
+      // Cria o novo documento na coleção trilhaPaciente
       await db.collection("trilhaPaciente").add(cardData);
       console.log(
-        `(v2) Card criado com sucesso na Trilha do Paciente para CPF: ${cardData.cpf} com status: ${statusInicial}`
+        `Card criado com sucesso na Trilha do Paciente para CPF: ${cardData.cpf}`
       );
+      return null;
     } catch (error) {
-      console.error("(v2) Erro ao criar card na Trilha do Paciente:", error);
+      console.error("Erro ao criar card na Trilha do Paciente:", error);
+      return null;
     }
-  }
-);
+  });
 
 // FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
 // -------------------------------------------------------------------
