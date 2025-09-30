@@ -1,8 +1,7 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Completa, com Agendamento ao Final do Formulário e verificação de CPF segura via Cloud Function
+// Versão Final: Simplificada, sem agendamento de triagem no formulário.
 
 import { db, functions } from "./firebase-init.js";
-// Adicionada a importação para chamar as Cloud Functions
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,12 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const outroParentescoContainer = document.getElementById(
     "outro-parentesco-container"
   );
-  const semAgendaAviso = document.getElementById("sem-agenda-aviso");
-  const loadingContainer = document.getElementById("loading-container");
+  // Elementos de agendamento removidos
+  // const semAgendaAviso = document.getElementById("sem-agenda-aviso");
+  // const loadingContainer = document.getElementById("loading-container");
   const formContent = document.getElementById("form-content");
 
-  let horariosDisponiveis = [];
-  let horarioAgendado = null;
   let pacienteExistenteData = null;
 
   // --- Instância da Cloud Function ---
@@ -98,114 +96,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   }
 
-  // --- LÓGICA DE AGENDAMENTO (sem alterações na lógica interna) ---
-  async function verificarDisponibilidadeTriagem() {
-    try {
-      const getHorarios = functions.httpsCallable("getHorariosTriagem");
-      const result = await getHorarios();
-      horariosDisponiveis = result.data.horarios;
-
-      if (horariosDisponiveis && horariosDisponiveis.length > 0) {
-        loadingContainer.style.display = "none";
-        formContent.style.display = "block";
-      } else {
-        loadingContainer.style.display = "none";
-        semAgendaAviso.style.display = "block";
-      }
-    } catch (error) {
-      console.error("Erro ao verificar disponibilidade:", error);
-      loadingContainer.style.display = "none";
-      semAgendaAviso.querySelector("p").textContent =
-        "Ocorreu um erro ao verificar as agendas. Por favor, tente novamente mais tarde.";
-      semAgendaAviso.style.display = "block";
-    }
-  }
-
-  function abrirModalAgendamento() {
-    const modal = document.getElementById("agendamento-modal");
-    const container = document.getElementById("datas-disponiveis-container");
-    container.innerHTML = '<div class="loading-spinner"></div>';
-    modal.style.display = "flex";
-    renderizarHorarios(horariosDisponiveis);
-  }
-
-  function renderizarHorarios(horarios) {
-    const container = document.getElementById("datas-disponiveis-container");
-    if (horarios.length === 0) {
-      container.innerHTML =
-        "<p>Não há horários de triagem disponíveis no momento.</p>";
-      document.getElementById("agendamento-confirm-btn").disabled = true;
-      return;
-    }
-
-    const horariosAgrupados = horarios.reduce((acc, horario) => {
-      const dataFormatada = new Date(
-        horario.data + "T03:00:00"
-      ).toLocaleDateString("pt-BR", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-      });
-      if (!acc[dataFormatada]) acc[dataFormatada] = [];
-      acc[dataFormatada].push(horario);
-      return acc;
-    }, {});
-
-    let html = "";
-    for (const data in horariosAgrupados) {
-      html += `<div class="data-grupo"><h4>${data}</h4><div class="horarios-botoes">`;
-      horariosAgrupados[data].forEach((horario) => {
-        const horarioData = JSON.stringify(horario).replace(/'/g, "&apos;");
-        html += `<button type="button" class="horario-btn" data-horario='${horarioData}'>${horario.hora}</button>`;
-      });
-      html += `</div></div>`;
-    }
-    container.innerHTML = html;
-
-    container.querySelectorAll(".horario-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        container
-          .querySelectorAll(".horario-btn")
-          .forEach((b) => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        document.getElementById("agendamento-confirm-btn").disabled = false;
-      });
-    });
-  }
-
-  document
-    .getElementById("agendamento-confirm-btn")
-    .addEventListener("click", () => {
-      const selectedBtn = document.querySelector(".horario-btn.selected");
-      if (selectedBtn) {
-        horarioAgendado = JSON.parse(selectedBtn.dataset.horario);
-        document.getElementById("agendamento-step-1").style.display = "none";
-        document.getElementById("footer-step-1").style.display = "none";
-        document.getElementById("agendamento-step-2").style.display = "block";
-        document.getElementById("footer-step-2").style.display = "block";
-      }
-    });
-
-  document
-    .getElementById("agendamento-ok-btn")
-    .addEventListener("click", () => {
-      document.getElementById("agendamento-modal").style.display = "none";
-      document.getElementById("agendamento-step-1").style.display = "block";
-      document.getElementById("footer-step-1").style.display = "flex";
-      document.getElementById("agendamento-step-2").style.display = "none";
-      document.getElementById("footer-step-2").style.display = "none";
-      document.getElementById("agendamento-confirm-btn").disabled = true;
-
-      // Após confirmar, envia o formulário
-      enviarFormulario();
-    });
-
   // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
 
-  // ############# ALTERAÇÃO PRINCIPAL #############
-  // A verificação de CPF agora usa a Cloud Function para mais segurança.
   cpfInput.addEventListener("blur", async () => {
-    const cpf = cpfInput.value.replace(/\D/g, ""); // Limpa o CPF para ter apenas dígitos
+    const cpf = cpfInput.value.replace(/\D/g, "");
     cpfError.style.display = "none";
 
     if (!validarCPF(cpf)) {
@@ -215,13 +109,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Chama a Cloud Function ao invés de consultar o DB diretamente
       const result = await verificarCpfExistente({ cpf: cpf });
       const data = result.data;
 
       if (data && data.exists) {
-        // Paciente encontrado, preenche os dados para atualização
-        pacienteExistenteData = data.dados; // 'dados' deve conter o objeto completo do paciente
+        pacienteExistenteData = data.dados;
         pacienteExistenteData.id = data.docId;
 
         initialFieldsContainer.classList.add("hidden-section");
@@ -229,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSection.classList.remove("hidden-section");
         newRegisterSection.classList.add("hidden-section");
 
-        // Preenche o formulário de atualização com os dados retornados
         document.getElementById("update-nome-completo").value =
           pacienteExistenteData.nomeCompleto || "";
         document.getElementById("update-rua").value =
@@ -243,14 +134,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("update-cep").value =
           pacienteExistenteData.cep || "";
 
-        // Limpa campos que devem ser preenchidos novamente
         document.getElementById("update-pessoas-moradia").value = "";
         document.getElementById("update-casa-propria").value = "";
         document.getElementById("update-valor-aluguel").value = "";
         document.getElementById("update-renda-mensal").value = "";
         document.getElementById("update-renda-familiar").value = "";
       } else {
-        // Paciente não encontrado, prepara para novo cadastro
         pacienteExistenteData = null;
       }
     } catch (error) {
@@ -260,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   });
-  // ############# FIM DA ALTERAÇÃO PRINCIPAL #############
 
   document
     .getElementById("btn-alterar-endereco")
@@ -347,8 +235,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (disponibilidadeSection) {
     const infoText = document.createElement("p");
     infoText.className = "info-note";
+    // Texto ajustado, pois não há mais agendamento de triagem aqui
     infoText.textContent =
-      "Esta disponibilidade refere-se aos seus horários para as sessões de PSICOTERAPIA, não para a triagem inicial que será agendada ao final.";
+      "Esta disponibilidade refere-se aos seus horários para as sessões de PSICOTERAPIA.";
     const h3 = disponibilidadeSection.querySelector("h3");
     if (h3) h3.insertAdjacentElement("afterend", infoText);
   }
@@ -406,24 +295,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (keepCpf) {
       cpfInput.value = cpfValue;
     }
-    horarioAgendado = null;
   }
 
   // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
+
+  // **ALTERAÇÃO**: O submit agora chama diretamente a função de envio.
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
     if (!form.checkValidity()) {
       form.reportValidity();
       alert(
-        "Por favor, preencha todos os campos obrigatórios (*) antes de prosseguir para o agendamento."
+        "Por favor, preencha todos os campos obrigatórios (*) antes de enviar."
       );
       return;
     }
-
-    abrirModalAgendamento();
+    // Chama a função de envio diretamente
+    enviarFormulario();
   });
 
+  // A função agora é chamada diretamente pelo submit do formulário
   async function enviarFormulario() {
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
@@ -445,11 +336,8 @@ document.addEventListener("DOMContentLoaded", () => {
           rendaMensal: document.getElementById("update-renda-mensal").value,
           rendaFamiliar: document.getElementById("update-renda-familiar").value,
           lastUpdated: new Date(),
-          dataTriagem: horarioAgendado.data,
-          horaTriagem: horarioAgendado.hora,
-          assistenteSocialNome: horarioAgendado.assistenteNome,
-          assistenteSocialId: horarioAgendado.assistenteId,
-          status: "triagem_agendada",
+          // Campos de agendamento removidos
+          status: "atualizacao_realizada", // Status alterado
         };
         await db
           .collection("inscricoes")
@@ -509,19 +397,13 @@ document.addEventListener("DOMContentLoaded", () => {
           ).map((cb) => cb.nextSibling.textContent.trim()),
           disponibilidadeEspecifica: horariosSelecionados,
           timestamp: new Date(),
-          dataTriagem: horarioAgendado.data,
-          horaTriagem: horarioAgendado.hora,
-          assistenteSocialNome: horarioAgendado.assistenteNome,
-          assistenteSocialId: horarioAgendado.assistenteId,
-          status: "triagem_agendada",
+          // Campos de agendamento removidos
+          status: "inscricao_realizada", // Status alterado
         };
         await db.collection("inscricoes").add(novoCadastro);
       }
-      form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada!</h2><p>Sua triagem foi agendada para <strong>${new Date(
-        horarioAgendado.data + "T03:00:00"
-      ).toLocaleDateString("pt-BR")} às ${
-        horarioAgendado.hora
-      }</strong>. Em breve, nossa equipe entrará em contato.</p></div>`;
+      // Mensagem de sucesso simplificada
+      form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada com Sucesso!</h2><p>Recebemos seus dados. Em breve, nossa equipe entrará em contato para os próximos passos.</p></div>`;
     } catch (error) {
       console.error("Erro ao salvar inscrição:", error);
       alert(
@@ -532,5 +414,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  verificarDisponibilidadeTriagem();
+  document.getElementById("loading-container").style.display = "none";
+  document.getElementById("form-content").style.display = "block";
 });
