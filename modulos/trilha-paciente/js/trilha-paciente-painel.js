@@ -15,7 +15,7 @@ const menuFilters = {
 
 let db, user, userData;
 
-export function initTrilhaPacientePanel(firestoreDb, authUser, authUserData) {
+export function init(firestoreDb, authUser, authUserData) {
   db = firestoreDb;
   user = authUser;
   userData = authUserData;
