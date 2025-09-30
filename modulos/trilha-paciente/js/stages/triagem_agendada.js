@@ -15,7 +15,7 @@ export function render(modalBody, cardData, db) {
   modalBody.innerHTML = `
         <h3 class="form-section-title">Confirmação do Agendamento</h3>
         <div class="confirmation-box">
-Sua triagem será ${cardData.tipoTriagem || "não definido"}.
+Sua triagem será ${cardData.modalidadeTriagem || "não definido"}.
 
 Paciente: ${cardData.nomeCompleto || "não informado"}
 Data e Horário: ${dataTriagemFormatada} às ${
