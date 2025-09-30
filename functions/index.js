@@ -392,11 +392,12 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     );
   }
 });
+
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const dados = request.data;
 
-  // Validação básica dos dados recebidos do formulário
-  if (!dados.inscricaoId || !dados.dataTriagem || !dados.horaTriagem) {
+  // Validação mais robusta dos dados recebidos do frontend
+  if (!dados || !dados.horarioSelecionado || !dados.cpf || !dados.nome) {
     console.error("Tentativa de agendamento com dados incompletos:", dados);
     throw new HttpsError(
       "invalid-argument",
@@ -404,35 +405,48 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     );
   }
 
+  const { pacienteExistenteId, cpf, nome, telefone, horarioSelecionado } =
+    dados;
+
+  const dadosAgendamento = {
+    status: "triagem_agendada",
+    dataTriagem: horarioSelecionado.data,
+    horaTriagem: horarioSelecionado.hora,
+    modalidadeTriagem: horarioSelecionado.modalidade,
+    assistenteSocialNome: horarioSelecionado.assistenteNome,
+    assistenteSocialId: horarioSelecionado.assistenteId,
+    lastUpdate: new Date(),
+  };
+
   try {
-    const docRef = db.collection("trilhaPaciente").doc(dados.inscricaoId);
+    if (pacienteExistenteId) {
+      // Se o paciente já existe, apenas atualizamos o agendamento
+      const docRef = db.collection("trilhaPaciente").doc(pacienteExistenteId);
+      await docRef.update(dadosAgendamento);
+      console.log(
+        `Agendamento atualizado para paciente existente: ${pacienteExistenteId}`
+      );
+    } else {
+      // Se for um novo paciente, criamos um novo registro completo
+      const novoPaciente = {
+        ...dadosAgendamento,
+        nomeCompleto: nome,
+        cpf: cpf,
+        telefoneCelular: telefone,
+        status: "triagem_agendada", // Garante o status inicial correto
+        timestamp: new Date(),
+      };
+      await db.collection("trilhaPaciente").add(novoPaciente);
+      console.log(`Novo agendamento criado para o paciente: ${nome}`);
+    }
 
-    // Dados que serão salvos no Firestore
-    const dadosParaSalvar = {
-      status: "triagem_agendada",
-      dataTriagem: dados.dataTriagem,
-      horaTriagem: dados.horaTriagem,
-      modalidadeTriagem: dados.modalidade,
-      assistenteId: dados.assistenteId,
-      assistenteNome: dados.assistenteNome,
-      nome: dados.nome,
-      telefone: dados.telefone,
-      // Adicione quaisquer outros campos que você precise salvar
-    };
-
-    // Usamos 'set' com 'merge: true' para criar ou atualizar o documento
-    await docRef.set(dadosParaSalvar, { merge: true });
-
-    console.log(
-      `Agendamento realizado com sucesso para a inscrição: ${dados.inscricaoId}`
-    );
-    return { success: true, message: "Agendamento confirmado!" };
+    return { success: true, message: "Agendamento confirmado com sucesso!" };
   } catch (error) {
-    console.error("Erro ao salvar agendamento via função:", error);
+    console.error("Erro grave ao salvar agendamento via função:", error);
     throw new HttpsError(
       "internal",
-      "Não foi possível salvar o agendamento.",
-      error
+      "Ocorreu um erro interno ao salvar o agendamento.",
+      error.message
     );
   }
 });
