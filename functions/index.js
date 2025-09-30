@@ -451,10 +451,12 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   }
 });
 
+// Substitua a função getTodasDisponibilidadesAssistentes existente por esta versão corrigida
+
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
-    // Passo de segurança: Verifica se o usuário que chama a função é um admin
+    // 1. Validação de segurança (permanece igual)
     if (!request.auth || !request.auth.token.funcoes?.includes("admin")) {
       throw new HttpsError(
         "permission-denied",
@@ -463,36 +465,54 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
     }
 
     try {
-      // 1. Busca todas as assistentes sociais ativas
-      const assistentesSnapshot = await db
-        .collection("usuarios")
-        .where("funcoes", "array-contains", "servico_social")
-        .where("inativo", "==", false)
+      console.log("Iniciando busca de disponibilidade (método robusto)...");
+
+      // 2. Busca TODOS os documentos da coleção de disponibilidades.
+      // Como são poucos, isso é eficiente e seguro.
+      const dispoSnapshot = await db
+        .collection("disponibilidadeAssistentes")
         .get();
 
-      if (assistentesSnapshot.empty) {
+      if (dispoSnapshot.empty) {
+        console.log(
+          "Nenhum documento de disponibilidade encontrado na coleção."
+        );
         return [];
       }
 
-      const assistentesIds = assistentesSnapshot.docs.map((doc) => doc.id);
-      const assistentesMap = new Map(
-        assistentesSnapshot.docs.map((doc) => [doc.id, doc.data()])
-      );
+      // 3. Extrai os IDs de todos que registraram disponibilidade.
+      const assistentesComDispoIds = dispoSnapshot.docs.map((doc) => doc.id);
+      if (assistentesComDispoIds.length === 0) {
+        return [];
+      }
 
-      // 2. Busca os documentos de disponibilidade para essas assistentes
-      const disponibilidadesSnapshot = await db
-        .collection("disponibilidadeAssistentes")
-        .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
+      // 4. Busca os dados dos usuários correspondentes a esses IDs.
+      const usuariosSnapshot = await db
+        .collection("usuarios")
+        .where(
+          admin.firestore.FieldPath.documentId(),
+          "in",
+          assistentesComDispoIds
+        )
         .get();
 
-      // 3. Formata os dados para enviar ao frontend
-      const todasDisponibilidades = [];
-      disponibilidadesSnapshot.forEach((doc) => {
-        const assistenteInfo = assistentesMap.get(doc.id);
+      // 5. Cria um mapa apenas com os usuários que são assistentes sociais e estão ativos.
+      const assistentesAtivosMap = new Map();
+      usuariosSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        const isAssistente = userData.funcoes?.includes("servico_social");
+        const isAtivo = userData.inativo === false;
+        if (isAssistente && isAtivo) {
+          assistentesAtivosMap.set(doc.id, userData);
+        }
+      });
 
-        // ### CORREÇÃO ADICIONADA AQUI ###
-        // Verifica se o documento de disponibilidade existe E se possui o campo 'disponibilidade'
-        if (assistenteInfo && doc.exists && doc.data().disponibilidade) {
+      // 6. Monta o resultado final, combinando os dados.
+      const todasDisponibilidades = [];
+      dispoSnapshot.forEach((doc) => {
+        // Adiciona a disponibilidade apenas se o ID do documento pertencer a um assistente ativo
+        if (assistentesAtivosMap.has(doc.id)) {
+          const assistenteInfo = assistentesAtivosMap.get(doc.id);
           todasDisponibilidades.push({
             nome: assistenteInfo.nome,
             disponibilidade: doc.data().disponibilidade,
@@ -500,12 +520,12 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
         }
       });
 
+      console.log(
+        `Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
+      );
       return todasDisponibilidades;
     } catch (error) {
-      console.error(
-        "Erro ao buscar todas as disponibilidades de assistentes:",
-        error
-      );
+      console.error("Erro na busca robusta de disponibilidades:", error);
       throw new HttpsError(
         "internal",
         "Não foi possível buscar as disponibilidades."
