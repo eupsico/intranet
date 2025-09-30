@@ -10,7 +10,6 @@ export function render(modalBody, cardData, db) {
       ? `Responsável: ${cardData.responsavel.nome}`
       : "";
 
-  // Converte a data de nascimento para o formato brasileiro dd/mm/yyyy
   const dataNascimentoFormatada = cardData.dataNascimento
     ? new Date(cardData.dataNascimento + "T03:00:00").toLocaleDateString(
         "pt-BR"
@@ -159,14 +158,18 @@ function setupEventListeners() {
   const agendamentoSection = document.getElementById("agendamento-section");
   const allCheckboxes = document.querySelectorAll('input[name="checklist"]');
 
+  // **CORREÇÃO PRINCIPAL**: Garante que os campos comecem ocultos
+  isentoSection.style.display = "none";
+  desistiuSection.style.display = "none";
+
   chkIsento.addEventListener("change", function () {
-    isentoSection.classList.toggle("hidden-section", !this.checked);
+    isentoSection.style.display = this.checked ? "block" : "none";
     if (this.checked) {
       chkPagamento.checked = false;
       chkPagamento.disabled = true;
       chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
-      desistiuSection.classList.add("hidden-section");
+      desistiuSection.style.display = "none";
     } else {
       chkPagamento.disabled = false;
       chkDesistiu.disabled = false;
@@ -179,8 +182,8 @@ function setupEventListeners() {
       chkIsento.disabled = true;
       chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
-      isentoSection.classList.add("hidden-section");
-      desistiuSection.classList.add("hidden-section");
+      isentoSection.style.display = "none";
+      desistiuSection.style.display = "none";
     } else {
       chkIsento.disabled = false;
       chkDesistiu.disabled = false;
@@ -189,25 +192,25 @@ function setupEventListeners() {
 
   chkDesistiu.addEventListener("change", function () {
     const isDesistente = this.checked;
-    desistiuSection.classList.toggle("hidden-section", !isDesistente);
+    desistiuSection.style.display = isDesistente ? "block" : "none";
     agendamentoSection.style.display = isDesistente ? "none" : "block";
 
     allCheckboxes.forEach((chk) => {
       if (chk.id !== "chk-desistiu") {
         chk.disabled = isDesistente;
-        if (isDesistente) {
-          chk.checked = false;
-        }
+        if (isDesistente) chk.checked = false;
       }
     });
 
     if (isDesistente) {
-      isentoSection.classList.add("hidden-section");
+      chkIsento.checked = false;
+      isentoSection.style.display = "none";
     }
   });
 }
 
 async function save(cardId, db) {
+  // A função save permanece a mesma da versão anterior...
   const chkDesistiu = document.getElementById("chk-desistiu").checked;
   const desistiuMotivo = document
     .getElementById("desistencia-motivo")
