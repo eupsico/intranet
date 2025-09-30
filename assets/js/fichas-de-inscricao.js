@@ -1,7 +1,9 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Completa, com Agendamento ao Final do Formulário
+// Versão Final: Completa, com Agendamento ao Final do Formulário e verificação de CPF segura via Cloud Function
 
 import { db, functions } from "./firebase-init.js";
+// Adicionada a importação para chamar as Cloud Functions
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // --- Mapeamento de Elementos ---
@@ -30,6 +32,12 @@ document.addEventListener("DOMContentLoaded", () => {
   let horariosDisponiveis = [];
   let horarioAgendado = null;
   let pacienteExistenteData = null;
+
+  // --- Instância da Cloud Function ---
+  const verificarCpfExistente = httpsCallable(
+    functions,
+    "verificarCpfExistente"
+  );
 
   // --- FUNÇÕES DE FORMATAÇÃO E VALIDAÇÃO (sem alterações) ---
   function formatarTelefone(input) {
@@ -194,8 +202,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
 
+  // ############# ALTERAÇÃO PRINCIPAL #############
+  // A verificação de CPF agora usa a Cloud Function para mais segurança.
   cpfInput.addEventListener("blur", async () => {
-    const cpf = cpfInput.value;
+    const cpf = cpfInput.value.replace(/\D/g, ""); // Limpa o CPF para ter apenas dígitos
     cpfError.style.display = "none";
 
     if (!validarCPF(cpf)) {
@@ -205,21 +215,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const snapshot = await db
-        .collection("inscricoes")
-        .where("cpf", "==", cpf)
-        .limit(1)
-        .get();
+      // Chama a Cloud Function ao invés de consultar o DB diretamente
+      const result = await verificarCpfExistente({ cpf: cpf });
+      const data = result.data;
 
-      if (!snapshot.empty) {
-        pacienteExistenteData = snapshot.docs[0].data();
-        pacienteExistenteData.id = snapshot.docs[0].id;
+      if (data && data.exists) {
+        // Paciente encontrado, preenche os dados para atualização
+        pacienteExistenteData = data.dados; // 'dados' deve conter o objeto completo do paciente
+        pacienteExistenteData.id = data.docId;
 
         initialFieldsContainer.classList.add("hidden-section");
         formBody.classList.remove("hidden-section");
         updateSection.classList.remove("hidden-section");
         newRegisterSection.classList.add("hidden-section");
 
+        // Preenche o formulário de atualização com os dados retornados
         document.getElementById("update-nome-completo").value =
           pacienteExistenteData.nomeCompleto || "";
         document.getElementById("update-rua").value =
@@ -233,21 +243,24 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("update-cep").value =
           pacienteExistenteData.cep || "";
 
+        // Limpa campos que devem ser preenchidos novamente
         document.getElementById("update-pessoas-moradia").value = "";
         document.getElementById("update-casa-propria").value = "";
         document.getElementById("update-valor-aluguel").value = "";
         document.getElementById("update-renda-mensal").value = "";
         document.getElementById("update-renda-familiar").value = "";
       } else {
+        // Paciente não encontrado, prepara para novo cadastro
         pacienteExistenteData = null;
       }
     } catch (error) {
-      console.error("Erro ao verificar CPF:", error);
+      console.error("Erro ao verificar CPF via Cloud Function:", error);
       alert(
-        "Não foi possível verificar o CPF. Verifique sua conexão e as regras de segurança."
+        "Não foi possível verificar o CPF. Verifique sua conexão e tente novamente."
       );
     }
   });
+  // ############# FIM DA ALTERAÇÃO PRINCIPAL #############
 
   document
     .getElementById("btn-alterar-endereco")
@@ -265,7 +278,6 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Os campos de endereço foram desbloqueados para alteração.");
     });
 
-  // **ALTERAÇÃO**: Abertura do modal foi removida daqui
   dataNascimentoInput.addEventListener("change", () => {
     const dataNasc = new Date(dataNascimentoInput.value);
     if (isNaN(dataNasc.getTime()) || pacienteExistenteData) {
@@ -329,7 +341,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // **ALTERAÇÃO**: Adiciona o texto informativo sobre a disponibilidade
   const disponibilidadeSection = document.getElementById(
     "disponibilidade-section"
   );
@@ -402,8 +413,6 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    // **ALTERAÇÃO**: A submissão do formulário agora abre o modal de agendamento
-    // Valida se o formulário está preenchido antes de abrir a agenda
     if (!form.checkValidity()) {
       form.reportValidity();
       alert(
@@ -415,7 +424,6 @@ document.addEventListener("DOMContentLoaded", () => {
     abrirModalAgendamento();
   });
 
-  // **NOVA FUNÇÃO**: Lida com o envio dos dados APÓS o agendamento
   async function enviarFormulario() {
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
