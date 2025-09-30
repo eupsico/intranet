@@ -1,8 +1,8 @@
 // Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js
 
-import { app, auth, db } from "/assets/js/firebase-init.js";
+// CORREÇÃO: Removido 'app' da importação e ajustado o caminho para o SDK v9
+import { auth, db } from "/assets/js/firebase-init.js";
 import {
-  getFirestore,
   collection,
   query,
   where,
@@ -10,7 +10,40 @@ import {
   orderBy,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-const container = document.getElementById("meus-agendamentos-view");
+// A função init agora recebe 'db' e 'user' como parâmetros, seguindo o padrão do painel.
+export async function init(db, user, userData) {
+  const container = document.getElementById("meus-agendamentos-view");
+  if (!container) {
+    console.error("Container para 'Meus Agendamentos' não foi encontrado.");
+    return;
+  }
+
+  const listaContainer = container.querySelector("#agendamentos-lista");
+  if (!listaContainer) {
+    console.error("Elemento da lista de agendamentos não encontrado.");
+    return;
+  }
+
+  listaContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+  try {
+    // Usa o 'user.uid' recebido por parâmetro para a consulta
+    const q = query(
+      collection(db, "agendamentos"),
+      where("supervisorUid", "==", user.uid),
+      orderBy("dataAgendamento", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    const agendamentos = [];
+    querySnapshot.forEach((doc) => {
+      agendamentos.push(doc.data());
+    });
+    displayAgendamentos(agendamentos, listaContainer);
+  } catch (error) {
+    console.error("Erro ao buscar agendamentos:", error);
+    listaContainer.innerHTML = `<p class="alert alert-error">Erro ao carregar agendamentos.</p>`;
+  }
+}
 
 // Função auxiliar para formatar valores monetários, tratando casos onde o valor não existe.
 function formatCurrency(value) {
@@ -20,12 +53,9 @@ function formatCurrency(value) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function displayAgendamentos(agendamentos) {
-  const lista = container.querySelector("#agendamentos-lista");
-  if (!lista) return;
-
+function displayAgendamentos(agendamentos, listaContainer) {
   if (agendamentos.length === 0) {
-    lista.innerHTML =
+    listaContainer.innerHTML =
       '<p class="no-fichas-message">Nenhum agendamento encontrado.</p>';
     return;
   }
@@ -39,7 +69,6 @@ function displayAgendamentos(agendamentos) {
       minute: "2-digit",
     });
 
-    // Detalhes financeiros e de pacientes (com verificação para dados antigos)
     const numPacientes = agendamento.pacientes
       ? agendamento.pacientes.length
       : 0;
@@ -77,40 +106,5 @@ function displayAgendamentos(agendamentos) {
             </div>
         `;
   });
-  lista.innerHTML = html;
-}
-
-export async function init(db, user, userData) {
-  if (!container) {
-    console.error("Elemento container de 'Meus Agendamentos' não encontrado.");
-    return;
-  }
-  // Adiciona o elemento de lista se ele não existir
-  if (!container.querySelector("#agendamentos-lista")) {
-    container.innerHTML +=
-      '<div id="agendamentos-lista"><div class="loading-spinner"></div></div>';
-  }
-
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      try {
-        const q = query(
-          collection(db, "agendamentos"),
-          where("supervisorUid", "==", user.uid),
-          orderBy("dataAgendamento", "desc")
-        );
-        const querySnapshot = await getDocs(q);
-        const agendamentos = [];
-        querySnapshot.forEach((doc) => {
-          agendamentos.push(doc.data());
-        });
-        displayAgendamentos(agendamentos);
-      } catch (error) {
-        console.error("Erro ao buscar agendamentos:", error);
-        const lista = container.querySelector("#agendamentos-lista");
-        if (lista)
-          lista.innerHTML = `<p class="alert alert-error">Erro ao carregar agendamentos.</p>`;
-      }
-    }
-  });
+  listaContainer.innerHTML = html;
 }
