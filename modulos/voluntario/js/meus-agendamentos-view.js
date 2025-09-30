@@ -1,16 +1,9 @@
-// Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js (CORRIGIDO)
+// Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js (VERSÃO CORRIGIDA)
 
-import { auth, db } from "/assets/js/firebase-init.js";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+// REMOVIDO: A importação dos métodos da versão nova do Firebase foi removida.
+// import { collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 export async function init(db, user, userData) {
-  // CORREÇÃO: Procura o container dentro da área de conteúdo do painel
   const container = document.getElementById("painel-supervisor-content");
   if (!container) {
     console.error(
@@ -19,7 +12,7 @@ export async function init(db, user, userData) {
     return;
   }
 
-  // Carrega o HTML base para esta aba dentro do container
+  // Carrega o HTML da aba.
   container.innerHTML = `
         <div id="meus-agendamentos-view">
             <div class="list-header">
@@ -39,16 +32,19 @@ export async function init(db, user, userData) {
   }
 
   try {
-    const q = query(
-      collection(db, "agendamentos"),
-      where("supervisorUid", "==", user.uid),
-      orderBy("dataAgendamento", "desc")
-    );
-    const querySnapshot = await getDocs(q);
+    // ALTERADO: A consulta ao Firestore agora usa o formato antigo (compatível com o seu projeto).
+    const q = db
+      .collection("agendamentos")
+      .where("supervisorUid", "==", user.uid)
+      .orderBy("dataAgendamento", "desc");
+
+    const querySnapshot = await q.get();
+
     const agendamentos = [];
     querySnapshot.forEach((doc) => {
       agendamentos.push(doc.data());
     });
+
     displayAgendamentos(agendamentos, listaContainer);
   } catch (error) {
     console.error("Erro ao buscar agendamentos:", error);
@@ -72,6 +68,7 @@ function displayAgendamentos(agendamentos, listaContainer) {
 
   let html = "";
   agendamentos.forEach((agendamento) => {
+    // O restante do código de exibição permanece o mesmo.
     const data = agendamento.dataAgendamento.toDate();
     const dataFormatada = data.toLocaleDateString("pt-BR");
     const horaFormatada = data.toLocaleTimeString("pt-BR", {
