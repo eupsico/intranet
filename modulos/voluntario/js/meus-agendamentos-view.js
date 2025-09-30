@@ -9,24 +9,29 @@ import {
   getDocs,
   orderBy,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
 const container = document.getElementById("meus-agendamentos-view");
 
+// Função auxiliar para formatar valores monetários, tratando casos onde o valor não existe.
 function formatCurrency(value) {
-  if (typeof value !== "number") return "R$ 0,00";
+  if (typeof value !== "number") {
+    return "R$ 0,00";
+  }
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
 function displayAgendamentos(agendamentos) {
   const lista = container.querySelector("#agendamentos-lista");
   if (!lista) return;
 
   if (agendamentos.length === 0) {
-    lista.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
+    lista.innerHTML =
+      '<p class="no-fichas-message">Nenhum agendamento encontrado.</p>';
     return;
   }
 
   let html = "";
-  for (let i = 0; i < agendamentos.length; i++) {
-    const agendamento = agendamentos[i];
+  agendamentos.forEach((agendamento) => {
     const data = agendamento.dataAgendamento.toDate();
     const dataFormatada = data.toLocaleDateString("pt-BR");
     const horaFormatada = data.toLocaleTimeString("pt-BR", {
@@ -34,7 +39,7 @@ function displayAgendamentos(agendamentos) {
       minute: "2-digit",
     });
 
-    // Detalhes financeiros e de pacientes
+    // Detalhes financeiros e de pacientes (com verificação para dados antigos)
     const numPacientes = agendamento.pacientes
       ? agendamento.pacientes.length
       : 0;
@@ -42,20 +47,20 @@ function displayAgendamentos(agendamentos) {
     const valorSupervisao = formatCurrency(agendamento.valorSupervisao);
 
     html += `
-            <div class="agendamento-card">
+            <div class="agendamento-card-supervisor">
                 <div class="card-header">
                     <h4>${agendamento.profissionalNome}</h4>
                     <span class="data-agendamento">${dataFormatada} às ${horaFormatada}</span>
                 </div>
                 <div class="card-body">
                     <p><strong>E-mail:</strong> ${
-                      agendamento.profissionalEmail
+                      agendamento.profissionalEmail || "Não informado"
                     }</p>
                     <p><strong>Telefone:</strong> ${
                       agendamento.profissionalTelefone || "Não informado"
                     }</p>
                 </div>
-                <div class="card-footer">
+                <div class="card-footer-details">
                     <div class="info-item">
                         <span class="label">Pacientes</span>
                         <span class="value">${numPacientes}</span>
@@ -71,12 +76,20 @@ function displayAgendamentos(agendamentos) {
                 </div>
             </div>
         `;
-  }
+  });
   lista.innerHTML = html;
 }
 
-export async function init() {
-  if (!container) return;
+export async function init(db, user, userData) {
+  if (!container) {
+    console.error("Elemento container de 'Meus Agendamentos' não encontrado.");
+    return;
+  }
+  // Adiciona o elemento de lista se ele não existir
+  if (!container.querySelector("#agendamentos-lista")) {
+    container.innerHTML +=
+      '<div id="agendamentos-lista"><div class="loading-spinner"></div></div>';
+  }
 
   auth.onAuthStateChanged(async (user) => {
     if (user) {
