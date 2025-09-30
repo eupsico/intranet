@@ -370,7 +370,6 @@ if (modal) {
     .querySelector("#agendamento-ok-btn")
     .addEventListener("click", () => (modal.style.display = "none"));
 }
-
 export const agendamentoController = {
   open,
 };

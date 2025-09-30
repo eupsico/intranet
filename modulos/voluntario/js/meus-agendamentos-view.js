@@ -9,7 +9,6 @@ import {
   getDocs,
   orderBy,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
 const container = document.getElementById("meus-agendamentos-view");
 
 function formatCurrency(value) {
