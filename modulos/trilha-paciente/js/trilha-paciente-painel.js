@@ -85,7 +85,13 @@ async function loadView(view) {
     if (!filter)
       throw new Error(`Filtro de visão não encontrado para: ${view}`);
 
-    await initKanban(db, user, userData, moduleContentArea, filter);
+    await initKanban(
+      firestoreDb,
+      authUser,
+      authUserData,
+      moduleContentArea,
+      filter
+    );
   } catch (error) {
     console.error(`Erro ao carregar a visão ${view}:`, error);
     moduleContentArea.innerHTML = `<div class="error-message">Ocorreu um erro.</div>`;
