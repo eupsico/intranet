@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
           "<h2>Falha ao carregar o painel administrativo.</h2>";
       }
     } else if (
-      window.location.pathname.includes("trilha-paciente-painel.html")
+      window.location.pathname.includes("painel-trilha-paciente.html")
     ) {
       const pageTitleContainer = document.getElementById(
         "page-title-container"
@@ -182,10 +182,10 @@ document.addEventListener("DOMContentLoaded", function () {
                   `;
       }
       try {
-        const trilhaPanelModule = await import(
-          "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
+        const trilhaModule = await import(
+          "../../modulos/trilha-paciente/js/trilha-paciente.js"
         );
-        trilhaPanelModule.initTrilhaPacientePanel(db, user, userData);
+        trilhaModule.init(db, user, userData);
       } catch (error) {
         console.error("Erro ao carregar o módulo Trilha do Paciente:", error);
         document.getElementById("content-area").innerHTML =
@@ -344,8 +344,8 @@ document.addEventListener("DOMContentLoaded", function () {
         titulo: "Trilha do Paciente",
         descricao:
           "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
-        url: "/modulos/trilha-paciente/page/trilha-paciente-painel.html",
-        roles: ["admin", "assistente"],
+        url: "./modulos/trilha-paciente/page/painel-trilha-paciente.html",
+        roles: ["admin", "assistente"], // Permitido para admin e serviço social
         icon: icons.trilha_paciente,
       },
       captacao: {
