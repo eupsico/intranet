@@ -145,38 +145,38 @@ exports.criarNovoProfissional = onCall(async (request) => {
 // -----------------------------
 // Função verificarCpfExistente (HTTP v1)
 // -----------------------------
-exports.verificarCpfExistente = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
-    }
+// Nova versão da função usando o formato onCall (v2)
+exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
+  const cpf = request.data.cpf;
+  if (!cpf || cpf.length < 11) {
+    throw new HttpsError("invalid-argument", "CPF inválido ou não fornecido.");
+  }
 
-    const cpf = req.body.cpf;
-    if (!cpf || cpf.length < 11) {
-      return res.status(400).json({ error: "CPF inválido ou não fornecido." });
-    }
+  try {
+    const trilhaRef = db.collection("trilhaPaciente");
+    const snapshot = await trilhaRef.where("cpf", "==", cpf).limit(1).get();
 
-    try {
-      const inscricoesRef = db.collection("inscricoes");
-      const snapshot = await inscricoesRef
-        .where("cpf", "==", cpf)
-        .limit(1)
-        .get();
-
-      if (snapshot.empty) {
-        return res.status(200).json({ existe: false });
-      } else {
-        const paciente = snapshot.docs[0].data();
-        return res.status(200).json({
-          existe: true,
-          nome: paciente.nomeCompleto || "Nome não encontrado",
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao verificar CPF:", error);
-      return res.status(500).json({ error: "Erro interno do servidor." });
+    if (snapshot.empty) {
+      return { exists: false };
+    } else {
+      const doc = snapshot.docs[0];
+      const paciente = doc.data();
+      return {
+        exists: true,
+        docId: doc.id,
+        dados: {
+          nomeCompleto: paciente.nomeCompleto || "Nome não encontrado",
+          telefoneCelular: paciente.telefoneCelular || "",
+        },
+      };
     }
-  });
+  } catch (error) {
+    console.error("Erro ao verificar CPF na trilha:", error);
+    throw new HttpsError(
+      "internal",
+      "Erro interno do servidor ao verificar CPF."
+    );
+  }
 });
 
 // -------------------------------------------------------------------
