@@ -358,7 +358,6 @@ async function open(db, user, userData, supervisorData) {
     datasContainer.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao buscar os horários.</p>`;
   }
 }
-
 if (modal) {
   modal
     .querySelector(".close-modal-btn")

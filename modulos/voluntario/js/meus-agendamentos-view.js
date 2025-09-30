@@ -15,7 +15,6 @@ function formatCurrency(value) {
   if (typeof value !== "number") return "R$ 0,00";
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
-
 function displayAgendamentos(agendamentos) {
   const lista = container.querySelector("#agendamentos-lista");
   if (!lista) return;
