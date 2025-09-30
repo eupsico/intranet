@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento de Triagem - EuPsico</title>
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <style>
+      /* Estilos fornecidos foram inseridos aqui */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💡 Agendamento Online - EuPsico</h1>
+        <hr style="margin: 30px 0; border-color: rgba(255,255,255,0.2);">
+
+        <div id="agendamento-section">
+            <h2>Escolha um Horário para sua Triagem</h2>
+            <div id="horarios-container">
+                <div class="loading-spinner" style="border-top-color: white;"></div>
+                <p>Carregando horários disponíveis...</p>
+            </div>
+        </div>
+
+        <div id="confirmacao-section" style="display: none; text-align: center; padding: 20px; background-color: #e8f5e9; color: #2e7d32; border-radius: 8px;">
+            <h2>Agendamento Confirmado!</h2>
+            <p>Sua triagem foi agendada com sucesso. Em breve, nossa equipe entrará em contato com mais detalhes.</p>
+            <p><strong>Assistente Social:</strong> <span id="confirm-assistente"></span></p>
+            <p><strong>Data:</strong> <span id="confirm-data"></span></p>
+            <p><strong>Horário:</strong> <span id="confirm-horario"></span></p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
+    <script type="module" src="../assets/js/firebase-init.js"></script>
+    <script type="module" src="../modulos/servico-social/js/agendamento-publico.js"></script>
+</body>
+</html>
