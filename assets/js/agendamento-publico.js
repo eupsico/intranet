@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/agendamento-publico.js
-// Versão 2.2: Corrige a busca de CPF para consultar as coleções corretas diretamente, espelhando a lógica da ficha de inscrição.
+// Versão 2.1: Utiliza a Cloud Function existente 'verificarCpfExistente' para segurança.
 
 import { db, functions } from "../../../assets/js/firebase-init.js";
 
@@ -17,7 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let horarioSelecionado = null;
   let pacienteExistenteId = null;
-  let colecaoDoPaciente = null; // 'trilhaPaciente' ou 'inscricoes'
 
   // --- Funções Principais ---
 
@@ -84,7 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function abrirModalConfirmacao(horario) {
     horarioSelecionado = horario;
     pacienteExistenteId = null;
-    colecaoDoPaciente = null;
 
     cpfInput.value = "";
     nomeInput.value = "";
@@ -104,7 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
     nomeInput.value = "";
     nomeInput.readOnly = false;
     pacienteExistenteId = null;
-    colecaoDoPaciente = null;
 
     if (cpf.length !== 11) {
       cpfFeedback.textContent = "CPF inválido.";
@@ -113,30 +110,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Lógica replicada da ficha de inscrição, mas buscando em ambas as coleções
-      let snapshot = await db
-        .collection("trilhaPaciente")
-        .where("cpf", "==", cpf)
-        .limit(1)
-        .get();
-      let colecao = "trilhaPaciente";
+      // **** INÍCIO DA CORREÇÃO ****
+      // Chamando a Cloud Function CORRETA e JÁ EXISTENTE
+      const verificarCpf = functions.httpsCallable("verificarCpfExistente");
+      const result = await verificarCpf({ cpf: cpf });
+      const data = result.data;
+      // **** FIM DA CORREÇÃO ****
 
-      if (snapshot.empty) {
-        snapshot = await db
-          .collection("inscricoes")
-          .where("cpf", "==", cpf)
-          .limit(1)
-          .get();
-        colecao = "inscricoes";
-      }
+      if (data.exists) {
+        pacienteExistenteId = data.docId;
 
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        const paciente = doc.data();
-
-        pacienteExistenteId = doc.id;
-        colecaoDoPaciente = colecao;
-
+        // A função 'verificarCpfExistente' retorna 'dados'
+        const paciente = data.dados;
         nomeInput.value = paciente.nomeCompleto;
         nomeInput.readOnly = true;
         telefoneInput.value = paciente.telefoneCelular || "";
@@ -149,14 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
         cpfFeedback.style.color = "orange";
       }
     } catch (error) {
-      console.error("Erro ao verificar CPF:", error);
-      // Este erro de permissão indica que as regras de segurança precisam de ajuste
-      if (error.code === "permission-denied") {
-        cpfFeedback.textContent =
-          "Erro de segurança ao verificar CPF. Contate o administrador.";
-      } else {
-        cpfFeedback.textContent = "Erro ao verificar o CPF. Tente novamente.";
-      }
+      console.error("Erro ao chamar a função verificarCpfExistente:", error);
+      cpfFeedback.textContent = "Erro ao verificar o CPF. Tente novamente.";
       cpfFeedback.style.color = "red";
     }
   }
@@ -192,14 +171,12 @@ document.addEventListener("DOMContentLoaded", () => {
         lastUpdate: new Date(),
       };
 
-      if (pacienteExistenteId && colecaoDoPaciente) {
-        // Atualiza o documento na coleção onde o paciente foi encontrado
-        const docRef = db
-          .collection(colecaoDoPaciente)
-          .doc(pacienteExistenteId);
+      if (pacienteExistenteId) {
+        // Atualiza um paciente existente
+        const docRef = db.collection("trilhaPaciente").doc(pacienteExistenteId);
         await docRef.update(dadosAgendamento);
       } else {
-        // Se não encontrou, cria um novo paciente sempre na 'trilhaPaciente'
+        // Cria um novo paciente na trilha
         const novoPaciente = {
           ...dadosAgendamento,
           nomeCompleto: nome,
