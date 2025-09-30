@@ -33,30 +33,12 @@ E-mail: ${cardData.email}
         <h3 class="form-section-title">Checklist para Agendar Triagem</h3>
         <div class="checklist-group">
             <div class="form-grid-2-col">
-                 <div class="form-group">
-                    <input type="checkbox" id="chk-docs" name="checklist">
-                    <label for="chk-docs">Enviou os documentos</label>
-                </div>
-                <div class="form-group">
-                    <input type="checkbox" id="chk-confirmou" name="checklist">
-                    <label for="chk-confirmou">Confirmou os dados</label>
-                </div>
-                <div class="form-group">
-                    <input type="checkbox" id="chk-pasta" name="checklist">
-                    <label for="chk-pasta">Criou Pasta no Drive</label>
-                </div>
-                <div class="form-group">
-                    <input type="checkbox" id="chk-pagamento" name="checklist">
-                    <label for="chk-pagamento">Efetuou o pagamento</label>
-                </div>
-                <div class="form-group">
-                    <input type="checkbox" id="chk-isento" name="checklist">
-                    <label for="chk-isento">Isento da triagem</label>
-                </div>
-                <div class="form-group">
-                    <input type="checkbox" id="chk-desistiu" name="checklist">
-                    <label for="chk-desistiu">Desistiu do processo</label>
-                </div>
+                 <div class="form-group"><input type="checkbox" id="chk-docs" name="checklist"><label for="chk-docs">Enviou os documentos</label></div>
+                <div class="form-group"><input type="checkbox" id="chk-confirmou" name="checklist"><label for="chk-confirmou">Confirmou os dados</label></div>
+                <div class="form-group"><input type="checkbox" id="chk-pasta" name="checklist"><label for="chk-pasta">Criou Pasta no Drive</label></div>
+                <div class="form-group"><input type="checkbox" id="chk-pagamento" name="checklist"><label for="chk-pagamento">Efetuou o pagamento</label></div>
+                <div class="form-group"><input type="checkbox" id="chk-isento" name="checklist"><label for="chk-isento">Isento da triagem</label></div>
+                <div class="form-group"><input type="checkbox" id="chk-desistiu" name="checklist"><label for="chk-desistiu">Desistiu do processo</label></div>
             </div>
            
              <div id="isento-motivo-section" class="form-group hidden-section">
@@ -73,34 +55,13 @@ E-mail: ${cardData.email}
         <div id="agendamento-section">
             <h3 class="form-section-title">Agendamento da Triagem</h3>
             <div class="form-grid-2-col">
-                <div class="form-group">
-                    <label for="assistente-social">Nome da Assistente Social</label>
-                    <select id="assistente-social" class="form-control">
-                        <option value="">Carregando...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="assistente-email">E-mail da Assistente Social</label>
-                    <input type="email" id="assistente-email" class="form-control" disabled>
-                </div>
+                <div class="form-group"><label for="assistente-social">Nome da Assistente Social</label><select id="assistente-social" class="form-control"><option value="">Carregando...</option></select></div>
+                <div class="form-group"><label for="assistente-email">E-mail da Assistente Social</label><input type="email" id="assistente-email" class="form-control" disabled></div>
             </div>
             <div class="form-grid-3-col">
-                <div class="form-group">
-                    <label for="tipo-triagem">Tipo de Triagem</label>
-                    <select id="tipo-triagem" class="form-control">
-                        <option value="">Selecione...</option>
-                        <option value="Online">Online</option>
-                        <option value="Presencial">Presencial</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="data-triagem">Data da Triagem</label>
-                    <input type="date" id="data-triagem" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="hora-triagem">Horário da Triagem</label>
-                    <input type="time" id="hora-triagem" class="form-control">
-                </div>
+                <div class="form-group"><label for="tipo-triagem">Tipo de Triagem</label><select id="tipo-triagem" class="form-control"><option value="">Selecione...</option><option value="Online">Online</option><option value="Presencial">Presencial</option></select></div>
+                <div class="form-group"><label for="data-triagem">Data da Triagem</label><input type="date" id="data-triagem" class="form-control"></div>
+                <div class="form-group"><label for="hora-triagem">Horário da Triagem</label><input type="time" id="hora-triagem" class="form-control"></div>
             </div>
         </div>
     `;
@@ -121,16 +82,13 @@ async function loadAssistentesSociais(db) {
       .where("funcoes", "array-contains", "servico_social")
       .where("inativo", "==", false)
       .get();
-
     select.innerHTML = '<option value="">Selecione...</option>';
     const assistentes = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
       assistentes.push({ id: doc.id, nome: data.nome, email: data.email });
     });
-
     assistentes.sort((a, b) => a.nome.localeCompare(b.nome));
-
     assistentes.forEach((assistente) => {
       const option = document.createElement("option");
       option.value = assistente.nome;
@@ -138,7 +96,6 @@ async function loadAssistentesSociais(db) {
       option.dataset.email = assistente.email;
       select.appendChild(option);
     });
-
     select.addEventListener("change", (e) => {
       const selectedOption = e.target.options[e.target.selectedIndex];
       emailInput.value = selectedOption.dataset.email || "";
@@ -150,6 +107,7 @@ async function loadAssistentesSociais(db) {
 }
 
 function setupEventListeners() {
+  // ... (Esta função permanece a mesma da versão anterior, corrigida)
   const chkPagamento = document.getElementById("chk-pagamento");
   const chkIsento = document.getElementById("chk-isento");
   const chkDesistiu = document.getElementById("chk-desistiu");
@@ -158,7 +116,6 @@ function setupEventListeners() {
   const agendamentoSection = document.getElementById("agendamento-section");
   const allCheckboxes = document.querySelectorAll('input[name="checklist"]');
 
-  // **CORREÇÃO PRINCIPAL**: Garante que os campos comecem ocultos
   isentoSection.style.display = "none";
   desistiuSection.style.display = "none";
 
@@ -194,14 +151,12 @@ function setupEventListeners() {
     const isDesistente = this.checked;
     desistiuSection.style.display = isDesistente ? "block" : "none";
     agendamentoSection.style.display = isDesistente ? "none" : "block";
-
     allCheckboxes.forEach((chk) => {
       if (chk.id !== "chk-desistiu") {
         chk.disabled = isDesistente;
         if (isDesistente) chk.checked = false;
       }
     });
-
     if (isDesistente) {
       chkIsento.checked = false;
       isentoSection.style.display = "none";
@@ -210,7 +165,6 @@ function setupEventListeners() {
 }
 
 async function save(cardId, db) {
-  // A função save permanece a mesma da versão anterior...
   const chkDesistiu = document.getElementById("chk-desistiu").checked;
   const desistiuMotivo = document
     .getElementById("desistencia-motivo")
@@ -229,7 +183,7 @@ async function save(cardId, db) {
       desistenciaMotivo: desistiuMotivo,
       lastUpdate: new Date(),
     };
-    newStatus = "desistencia";
+    newStatus = "Desistência";
   } else {
     const isento = document.getElementById("chk-isento").checked;
     const camposObrigatorios = {
@@ -241,10 +195,7 @@ async function save(cardId, db) {
       "data-triagem": "Informar a data da triagem",
       "hora-triagem": "Informar o horário da triagem",
     };
-
-    if (!isento) {
-      camposObrigatorios["chk-pagamento"] = "Confirmar o pagamento";
-    }
+    if (!isento) camposObrigatorios["chk-pagamento"] = "Confirmar o pagamento";
 
     for (const [id, nome] of Object.entries(camposObrigatorios)) {
       const element = document.getElementById(id);
@@ -268,7 +219,7 @@ async function save(cardId, db) {
       horaTriagem: document.getElementById("hora-triagem").value,
       lastUpdate: new Date(),
     };
-    newStatus = "triagem_agendada";
+    newStatus = "Triagem Agendada";
   }
 
   try {
@@ -278,8 +229,9 @@ async function save(cardId, db) {
 
     await db.collection("trilhaPaciente").doc(cardId).update(dataToUpdate);
 
-    const friendlyStatus = COLUMNS_CONFIG[newStatus] || newStatus;
-    alert(`Paciente movido para a etapa "${friendlyStatus}" com sucesso!`);
+    // **AQUI ESTÁ A CORREÇÃO**
+    // A mensagem de alerta foi simplificada para não depender da variável externa.
+    alert(`Paciente movido para a etapa "${newStatus}" com sucesso!`);
     document.getElementById("close-modal-btn").click();
   } catch (error) {
     console.error("Erro ao salvar dados do card:", error);
