@@ -20,6 +20,21 @@ function formatarMoeda(input) {
 }
 
 /**
+ * Converte uma string de moeda BRL para um número.
+ * @param {string} currencyString A string no formato "R$ 1.234,56".
+ * @returns {number} O valor numérico.
+ */
+function parseCurrency(currencyString) {
+  if (!currencyString) return 0;
+  const numericString = currencyString
+    .replace("R$", "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .trim();
+  return parseFloat(numericString) || 0;
+}
+
+/**
  * Calcula a capacidade de agendamentos em slots de 30 minutos.
  * @param {string} inicio Hora de início (HH:mm).
  * @param {string} fim Hora de fim (HH:mm).
@@ -39,13 +54,51 @@ let dbInstance, currentUser, currentUserData;
 const modal = document.getElementById("agendamento-modal");
 
 /**
+ * Atualiza o cálculo do custo da supervisão na tela.
+ */
+function updateSupervisionCost() {
+  if (!modal.querySelector("#numero-pacientes")) return;
+
+  const numeroPacientes =
+    parseInt(modal.querySelector("#numero-pacientes").value, 10) || 0;
+  let valorTotalContribuicao = 0;
+
+  for (let i = 1; i <= numeroPacientes; i++) {
+    const contribuicaoInput = modal.querySelector(
+      `#paciente-contribuicao-${i}`
+    );
+    if (contribuicaoInput) {
+      valorTotalContribuicao += parseCurrency(contribuicaoInput.value);
+    }
+  }
+
+  const valorSupervisao = valorTotalContribuicao * 0.2;
+
+  const totalEl = modal.querySelector("#total-contribuicoes-valor");
+  const supervisaoEl = modal.querySelector("#valor-supervisao-calculado");
+  if (totalEl)
+    totalEl.textContent = valorTotalContribuicao.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  if (supervisaoEl)
+    supervisaoEl.textContent = valorSupervisao.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+}
+
+/**
  * Renderiza os campos de input para cada paciente.
  * @param {number} count O número de pacientes.
  */
 function renderPatientInputs(count) {
   const container = modal.querySelector("#pacientes-container");
   container.innerHTML = "";
-  if (isNaN(count) || count < 1) return;
+  if (isNaN(count) || count < 1) {
+    updateSupervisionCost();
+    return;
+  }
 
   for (let i = 1; i <= count; i++) {
     container.innerHTML += `
@@ -61,12 +114,17 @@ function renderPatientInputs(count) {
             </div>
         `;
   }
-  // Adiciona o listener para formatar a moeda em tempo real
+
   container
     .querySelectorAll('input[id^="paciente-contribuicao-"]')
     .forEach((input) => {
-      input.addEventListener("input", () => formatarMoeda(input));
+      input.addEventListener("input", () => {
+        formatarMoeda(input);
+        updateSupervisionCost();
+      });
     });
+
+  updateSupervisionCost();
 }
 
 /**
@@ -135,22 +193,24 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
   confirmBtn.disabled = true;
   confirmBtn.textContent = "Aguarde...";
 
-  // Coleta os dados dos pacientes
   const numeroPacientes = parseInt(
     modal.querySelector("#numero-pacientes").value,
     10
   );
   const pacientes = [];
+  let valorTotalContribuicao = 0;
+
   for (let i = 1; i <= numeroPacientes; i++) {
     const iniciais = modal.querySelector(`#paciente-iniciais-${i}`).value;
-    const contribuicao = modal.querySelector(
+    const contribuicaoString = modal.querySelector(
       `#paciente-contribuicao-${i}`
     ).value;
     if (iniciais) {
-      // Salva apenas se houver iniciais
-      pacientes.push({ iniciais, contribuicao });
+      pacientes.push({ iniciais, contribuicao: contribuicaoString });
+      valorTotalContribuicao += parseCurrency(contribuicaoString);
     }
   }
+  const valorSupervisao = valorTotalContribuicao * 0.2;
 
   const agendamentoData = {
     supervisorUid: currentSupervisorData.uid,
@@ -162,7 +222,9 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     profissionalNome: nome,
     profissionalEmail: email,
     profissionalTelefone: telefone,
-    pacientes: pacientes, // Adiciona a lista de pacientes
+    pacientes: pacientes,
+    valorTotalContribuicao: valorTotalContribuicao,
+    valorSupervisao: valorSupervisao,
     criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
   };
 
@@ -178,6 +240,7 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     alert(
       "Não foi possível realizar o agendamento. Verifique o console para mais detalhes."
     );
+  } finally {
     confirmBtn.disabled = false;
     confirmBtn.textContent = "Confirmar Agendamento";
   }
@@ -209,7 +272,6 @@ async function open(db, user, userData, supervisorData) {
 
   const numeroPacientesInput = modal.querySelector("#numero-pacientes");
   if (numeroPacientesInput) {
-    // Remove listeners antigos para evitar duplicação
     const newNumeroPacientesInput = numeroPacientesInput.cloneNode(true);
     numeroPacientesInput.parentNode.replaceChild(
       newNumeroPacientesInput,
@@ -220,7 +282,7 @@ async function open(db, user, userData, supervisorData) {
       const count = parseInt(e.target.value, 10);
       renderPatientInputs(count);
     });
-    renderPatientInputs(parseInt(newNumeroPacientesInput.value, 10)); // Renderização inicial
+    renderPatientInputs(parseInt(newNumeroPacientesInput.value, 10));
   }
 
   modal.style.display = "flex";
@@ -265,7 +327,6 @@ async function open(db, user, userData, supervisorData) {
             const slotDate = new Date(diaAtual);
             slotDate.setHours(h, m, 0, 0);
 
-            // Garante que o horário ainda não passou
             if (slotDate > new Date()) {
               potentialSlots.push({ date: slotDate, horario });
             }
