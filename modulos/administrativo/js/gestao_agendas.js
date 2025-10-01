@@ -1,53 +1,58 @@
-let db, functions, httpsCallable;
+import { functions } from "../../../assets/js/firebase-init.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
+
+let db, user, userData;
 let currentAgendaConfig = null; // Armazena os dados da agenda que está sendo configurada
 
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    const firebaseApp = await firebaseInitializer.getFirebaseApp();
-    db = getFirestore(firebaseApp);
-    functions = getFunctions(firebaseApp, "southamerica-east1");
-    httpsCallable = httpsCallable;
+// Função de inicialização do módulo
+export function init(dbRef, userRef, userDataRef) {
+  db = dbRef;
+  user = userRef;
+  userData = userDataRef;
 
-    await carregarDisponibilidades();
+  console.log("Módulo de Gestão de Agendas iniciado.");
+  carregarDisponibilidades();
 
-    // Adiciona o listener de evento para o botão de salvar no modal
-    const saveButton = document.getElementById("saveConfigButton");
-    if (saveButton) {
-      saveButton.addEventListener("click", salvarConfiguracaoAgenda);
-    }
-  } catch (error) {
-    console.error("Erro ao inicializar a página de gestão de agendas:", error);
-    const spinner = document.getElementById("loading-spinner");
-    spinner.innerHTML = `<p class="text-danger">Erro ao carregar dados. Tente recarregar a página.</p>`;
+  // Adiciona o listener de evento para o botão de salvar no modal
+  const saveButton = document.getElementById("saveConfigButton");
+  if (saveButton) {
+    saveButton.addEventListener("click", salvarConfiguracaoAgenda);
   }
-});
+}
 
+// Função para carregar e renderizar as disponibilidades
 async function carregarDisponibilidades() {
   const spinner = document.getElementById("loading-spinner");
   const table = document.getElementById("disponibilidades-table");
   const noDataMessage = document.getElementById("no-data-message");
   const tableBody = document.getElementById("disponibilidades-body");
 
+  // Garante que o estado inicial esteja correto
   spinner.style.display = "block";
   table.style.display = "none";
   noDataMessage.style.display = "none";
   tableBody.innerHTML = "";
 
   try {
-    const getDisponibilidadesAdmin = httpsCallable(
+    // CORREÇÃO: Usando a Cloud Function correta que criamos
+    const getDisponibilidades = httpsCallable(
       functions,
-      "getDisponibilidadesParaAdmin"
+      "getTodasDisponibilidadesAssistentes"
     );
-    const result = await getDisponibilidadesAdmin();
-    const disponibilidades = result.data.disponibilidades;
+    const result = await getDisponibilidades();
+    const disponibilidades = result.data;
 
-    if (disponibilidades.length === 0) {
+    if (!disponibilidades || disponibilidades.length === 0) {
       noDataMessage.style.display = "block";
     } else {
       disponibilidades.forEach((item) => {
         const diasOrdenados = item.dias.sort();
+        // Formata os dias para exibição
         const diasFormatados = diasOrdenados
-          .map((dia) => new Date(dia + "T00:00:00").toLocaleDateString("pt-BR"))
+          .map((dia) => {
+            const [year, month, day] = dia.split("-");
+            return `${day}/${month}`;
+          })
           .join(", ");
 
         const row = `
@@ -58,7 +63,7 @@ async function carregarDisponibilidades() {
                         <td class="text-wrap" style="max-width: 300px;">${diasFormatados}</td>
                         <td>${item.inicio} - ${item.fim}</td>
                         <td>
-                            <a href="#" class="btn btn-primary btn-sm config-btn" 
+                            <button class="btn btn-primary btn-sm config-btn" 
                                data-bs-toggle="modal" 
                                data-bs-target="#configurarAgendaModal"
                                data-assistente-id="${item.assistenteId}"
@@ -66,15 +71,15 @@ async function carregarDisponibilidades() {
                                data-mes="${item.mes}"
                                data-modalidade="${item.modalidade}"
                                data-dias='${JSON.stringify(diasOrdenados)}'>
-                               <i class="fas fa-cog me-2"></i>Clique para configurar
-                            </a>
+                               <i class="fas fa-cog me-1"></i> Configurar
+                            </button>
                         </td>
                     </tr>
                 `;
         tableBody.innerHTML += row;
       });
 
-      // Adiciona o listener para os botões de configurar recém-criados
+      // Adiciona listener aos botões recém-criados
       document.querySelectorAll(".config-btn").forEach((button) => {
         button.addEventListener("click", (event) => {
           const data = event.currentTarget.dataset;
@@ -101,6 +106,7 @@ async function carregarDisponibilidades() {
   }
 }
 
+// Abre e popula o modal com os dados do dia a ser configurado
 function abrirModalConfiguracao(
   assistenteId,
   assistenteNome,
@@ -108,17 +114,16 @@ function abrirModalConfiguracao(
   modalidade,
   dias
 ) {
-  // Armazena os dados atuais para serem usados na função de salvar
   currentAgendaConfig = { assistenteId, mes, modalidade };
 
   const modalTitle = document.getElementById("configurarAgendaModalLabel");
   const modalContent = document.getElementById("agenda-config-content");
 
-  modalTitle.textContent = `Configurar Agenda de ${assistenteNome} - ${mes}`;
+  modalTitle.textContent = `Configurar Agenda de ${assistenteNome} (${modalidade} - ${mes})`;
 
   let contentHTML = '<div class="row g-3">';
   dias.forEach((dia) => {
-    const dataFormatada = new Date(dia + "T00:00:00").toLocaleDateString(
+    const dataFormatada = new Date(dia + "T03:00:00").toLocaleDateString(
       "pt-BR",
       { weekday: "long", day: "2-digit", month: "2-digit" }
     );
@@ -129,15 +134,11 @@ function abrirModalConfiguracao(
                         <h6 class="card-title">${dataFormatada}</h6>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked>
-                            <label class="form-check-label" for="triagem-${dia}">
-                                Triagem
-                            </label>
+                            <label class="form-check-label" for="triagem-${dia}">Triagem</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao">
-                            <label class="form-check-label" for="reavaliacao-${dia}">
-                                Reavaliação
-                            </label>
+                            <label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label>
                         </div>
                     </div>
                 </div>
@@ -148,12 +149,12 @@ function abrirModalConfiguracao(
   modalContent.innerHTML = contentHTML;
 }
 
+// Salva a configuração feita no modal
 async function salvarConfiguracaoAgenda() {
   const button = document.getElementById("saveConfigButton");
   button.disabled = true;
   button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Salvando...`;
 
-  // Coleta a configuração que o admin fez no modal
   const diasConfig = Array.from(
     document.querySelectorAll(
       '#agenda-config-content input[type="radio"]:checked'
@@ -164,10 +165,7 @@ async function salvarConfiguracaoAgenda() {
   }));
 
   if (diasConfig.length === 0) {
-    showFeedbackModal(
-      "Nenhum dia foi configurado. Nenhuma ação foi tomada.",
-      false
-    );
+    alert("Nenhum dia foi configurado.");
     button.disabled = false;
     button.innerHTML = '<i class="fas fa-save me-2"></i>Salvar Configuração';
     return;
@@ -179,23 +177,15 @@ async function salvarConfiguracaoAgenda() {
     const definirTipoAgenda = httpsCallable(functions, "definirTipoAgenda");
     const result = await definirTipoAgenda(payload);
 
-    // Esconde o modal manualmente após o sucesso
     const modalInstance = bootstrap.Modal.getInstance(
       document.getElementById("configurarAgendaModal")
     );
     modalInstance.hide();
 
-    showFeedbackModal(result.data.message, true);
+    alert(result.data.message);
   } catch (error) {
     console.error("Erro ao definir tipo da agenda:", error);
-    const modalInstance = bootstrap.Modal.getInstance(
-      document.getElementById("configurarAgendaModal")
-    );
-    modalInstance.hide();
-    showFeedbackModal(
-      `Não foi possível salvar a configuração: ${error.message}`,
-      false
-    );
+    alert(`Não foi possível salvar a configuração: ${error.message}`);
   } finally {
     button.disabled = false;
     button.innerHTML = '<i class="fas fa-save me-2"></i>Salvar Configuração';
