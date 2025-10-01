@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const socialModule = await import(
           "../../modulos/servico-social/js/servico-social-painel.js"
         );
-        socialModule.initsocialPanel(user, db, userData);
+        socialModule.initsocialPanel(user, db, userData, functions);
       } catch (error) {
         console.error("Erro ao carregar o módulo Serviço Social:", error);
         document.getElementById("content-area").innerHTML =

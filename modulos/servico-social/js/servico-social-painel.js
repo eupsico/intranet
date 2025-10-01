@@ -1,7 +1,7 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
 // Versão: 2.7 (Adiciona a view de Disponibilidade de Agendamentos)
 
-export function initsocialPanel(user, db, userData) {
+export function initsocialPanel(user, db, userData, functions) {
   window.db = db;
 
   const contentArea = document.getElementById("content-area");
@@ -125,7 +125,7 @@ export function initsocialPanel(user, db, userData) {
         const viewModule = await import(scriptPath);
         if (viewModule && typeof viewModule.init === "function") {
           // Passa o parâmetro para a função de inicialização do módulo
-          viewModule.init(db, user, userData, param);
+          viewModule.init(db, user, userData, functions, param);
         }
       } catch (e) {
         console.log(
