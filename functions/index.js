@@ -370,6 +370,8 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
     const disponibilidade = dispoData.disponibilidade[mes][modalidade];
 
     if (
+      !disponibilidade.inicio || // <-- Adicionado
+      !disponibilidade.fim || // <-- Adicionado
       typeof disponibilidade.inicio !== "string" ||
       typeof disponibilidade.fim !== "string" ||
       !disponibilidade.inicio.includes(":") ||
