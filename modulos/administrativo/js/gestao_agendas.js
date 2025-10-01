@@ -1,8 +1,7 @@
 // Arquivo: /modulos/administrativo/js/gestao_agendas.js
-// Versão: 1.1 (CORRIGIDO)
-// Descrição: Corrige a importação do Firebase para ser compatível com firebase-init.js.
+// Versão: 1.2 (CORRIGIDO)
+// Descrição: Corrige a chamada do modal e previne a navegação indesejada.
 
-// A importação agora busca 'functions' diretamente do seu inicializador.
 import { functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
@@ -40,9 +39,6 @@ async function carregarDisponibilidadeAdmin() {
 
   if (!container || !errorMessageDiv || !spinner) {
     console.error("Elementos essenciais da interface não encontrados.");
-    spinner.style.display = "none";
-    container.innerHTML =
-      '<p class="text-danger">Erro de Interface: Elementos não encontrados.</p>';
     return;
   }
 
@@ -82,8 +78,7 @@ async function carregarDisponibilidadeAdmin() {
             const dispo = mesData[modalidade];
             if (dispo.dias && dispo.dias.length > 0) {
               contentHtml += `
-                                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start" 
-                                    data-bs-toggle="modal" data-bs-target="#agendaModal"
+                                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start open-agenda-modal-btn" 
                                     data-assistente-id="${assistenteId}"
                                     data-assistente-nome="${item.nome}"
                                     data-mes="${mes}"
@@ -139,49 +134,61 @@ function setupAgendaModal() {
 
   agendaModalInstance = new bootstrap.Modal(agendaModalElement);
 
-  agendaModalElement.addEventListener("show.bs.modal", function (event) {
-    const button = event.relatedTarget;
-    currentAgendaConfig = {
-      assistenteId: button.dataset.assistenteId,
-      mes: button.dataset.mes,
-      modalidade: button.dataset.modalidade,
-    };
+  // ### CORREÇÃO APLICADA AQUI ###
+  // O listener agora está no container principal para capturar os cliques nos links
+  document
+    .getElementById("disponibilidade-admin-content")
+    .addEventListener("click", function (event) {
+      const link = event.target.closest(".open-agenda-modal-btn");
+      if (link) {
+        event.preventDefault(); // Previne a navegação da tag <a>
 
-    const modalTitle = document.getElementById("agendaModalLabel");
-    modalTitle.textContent = `Abrir Agenda - ${button.dataset.assistenteNome} (${button.dataset.modalidade} - ${button.dataset.mes})`;
+        currentAgendaConfig = {
+          assistenteId: link.dataset.assistenteId,
+          mes: link.dataset.mes,
+          modalidade: link.dataset.modalidade,
+        };
 
-    const modalContent = document.getElementById("agenda-config-content");
-    const dispo = JSON.parse(button.dataset.dispo);
+        const modalTitle = document.getElementById("agendaModalLabel");
+        modalTitle.textContent = `Abrir Agenda - ${link.dataset.assistenteNome} (${link.dataset.modalidade} - ${link.dataset.mes})`;
 
-    let contentHtml = '<div class="row">';
-    if (dispo.dias && dispo.dias.length > 0) {
-      dispo.dias.sort().forEach((dia) => {
-        const data = new Date(`${dia}T03:00:00`);
-        const diaSemana = data.toLocaleDateString("pt-BR", { weekday: "long" });
-        contentHtml += `
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100">
-                            <div class="card-header fw-bold">${data.toLocaleDateString(
-                              "pt-BR"
-                            )} (${diaSemana})</div>
-                            <div class="card-body">
-                                <p class="card-text">Atribuir este dia para:</p>
-                                <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
-                                <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
+        const modalContent = document.getElementById("agenda-config-content");
+        const dispo = JSON.parse(link.dataset.dispo);
+
+        let contentHtml = '<div class="row">';
+        if (dispo.dias && dispo.dias.length > 0) {
+          dispo.dias.sort().forEach((dia) => {
+            const data = new Date(`${dia}T03:00:00`);
+            const diaSemana = data.toLocaleDateString("pt-BR", {
+              weekday: "long",
+            });
+            contentHtml += `
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header fw-bold">${data.toLocaleDateString(
+                                  "pt-BR"
+                                )} (${diaSemana})</div>
+                                <div class="card-body">
+                                    <p class="card-text">Atribuir este dia para:</p>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-      });
-    } else {
-      contentHtml =
-        '<p class="text-center text-muted">Não há dias de disponibilidade cadastrados para este bloco.</p>';
-    }
-    modalContent.innerHTML = contentHtml + "</div>";
-  });
+                    `;
+          });
+        } else {
+          contentHtml =
+            '<p class="text-center text-muted">Não há dias de disponibilidade cadastrados para este bloco.</p>';
+        }
+        modalContent.innerHTML = contentHtml + "</div>";
+
+        agendaModalInstance.show();
+      }
+    });
 
   const saveButton = document.getElementById("saveAgendaButton");
-  if (saveButton.dataset.listenerAttached !== "true") {
+  if (saveButton && saveButton.dataset.listenerAttached !== "true") {
     saveButton.addEventListener("click", saveAgenda);
     saveButton.dataset.listenerAttached = "true";
   }
