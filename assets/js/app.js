@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 2.0.3 (Adicionado carregamento do módulo Trilha do Paciente)
+// Versão: 3.0.0 (Refatorado com roteador dinâmico e painel admin)
 
 import { auth, db, functions } from "./firebase-init.js";
 
@@ -13,15 +13,20 @@ document.addEventListener("DOMContentLoaded", function () {
     inactivityTimer = setTimeout(() => {
       alert("Você foi desconectado por inatividade.");
       auth.signOut();
-    }, 20 * 60 * 1000);
+    }, 20 * 60 * 1000); // 20 minutos
   }
 
   function setupInactivityListeners() {
-    window.addEventListener("mousemove", resetInactivityTimer);
-    window.addEventListener("mousedown", resetInactivityTimer);
-    window.addEventListener("keypress", resetInactivityTimer);
-    window.addEventListener("scroll", resetInactivityTimer);
-    window.addEventListener("touchstart", resetInactivityTimer);
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keypress",
+      "scroll",
+      "touchstart",
+    ];
+    events.forEach((event) =>
+      window.addEventListener(event, resetInactivityTimer, { passive: true })
+    );
     resetInactivityTimer();
   }
 
@@ -30,9 +35,14 @@ document.addEventListener("DOMContentLoaded", function () {
       try {
         if (user) {
           const userDoc = await db.collection("usuarios").doc(user.uid).get();
-          if (userDoc.exists && userDoc.data().funcoes?.length > 0) {
+          // CORREÇÃO: Verifica se 'funcoes' é um objeto com chaves
+          if (
+            userDoc.exists &&
+            userDoc.data().funcoes &&
+            Object.keys(userDoc.data().funcoes).length > 0
+          ) {
             const userData = userDoc.data();
-            await renderLayoutAndContent(user, userData);
+            await setupDashboard(user, userData);
             setupInactivityListeners();
           } else {
             renderAccessDenied();
@@ -53,19 +63,18 @@ document.addEventListener("DOMContentLoaded", function () {
     dashboardView.style.display = "none";
     loginView.style.display = "block";
 
-    const isSubPage = window.location.pathname.includes("/modulos/");
-    const pathPrefix = isSubPage ? "../../../" : "./";
+    const pathPrefix = "./"; // Simplificado para SPA
 
     loginView.innerHTML = `
-              <div class="login-container">
-                  <div class="login-card">
-                      <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
-                      <h2>Intranet EuPsico</h2>
-                      <p>${message}</p>
-                      <p class="login-email-info">Utilize seu e-mail @eupsico.org.br para acessar.</p>
-                      <button id="login-button" class="login-button">Login com Google</button>
-                  </div>
-              </div>`;
+            <div class="login-container">
+                <div class="login-card">
+                    <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                    <h2>Intranet EuPsico</h2>
+                    <p>${message}</p>
+                    <p class="login-email-info">Utilize seu e-mail @eupsico.org.br para acessar.</p>
+                    <button id="login-button" class="login-button">Login com Google</button>
+                </div>
+            </div>`;
     document.getElementById("login-button").addEventListener("click", () => {
       loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -90,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return "Boa noite";
   }
 
-  async function renderLayoutAndContent(user, userData) {
+  async function setupDashboard(user, userData) {
     if (!loginView || !dashboardView) return;
     loginView.style.display = "none";
     dashboardView.style.display = "block";
@@ -99,18 +108,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const userGreeting = document.getElementById("user-greeting");
     const logoutButton = document.getElementById("logout-button-dashboard");
 
-    if (userGreeting) {
-      try {
-        if (userData && userData.nome) {
-          const firstName = userData.nome.split(" ")[0];
-          userGreeting.textContent = `${getGreeting()}, ${firstName}!`;
-        } else {
-          userGreeting.textContent = getGreeting();
-        }
-      } catch (e) {
-        console.warn("Não foi possível montar a saudação completa:", e);
-        userGreeting.textContent = "Olá!";
-      }
+    if (userGreeting && userData.nome) {
+      userGreeting.textContent = `${getGreeting()}, ${
+        userData.nome.split(" ")[0]
+      }!`;
     }
     if (userPhoto) {
       userPhoto.src =
@@ -124,121 +125,148 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    const modules = getVisibleModules(userData);
+    const visibleModules = getVisibleModules(userData);
+    renderSidebarMenu(visibleModules);
     setupSidebarToggle();
-    renderSidebarMenu(modules);
-    if (window.location.pathname.includes("painel-financeiro.html")) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                      <h1>Painel Financeiro</h1>
-                      <p>Gestão de pagamentos, cobranças e relatórios.</p>
-                  `;
-      }
-      try {
-        const financeModule = await import(
-          "../../modulos/financeiro/js/painel-financeiro.js"
-        );
-        financeModule.initFinancePanel(user, db, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo financeiro:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel financeiro.</h2>";
-      }
-    } else if (
-      window.location.pathname.includes("administrativo-painel.html")
-    ) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                      <h2>Painel Administrativo</h2>
-                      <p>Gestão de configurações e dados dos usuários.</p>
-                  `;
-      }
-      try {
-        const administrativoModule = await import(
-          "../../modulos/administrativo/js/administrativo-painel.js"
-        );
-        administrativoModule.initadministrativoPanel(user, db, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo administrativo:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel administrativo.</h2>";
-      }
-    } else if (
-      window.location.pathname.includes("trilha-paciente-painel.html")
-    ) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                      <h2>Trilha do Paciente</h2>
-                      <p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>
-                  `;
-      }
-      try {
-        const trilhaModule = await import(
-          "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
-        );
-        trilhaModule.init(db, user, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo Trilha do Paciente:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar a Trilha do Paciente.</h2>";
-      }
-    } else if (
-      window.location.pathname.includes("servico-social-painel.html")
-    ) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                      <h2>Serviço Social</h2>
-                      <p>Gestão de triagens, reavaliações.</p>
-                  `;
-      }
-      try {
-        const socialModule = await import(
-          "../../modulos/servico-social/js/servico-social-painel.js"
-        );
-        socialModule.initsocialPanel(user, db, userData, functions);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo Serviço Social:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel serviço social.</h2>";
-      }
-    } else if (window.location.pathname.includes("rh-painel.html")) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                      <h2>Recursos Humanos</h2>
-                      <p>Gestão de profissionais, vagas e comunicados.</p>
-                  `;
-      }
-      try {
-        const rhModule = await import("../../modulos/rh/js/rh-painel.js");
-        rhModule.initrhPanel(user, db, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo de Recursos Humanos:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel R.H.</h2>";
+
+    router(user, userData);
+    window.addEventListener("hashchange", () => router(user, userData));
+  }
+
+  const modulesConfig = {
+    admin: {
+      id: "admin",
+      titulo: "Painel do Admin",
+      descricao: "Gestão central de usuários, permissões e sistema.",
+      url: "#!/admin",
+      roles: ["admin"],
+      icon: `<i class="fas fa-user-shield"></i>`,
+      modulePath: "./modulos/admin/js/painel-admin.js",
+      pagePath: "./modulos/admin/page/painel-admin.html",
+    },
+    portal_voluntario: {
+      id: "portal_voluntario",
+      titulo: "Portal do Voluntário",
+      url: "#!/portal_voluntario",
+      roles: ["todos"],
+      icon: `<i class="fas fa-home"></i>`,
+      modulePath: "./modulos/voluntario/js/portal-voluntario.js",
+      pagePath: "./modulos/voluntario/page/portal-voluntario.html",
+    },
+    financeiro: {
+      id: "financeiro",
+      titulo: "Financeiro",
+      url: "#!/financeiro",
+      roles: ["admin", "financeiro"],
+      icon: `<i class="fas fa-dollar-sign"></i>`,
+      modulePath: "./modulos/financeiro/js/painel-financeiro.js",
+      pagePath: "./modulos/financeiro/page/painel-financeiro.html",
+    },
+    servico_social: {
+      id: "servico_social",
+      titulo: "Serviço Social",
+      url: "#!/servico_social",
+      roles: ["admin", "servico_social"],
+      icon: `<i class="fas fa-hands-helping"></i>`,
+      modulePath: "./modulos/servico-social/js/servico-social-painel.js",
+      pagePath: "./modulos/servico-social/page/servico-social-painel.html",
+    },
+    rh: {
+      id: "rh",
+      titulo: "Recursos Humanos",
+      url: "#!/rh",
+      roles: ["admin", "rh"],
+      icon: `<i class="fas fa-users"></i>`,
+      modulePath: "./modulos/rh/js/rh-painel.js",
+      pagePath: "./modulos/rh/page/rh-painel.html",
+    },
+    trilha_paciente: {
+      id: "trilha_paciente",
+      titulo: "Trilha do Paciente",
+      url: "#!/trilha_paciente",
+      roles: ["admin", "assistente"],
+      icon: `<i class="fas fa-route"></i>`,
+      modulePath: "./modulos/trilha-paciente/js/trilha-paciente-painel.js",
+      pagePath: "./modulos/trilha-paciente/page/trilha-paciente-painel.html",
+    },
+    captacao: {
+      id: "captacao",
+      titulo: "Captação",
+      descricao:
+        "Ferramentas e informações para a equipe de captação de recursos.",
+      url: "#",
+      roles: ["admin", "captacao"],
+      icon: `<i class="fas fa-hand-holding-usd"></i>`,
+    },
+    grupos: {
+      id: "grupos",
+      titulo: "Grupos",
+      descricao:
+        "Informações e materiais para a equipe de coordenação de grupos.",
+      url: "#",
+      roles: ["admin", "grupos"],
+      icon: `<i class="fas fa-users-cog"></i>`,
+    },
+    marketing: {
+      id: "marketing",
+      titulo: "Marketing",
+      descricao: "Acesso aos materiais de marketing e campanhas da EuPsico.",
+      url: "#",
+      roles: ["admin", "marketing"],
+      icon: `<i class="fas fa-bullhorn"></i>`,
+    },
+    // Adicione outros módulos aqui...
+  };
+
+  async function router(user, userData) {
+    const contentArea = document.getElementById("content-area");
+    const pageTitleContainer = document.getElementById("page-title-container");
+    if (!contentArea || !pageTitleContainer) return;
+
+    const path = window.location.hash.slice(2) || "portal_voluntario";
+    const module = modulesConfig[path];
+
+    if (module) {
+      const userFuncoes = userData.funcoes || {};
+      const hasPermission =
+        module.roles.includes("todos") ||
+        userFuncoes.admin ||
+        module.roles.some((role) => userFuncoes[role]);
+
+      if (hasPermission) {
+        pageTitleContainer.innerHTML = `<h1>${module.titulo}</h1>${
+          module.descricao ? `<p>${module.descricao}</p>` : ""
+        }`;
+        contentArea.innerHTML =
+          '<div class="text-center mt-5"><div class="spinner-border" role="status"><span class="sr-only">Carregando...</span></div></div>';
+
+        try {
+          const response = await fetch(module.pagePath);
+          if (!response.ok)
+            throw new Error(`Página não encontrada: ${module.pagePath}`);
+          contentArea.innerHTML = await response.text();
+
+          const jsModule = await import(module.modulePath);
+          if (jsModule.init) {
+            jsModule.init(db, user, userData, functions);
+          } else {
+            console.warn(
+              `O módulo ${module.id} não possui uma função 'init' exportada.`
+            );
+          }
+        } catch (error) {
+          console.error(`Erro ao carregar o módulo ${module.id}:`, error);
+          contentArea.innerHTML = `<h2>Falha ao carregar o módulo.</h2><p>${error.message}</p>`;
+        }
+      } else {
+        pageTitleContainer.innerHTML = "<h1>Acesso Negado</h1>";
+        contentArea.innerHTML =
+          "<p>Você não tem permissão para acessar esta área.</p>";
       }
     } else {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = "<h1>Intranet EuPsico</h1>";
-      }
-      renderSidebarMenu(modules);
+      pageTitleContainer.innerHTML = "<h1>Página não encontrada</h1>";
+      contentArea.innerHTML =
+        "<p>O recurso que você procurou não foi encontrado.</p>";
     }
   }
 
@@ -313,107 +341,29 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getVisibleModules(userData) {
-    const icons = {
-      intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
-      administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
-      captacao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
-      financeiro: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
-      grupos: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-      marketing: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
-      rh: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
-      supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
-      servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-      trilha_paciente: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>`,
-    };
-    const areas = {
-      portal_voluntario: {
-        titulo: "Portal do Voluntário",
-        descricao: "Avisos, notícias e ferramentas para todos os voluntários.",
-        url: "./modulos/voluntario/page/portal-voluntario.html",
-        roles: ["todos"],
-        icon: icons.intranet,
-      },
-      administrativo: {
-        titulo: "Administrativo",
-        descricao: "Acesso aos processos, documentos e organização da equipe.",
-        url: "./modulos/administrativo/page/administrativo-painel.html",
-        roles: ["admin", "gestor", "assistente"],
-        icon: icons.administrativo,
-      },
-      trilha_paciente: {
-        titulo: "Trilha do Paciente",
-        descricao:
-          "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
-        url: "./modulos/trilha-paciente/page/trilha-paciente-painel.html",
-        roles: ["admin", "assistente"], // Permitido para admin e serviço social
-        icon: icons.trilha_paciente,
-      },
-      captacao: {
-        titulo: "Captação",
-        descricao:
-          "Ferramentas e informações para a equipe de captação de recursos.",
-        url: "#",
-        roles: ["admin", "captacao"],
-        icon: icons.captacao,
-      },
-      financeiro: {
-        titulo: "Financeiro",
-        descricao: "Acesso ao painel de controle financeiro e relatórios.",
-        url: "./modulos/financeiro/page/painel-financeiro.html",
-        roles: ["admin", "financeiro"],
-        icon: icons.financeiro,
-      },
-      grupos: {
-        titulo: "Grupos",
-        descricao:
-          "Informações e materiais para a equipe de coordenação de grupos.",
-        url: "#",
-        roles: ["admin", "grupos"],
-        icon: icons.grupos,
-      },
-      marketing: {
-        titulo: "Marketing",
-        descricao: "Acesso aos materiais de marketing e campanhas da EuPsico.",
-        url: "#",
-        roles: ["admin", "marketing"],
-        icon: icons.marketing,
-      },
-      rh: {
-        titulo: "Recursos Humanos",
-        descricao:
-          "Informações sobre vagas, comunicados e gestão de voluntários.",
-        url: "./modulos/rh/page/rh-painel.html",
-        roles: ["admin", "rh"],
-        icon: icons.rh,
-      },
-      servico_social: {
-        titulo: "Serviço Social",
-        descricao: "Documentos, orientações e fichas para o serviço social.",
-        url: "./modulos/servico-social/page/servico-social-painel.html",
-        roles: ["admin", "servico_social"],
-        icon: icons.servico_social,
-      },
-    };
-    const userFuncoes = (userData.funcoes || []).map((f) => f.toLowerCase());
+    const userFuncoes = userData.funcoes || {};
     let modulesToShow = [];
-    for (const key in areas) {
-      const area = areas[key];
-      const rolesLowerCase = (area.roles || []).map((r) => r.toLowerCase());
-      let hasPermission = false;
-      if (userFuncoes.includes("admin") || rolesLowerCase.includes("todos")) {
-        hasPermission = true;
-      } else if (rolesLowerCase.some((role) => userFuncoes.includes(role))) {
-        hasPermission = true;
-      }
+
+    for (const key in modulesConfig) {
+      const module = modulesConfig[key];
+      const hasPermission =
+        module.roles.includes("todos") ||
+        userFuncoes.admin ||
+        module.roles.some((role) => userFuncoes[role]);
+
       if (hasPermission) {
-        modulesToShow.push(area);
+        modulesToShow.push(module);
       }
     }
+
     modulesToShow.sort((a, b) => {
       if (a.titulo === "Portal do Voluntário") return -1;
       if (b.titulo === "Portal do Voluntário") return 1;
+      if (a.titulo === "Painel do Admin") return -1;
+      if (b.titulo === "Painel do Admin") return 1;
       return a.titulo.localeCompare(b.titulo);
     });
+
     return modulesToShow;
   }
 
