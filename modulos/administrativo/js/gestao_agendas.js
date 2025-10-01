@@ -2,8 +2,9 @@ import { functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
 let db, user, userData;
-let currentAgendaConfig = null;
+let currentAgendaConfig = null; // Armazena os dados da agenda que está sendo configurada
 
+// Função de inicialização do módulo
 export function init(dbRef, userRef, userDataRef) {
   db = dbRef;
   user = userRef;
@@ -12,12 +13,14 @@ export function init(dbRef, userRef, userDataRef) {
   console.log("Módulo de Gestão de Agendas iniciado.");
   carregarDisponibilidades();
 
+  // Adiciona o listener de evento para o botão de salvar no modal
   const saveButton = document.getElementById("saveConfigButton");
   if (saveButton) {
     saveButton.addEventListener("click", salvarConfiguracaoAgenda);
   }
 }
 
+// Função para carregar e renderizar as disponibilidades
 async function carregarDisponibilidades() {
   const spinner = document.getElementById("loading-spinner");
   const table = document.getElementById("disponibilidades-table");
@@ -35,59 +38,86 @@ async function carregarDisponibilidades() {
       "getTodasDisponibilidadesAssistentes"
     );
     const result = await getDisponibilidades();
-    const disponibilidades = result.data;
+    const disponibilidadesPorAssistente = result.data;
 
-    // Log para depuração: veja no console do navegador os dados exatos que o servidor retornou
     console.log(
       "Dados recebidos da Cloud Function:",
-      JSON.stringify(disponibilidades, null, 2)
+      JSON.stringify(disponibilidadesPorAssistente, null, 2)
     );
 
-    if (!disponibilidades || disponibilidades.length === 0) {
+    if (
+      !disponibilidadesPorAssistente ||
+      disponibilidadesPorAssistente.length === 0
+    ) {
       noDataMessage.style.display = "block";
-    } else {
-      disponibilidades.forEach((item) => {
-        // *** CORREÇÃO PRINCIPAL AQUI ***
-        // Se o item não tiver o campo 'dias' ou se 'dias' não for uma lista, pula este item
-        if (!item.dias || !Array.isArray(item.dias)) {
-          console.warn(
-            "Item de disponibilidade ignorado por não conter uma lista de dias:",
-            item
-          );
-          return; // Pula para o próximo item do loop
+      spinner.style.display = "none";
+      return;
+    }
+
+    let hasData = false;
+    disponibilidadesPorAssistente.forEach((assistente) => {
+      const {
+        id: assistenteId,
+        nome: assistenteNome,
+        disponibilidade,
+      } = assistente;
+
+      if (disponibilidade && typeof disponibilidade === "object") {
+        // Itera sobre os meses (ex: "2025-10")
+        for (const mes in disponibilidade) {
+          const dadosDoMes = disponibilidade[mes];
+          // Itera sobre as modalidades (ex: "online", "presencial")
+          for (const modalidade in dadosDoMes) {
+            const dispo = dadosDoMes[modalidade];
+
+            // Verifica se existe uma lista de dias com pelo menos um dia
+            if (dispo && Array.isArray(dispo.dias) && dispo.dias.length > 0) {
+              hasData = true;
+              const diasOrdenados = dispo.dias.sort();
+              const diasFormatados = diasOrdenados
+                .map((dia) => {
+                  const [year, month, day] = dia.split("-");
+                  return `${day}/${month}`;
+                })
+                .join(", ");
+
+              const row = `
+                                <tr>
+                                    <td>${
+                                      assistenteNome || "Nome não informado"
+                                    }</td>
+                                    <td>${mes || "N/A"}</td>
+                                    <td class="text-capitalize">${
+                                      modalidade || "N/A"
+                                    }</td>
+                                    <td class="text-wrap" style="max-width: 300px;">${diasFormatados}</td>
+                                    <td>${dispo.inicio || "N/A"} - ${
+                dispo.fim || "N/A"
+              }</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm config-btn" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#configurarAgendaModal"
+                                            data-assistente-id="${assistenteId}"
+                                            data-assistente-nome="${assistenteNome}"
+                                            data-mes="${mes}"
+                                            data-modalidade="${modalidade}"
+                                            data-dias='${JSON.stringify(
+                                              diasOrdenados
+                                            )}'>
+                                            <i class="fas fa-cog me-1"></i> Configurar
+                                        </button>
+                                    </td>
+                                </tr>`;
+              tableBody.innerHTML += row;
+            }
+          }
         }
+      }
+    });
 
-        const diasOrdenados = item.dias.sort();
-        const diasFormatados = diasOrdenados
-          .map((dia) => {
-            const [year, month, day] = dia.split("-");
-            return `${day}/${month}`;
-          })
-          .join(", ");
-
-        const row = `
-                    <tr>
-                        <td>${item.assistenteNome || "Nome não informado"}</td>
-                        <td>${item.mes || "N/A"}</td>
-                        <td>${item.modalidade || "N/A"}</td>
-                        <td class="text-wrap" style="max-width: 300px;">${diasFormatados}</td>
-                        <td>${item.inicio || "N/A"} - ${item.fim || "N/A"}</td>
-                        <td>
-                            <button class="btn btn-primary btn-sm config-btn" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#configurarAgendaModal"
-                                data-assistente-id="${item.assistenteId}"
-                                data-assistente-nome="${item.assistenteNome}"
-                                data-mes="${item.mes}"
-                                data-modalidade="${item.modalidade}"
-                                data-dias='${JSON.stringify(diasOrdenados)}'>
-                                <i class="fas fa-cog me-1"></i> Configurar
-                            </button>
-                        </td>
-                    </tr>`;
-        tableBody.innerHTML += row;
-      });
-
+    if (hasData) {
+      table.style.display = "table";
       document.querySelectorAll(".config-btn").forEach((button) => {
         button.addEventListener("click", (event) => {
           const data = event.currentTarget.dataset;
@@ -100,8 +130,8 @@ async function carregarDisponibilidades() {
           );
         });
       });
-
-      table.style.display = "table";
+    } else {
+      noDataMessage.style.display = "block";
     }
   } catch (error) {
     console.error("Erro detalhado ao carregar disponibilidades:", error);
@@ -114,6 +144,7 @@ async function carregarDisponibilidades() {
   }
 }
 
+// Abre e popula o modal com os dados do dia a ser configurado
 function abrirModalConfiguracao(
   assistenteId,
   assistenteNome,
@@ -122,19 +153,17 @@ function abrirModalConfiguracao(
   dias
 ) {
   currentAgendaConfig = { assistenteId, mes, modalidade };
+
   const modalTitle = document.getElementById("configurarAgendaModalLabel");
   const modalContent = document.getElementById("agenda-config-content");
 
   modalTitle.textContent = `Configurar Agenda de ${assistenteNome} (${modalidade} - ${mes})`;
+
   let contentHTML = '<div class="row g-3">';
   dias.forEach((dia) => {
     const dataFormatada = new Date(dia + "T03:00:00").toLocaleDateString(
       "pt-BR",
-      {
-        weekday: "long",
-        day: "2-digit",
-        month: "2-digit",
-      }
+      { weekday: "long", day: "2-digit", month: "2-digit" }
     );
     contentHTML += `
             <div class="col-md-6 col-lg-4">
@@ -157,6 +186,7 @@ function abrirModalConfiguracao(
   modalContent.innerHTML = contentHTML;
 }
 
+// Salva a configuração feita no modal
 async function salvarConfiguracaoAgenda() {
   const button = document.getElementById("saveConfigButton");
   button.disabled = true;
@@ -183,12 +213,14 @@ async function salvarConfiguracaoAgenda() {
   try {
     const definirTipoAgenda = httpsCallable(functions, "definirTipoAgenda");
     const result = await definirTipoAgenda(payload);
+
     const modalEl = document.getElementById("configurarAgendaModal");
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
     if (modalInstance) {
       modalInstance.hide();
     }
-    alert(result.data.message);
+
+    alert(result.data.message); // Usando alert simples para feedback
   } catch (error) {
     console.error("Erro ao definir tipo da agenda:", error);
     alert(`Não foi possível salvar a configuração: ${error.message}`);
