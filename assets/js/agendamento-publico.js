@@ -1,11 +1,11 @@
 // Arquivo: /assets/js/agendamento-publico.js
-// Versão Final: Chama a Cloud Function 'agendarTriagemPublico' com os dados corretos.
+// Versão: 1.3 (Final Corrigida)
+// Descrição: Chama a Cloud Function 'getHorariosTriagemPublicos' (com o nome correto).
 
 import { db, functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // --- Mapeamento de Elementos ---
   const horariosContainer = document.getElementById("horarios-container");
   const agendamentoSection = document.getElementById("agendamento-section");
   const confirmacaoSection = document.getElementById("confirmacao-section");
@@ -19,11 +19,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let horarioSelecionado = null;
   let pacienteExistenteId = null;
 
-  // --- Funções Principais ---
-
   async function carregarHorarios() {
     try {
-      const getHorarios = httpsCallable(functions, "getHorariosTriagem");
+      // ### CORREÇÃO APLICADA AQUI ###
+      // O nome da função foi atualizado para corresponder ao backend.
+      const getHorarios = httpsCallable(
+        functions,
+        "getHorariosTriagemPublicos"
+      );
       const result = await getHorarios();
       const horarios = result.data.horarios;
 
@@ -36,8 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderizarHorarios(horarios);
     } catch (error) {
       console.error("Erro ao carregar horários:", error);
-      horariosContainer.innerHTML =
-        '<p style="color: red;">Ocorreu um erro ao buscar os horários. Tente recarregar a página.</p>';
+      horariosContainer.innerHTML = `<p style="color: red;"><strong>Erro ao carregar horários:</strong> ${error.message}</p><p>Tente recarregar a página.</p>`;
     }
   }
 
@@ -116,12 +118,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data.exists) {
         pacienteExistenteId = data.docId;
-
         const paciente = data.dados;
         nomeInput.value = paciente.nomeCompleto;
         nomeInput.readOnly = true;
         telefoneInput.value = paciente.telefoneCelular || "";
-
         cpfFeedback.textContent = `Paciente encontrado: ${paciente.nomeCompleto}. Confirme seus dados.`;
         cpfFeedback.style.color = "green";
       } else {
@@ -156,26 +156,21 @@ document.addEventListener("DOMContentLoaded", () => {
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = "Salvando...";
 
-    // Objeto de dados COMPLETO para enviar para a Cloud Function
     const dadosParaAgendamento = {
       cpf: cpf,
       nome: nome,
       telefone: telefone,
       horarioSelecionado: horarioSelecionado,
-      pacienteExistenteId: pacienteExistenteId, // Será null se for um novo paciente
+      pacienteExistenteId: pacienteExistenteId,
     };
 
     try {
-      // Chama a Cloud Function segura para salvar os dados
       const agendarTriagem = httpsCallable(functions, "agendarTriagemPublico");
       await agendarTriagem(dadosParaAgendamento);
-
       exibirConfirmacaoFinal(nome);
     } catch (error) {
       console.error("Erro ao salvar agendamento via Cloud Function:", error);
-      alert(
-        "Não foi possível salvar seu agendamento. Por favor, tente novamente."
-      );
+      alert(`Não foi possível salvar seu agendamento: ${error.message}`);
     } finally {
       btnConfirmar.disabled = false;
       btnConfirmar.textContent = "Confirmar Agendamento";
@@ -197,9 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmacaoSection.style.display = "block";
   }
 
-  // --- Listeners de Eventos ---
   cpfInput.addEventListener("blur", buscarPacientePorCPF);
-
   modal
     .querySelector(".close-modal-btn")
     .addEventListener("click", () => (modal.style.display = "none"));
@@ -210,6 +203,5 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("modal-confirm-agendamento-btn")
     .addEventListener("click", handleAgendamento);
 
-  // --- Inicialização ---
   carregarHorarios();
 });
