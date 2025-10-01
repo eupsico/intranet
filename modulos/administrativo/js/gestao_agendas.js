@@ -199,6 +199,7 @@ async function saveAgenda() {
   button.disabled = true;
   button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Salvando...`;
 
+  // Coleta a configuração que o admin fez no modal
   const diasConfig = Array.from(
     document.querySelectorAll(
       '#agenda-config-content input[type="radio"]:checked'
@@ -210,34 +211,36 @@ async function saveAgenda() {
 
   if (diasConfig.length === 0) {
     showFeedbackModal(
-      "Nenhum dia foi configurado. Nenhuma agenda foi aberta.",
+      "Nenhum dia foi configurado. Nenhuma ação foi tomada.",
       false
     );
     button.disabled = false;
     button.innerHTML =
-      '<i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda';
+      '<i class="fas fa-calendar-check me-2"></i>Salvar Configuração';
     return;
   }
 
+  // Monta o payload para a nova Cloud Function
+  // currentAgendaConfig é a variável global que já armazena assistenteId, mes, etc.
   const payload = { ...currentAgendaConfig, dias: diasConfig };
 
   try {
-    const abrirAgenda = httpsCallable(functions, "abrirAgendaServicoSocial");
-    const result = await abrirAgenda(payload);
+    // Chama a nova Cloud Function
+    const definirTipoAgenda = httpsCallable(functions, "definirTipoAgenda");
+    const result = await definirTipoAgenda(payload);
+
     agendaModalInstance.hide();
     showFeedbackModal(result.data.message, true);
   } catch (error) {
-    console.error("Erro ao abrir agenda:", error);
-    // ### CORREÇÃO APLICADA AQUI ###
-    // Garante que o modal principal feche mesmo se ocorrer um erro.
+    console.error("Erro ao definir tipo da agenda:", error);
     agendaModalInstance.hide();
     showFeedbackModal(
-      `Não foi possível abrir a agenda: ${error.message}`,
+      `Não foi possível salvar a configuração: ${error.message}`,
       false
     );
   } finally {
     button.disabled = false;
     button.innerHTML =
-      '<i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda';
+      '<i class="fas fa-calendar-check me-2"></i>Salvar Configuração';
   }
 }

@@ -595,3 +595,104 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     );
   }
 });
+exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
+  // 1. Validação de permissão
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
+  }
+  const adminDoc = await db.collection("usuarios").doc(request.auth.uid).get();
+  if (!adminDoc.exists || !adminDoc.data().funcoes?.includes("admin")) {
+    throw new HttpsError(
+      "permission-denied",
+      "Apenas administradores podem executar esta ação."
+    );
+  }
+
+  // 2. Validação dos dados recebidos
+  const { assistenteId, mes, modalidade, dias } = request.data;
+  if (
+    !assistenteId ||
+    !mes ||
+    !modalidade ||
+    !Array.isArray(dias) ||
+    dias.length === 0
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Dados insuficientes para configurar a agenda."
+    );
+  }
+
+  try {
+    // 3. Buscar os horários de início e fim da disponibilidade original
+    const dispoDoc = await db
+      .collection("disponibilidadeAssistentes")
+      .doc(assistenteId)
+      .get();
+    const assistenteDoc = await db
+      .collection("usuarios")
+      .doc(assistenteId)
+      .get();
+
+    if (!dispoDoc.exists() || !assistenteDoc.exists()) {
+      throw new HttpsError(
+        "not-found",
+        "Assistente ou sua disponibilidade não encontrada."
+      );
+    }
+
+    const disponibilidadeOriginal =
+      dispoDoc.data().disponibilidade?.[mes]?.[modalidade];
+    if (
+      !disponibilidadeOriginal ||
+      !disponibilidadeOriginal.inicio ||
+      !disponibilidadeOriginal.fim
+    ) {
+      throw new HttpsError(
+        "not-found",
+        `Horários de início/fim não encontrados para ${mes}/${modalidade}.`
+      );
+    }
+    const assistenteNome = assistenteDoc.data().nome;
+    const { inicio, fim } = disponibilidadeOriginal;
+
+    // 4. Salvar cada dia configurado em um novo documento
+    const batch = db.batch();
+    dias.forEach((configDia) => {
+      const { dia, tipo } = configDia;
+      // Usamos um ID de documento previsível para evitar duplicatas
+      const docId = `${dia}_${assistenteId}`;
+      const docRef = db.collection("agendaConfigurada").doc(docId);
+
+      batch.set(
+        docRef,
+        {
+          assistenteId,
+          assistenteNome,
+          data: dia, // Formato "YYYY-MM-DD"
+          tipo, // "triagem" ou "reavaliação"
+          modalidade,
+          inicio,
+          fim,
+          configuradoPor: request.auth.uid,
+          configuradoEm: new Date(),
+        },
+        { merge: true }
+      ); // Merge: true permite sobrescrever se já existir
+    });
+
+    await batch.commit();
+
+    return {
+      status: "success",
+      message: `${dias.length} dia(s) configurado(s) com sucesso para ${assistenteNome}!`,
+    };
+  } catch (error) {
+    console.error("Erro em definirTipoAgenda:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(
+      "internal",
+      "Ocorreu um erro interno ao salvar a configuração."
+    );
+  }
+});
