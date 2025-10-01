@@ -463,25 +463,26 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
 
 // Substitua a função getTodasDisponibilidadesAssistentes existente por esta versão corrigida
 
-exports.getTodasDisponibilidadesAssistentes = onCall(
-  { cors: true },
-  async (request) => {
-    // 1. Validação de segurança corrigida
-    if (!request.auth) {
-      throw new HttpsError(
+exports.getTodasDisponibilidadesAssistentes = functions.https.onCall(
+  async (data, context) => {
+    // 1. Validação de segurança usando o 'context' da v1
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
         "unauthenticated",
-        "Você precisa estar autenticado."
+        "Você precisa estar autenticado para acessar estes dados."
       );
     }
 
-    const adminUid = request.auth.uid;
+    // 2. Busca os dados do usuário que está fazendo a chamada
+    const adminUid = context.auth.uid;
     const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
 
+    // 3. Verifica se o usuário é 'admin' pelo campo 'funcoes' no Firestore
     if (
       !adminUserDoc.exists ||
       !(adminUserDoc.data().funcoes || []).includes("admin")
     ) {
-      throw new HttpsError(
+      throw new functions.https.HttpsError(
         "permission-denied",
         "Você não tem permissão para acessar estes dados."
       );
@@ -489,9 +490,6 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
 
     try {
       console.log("Iniciando busca de disponibilidade (método robusto)...");
-
-      // 2. Busca TODOS os documentos da coleção de disponibilidades.
-      // Como são poucos, isso é eficiente e seguro.
       const dispoSnapshot = await db
         .collection("disponibilidadeAssistentes")
         .get();
