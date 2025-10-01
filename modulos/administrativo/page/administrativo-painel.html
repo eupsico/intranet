@@ -57,18 +57,37 @@
     <div class="modal fade" id="agendaModal" tabindex="-1" aria-labelledby="agendaModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-light"><h5 class="modal-title" id="agendaModalLabel">Abrir Agenda</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-                <div class="modal-body"><p>Configure abaixo quais dias serão abertos para <strong>Triagem</strong> e quais serão para <strong>Reavaliação</strong>.</p><div id="agenda-config-content"></div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="saveAgendaButton"><i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda</button></div>
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title" id="agendaModalLabel">Abrir Agenda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Configure abaixo quais dias serão abertos para <strong>Triagem</strong> e quais serão para <strong>Reavaliação</strong>.</p>
+                    <div id="agenda-config-content">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveAgendaButton">
+                        <i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title" id="feedbackModalLabel">Status da Operação</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-                <div class="modal-body" id="feedbackModalBody"></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="feedbackModalLabel">Status da Operação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="feedbackModalBody">
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
             </div>
         </div>
     </div>
