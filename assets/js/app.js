@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 4.2.1 (Final, Completo e Funcional)
+// Versão: 4.3.0 (Correção Final de Permissão de Admin e Caminhos de Módulos)
 
 import { auth, db, functions } from "./firebase-init.js";
 
@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const dashboardView = document.getElementById("dashboard-view");
 
   // --- CONFIGURAÇÃO CENTRAL DE MÓDULOS ---
-  // Todos os módulos da intranet são definidos aqui.
+  // CORREÇÃO: Os caminhos (modulePath e pagePath) foram ajustados para a nova estrutura.
   const modulesConfig = {
     home: {
       id: "home",
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/home",
       roles: ["todos"],
       icon: `<i class="fas fa-home"></i>`,
-      modulePath: "./modulos/voluntario/js/portal-voluntario.js",
+      modulePath: "../modulos/voluntario/js/portal-voluntario.js",
     },
     admin: {
       id: "admin",
@@ -26,8 +26,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/admin",
       roles: ["admin"],
       icon: `<i class="fas fa-user-shield"></i>`,
-      modulePath: "./modulos/admin/js/painel-admin.js",
-      pagePath: "./modulos/admin/page/painel-admin.html",
+      modulePath: "../modulos/admin/js/painel-admin.js",
+      pagePath: "../modulos/admin/page/painel-admin.html",
     },
     administrativo: {
       id: "administrativo",
@@ -36,8 +36,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/administrativo",
       roles: ["admin", "gestor", "assistente"],
       icon: `<i class="fas fa-file-alt"></i>`,
-      modulePath: "./modulos/administrativo/js/administrativo-painel.js",
-      pagePath: "./modulos/administrativo/page/administrativo-painel.html",
+      modulePath: "../modulos/administrativo/js/administrativo-painel.js",
+      pagePath: "../modulos/administrativo/page/administrativo-painel.html",
     },
     trilha_paciente: {
       id: "trilha_paciente",
@@ -47,8 +47,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/trilha_paciente",
       roles: ["admin", "assistente"],
       icon: `<i class="fas fa-route"></i>`,
-      modulePath: "./modulos/trilha-paciente/js/trilha-paciente-painel.js",
-      pagePath: "./modulos/trilha-paciente/page/trilha-paciente-painel.html",
+      modulePath: "../modulos/trilha-paciente/js/trilha-paciente-painel.js",
+      pagePath: "../modulos/trilha-paciente/page/trilha-paciente-painel.html",
     },
     financeiro: {
       id: "financeiro",
@@ -57,8 +57,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/financeiro",
       roles: ["admin", "financeiro"],
       icon: `<i class="fas fa-dollar-sign"></i>`,
-      modulePath: "./modulos/financeiro/js/painel-financeiro.js",
-      pagePath: "./modulos/financeiro/page/painel-financeiro.html",
+      modulePath: "../modulos/financeiro/js/painel-financeiro.js",
+      pagePath: "../modulos/financeiro/page/painel-financeiro.html",
     },
     rh: {
       id: "rh",
@@ -68,8 +68,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/rh",
       roles: ["admin", "rh"],
       icon: `<i class="fas fa-users"></i>`,
-      modulePath: "./modulos/rh/js/rh-painel.js",
-      pagePath: "./modulos/rh/page/rh-painel.html",
+      modulePath: "../modulos/rh/js/rh-painel.js",
+      pagePath: "../modulos/rh/page/rh-painel.html",
     },
     servico_social: {
       id: "servico_social",
@@ -78,8 +78,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/servico_social",
       roles: ["admin", "servico_social"],
       icon: `<i class="fas fa-hands-helping"></i>`,
-      modulePath: "./modulos/servico-social/js/servico-social-painel.js",
-      pagePath: "./modulos/servico-social/page/servico-social-painel.html",
+      modulePath: "../modulos/servico-social/js/servico-social-painel.js",
+      pagePath: "../modulos/servico-social/page/servico-social-painel.html",
     },
     captacao: {
       id: "captacao",
@@ -220,7 +220,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (module.pagePath && module.modulePath) {
         try {
-          const response = await fetch(module.pagePath);
+          // CORREÇÃO: Os fetch/import agora usam caminhos relativos ao `app.js`
+          const response = await fetch(
+            module.pagePath.replace("./modulos", "../modulos")
+          );
           if (!response.ok)
             throw new Error(
               `Arquivo HTML do módulo não encontrado: ${module.pagePath}`
@@ -254,9 +257,11 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
+  // CORREÇÃO: Lógica de permissão simplificada e mais robusta para admin
   function hasPermission(module, userData) {
     const userFuncoes = userData.funcoes || {};
-    if (userFuncoes.admin === true) {
+    if (userFuncoes.admin) {
+      // Se a chave 'admin' existir e for "truthy" (true, 1, etc.), libera o acesso.
       return true;
     }
 
@@ -265,7 +270,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     }
 
-    return roles.some((role) => userFuncoes[role] === true);
+    return roles.some((role) => userFuncoes[role]); // Verifica se alguma das roles do módulo existe no usuário
   }
 
   function renderSidebarMenu(modules) {
@@ -296,7 +301,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <img src="./assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
                     <h2>Intranet EuPsico</h2>
                     <p>${message}</p>
-                    <p class="login-email-info" style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
+                    <p style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
                     <button id="login-button" class="action-button login-button">Login com Google</button>
                 </div>
             </div>`;
