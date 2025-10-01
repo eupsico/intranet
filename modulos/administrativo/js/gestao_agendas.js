@@ -1,6 +1,6 @@
 // Arquivo: /modulos/administrativo/js/gestao_agendas.js
-// Versão: 1.2 (CORRIGIDO)
-// Descrição: Corrige a chamada do modal e previne a navegação indesejada.
+// Versão: 1.3 (Final Corrigida)
+// Descrição: Garante que o modal de configuração feche mesmo em caso de erro no salvamento.
 
 import { functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
@@ -79,11 +79,11 @@ async function carregarDisponibilidadeAdmin() {
             if (dispo.dias && dispo.dias.length > 0) {
               contentHtml += `
                                 <a href="#" class="list-group-item list-group-item-action flex-column align-items-start open-agenda-modal-btn" 
-                                    data-assistente-id="${assistenteId}"
-                                    data-assistente-nome="${item.nome}"
-                                    data-mes="${mes}"
-                                    data-modalidade="${modalidade}"
-                                    data-dispo='${JSON.stringify(dispo)}'>
+                                   data-assistente-id="${assistenteId}"
+                                   data-assistente-nome="${item.nome}"
+                                   data-mes="${mes}"
+                                   data-modalidade="${modalidade}"
+                                   data-dispo='${JSON.stringify(dispo)}'>
                                     <div class="d-flex w-100 justify-content-between">
                                         <h5 class="mb-1 text-capitalize">${modalidade} - ${mes}</h5>
                                         <small><i class="fas fa-calendar-alt me-1"></i> ${
@@ -91,8 +91,10 @@ async function carregarDisponibilidadeAdmin() {
                                         } dias</small>
                                     </div>
                                     <p class="mb-1">Horário de trabalho: <strong>${
-                                      dispo.inicio
-                                    } às ${dispo.fim}</strong>.</p>
+                                      dispo.inicio || "Não definido"
+                                    } às ${
+                dispo.fim || "Não definido"
+              }</strong>.</p>
                                     <small class="text-success">Clique para configurar e abrir a agenda.</small>
                                 </a>
                             `;
@@ -134,14 +136,12 @@ function setupAgendaModal() {
 
   agendaModalInstance = new bootstrap.Modal(agendaModalElement);
 
-  // ### CORREÇÃO APLICADA AQUI ###
-  // O listener agora está no container principal para capturar os cliques nos links
   document
     .getElementById("disponibilidade-admin-content")
     .addEventListener("click", function (event) {
       const link = event.target.closest(".open-agenda-modal-btn");
       if (link) {
-        event.preventDefault(); // Previne a navegação da tag <a>
+        event.preventDefault();
 
         currentAgendaConfig = {
           assistenteId: link.dataset.assistenteId,
@@ -163,19 +163,19 @@ function setupAgendaModal() {
               weekday: "long",
             });
             contentHtml += `
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header fw-bold">${data.toLocaleDateString(
-                                  "pt-BR"
-                                )} (${diaSemana})</div>
-                                <div class="card-body">
-                                    <p class="card-text">Atribuir este dia para:</p>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header fw-bold">${data.toLocaleDateString(
+                                      "pt-BR"
+                                    )} (${diaSemana})</div>
+                                    <div class="card-body">
+                                        <p class="card-text">Atribuir este dia para:</p>
+                                        <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        `;
           });
         } else {
           contentHtml =
@@ -228,6 +228,9 @@ async function saveAgenda() {
     showFeedbackModal(result.data.message, true);
   } catch (error) {
     console.error("Erro ao abrir agenda:", error);
+    // ### CORREÇÃO APLICADA AQUI ###
+    // Garante que o modal principal feche mesmo se ocorrer um erro.
+    agendaModalInstance.hide();
     showFeedbackModal(
       `Não foi possível abrir a agenda: ${error.message}`,
       false
