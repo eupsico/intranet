@@ -446,7 +446,7 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
     throw new HttpsError(
       "internal",
       "Ocorreu um erro inesperado no servidor ao processar sua solicitação.",
-      error.message
+      { originalMessage: error.message }
     );
   }
 });
@@ -494,11 +494,9 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     return { horarios: horariosDisponiveis };
   } catch (error) {
     console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
-    throw new HttpsError(
-      "internal",
-      "Ocorreu um erro ao buscar os horários.",
-      error.message
-    );
+    throw new HttpsError("internal", "Ocorreu um erro ao buscar os horários.", {
+      originalMessage: error.message,
+    });
   }
 });
 
@@ -574,7 +572,7 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     throw new HttpsError(
       "internal",
       "Ocorreu um erro interno ao salvar o agendamento.",
-      error.message
+      { originalMessage: error.message }
     );
   }
 });
