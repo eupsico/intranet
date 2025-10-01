@@ -17,8 +17,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/home",
       roles: ["todos"],
       icon: `<i class="fas fa-home"></i>`,
-      modulePath: "./modulos/voluntario/js/portal-voluntario.js",
-      pagePath: "./modulos/admin/page/portal-voluntario.html",
+      modulePath: "../modulos/voluntario/js/portal-voluntario.js",
+      pagePath: "../modulos/admin/page/portal-voluntario.html",
     },
     admin: {
       id: "admin",
