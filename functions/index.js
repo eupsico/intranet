@@ -329,14 +329,15 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
       );
     }
 
-    const dispoDoc = await db
+    const dispoDocRef = db
       .collection("disponibilidadeAssistentes")
-      .doc(assistenteId)
-      .get();
-    const assistenteDoc = await db
-      .collection("usuarios")
-      .doc(assistenteId)
-      .get();
+      .doc(assistenteId);
+    const assistenteDocRef = db.collection("usuarios").doc(assistenteId);
+
+    const [dispoDoc, assistenteDoc] = await Promise.all([
+      dispoDocRef.get(),
+      assistenteDocRef.get(),
+    ]);
 
     if (!dispoDoc.exists() || !assistenteDoc.exists()) {
       throw new HttpsError(
@@ -344,17 +345,30 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
         "Disponibilidade ou assistente não encontrada."
       );
     }
-
-    const disponibilidade = dispoDoc.data().disponibilidade[mes]?.[modalidade];
     const assistenteNome = assistenteDoc.data().nome;
+    const dispoData = dispoDoc.data();
 
-    // ### CORREÇÃO ROBUSTA APLICADA AQUI ###
-    if (!disponibilidade) {
+    if (!dispoData || !dispoData.disponibilidade) {
       throw new HttpsError(
         "not-found",
-        `Configuração de disponibilidade para ${mes}/${modalidade} não encontrada.`
+        `Nenhum registro de 'disponibilidade' encontrado para '${assistenteNome}'.`
       );
     }
+    if (!dispoData.disponibilidade[mes]) {
+      throw new HttpsError(
+        "not-found",
+        `Nenhuma configuração de disponibilidade para o mês '${mes}' encontrada para '${assistenteNome}'.`
+      );
+    }
+    if (!dispoData.disponibilidade[mes][modalidade]) {
+      throw new HttpsError(
+        "not-found",
+        `Nenhuma configuração para a modalidade '${modalidade}' no mês '${mes}' encontrada para '${assistenteNome}'.`
+      );
+    }
+
+    const disponibilidade = dispoData.disponibilidade[mes][modalidade];
+
     if (
       typeof disponibilidade.inicio !== "string" ||
       typeof disponibilidade.fim !== "string" ||
@@ -369,7 +383,7 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
       });
       throw new HttpsError(
         "invalid-argument",
-        `O formato do horário de início/fim para a assistente '${assistenteNome}' é inválido. Verifique se o formato é "HH:MM".`
+        `O formato do horário de início/fim para a assistente '${assistenteNome}' é inválido. Verifique o cadastro. O formato esperado é "HH:MM".`
       );
     }
 
@@ -386,12 +400,15 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
         [hInicio, mInicio] = disponibilidade.inicio.split(":").map(Number);
         [hFim] = disponibilidade.fim.split(":").map(Number);
         if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim)) {
-          throw new Error("Valor não numérico encontrado");
+          throw new Error(
+            "Valor não numérico encontrado ao converter horário."
+          );
         }
       } catch (e) {
         console.error("Não foi possível processar os horários:", {
           inicio: disponibilidade.inicio,
           fim: disponibilidade.fim,
+          error: e,
         });
         throw new HttpsError(
           "invalid-argument",
