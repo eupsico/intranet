@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 3.0.0 (Refatorado com roteador dinâmico e painel admin)
+// Versão: 3.1.0 (Corrigido e Funcional com Roteador Dinâmico)
 
 import { auth, db, functions } from "./firebase-init.js";
 
@@ -35,11 +35,11 @@ document.addEventListener("DOMContentLoaded", function () {
       try {
         if (user) {
           const userDoc = await db.collection("usuarios").doc(user.uid).get();
-          // CORREÇÃO: Verifica se 'funcoes' é um objeto com chaves
+          // CORREÇÃO DEFINITIVA: Verifica se 'funcoes' é um ARRAY com itens.
           if (
             userDoc.exists &&
-            userDoc.data().funcoes &&
-            Object.keys(userDoc.data().funcoes).length > 0
+            Array.isArray(userDoc.data().funcoes) &&
+            userDoc.data().funcoes.length > 0
           ) {
             const userData = userDoc.data();
             await setupDashboard(user, userData);
@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function () {
     dashboardView.style.display = "none";
     loginView.style.display = "block";
 
-    const pathPrefix = "./"; // Simplificado para SPA
+    const pathPrefix = "./";
 
     loginView.innerHTML = `
             <div class="login-container">
@@ -147,6 +147,7 @@ document.addEventListener("DOMContentLoaded", function () {
     portal_voluntario: {
       id: "portal_voluntario",
       titulo: "Portal do Voluntário",
+      descricao: "Avisos, notícias e ferramentas para todos os voluntários.",
       url: "#!/portal_voluntario",
       roles: ["todos"],
       icon: `<i class="fas fa-home"></i>`,
@@ -156,6 +157,7 @@ document.addEventListener("DOMContentLoaded", function () {
     financeiro: {
       id: "financeiro",
       titulo: "Financeiro",
+      descricao: "Acesso ao painel de controle financeiro e relatórios.",
       url: "#!/financeiro",
       roles: ["admin", "financeiro"],
       icon: `<i class="fas fa-dollar-sign"></i>`,
@@ -165,6 +167,7 @@ document.addEventListener("DOMContentLoaded", function () {
     servico_social: {
       id: "servico_social",
       titulo: "Serviço Social",
+      descricao: "Documentos, orientações e fichas para o serviço social.",
       url: "#!/servico_social",
       roles: ["admin", "servico_social"],
       icon: `<i class="fas fa-hands-helping"></i>`,
@@ -174,6 +177,8 @@ document.addEventListener("DOMContentLoaded", function () {
     rh: {
       id: "rh",
       titulo: "Recursos Humanos",
+      descricao:
+        "Informações sobre vagas, comunicados e gestão de voluntários.",
       url: "#!/rh",
       roles: ["admin", "rh"],
       icon: `<i class="fas fa-users"></i>`,
@@ -183,6 +188,8 @@ document.addEventListener("DOMContentLoaded", function () {
     trilha_paciente: {
       id: "trilha_paciente",
       titulo: "Trilha do Paciente",
+      descricao:
+        "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
       url: "#!/trilha_paciente",
       roles: ["admin", "assistente"],
       icon: `<i class="fas fa-route"></i>`,
@@ -192,8 +199,6 @@ document.addEventListener("DOMContentLoaded", function () {
     captacao: {
       id: "captacao",
       titulo: "Captação",
-      descricao:
-        "Ferramentas e informações para a equipe de captação de recursos.",
       url: "#",
       roles: ["admin", "captacao"],
       icon: `<i class="fas fa-hand-holding-usd"></i>`,
@@ -201,8 +206,6 @@ document.addEventListener("DOMContentLoaded", function () {
     grupos: {
       id: "grupos",
       titulo: "Grupos",
-      descricao:
-        "Informações e materiais para a equipe de coordenação de grupos.",
       url: "#",
       roles: ["admin", "grupos"],
       icon: `<i class="fas fa-users-cog"></i>`,
@@ -210,12 +213,10 @@ document.addEventListener("DOMContentLoaded", function () {
     marketing: {
       id: "marketing",
       titulo: "Marketing",
-      descricao: "Acesso aos materiais de marketing e campanhas da EuPsico.",
       url: "#",
       roles: ["admin", "marketing"],
       icon: `<i class="fas fa-bullhorn"></i>`,
     },
-    // Adicione outros módulos aqui...
   };
 
   async function router(user, userData) {
@@ -227,11 +228,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const module = modulesConfig[path];
 
     if (module) {
-      const userFuncoes = userData.funcoes || {};
+      // CORREÇÃO DEFINITIVA: Verificação de permissão baseada em ARRAY
+      const userFuncoes = (userData.funcoes || []).map((f) => f.toLowerCase());
+      const rolesLowerCase = (module.roles || []).map((r) => r.toLowerCase());
       const hasPermission =
-        module.roles.includes("todos") ||
-        userFuncoes.admin ||
-        module.roles.some((role) => userFuncoes[role]);
+        rolesLowerCase.includes("todos") ||
+        userFuncoes.includes("admin") ||
+        rolesLowerCase.some((role) => userFuncoes.includes(role));
 
       if (hasPermission) {
         pageTitleContainer.innerHTML = `<h1>${module.titulo}</h1>${
@@ -240,23 +243,28 @@ document.addEventListener("DOMContentLoaded", function () {
         contentArea.innerHTML =
           '<div class="text-center mt-5"><div class="spinner-border" role="status"><span class="sr-only">Carregando...</span></div></div>';
 
-        try {
-          const response = await fetch(module.pagePath);
-          if (!response.ok)
-            throw new Error(`Página não encontrada: ${module.pagePath}`);
-          contentArea.innerHTML = await response.text();
+        // Carrega apenas módulos que tem um pagePath definido
+        if (module.pagePath && module.modulePath) {
+          try {
+            const response = await fetch(module.pagePath);
+            if (!response.ok)
+              throw new Error(`Página não encontrada: ${module.pagePath}`);
+            contentArea.innerHTML = await response.text();
 
-          const jsModule = await import(module.modulePath);
-          if (jsModule.init) {
-            jsModule.init(db, user, userData, functions);
-          } else {
-            console.warn(
-              `O módulo ${module.id} não possui uma função 'init' exportada.`
-            );
+            const jsModule = await import(module.modulePath);
+            if (jsModule.init) {
+              jsModule.init(db, user, userData, functions);
+            } else {
+              console.warn(
+                `O módulo ${module.id} não possui uma função 'init' exportada.`
+              );
+            }
+          } catch (error) {
+            console.error(`Erro ao carregar o módulo ${module.id}:`, error);
+            contentArea.innerHTML = `<h2>Falha ao carregar o módulo.</h2><p>${error.message}</p>`;
           }
-        } catch (error) {
-          console.error(`Erro ao carregar o módulo ${module.id}:`, error);
-          contentArea.innerHTML = `<h2>Falha ao carregar o módulo.</h2><p>${error.message}</p>`;
+        } else {
+          contentArea.innerHTML = `<p>Este módulo está em desenvolvimento.</p>`;
         }
       } else {
         pageTitleContainer.innerHTML = "<h1>Acesso Negado</h1>";
@@ -283,9 +291,8 @@ document.addEventListener("DOMContentLoaded", function () {
       !sidebar ||
       !overlay ||
       !sidebarMenu
-    ) {
+    )
       return;
-    }
 
     const handleToggle = () => {
       const isMobile = window.innerWidth <= 768;
@@ -305,9 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (window.innerWidth > 768) {
       const isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
-      if (isCollapsed) {
-        layoutContainer.classList.add("sidebar-collapsed");
-      }
+      if (isCollapsed) layoutContainer.classList.add("sidebar-collapsed");
       toggleButton.setAttribute(
         "title",
         isCollapsed ? "Expandir menu" : "Recolher menu"
@@ -318,10 +323,8 @@ document.addEventListener("DOMContentLoaded", function () {
     overlay.addEventListener("click", handleToggle);
 
     sidebarMenu.addEventListener("click", (e) => {
-      if (window.innerWidth <= 768) {
-        if (e.target.closest("a")) {
-          handleToggle();
-        }
+      if (window.innerWidth <= 768 && e.target.closest("a")) {
+        handleToggle();
       }
     });
   }
@@ -341,15 +344,20 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getVisibleModules(userData) {
-    const userFuncoes = userData.funcoes || {};
+    // CORREÇÃO DEFINITIVA: Lógica de visibilidade baseada em ARRAY
+    const userFuncoes = (userData.funcoes || []).map((f) => f.toLowerCase());
     let modulesToShow = [];
 
     for (const key in modulesConfig) {
       const module = modulesConfig[key];
-      const hasPermission =
-        module.roles.includes("todos") ||
-        userFuncoes.admin ||
-        module.roles.some((role) => userFuncoes[role]);
+      const rolesLowerCase = (module.roles || []).map((r) => r.toLowerCase());
+
+      let hasPermission = false;
+      if (rolesLowerCase.includes("todos") || userFuncoes.includes("admin")) {
+        hasPermission = true;
+      } else if (rolesLowerCase.some((role) => userFuncoes.includes(role))) {
+        hasPermission = true;
+      }
 
       if (hasPermission) {
         modulesToShow.push(module);
