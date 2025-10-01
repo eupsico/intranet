@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 4.0.0 (Arquitetura Híbrida - Base Sólida)
+// Versão: 4.1.0 (Correção Definitiva da Lógica de Permissões - Objeto/Mapa)
 
 import { auth, db, functions } from "./firebase-init.js";
 
@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "#!/home",
       roles: ["todos"],
       icon: `<i class="fas fa-home"></i>`,
-      // O conteúdo da home é parte do index.html, mas seu JS controla partes dinâmicas
       modulePath: "./modulos/voluntario/js/portal-voluntario.js",
     },
     admin: {
@@ -34,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
       titulo: "Administrativo",
       descricao: "Processos, documentos e organização da equipe.",
       url: "#!/administrativo",
-      roles: ["admin", "administrativo"], // Defina as roles corretas
+      roles: ["admin", "gestor", "assistente"], // Permissões corretas
       icon: `<i class="fas fa-file-alt"></i>`,
       modulePath: "./modulos/administrativo/js/administrativo-painel.js",
       pagePath: "./modulos/administrativo/page/administrativo-painel.html",
@@ -56,10 +55,11 @@ document.addEventListener("DOMContentLoaded", function () {
       try {
         if (user) {
           const userDoc = await db.collection("usuarios").doc(user.uid).get();
+          // CORREÇÃO: Verifica se 'funcoes' é um OBJETO com chaves
           if (
             userDoc.exists &&
-            Array.isArray(userDoc.data().funcoes) &&
-            userDoc.data().funcoes.length > 0
+            typeof userDoc.data().funcoes === "object" &&
+            Object.keys(userDoc.data().funcoes).length > 0
           ) {
             const userData = userDoc.data();
             setupDashboard(user, userData);
@@ -80,7 +80,6 @@ document.addEventListener("DOMContentLoaded", function () {
     loginView.style.display = "none";
     dashboardView.style.display = "block";
 
-    // Configura header e sidebar
     const userGreeting = document.getElementById("user-greeting");
     if (userGreeting)
       userGreeting.textContent = `Olá, ${userData.nome.split(" ")[0]}!`;
@@ -94,7 +93,6 @@ document.addEventListener("DOMContentLoaded", function () {
     renderSidebarMenu(visibleModules);
     setupSidebarToggle();
 
-    // Inicia o roteador e escuta por mudanças na URL
     router(user, userData);
     window.addEventListener("hashchange", () => router(user, userData));
   }
@@ -117,16 +115,13 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Atualiza o título do header
     pageTitleContainer.innerHTML = `<h1>${module.titulo}</h1><p>${
       module.descricao || ""
     }</p>`;
 
     if (path === "home") {
-      // Se for a página inicial, mostra o conteúdo institucional e esconde o palco
       institutionalContent.style.display = "block";
       contentArea.style.display = "none";
-      // Carrega o JS da home para popular áreas dinâmicas como "Acesso Rápido"
       try {
         const jsModule = await import(module.modulePath);
         if (jsModule.init) {
@@ -136,7 +131,6 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Erro ao carregar JS da home:", error);
       }
     } else {
-      // Para todos os outros módulos, esconde o institucional e mostra o palco
       institutionalContent.style.display = "none";
       contentArea.style.display = "block";
       contentArea.innerHTML = `<div class="loading-spinner"></div>`;
@@ -165,14 +159,17 @@ document.addEventListener("DOMContentLoaded", function () {
       .sort((a, b) => a.titulo.localeCompare(b.titulo));
   }
 
+  // CORREÇÃO: Lógica de permissão para ler um OBJETO
   function hasPermission(module, userData) {
-    const userFuncoes = (userData.funcoes || []).map((f) => f.toLowerCase());
-    const roles = (module.roles || []).map((r) => r.toLowerCase());
-    return (
-      roles.includes("todos") ||
-      userFuncoes.includes("admin") ||
-      roles.some((role) => userFuncoes.includes(role))
-    );
+    const userFuncoes = userData.funcoes || {}; // { admin: true, gestor: true }
+    const roles = module.roles || []; // [ "admin", "gestor", "assistente" ]
+
+    if (roles.includes("todos") || userFuncoes.admin) {
+      return true; // Acesso liberado para "todos" ou se o usuário for admin
+    }
+
+    // Verifica se alguma das roles necessárias existe como uma chave no objeto de funções do usuário
+    return roles.some((role) => userFuncoes[role] === true);
   }
 
   function renderSidebarMenu(modules) {
@@ -188,11 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateActiveMenuLink() {
     const path = window.location.hash || "#!/home";
     document.querySelectorAll("#sidebar-menu a").forEach((link) => {
-      if (link.getAttribute("href") === path) {
-        link.classList.add("active");
-      } else {
-        link.classList.remove("active");
-      }
+      link.classList.toggle("active", link.getAttribute("href") === path);
     });
   }
 
@@ -206,18 +199,32 @@ document.addEventListener("DOMContentLoaded", function () {
             <button id="login-button" class="action-button login-button">Login com Google</button>
         </div></div>`;
     document.getElementById("login-button").addEventListener("click", () => {
-      auth
-        .signInWithPopup(new firebase.auth.GoogleAuthProvider())
-        .catch(console.error);
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(console.error);
     });
   }
   function renderAccessDenied() {
-    /* ... */
+    loginView.style.display = "block";
+    dashboardView.style.display = "none";
+    loginView.innerHTML = `<div class="login-container"><div class="login-card"><h2>Acesso Negado</h2><p>Você está autenticado, mas seu usuário não tem permissões. Contate o administrador.</p></div></div>`;
   }
   function setupSidebarToggle() {
-    /* ... */
+    const layoutContainer = document.querySelector(".layout-container");
+    const sidebar = document.querySelector(".sidebar");
+    const toggleButton = document.getElementById("sidebar-toggle");
+    const overlay = document.getElementById("menu-overlay");
+    if (!layoutContainer || !toggleButton || !sidebar || !overlay) return;
+    const handleToggle = () => {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.toggle("is-visible");
+        layoutContainer.classList.toggle("mobile-menu-open");
+      } else {
+        layoutContainer.classList.toggle("sidebar-collapsed");
+      }
+    };
+    toggleButton.addEventListener("click", handleToggle);
+    overlay.addEventListener("click", handleToggle);
   }
 
-  // Inicia a aplicação
   handleAuth();
 });
