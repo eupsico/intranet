@@ -23,10 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       // ### CORREÇÃO APLICADA AQUI ###
       // O nome da função foi atualizado para corresponder ao backend.
-      const getHorarios = httpsCallable(
-        functions,
-        "getHorariosTriagemPublicos"
-      );
+      const getHorarios = httpsCallable(functions, "getHorariosPublicos");
       const result = await getHorarios();
       const horarios = result.data.horarios;
 

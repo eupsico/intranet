@@ -473,49 +473,87 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
 // -------------------------------------------------------------------
 // (PÚBLICO) Busca horários de TRIAGEM disponíveis na agenda aberta pelo admin.
 // -------------------------------------------------------------------
-exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
+exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
   try {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    const hojeISO = hoje.toISOString().split("T")[0];
+    const dataInicio = hoje.toISOString().split("T")[0];
 
-    const dataLimite = new Date(hoje);
-    dataLimite.setDate(hoje.getDate() + 14); // Busca horários nos próximos 14 dias
-    const dataLimiteISO = dataLimite.toISOString().split("T")[0];
+    const dataFim = new Date(hoje);
+    dataFim.setDate(hoje.getDate() + 7); // Busca horários para os próximos 7 dias
+    const dataFimISO = dataFim.toISOString().split("T")[0];
 
-    const agendaSnapshot = await db
-      .collection("agendaServicoSocial")
+    // 1. Busca os dias configurados como 'triagem' para os próximos 7 dias
+    const configSnapshot = await db
+      .collection("agendaConfigurada")
       .where("tipo", "==", "triagem")
-      .where("agendado", "==", false)
-      .where("data", ">=", hojeISO)
-      .where("data", "<=", dataLimiteISO)
-      .orderBy("data")
-      .orderBy("hora")
+      .where("data", ">=", dataInicio)
+      .where("data", "<=", dataFimISO)
       .get();
 
-    if (agendaSnapshot.empty) {
+    if (configSnapshot.empty) {
       return { horarios: [] };
     }
 
-    const horariosDisponiveis = agendaSnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        agendaId: doc.id,
-        data: data.data,
-        hora: data.hora,
-        modalidade: data.modalidade,
-        assistenteNome: data.assistenteNome,
-        assistenteId: data.assistenteId,
-        tipo: data.tipo,
-      };
+    const diasConfigurados = configSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    const slotsPotenciais = [];
+
+    // 2. Gera todos os slots de 30 minutos para os dias configurados
+    diasConfigurados.forEach((diaConfig) => {
+      const [hInicio] = diaConfig.inicio.split(":").map(Number);
+      const [hFim] = diaConfig.fim.split(":").map(Number);
+
+      let hAtual = hInicio;
+      let mAtual = 0;
+
+      while (hAtual < hFim) {
+        const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
+          mAtual
+        ).padStart(2, "0")}`;
+        slotsPotenciais.push({
+          id: `${diaConfig.data}_${horaSlot}_${diaConfig.assistenteId}`, // ID único para o slot
+          data: diaConfig.data,
+          hora: horaSlot,
+          modalidade: diaConfig.modalidade,
+          assistenteNome: diaConfig.assistenteNome,
+          assistenteId: diaConfig.assistenteId,
+        });
+
+        mAtual += 30;
+        if (mAtual >= 60) {
+          hAtual++;
+          mAtual = 0;
+        }
+      }
     });
+
+    // 3. Busca os horários que JÁ foram agendados para remover da lista
+    const agendadosSnapshot = await db
+      .collection("agendamentos")
+      .where("data", ">=", dataInicio)
+      .where("data", "<=", dataFimISO)
+      .get();
+
+    const idsAgendados = new Set();
+    agendadosSnapshot.forEach((doc) => {
+      const agendamento = doc.data();
+      idsAgendados.add(
+        `${agendamento.data}_${agendamento.hora}_${agendamento.assistenteId}`
+      );
+    });
+
+    // 4. Filtra e retorna apenas os slots que não foram agendados
+    const horariosDisponiveis = slotsPotenciais.filter(
+      (slot) => !idsAgendados.has(slot.id)
+    );
 
     return { horarios: horariosDisponiveis };
   } catch (error) {
-    console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
-    throw new HttpsError("internal", "Ocorreu um erro ao buscar os horários.", {
-      originalMessage: error.message,
-    });
+    console.error("Erro em getHorariosPublicos:", error);
+    throw new HttpsError("internal", "Ocorreu um erro ao buscar os horários.");
   }
 });
 
@@ -526,56 +564,62 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const { pacienteExistenteId, cpf, nome, telefone, horarioSelecionado } =
     request.data;
 
-  if (!horarioSelecionado || !horarioSelecionado.agendaId || !cpf || !nome) {
+  if (!horarioSelecionado || !horarioSelecionado.id || !cpf || !nome) {
     throw new HttpsError(
       "invalid-argument",
       "Dados do agendamento estão incompletos."
     );
   }
 
-  const { agendaId, ...horarioParaSalvar } = horarioSelecionado;
+  // O ID do slot (ex: "2025-10-20_09:30_assistenteUID") será o ID do nosso documento
+  const agendamentoId = horarioSelecionado.id;
+  const agendamentoRef = db.collection("agendamentos").doc(agendamentoId);
 
   try {
     await db.runTransaction(async (transaction) => {
-      const agendaRef = db.collection("agendaServicoSocial").doc(agendaId);
-      const agendaDoc = await transaction.get(agendaRef);
+      const agendamentoDoc = await transaction.get(agendamentoRef);
 
-      if (!agendaDoc.exists) {
-        throw new HttpsError(
-          "not-found",
-          "O horário selecionado não está mais disponível."
-        );
-      }
-      if (agendaDoc.data().agendado) {
+      // Se o documento já existe, significa que o slot foi agendado.
+      if (agendamentoDoc.exists) {
         throw new HttpsError(
           "already-exists",
           "Desculpe, este horário acabou de ser agendado por outra pessoa."
         );
       }
 
-      transaction.update(agendaRef, {
-        agendado: true,
-        agendadoEm: new Date(),
-        paciente: { nome, cpf },
-      });
-
+      // Se não existe, podemos criar o agendamento
       const dadosAgendamento = {
+        // Dados do horário
+        data: horarioSelecionado.data,
+        hora: horarioSelecionado.hora,
+        modalidade: horarioSelecionado.modalidade,
+        assistenteId: horarioSelecionado.assistenteId,
+        assistenteNome: horarioSelecionado.assistenteNome,
+        tipo: "triagem",
+        // Dados do paciente
+        paciente: { nome, cpf, telefone },
+        agendadoEm: new Date(),
+      };
+      transaction.set(agendamentoRef, dadosAgendamento);
+
+      // Atualiza a Trilha do Paciente
+      const dadosTrilha = {
         status: "triagem_agendada",
-        dataTriagem: horarioParaSalvar.data,
-        horaTriagem: horarioParaSalvar.hora,
-        modalidadeTriagem: horarioParaSalvar.modalidade,
-        assistenteSocialNome: horarioParaSalvar.assistenteNome,
-        assistenteSocialId: horarioParaSalvar.assistenteId,
+        dataTriagem: horarioSelecionado.data,
+        horaTriagem: horarioSelecionado.hora,
+        modalidadeTriagem: horarioSelecionado.modalidade,
+        assistenteSocialNome: horarioSelecionado.assistenteNome,
+        assistenteSocialId: horarioSelecionado.assistenteId,
         lastUpdate: new Date(),
       };
 
       if (pacienteExistenteId) {
         const docRef = db.collection("trilhaPaciente").doc(pacienteExistenteId);
-        transaction.update(docRef, dadosAgendamento);
+        transaction.update(docRef, dadosTrilha);
       } else {
         const newDocRef = db.collection("trilhaPaciente").doc();
         transaction.set(newDocRef, {
-          ...dadosAgendamento,
+          ...dadosTrilha,
           nomeCompleto: nome,
           cpf,
           telefoneCelular: telefone,
@@ -586,12 +630,11 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
 
     return { success: true, message: "Agendamento confirmado com sucesso!" };
   } catch (error) {
-    console.error("Erro grave ao salvar agendamento:", error);
+    console.error("Erro transacional ao agendar:", error);
     if (error instanceof HttpsError) throw error;
     throw new HttpsError(
       "internal",
-      "Ocorreu um erro interno ao salvar o agendamento.",
-      { originalMessage: error.message }
+      "Ocorreu um erro interno ao salvar o agendamento."
     );
   }
 });
