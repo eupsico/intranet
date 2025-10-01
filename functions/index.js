@@ -12,6 +12,13 @@ const db = admin.firestore();
 // -----------------------------
 // Função auxiliar para username
 // -----------------------------
+
+/**
+ * Gera um username único baseado no nome completo fornecido.
+ * @param {string} nomeCompleto - O nome completo do usuário.
+ * @return {Promise<string>} - Um username único.
+ * @throws {HttpsError} - Se não for possível gerar um username único.
+ */
 async function gerarUsernameUnico(nomeCompleto) {
   const partesNome = nomeCompleto
     .trim()
@@ -61,9 +68,12 @@ async function gerarUsernameUnico(nomeCompleto) {
   }
 
   let contador = 2;
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const usernameNumerado = `${usernameBase} ${contador}`;
-    if (!(await checkUsernameExists(usernameNumerado))) return usernameNumerado;
+    if (!(await checkUsernameExists(usernameNumerado))) {
+      return usernameNumerado;
+    }
     contador++;
     if (contador > 100) {
       throw new HttpsError(
@@ -457,7 +467,7 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
     // 1. Validação de segurança (permanece igual)
-    if (!request.auth || !request.auth.token.funcoes?.includes("admin")) {
+    if (!request.auth || !request.auth.token.admin) {
       throw new HttpsError(
         "permission-denied",
         "Você não tem permissão para acessar estes dados."
