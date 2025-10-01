@@ -1,13 +1,10 @@
 // Arquivo: /modulos/administrativo/js/gestao_agendas.js
-// Descrição: Módulo para gerenciar a abertura de agendas do Serviço Social.
+// Versão: 1.1 (CORRIGIDO)
+// Descrição: Corrige a importação do Firebase para ser compatível com firebase-init.js.
 
-import { app } from "../../../assets/js/firebase-init.js";
-import {
-  getFunctions,
-  httpsCallable,
-} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
-
-const functions = getFunctions(app, "southamerica-east1");
+// A importação agora busca 'functions' diretamente do seu inicializador.
+import { functions } from "../../../assets/js/firebase-init.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
 let agendaModalInstance = null;
 let currentAgendaConfig = {};
@@ -43,6 +40,9 @@ async function carregarDisponibilidadeAdmin() {
 
   if (!container || !errorMessageDiv || !spinner) {
     console.error("Elementos essenciais da interface não encontrados.");
+    spinner.style.display = "none";
+    container.innerHTML =
+      '<p class="text-danger">Erro de Interface: Elementos não encontrados.</p>';
     return;
   }
 
@@ -54,8 +54,10 @@ async function carregarDisponibilidadeAdmin() {
     const result = await getTodasDisponibilidades();
     const disponibilidades = result.data;
 
-    spinner.classList.add("d-none");
-    document.getElementById("gestao-agenda-content").classList.remove("d-none");
+    spinner.style.display = "none";
+    document
+      .getElementById("gestao-agenda-content")
+      ?.classList.remove("d-none");
 
     if (!disponibilidades || disponibilidades.length === 0) {
       container.innerHTML =
@@ -79,7 +81,6 @@ async function carregarDisponibilidadeAdmin() {
           for (const modalidade in mesData) {
             const dispo = mesData[modalidade];
             if (dispo.dias && dispo.dias.length > 0) {
-              // Só mostra se houver dias
               contentHtml += `
                                 <a href="#" class="list-group-item list-group-item-action flex-column align-items-start" 
                                     data-bs-toggle="modal" data-bs-target="#agendaModal"
@@ -103,19 +104,20 @@ async function carregarDisponibilidadeAdmin() {
             }
           }
         }
-      } else {
-        contentHtml =
+      }
+      if (contentHtml === '<div class="list-group">') {
+        contentHtml +=
           '<p class="text-muted ms-3">Nenhuma disponibilidade cadastrada.</p>';
       }
       contentHtml += "</div>";
 
       accordionItem.innerHTML = `
                 <h2 class="accordion-header" id="heading-agenda-${index}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-agenda-${index}" aria-expanded="false" aria-controls="collapse-agenda-${index}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-agenda-${index}">
                         <strong>${item.nome}</strong>
                     </button>
                 </h2>
-                <div id="collapse-agenda-${index}" class="accordion-collapse collapse" aria-labelledby="heading-agenda-${index}" data-bs-parent="#disponibilidade-admin-content">
+                <div id="collapse-agenda-${index}" class="accordion-collapse collapse" data-bs-parent="#disponibilidade-admin-content">
                     <div class="accordion-body">${contentHtml}</div>
                 </div>
             `;
@@ -125,7 +127,7 @@ async function carregarDisponibilidadeAdmin() {
     setupAgendaModal();
   } catch (error) {
     console.error("Erro ao carregar disponibilidade para admin:", error);
-    spinner.classList.add("d-none");
+    spinner.style.display = "none";
     errorMessageDiv.textContent = `Erro ao carregar dados: ${error.message}`;
     errorMessageDiv.classList.remove("d-none");
   }
@@ -152,24 +154,29 @@ function setupAgendaModal() {
     const dispo = JSON.parse(button.dataset.dispo);
 
     let contentHtml = '<div class="row">';
-    dispo.dias.sort().forEach((dia) => {
-      const data = new Date(`${dia}T03:00:00`);
-      const diaSemana = data.toLocaleDateString("pt-BR", { weekday: "long" });
-      contentHtml += `
-                <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card h-100">
-                        <div class="card-header fw-bold">${data.toLocaleDateString(
-                          "pt-BR"
-                        )} (${diaSemana})</div>
-                        <div class="card-body">
-                            <p class="card-text">Atribuir este dia para:</p>
-                            <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
+    if (dispo.dias && dispo.dias.length > 0) {
+      dispo.dias.sort().forEach((dia) => {
+        const data = new Date(`${dia}T03:00:00`);
+        const diaSemana = data.toLocaleDateString("pt-BR", { weekday: "long" });
+        contentHtml += `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header fw-bold">${data.toLocaleDateString(
+                              "pt-BR"
+                            )} (${diaSemana})</div>
+                            <div class="card-body">
+                                <p class="card-text">Atribuir este dia para:</p>
+                                <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
+                                <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-    });
+                `;
+      });
+    } else {
+      contentHtml =
+        '<p class="text-center text-muted">Não há dias de disponibilidade cadastrados para este bloco.</p>';
+    }
     modalContent.innerHTML = contentHtml + "</div>";
   });
 
@@ -195,7 +202,10 @@ async function saveAgenda() {
   }));
 
   if (diasConfig.length === 0) {
-    showFeedbackModal("Nenhum dia foi configurado.", false);
+    showFeedbackModal(
+      "Nenhum dia foi configurado. Nenhuma agenda foi aberta.",
+      false
+    );
     button.disabled = false;
     button.innerHTML =
       '<i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda';
