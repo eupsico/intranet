@@ -53,6 +53,28 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="configurarAgendaModal" tabindex="-1" aria-labelledby="configurarAgendaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="configurarAgendaModalLabel">Configurar Tipos de Atendimento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Para cada dia disponível da assistente social, defina se o atendimento será para <strong>Triagem</strong> ou para <strong>Reavaliação</strong>. Essa configuração será usada para liberar os horários na página de agendamento público.</p>
+                <div id="agenda-config-content" class="mt-4">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveConfigButton">
+                    <i class="fas fa-save me-2"></i>Salvar Configuração
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
