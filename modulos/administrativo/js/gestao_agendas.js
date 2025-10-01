@@ -27,7 +27,7 @@ function showFeedbackModal(message, isSuccess = true) {
   modalTitle.textContent = isSuccess ? "Sucesso!" : "Erro!";
   modalBody.innerHTML = message;
 
-  modalHeader.className = "modal-header"; // Reseta classes
+  modalHeader.className = "modal-header";
   modalHeader.classList.add(
     isSuccess ? "bg-success" : "bg-danger",
     "text-white"
@@ -55,6 +55,7 @@ async function carregarDisponibilidadeAdmin() {
     const disponibilidades = result.data;
 
     spinner.classList.add("d-none");
+    document.getElementById("gestao-agenda-content").classList.remove("d-none");
 
     if (!disponibilidades || disponibilidades.length === 0) {
       container.innerHTML =
@@ -77,26 +78,29 @@ async function carregarDisponibilidadeAdmin() {
           const mesData = item.disponibilidade[mes];
           for (const modalidade in mesData) {
             const dispo = mesData[modalidade];
-            contentHtml += `
-              <a href="#" class="list-group-item list-group-item-action flex-column align-items-start" 
-                 data-bs-toggle="modal" data-bs-target="#agendaModal"
-                 data-assistente-id="${assistenteId}"
-                 data-assistente-nome="${item.nome}"
-                 data-mes="${mes}"
-                 data-modalidade="${modalidade}"
-                 data-dispo='${JSON.stringify(dispo)}'>
-                <div class="d-flex w-100 justify-content-between">
-                  <h5 class="mb-1 text-capitalize">${modalidade} - ${mes}</h5>
-                  <small><i class="fas fa-calendar-alt me-1"></i> ${
-                    dispo.dias ? dispo.dias.length : 0
-                  } dias</small>
-                </div>
-                <p class="mb-1">Horário de trabalho: <strong>${
-                  dispo.inicio
-                } às ${dispo.fim}</strong>.</p>
-                <small class="text-success">Clique para configurar e abrir a agenda.</small>
-              </a>
-            `;
+            if (dispo.dias && dispo.dias.length > 0) {
+              // Só mostra se houver dias
+              contentHtml += `
+                                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start" 
+                                    data-bs-toggle="modal" data-bs-target="#agendaModal"
+                                    data-assistente-id="${assistenteId}"
+                                    data-assistente-nome="${item.nome}"
+                                    data-mes="${mes}"
+                                    data-modalidade="${modalidade}"
+                                    data-dispo='${JSON.stringify(dispo)}'>
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1 text-capitalize">${modalidade} - ${mes}</h5>
+                                        <small><i class="fas fa-calendar-alt me-1"></i> ${
+                                          dispo.dias.length
+                                        } dias</small>
+                                    </div>
+                                    <p class="mb-1">Horário de trabalho: <strong>${
+                                      dispo.inicio
+                                    } às ${dispo.fim}</strong>.</p>
+                                    <small class="text-success">Clique para configurar e abrir a agenda.</small>
+                                </a>
+                            `;
+            }
           }
         }
       } else {
@@ -106,17 +110,15 @@ async function carregarDisponibilidadeAdmin() {
       contentHtml += "</div>";
 
       accordionItem.innerHTML = `
-        <h2 class="accordion-header" id="heading-agenda-${index}">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-agenda-${index}" aria-expanded="false" aria-controls="collapse-agenda-${index}">
-            <strong>${item.nome}</strong>
-          </button>
-        </h2>
-        <div id="collapse-agenda-${index}" class="accordion-collapse collapse" aria-labelledby="heading-agenda-${index}" data-bs-parent="#disponibilidade-admin-content">
-          <div class="accordion-body">
-            ${contentHtml}
-          </div>
-        </div>
-      `;
+                <h2 class="accordion-header" id="heading-agenda-${index}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-agenda-${index}" aria-expanded="false" aria-controls="collapse-agenda-${index}">
+                        <strong>${item.nome}</strong>
+                    </button>
+                </h2>
+                <div id="collapse-agenda-${index}" class="accordion-collapse collapse" aria-labelledby="heading-agenda-${index}" data-bs-parent="#disponibilidade-admin-content">
+                    <div class="accordion-body">${contentHtml}</div>
+                </div>
+            `;
       container.appendChild(accordionItem);
     });
 
@@ -137,56 +139,38 @@ function setupAgendaModal() {
 
   agendaModalElement.addEventListener("show.bs.modal", function (event) {
     const button = event.relatedTarget;
-    const assistenteId = button.dataset.assistenteId;
-    const assistenteNome = button.dataset.assistenteNome;
-    const mes = button.dataset.mes;
-    const modalidade = button.dataset.modalidade;
-    const dispo = JSON.parse(button.dataset.dispo);
-
-    currentAgendaConfig = { assistenteId, mes, modalidade };
+    currentAgendaConfig = {
+      assistenteId: button.dataset.assistenteId,
+      mes: button.dataset.mes,
+      modalidade: button.dataset.modalidade,
+    };
 
     const modalTitle = document.getElementById("agendaModalLabel");
-    const modalContent = document.getElementById("agenda-config-content");
+    modalTitle.textContent = `Abrir Agenda - ${button.dataset.assistenteNome} (${button.dataset.modalidade} - ${button.dataset.mes})`;
 
-    modalTitle.textContent = `Abrir Agenda - ${assistenteNome} (${modalidade} - ${mes})`;
+    const modalContent = document.getElementById("agenda-config-content");
+    const dispo = JSON.parse(button.dataset.dispo);
 
     let contentHtml = '<div class="row">';
-    if (dispo.dias && dispo.dias.length > 0) {
-      dispo.dias.forEach((dia) => {
-        const data = new Date(`${dia}T00:00:00-03:00`);
-        const diaSemana = data.toLocaleDateString("pt-BR", { weekday: "long" });
-
-        contentHtml += `
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100">
-                            <div class="card-header fw-bold">${data.toLocaleDateString(
-                              "pt-BR"
-                            )} (${diaSemana})</div>
-                            <div class="card-body">
-                                <p class="card-text">Atribuir este dia para:</p>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked>
-                                    <label class="form-check-label" for="triagem-${dia}">
-                                        Triagem
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao">
-                                    <label class="form-check-label" for="reavaliacao-${dia}">
-                                        Reavaliação
-                                    </label>
-                                </div>
-                            </div>
+    dispo.dias.sort().forEach((dia) => {
+      const data = new Date(`${dia}T03:00:00`);
+      const diaSemana = data.toLocaleDateString("pt-BR", { weekday: "long" });
+      contentHtml += `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold">${data.toLocaleDateString(
+                          "pt-BR"
+                        )} (${diaSemana})</div>
+                        <div class="card-body">
+                            <p class="card-text">Atribuir este dia para:</p>
+                            <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
+                            <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
                         </div>
                     </div>
-                `;
-      });
-    } else {
-      contentHtml =
-        '<p class="text-center text-muted">Não há dias de disponibilidade cadastrados para este bloco.</p>';
-    }
-    contentHtml += "</div>";
-    modalContent.innerHTML = contentHtml;
+                </div>
+            `;
+    });
+    modalContent.innerHTML = contentHtml + "</div>";
   });
 
   const saveButton = document.getElementById("saveAgendaButton");
@@ -198,35 +182,27 @@ function setupAgendaModal() {
 
 async function saveAgenda() {
   const button = document.getElementById("saveAgendaButton");
-  const originalButtonText = button.innerHTML;
-  button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...`;
   button.disabled = true;
+  button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Salvando...`;
 
-  const diasConfig = [];
-  const content = document.getElementById("agenda-config-content");
-  const inputs = content.querySelectorAll('input[type="radio"]:checked');
-
-  inputs.forEach((input) => {
-    diasConfig.push({
-      dia: input.name.replace("tipo-", ""),
-      tipo: input.value,
-    });
-  });
+  const diasConfig = Array.from(
+    document.querySelectorAll(
+      '#agenda-config-content input[type="radio"]:checked'
+    )
+  ).map((input) => ({
+    dia: input.name.replace("tipo-", ""),
+    tipo: input.value,
+  }));
 
   if (diasConfig.length === 0) {
-    showFeedbackModal(
-      "Nenhum dia foi configurado. Nenhuma agenda foi aberta.",
-      false
-    );
-    button.innerHTML = originalButtonText;
+    showFeedbackModal("Nenhum dia foi configurado.", false);
     button.disabled = false;
+    button.innerHTML =
+      '<i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda';
     return;
   }
 
-  const payload = {
-    ...currentAgendaConfig,
-    dias: diasConfig,
-  };
+  const payload = { ...currentAgendaConfig, dias: diasConfig };
 
   try {
     const abrirAgenda = httpsCallable(functions, "abrirAgendaServicoSocial");
@@ -236,11 +212,12 @@ async function saveAgenda() {
   } catch (error) {
     console.error("Erro ao abrir agenda:", error);
     showFeedbackModal(
-      `Não foi possível abrir a agenda. Detalhes: ${error.message}`,
+      `Não foi possível abrir a agenda: ${error.message}`,
       false
     );
   } finally {
-    button.innerHTML = originalButtonText;
     button.disabled = false;
+    button.innerHTML =
+      '<i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda';
   }
 }
