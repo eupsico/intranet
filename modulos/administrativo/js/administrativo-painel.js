@@ -1,12 +1,11 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 1.8
-// Descrição: Adiciona a view 'gestao_agendas' para o gerenciamento da agenda do Serviço Social.
+// Versão: 1.9 (CORRIGIDO)
+// Descrição: Corrige o caminho de carregamento das views locais (como 'grade') e adiciona a nova view 'gestao_agendas'.
 
 export function initadministrativoPanel(user, db, userData) {
   const contentArea = document.getElementById("content-area");
   const sidebarMenu = document.getElementById("sidebar-menu");
 
-  // ADICIONADO: Definição da função showToast para este painel.
   window.showToast = function (message, type = "success") {
     const container =
       document.getElementById("toast-container") || document.body;
@@ -36,7 +35,6 @@ export function initadministrativoPanel(user, db, userData) {
     }, 3000);
   };
 
-  // -Função para configurar o menu ---
   function setupSidebarToggle() {
     const layoutContainer = document.querySelector(".layout-container");
     const sidebar = document.querySelector(".sidebar");
@@ -69,7 +67,6 @@ export function initadministrativoPanel(user, db, userData) {
       }
     };
 
-    // Garante que o listener não seja adicionado múltiplas vezes
     const newToggleButton = toggleButton.cloneNode(true);
     toggleButton.parentNode.replaceChild(newToggleButton, toggleButton);
     newToggleButton.addEventListener("click", handleToggle);
@@ -94,11 +91,10 @@ export function initadministrativoPanel(user, db, userData) {
       roles: ["admin", "gestor", "assistente"],
       icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
     },
-    // NOVA VIEW ADICIONADA PARA GERIR AGENDAS
     {
       id: "gestao_agendas",
       name: "Gerir Agendas (Social)",
-      roles: ["admin"], // Somente administradores podem ver este item
+      roles: ["admin"],
       icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m10.5 14 2 2 4-4"/></svg>`,
     },
     {
@@ -157,10 +153,11 @@ export function initadministrativoPanel(user, db, userData) {
         jsPath = `../../${view.module}/js/${viewId}.js`;
         cssPath = `../../${view.module}/css/${viewId}.css`;
       } else {
-        // Caminhos ajustados para o módulo 'administrativo'
-        htmlPath = `./page/${viewId}.html`;
-        jsPath = `../js/${viewId}.js`;
-        cssPath = `../css/${viewId}.css`;
+        // ### CORREÇÃO APLICADA AQUI ###
+        // Os caminhos agora são relativos à pasta 'page', onde o 'administrativo-painel.html' está.
+        htmlPath = `./${viewId}.html`; // Ex: ./grade.html
+        jsPath = `../js/${viewId}.js`; // Ex: ../js/grade.js
+        cssPath = `../css/${viewId}.css`; // Ex: ../css/grade.css
       }
 
       const response = await fetch(htmlPath);
@@ -230,7 +227,7 @@ export function initadministrativoPanel(user, db, userData) {
     const userRoles = userData.funcoes || [];
     setupPageHeader();
     buildSidebarMenu(userRoles);
-    setupSidebarToggle(); // Assegura que o toggle do menu seja iniciado
+    setupSidebarToggle(); // Adicionado para garantir a inicialização
 
     const handleHashChange = () => {
       const viewId = window.location.hash.substring(1);
