@@ -443,77 +443,36 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   }
 });
 
-// ===================================================================
-// FUNÇÃO CORRIGIDA: getTodasDisponibilidadesAssistentes
-// ===================================================================
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
-    // LOG 1: Verifica se a função foi chamada e se há um contexto de autenticação.
     console.log("Função 'getTodasDisponibilidadesAssistentes' foi chamada.");
     if (!request.auth) {
-      console.error(
-        "[ERRO DE AUTENTICAÇÃO] A requisição não possui um token de autenticação."
-      );
       throw new HttpsError(
         "unauthenticated",
-        "Você precisa estar autenticado para acessar estes dados."
+        "Você precisa estar autenticado."
       );
     }
-
-    // LOG 2: Identifica o usuário que está tentando acessar.
     const adminUid = request.auth.uid;
-    console.log(`[INFO] UID do requisitante: ${adminUid}`);
-
     try {
-      // 1. Busca o documento do usuário que está fazendo a chamada.
       const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
-
-      // LOG 3: Verifica se o documento do usuário foi encontrado e quais são suas funções.
-      if (!adminUserDoc.exists) {
-        console.error(
-          `[FALHA DE PERMISSÃO] Documento do usuário com UID ${adminUid} não encontrado.`
-        );
+      if (
+        !adminUserDoc.exists ||
+        !(adminUserDoc.data().funcoes || []).includes("admin")
+      ) {
         throw new HttpsError(
           "permission-denied",
-          "Seu usuário não foi encontrado no banco de dados."
-        );
-      }
-      const adminUserData = adminUserDoc.data();
-      console.log(
-        `[INFO] Funções do usuário ${adminUserData.nome}:`,
-        adminUserData.funcoes || "Nenhuma"
-      );
-
-      // 2. Verifica se o usuário tem a função 'admin' no array 'funcoes'.
-      if (!(adminUserData.funcoes || []).includes("admin")) {
-        console.error(
-          `[FALHA DE PERMISSÃO] O usuário ${adminUserData.nome} não possui a função 'admin'.`
-        );
-        throw new HttpsError(
-          "permission-denied",
-          "Você não tem permissão de administrador para acessar estes dados."
+          "Você não tem permissão para acessar estes dados."
         );
       }
 
-      // LOG 4: Se passou pela verificação, confirma que o acesso foi concedido.
-      console.log(
-        `[SUCESSO DE PERMISSÃO] Acesso concedido para o admin: ${adminUserData.nome}. Iniciando busca de dados...`
-      );
-
-      // 3. Lógica de negócio da função (agora segura)
       const dispoSnapshot = await db
         .collection("disponibilidadeAssistentes")
         .get();
-      if (dispoSnapshot.empty) {
-        console.log("Nenhum documento de disponibilidade encontrado.");
-        return [];
-      }
+      if (dispoSnapshot.empty) return [];
 
       const assistentesComDispoIds = dispoSnapshot.docs.map((doc) => doc.id);
-      if (assistentesComDispoIds.length === 0) {
-        return [];
-      }
+      if (assistentesComDispoIds.length === 0) return [];
 
       const usuariosSnapshot = await db
         .collection("usuarios")
@@ -523,13 +482,13 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
           assistentesComDispoIds
         )
         .get();
-
       const assistentesAtivosMap = new Map();
       usuariosSnapshot.forEach((doc) => {
         const userData = doc.data();
-        const isAssistente = userData.funcoes?.includes("servico_social");
-        const isAtivo = userData.inativo === false;
-        if (isAssistente && isAtivo) {
+        if (
+          userData.funcoes?.includes("servico_social") &&
+          userData.inativo === false
+        ) {
           assistentesAtivosMap.set(doc.id, userData);
         }
       });
@@ -539,32 +498,258 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
         if (assistentesAtivosMap.has(doc.id)) {
           const assistenteInfo = assistentesAtivosMap.get(doc.id);
           todasDisponibilidades.push({
+            id: doc.id, // ID da assistente, crucial para o frontend
             nome: assistenteInfo.nome,
             disponibilidade: doc.data().disponibilidade,
           });
         }
       });
-
-      // LOG 5: Informa o resultado final antes de retornar.
       console.log(
-        `[INFO] Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
+        `Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
       );
       return todasDisponibilidades;
     } catch (error) {
-      console.error(
-        "[ERRO GERAL] Erro na execução de getTodasDisponibilidadesAssistentes:",
-        error
-      );
-      if (error instanceof HttpsError) {
-        throw error; // Re-lança os erros de permissão que já tratamos.
-      }
+      console.error("Erro em getTodasDisponibilidadesAssistentes:", error);
+      if (error instanceof HttpsError) throw error;
       throw new HttpsError(
         "internal",
-        "Ocorreu um erro interno ao buscar as disponibilidades."
+        "Não foi possível buscar as disponibilidades."
       );
     }
   }
 );
-// ===================================================================
-// FIM DA FUNÇÃO: getTodasDisponibilidadesAssistentes
-// ===================================================================
+
+/**
+ * (ADMIN) Processa a configuração do admin e cria a agenda pública de horários.
+ */
+exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
+  if (!request.auth)
+    throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
+
+  const adminUid = request.auth.uid;
+  const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
+  if (!adminUserDoc.exists || !adminUserDoc.data().funcoes?.includes("admin")) {
+    throw new HttpsError(
+      "permission-denied",
+      "Você não tem permissão para executar esta ação."
+    );
+  }
+
+  const { assistenteId, mes, modalidade, dias } = request.data;
+  if (
+    !assistenteId ||
+    !mes ||
+    !modalidade ||
+    !Array.isArray(dias) ||
+    dias.length === 0
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Dados insuficientes para abrir a agenda."
+    );
+  }
+
+  const dispoDoc = await db
+    .collection("disponibilidadeAssistentes")
+    .doc(assistenteId)
+    .get();
+  const assistenteDoc = await db.collection("usuarios").doc(assistenteId).get();
+
+  if (!dispoDoc.exists() || !assistenteDoc.exists()) {
+    throw new HttpsError(
+      "not-found",
+      "Disponibilidade ou assistente não encontrada."
+    );
+  }
+
+  const disponibilidade = dispoDoc.data().disponibilidade[mes]?.[modalidade];
+  if (!disponibilidade) {
+    throw new HttpsError(
+      "not-found",
+      `Configuração de disponibilidade para ${mes}/${modalidade} não encontrada.`
+    );
+  }
+  const assistenteNome = assistenteDoc.data().nome;
+
+  const batch = db.batch();
+  let slotsCriados = 0;
+
+  for (const configDia of dias) {
+    const { dia, tipo } = configDia;
+    const [hInicio, mInicio] = disponibilidade.inicio.split(":").map(Number);
+    const [hFim] = disponibilidade.fim.split(":").map(Number);
+
+    let hAtual = hInicio;
+    let mAtual = mInicio;
+
+    while (hAtual < hFim) {
+      const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
+        mAtual
+      ).padStart(2, "0")}`;
+
+      const slotData = {
+        assistenteId,
+        assistenteNome,
+        data: dia,
+        hora: horaSlot,
+        modalidade: modalidade.charAt(0).toUpperCase() + modalidade.slice(1),
+        tipo, // "triagem" ou "reavaliacao"
+        agendado: false,
+        createdAt: new Date(),
+      };
+
+      const slotRef = db.collection("agendaServicoSocial").doc();
+      batch.set(slotRef, slotData);
+      slotsCriados++;
+
+      mAtual += 30;
+      if (mAtual >= 60) {
+        hAtual++;
+        mAtual = 0;
+      }
+    }
+  }
+
+  await batch.commit();
+
+  return {
+    status: "success",
+    message: `Agenda aberta com sucesso! ${slotsCriados} horários para ${assistenteNome} foram disponibilizados.`,
+  };
+});
+
+/**
+ * (PÚBLICO) Busca horários de TRIAGEM disponíveis na agenda aberta pelo admin.
+ */
+exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
+  try {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const hojeISO = hoje.toISOString().split("T")[0];
+
+    const dataLimite = new Date(hoje);
+    dataLimite.setDate(hoje.getDate() + 14); // Busca horários nos próximos 14 dias
+    const dataLimiteISO = dataLimite.toISOString().split("T")[0];
+
+    console.log(
+      `Buscando horários de triagem de ${hojeISO} até ${dataLimiteISO}`
+    );
+
+    const agendaSnapshot = await db
+      .collection("agendaServicoSocial")
+      .where("tipo", "==", "triagem")
+      .where("agendado", "==", false)
+      .where("data", ">=", hojeISO)
+      .where("data", "<=", dataLimiteISO)
+      .orderBy("data")
+      .orderBy("hora")
+      .get();
+
+    if (agendaSnapshot.empty) {
+      console.log("Nenhum horário de triagem aberto e disponível encontrado.");
+      return { horarios: [] };
+    }
+
+    const horariosDisponiveis = agendaSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        agendaId: doc.id, // ID único do slot, crucial para o agendamento
+        data: data.data,
+        hora: data.hora,
+        modalidade: data.modalidade,
+        assistenteNome: data.assistenteNome,
+        assistenteId: data.assistenteId,
+        tipo: data.tipo,
+      };
+    });
+
+    console.log(
+      `${horariosDisponiveis.length} horários de triagem encontrados.`
+    );
+    return { horarios: horariosDisponiveis };
+  } catch (error) {
+    console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
+    throw new HttpsError(
+      "internal",
+      "Ocorreu um erro ao buscar os horários.",
+      error.message
+    );
+  }
+});
+
+/**
+ * (PÚBLICO) Agenda um horário de triagem, usando transação para garantir a vaga.
+ */
+exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
+  const { pacienteExistenteId, cpf, nome, telefone, horarioSelecionado } =
+    request.data;
+
+  if (!horarioSelecionado || !horarioSelecionado.agendaId || !cpf || !nome) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Dados do agendamento estão incompletos."
+    );
+  }
+
+  const { agendaId, ...horarioParaSalvar } = horarioSelecionado;
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const agendaRef = db.collection("agendaServicoSocial").doc(agendaId);
+      const agendaDoc = await transaction.get(agendaRef);
+
+      if (!agendaDoc.exists) {
+        throw new HttpsError(
+          "not-found",
+          "O horário selecionado não está mais disponível."
+        );
+      }
+      if (agendaDoc.data().agendado) {
+        throw new HttpsError(
+          "already-exists",
+          "Desculpe, este horário acabou de ser agendado por outra pessoa."
+        );
+      }
+
+      transaction.update(agendaRef, {
+        agendado: true,
+        agendadoEm: new Date(),
+        paciente: { nome, cpf },
+      });
+
+      const dadosAgendamento = {
+        status: "triagem_agendada",
+        dataTriagem: horarioParaSalvar.data,
+        horaTriagem: horarioParaSalvar.hora,
+        modalidadeTriagem: horarioParaSalvar.modalidade,
+        assistenteSocialNome: horarioParaSalvar.assistenteNome,
+        assistenteSocialId: horarioParaSalvar.assistenteId,
+        lastUpdate: new Date(),
+      };
+
+      if (pacienteExistenteId) {
+        const docRef = db.collection("trilhaPaciente").doc(pacienteExistenteId);
+        transaction.update(docRef, dadosAgendamento);
+      } else {
+        const newDocRef = db.collection("trilhaPaciente").doc();
+        transaction.set(newDocRef, {
+          ...dadosAgendamento,
+          nomeCompleto: nome,
+          cpf,
+          telefoneCelular: telefone,
+          timestamp: new Date(),
+        });
+      }
+    });
+
+    return { success: true, message: "Agendamento confirmado com sucesso!" };
+  } catch (error) {
+    console.error("Erro grave ao salvar agendamento:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(
+      "internal",
+      "Ocorreu um erro interno ao salvar o agendamento.",
+      error.message
+    );
+  }
+});
