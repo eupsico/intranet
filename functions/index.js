@@ -466,8 +466,21 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
-    // 1. Validação de segurança (permanece igual)
-    if (!request.auth || !request.auth.token.admin) {
+    // 1. Validação de segurança corrigida
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Você precisa estar autenticado."
+      );
+    }
+
+    const adminUid = request.auth.uid;
+    const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
+
+    if (
+      !adminUserDoc.exists ||
+      !(adminUserDoc.data().funcoes || []).includes("admin")
+    ) {
       throw new HttpsError(
         "permission-denied",
         "Você não tem permissão para acessar estes dados."
