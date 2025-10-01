@@ -1,9 +1,6 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 3.0 (Solução Definitiva)
-// Descrição: Adiciona ciclo de vida completo para os módulos (init/destroy) para evitar vazamento de componentes entre as telas.
-
-// ### NOVO: Variável para rastrear o módulo atualmente carregado ###
-let currentViewModule = null;
+// Versão: 2.0 (CORRIGIDO)
+// Descrição: Corrige o nome e caminho da view 'gestao_agendas'.
 
 export function initadministrativoPanel(user, db, userData) {
   const contentArea = document.getElementById("content-area");
@@ -112,36 +109,29 @@ export function initadministrativoPanel(user, db, userData) {
   function buildSidebarMenu(userRoles = []) {
     if (!sidebarMenu) return;
     sidebarMenu.innerHTML = `
-            <li>
-                <a href="../../../index.html" class="back-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    <span>Voltar à Intranet</span>
-                </a>
-            </li>
-            <li class="menu-separator"></li>
-        `;
+            <li>
+                <a href="../../../index.html" class="back-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <span>Voltar à Intranet</span>
+                </a>
+            </li>
+            <li class="menu-separator"></li>
+        `;
     views.forEach((view) => {
       const hasPermission = view.roles.some((role) => userRoles.includes(role));
       if (hasPermission) {
         sidebarMenu.innerHTML += `
-                    <li>
-                        <a href="#${view.id}" data-view="${view.id}">
-                            ${view.icon}
-                            <span>${view.name}</span>
-                        </a>
-                    </li>`;
+                    <li>
+                        <a href="#${view.id}" data-view="${view.id}">
+                            ${view.icon}
+                            <span>${view.name}</span>
+                        </a>
+                    </li>`;
       }
     });
   }
 
   async function loadView(viewId) {
-    // ### NOVO: Limpa o módulo anterior antes de carregar um novo ###
-    if (currentViewModule && typeof currentViewModule.destroy === "function") {
-      console.log(`Destruindo módulo anterior...`);
-      currentViewModule.destroy();
-    }
-    currentViewModule = null; // Reseta a referência
-
     const view = views.find((v) => v.id === viewId);
     if (!view) {
       contentArea.innerHTML = "<h2>View não encontrada.</h2>";
@@ -160,6 +150,7 @@ export function initadministrativoPanel(user, db, userData) {
         jsPath = `../../${view.module}/js/${viewId}.js`;
         cssPath = `../../${view.module}/css/${viewId}.css`;
       } else {
+        // ### CORREÇÃO APLICADA AQUI ###
         htmlPath = `./${viewId}.html`;
         jsPath = `../js/${viewId}.js`;
         cssPath = `../css/${viewId}.css`;
@@ -173,6 +164,7 @@ export function initadministrativoPanel(user, db, userData) {
 
       contentArea.innerHTML = await response.text();
 
+      // Lógica de CSS (sem alterações)
       document
         .querySelectorAll("link[data-dynamic-style]")
         .forEach((el) => el.remove());
@@ -186,10 +178,7 @@ export function initadministrativoPanel(user, db, userData) {
       document.head.appendChild(link);
 
       try {
-        // ### NOVO: Armazena a referência do módulo importado ###
         const viewModule = await import(jsPath);
-        currentViewModule = viewModule; // Guarda a referência para limpeza posterior
-
         if (viewModule && typeof viewModule.init === "function") {
           viewModule.init(db, user, userData);
         }
@@ -209,9 +198,9 @@ export function initadministrativoPanel(user, db, userData) {
     const pageTitleContainer = document.getElementById("page-title-container");
     if (pageTitleContainer) {
       pageTitleContainer.innerHTML = `
-                <h1>Painel Administrativo</h1>
-                <p>Gestão de configurações e dados do sistema.</p>
-            `;
+                <h1>Painel Administrativo</h1>
+                <p>Gestão de configurações e dados do sistema.</p>
+            `;
     }
   }
 
