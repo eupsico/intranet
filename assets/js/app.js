@@ -190,9 +190,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const dynamicHomeContent = document.getElementById(
           "dynamic-home-content"
         );
-        if (!dynamicHomeContent.querySelector("#nav-links")) {
+        if (
+          dynamicHomeContent &&
+          !dynamicHomeContent.querySelector("#nav-links")
+        ) {
           dynamicHomeContent.innerHTML = `
-                        <section id="quick-access-modules" class="dashboard-section" style="background: transparent; box-shadow: none; padding: 0;">
+                        <section id="quick-access-modules" class="dashboard-section" style="background: transparent; box-shadow: none; padding: 0; margin-top: 30px;">
                             <div class="section-header"><h2>Acesso Rápido</h2></div>
                             <div id="nav-links" class="modules-grid"><div class="loading-spinner"></div></div>
                         </section>`;
@@ -208,7 +211,7 @@ document.addEventListener("DOMContentLoaded", function () {
         );
         if (dynamicHomeContent)
           dynamicHomeContent.innerHTML =
-            "<p>Erro ao carregar conteúdo dinâmico.</p>";
+            '<p style="text-align: center; color: var(--cor-erro);">Erro ao carregar conteúdo dinâmico da página inicial.</p>';
       }
     } else {
       institutionalContent.style.display = "none";
@@ -233,7 +236,7 @@ document.addEventListener("DOMContentLoaded", function () {
           contentArea.innerHTML = `<h2>Falha ao carregar o módulo.</h2><p>${error.message}</p>`;
         }
       } else {
-        contentArea.innerHTML = `<div class="info-card"><h3 style="text-align: center;">Módulo em Desenvolvimento</h3><p style="text-align: center;">Este módulo ainda não está disponível.</p></div>`;
+        contentArea.innerHTML = `<div class="info-card" style="text-align: center;"><h3>Módulo em Desenvolvimento</h3><p>Este módulo ainda não está disponível.</p></div>`;
       }
     }
     updateActiveMenuLink();
@@ -253,10 +256,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function hasPermission(module, userData) {
     const userFuncoes = userData.funcoes || {};
-    if (userFuncoes.admin === true) return true;
+    if (userFuncoes.admin === true) {
+      return true;
+    }
 
     const roles = module.roles || [];
-    if (roles.includes("todos")) return true;
+    if (roles.includes("todos")) {
+      return true;
+    }
 
     return roles.some((role) => userFuncoes[role] === true);
   }
@@ -358,8 +365,14 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     }
 
-    toggleButton.addEventListener("click", handleToggle);
-    overlay.addEventListener("click", handleToggle);
+    // Remove listeners antigos para evitar duplicação
+    const newToggleButton = toggleButton.cloneNode(true);
+    toggleButton.parentNode.replaceChild(newToggleButton, toggleButton);
+    newToggleButton.addEventListener("click", handleToggle);
+
+    const newOverlay = overlay.cloneNode(true);
+    overlay.parentNode.replaceChild(newOverlay, overlay);
+    newOverlay.addEventListener("click", handleToggle);
 
     sidebarMenu.addEventListener("click", (e) => {
       if (window.innerWidth <= 768 && e.target.closest("a")) {
