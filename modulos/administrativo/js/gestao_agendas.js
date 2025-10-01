@@ -1,33 +1,17 @@
 // Arquivo: /modulos/administrativo/js/gestao_agendas.js
-// Versão: 2.0 (Solução Definitiva)
-// Descrição: Adiciona uma função 'destroy' para limpar o estado do módulo ao sair da view.
+// Versão: 1.3 (Final Corrigida)
+// Descrição: Garante que o modal de configuração feche mesmo em caso de erro no salvamento.
 
 import { functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
 let agendaModalInstance = null;
 let currentAgendaConfig = {};
-// ### NOVO: Referência ao AbortController para limpar o event listener ###
-let saveButtonController = null;
 
-// Função de inicialização do módulo
+// Função de inicialização do módulo, chamada pelo administrativo-painel.js
 export function init() {
   console.log("Módulo de Gestão de Agendas iniciado.");
   carregarDisponibilidadeAdmin();
-}
-
-// ### NOVO: Função de limpeza para ser chamada ao sair da view ###
-export function destroy() {
-  console.log("Destruindo módulo de Gestão de Agendas.");
-  if (agendaModalInstance) {
-    agendaModalInstance.dispose();
-    agendaModalInstance = null;
-  }
-  // Remove o event listener do botão de salvar se ele existir
-  if (saveButtonController) {
-    saveButtonController.abort();
-  }
-  // Remove qualquer outro listener ou estado se necessário
 }
 
 function showFeedbackModal(message, isSuccess = true) {
@@ -94,24 +78,26 @@ async function carregarDisponibilidadeAdmin() {
             const dispo = mesData[modalidade];
             if (dispo.dias && dispo.dias.length > 0) {
               contentHtml += `
-                                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start open-agenda-modal-btn" 
-                                   data-assistente-id="${assistenteId}"
-                                   data-assistente-nome="${item.nome}"
-                                   data-mes="${mes}"
-                                   data-modalidade="${modalidade}"
-                                   data-dispo='${JSON.stringify(dispo)}'>
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h5 class="mb-1 text-capitalize">${modalidade} - ${mes}</h5>
-                                        <small><i class="fas fa-calendar-alt me-1"></i> ${
-                dispo.dias.length
-              } dias</small>
-                                    </div>
-                                    <p class="mb-1">Horário de trabalho: <strong>${
-                dispo.inicio || "Não definido"
-              } às ${dispo.fim || "Não definido"}</strong>.</p>
-                                    <small class="text-success">Clique para configurar e abrir a agenda.</small>
-                                </a>
-                            `;
+                                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start open-agenda-modal-btn" 
+                                   data-assistente-id="${assistenteId}"
+                                   data-assistente-nome="${item.nome}"
+                                   data-mes="${mes}"
+                                   data-modalidade="${modalidade}"
+                                   data-dispo='${JSON.stringify(dispo)}'>
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1 text-capitalize">${modalidade} - ${mes}</h5>
+                                        <small><i class="fas fa-calendar-alt me-1"></i> ${
+                                          dispo.dias.length
+                                        } dias</small>
+                                    </div>
+                                    <p class="mb-1">Horário de trabalho: <strong>${
+                                      dispo.inicio || "Não definido"
+                                    } às ${
+                dispo.fim || "Não definido"
+              }</strong>.</p>
+                                    <small class="text-success">Clique para configurar e abrir a agenda.</small>
+                                </a>
+                            `;
             }
           }
         }
@@ -123,15 +109,15 @@ async function carregarDisponibilidadeAdmin() {
       contentHtml += "</div>";
 
       accordionItem.innerHTML = `
-                <h2 class="accordion-header" id="heading-agenda-${index}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-agenda-${index}">
-                        <strong>${item.nome}</strong>
-                    </button>
-                </h2>
-                <div id="collapse-agenda-${index}" class="accordion-collapse collapse" data-bs-parent="#disponibilidade-admin-content">
-                    <div class="accordion-body">${contentHtml}</div>
-                </div>
-            `;
+                <h2 class="accordion-header" id="heading-agenda-${index}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-agenda-${index}">
+                        <strong>${item.nome}</strong>
+                    </button>
+                </h2>
+                <div id="collapse-agenda-${index}" class="accordion-collapse collapse" data-bs-parent="#disponibilidade-admin-content">
+                    <div class="accordion-body">${contentHtml}</div>
+                </div>
+            `;
       container.appendChild(accordionItem);
     });
 
@@ -146,11 +132,8 @@ async function carregarDisponibilidadeAdmin() {
 
 function setupAgendaModal() {
   const agendaModalElement = document.getElementById("agendaModal");
-  if (!agendaModalElement) return; // Garante que não haja múltiplas instâncias
+  if (!agendaModalElement) return;
 
-  if (agendaModalInstance) {
-    agendaModalInstance.dispose();
-  }
   agendaModalInstance = new bootstrap.Modal(agendaModalElement);
 
   document
@@ -180,19 +163,19 @@ function setupAgendaModal() {
               weekday: "long",
             });
             contentHtml += `
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-header fw-bold">${data.toLocaleDateString(
-              "pt-BR"
-            )} (${diaSemana})</div>
-                                    <div class="card-body">
-                                        <p class="card-text">Atribuir este dia para:</p>
-                                        <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
-                                        <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header fw-bold">${data.toLocaleDateString(
+                                      "pt-BR"
+                                    )} (${diaSemana})</div>
+                                    <div class="card-body">
+                                        <p class="card-text">Atribuir este dia para:</p>
+                                        <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked><label class="form-check-label" for="triagem-${dia}">Triagem</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao"><label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
           });
         } else {
           contentHtml =
@@ -205,15 +188,9 @@ function setupAgendaModal() {
     });
 
   const saveButton = document.getElementById("saveAgendaButton");
-  // ### NOVO: Usa AbortController para garantir que o listener seja removível ###
-  if (saveButton) {
-    if (saveButtonController) {
-      saveButtonController.abort(); // Remove o listener antigo
-    }
-    saveButtonController = new AbortController();
-    saveButton.addEventListener("click", saveAgenda, {
-      signal: saveButtonController.signal,
-    });
+  if (saveButton && saveButton.dataset.listenerAttached !== "true") {
+    saveButton.addEventListener("click", saveAgenda);
+    saveButton.dataset.listenerAttached = "true";
   }
 }
 
@@ -247,11 +224,13 @@ async function saveAgenda() {
   try {
     const abrirAgenda = httpsCallable(functions, "abrirAgendaServicoSocial");
     const result = await abrirAgenda(payload);
-    if (agendaModalInstance) agendaModalInstance.hide();
+    agendaModalInstance.hide();
     showFeedbackModal(result.data.message, true);
   } catch (error) {
     console.error("Erro ao abrir agenda:", error);
-    if (agendaModalInstance) agendaModalInstance.hide();
+    // ### CORREÇÃO APLICADA AQUI ###
+    // Garante que o modal principal feche mesmo se ocorrer um erro.
+    agendaModalInstance.hide();
     showFeedbackModal(
       `Não foi possível abrir a agenda: ${error.message}`,
       false
