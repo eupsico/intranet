@@ -1,7 +1,3 @@
-// Arquivo: /functions/index.js
-// Versão: 2.0 (Final Corrigida e Completa)
-// Descrição: Adiciona validação robusta e logs de erro detalhados na função 'abrirAgendaServicoSocial' para identificar a causa raiz do erro 'INTERNAL'.
-
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
@@ -16,7 +12,6 @@ const db = admin.firestore();
 // -----------------------------
 // Função auxiliar para username
 // -----------------------------
-
 async function gerarUsernameUnico(nomeCompleto) {
   const partesNome = nomeCompleto
     .trim()
@@ -230,7 +225,6 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
-    console.log("Função 'getTodasDisponibilidadesAssistentes' foi chamada.");
     if (!request.auth) {
       throw new HttpsError(
         "unauthenticated",
@@ -282,15 +276,12 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
         if (assistentesAtivosMap.has(doc.id)) {
           const assistenteInfo = assistentesAtivosMap.get(doc.id);
           todasDisponibilidades.push({
-            id: doc.id, // ID da assistente, crucial para o frontend
+            id: doc.id,
             nome: assistenteInfo.nome,
             disponibilidade: doc.data().disponibilidade,
           });
         }
       });
-      console.log(
-        `Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
-      );
       return todasDisponibilidades;
     } catch (error) {
       console.error("Erro em getTodasDisponibilidadesAssistentes:", error);
@@ -312,29 +303,32 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
   }
 
   const adminUid = request.auth.uid;
-  const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
-  if (!adminUserDoc.exists || !adminUserDoc.data().funcoes?.includes("admin")) {
-    throw new HttpsError(
-      "permission-denied",
-      "Você não tem permissão para executar esta ação."
-    );
-  }
-
-  const { assistenteId, mes, modalidade, dias } = request.data;
-  if (
-    !assistenteId ||
-    !mes ||
-    !modalidade ||
-    !Array.isArray(dias) ||
-    dias.length === 0
-  ) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Dados insuficientes para abrir a agenda."
-    );
-  }
-
   try {
+    const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
+    if (
+      !adminUserDoc.exists ||
+      !adminUserDoc.data().funcoes?.includes("admin")
+    ) {
+      throw new HttpsError(
+        "permission-denied",
+        "Você não tem permissão para executar esta ação."
+      );
+    }
+
+    const { assistenteId, mes, modalidade, dias } = request.data;
+    if (
+      !assistenteId ||
+      !mes ||
+      !modalidade ||
+      !Array.isArray(dias) ||
+      dias.length === 0
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Dados insuficientes para abrir a agenda."
+      );
+    }
+
     const dispoDoc = await db
       .collection("disponibilidadeAssistentes")
       .doc(assistenteId)
@@ -352,9 +346,9 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
     }
 
     const disponibilidade = dispoDoc.data().disponibilidade[mes]?.[modalidade];
+    const assistenteNome = assistenteDoc.data().nome;
 
-    // ### CORREÇÃO APLICADA AQUI ###
-    // Validação robusta para garantir que os dados existem e estão no formato correto.
+    // ### CORREÇÃO ROBUSTA APLICADA AQUI ###
     if (!disponibilidade) {
       throw new HttpsError(
         "not-found",
@@ -367,31 +361,41 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
       !disponibilidade.inicio.includes(":") ||
       !disponibilidade.fim.includes(":")
     ) {
-      console.error("Dados de disponibilidade malformados:", disponibilidade);
+      console.error("Dados de disponibilidade malformados:", {
+        assistenteId,
+        mes,
+        modalidade,
+        data: disponibilidade,
+      });
       throw new HttpsError(
         "invalid-argument",
-        `O formato do horário de início/fim para ${mes}/${modalidade} é inválido. Deve ser uma string como "HH:MM".`
+        `O formato do horário de início/fim para a assistente '${assistenteNome}' é inválido. Verifique se o formato é "HH:MM".`
       );
     }
 
-    const assistenteNome = assistenteDoc.data().nome;
     const batch = db.batch();
     let slotsCriados = 0;
 
     for (const configDia of dias) {
       const { dia, tipo } = configDia;
 
-      const [hInicio, mInicio] = disponibilidade.inicio.split(":").map(Number);
-      const [hFim] = disponibilidade.fim.split(":").map(Number);
-
-      if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim)) {
-        console.error(
-          "Não foi possível converter os horários para números:",
-          disponibilidade
-        );
+      let hInicio;
+      let mInicio;
+      let hFim;
+      try {
+        [hInicio, mInicio] = disponibilidade.inicio.split(":").map(Number);
+        [hFim] = disponibilidade.fim.split(":").map(Number);
+        if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim)) {
+          throw new Error("Valor não numérico encontrado");
+        }
+      } catch (e) {
+        console.error("Não foi possível processar os horários:", {
+          inicio: disponibilidade.inicio,
+          fim: disponibilidade.fim,
+        });
         throw new HttpsError(
           "invalid-argument",
-          `Os horários '${disponibilidade.inicio}' ou '${disponibilidade.fim}' não puderam ser processados.`
+          `Os horários '${disponibilidade.inicio}' ou '${disponibilidade.fim}' não puderam ser processados. Verifique o formato.`
         );
       }
 
@@ -402,14 +406,13 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
         const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
           mAtual
         ).padStart(2, "0")}`;
-
         const slotData = {
           assistenteId,
           assistenteNome,
           data: dia,
           hora: horaSlot,
           modalidade: modalidade.charAt(0).toUpperCase() + modalidade.slice(1),
-          tipo, // "triagem" ou "reavaliacao"
+          tipo,
           agendado: false,
           createdAt: new Date(),
         };
@@ -434,17 +437,15 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
     };
   } catch (error) {
     console.error(
-      "### ERRO GRAVE AO ABRIR AGENDA DO SERVIÇO SOCIAL ###:",
+      "### ERRO GRAVE NA FUNÇÃO abrirAgendaServicoSocial ###:",
       error
     );
-    // Se o erro já for um HttpsError, apenas o relance
     if (error instanceof HttpsError) {
       throw error;
     }
-    // Para outros erros, encapsula em um HttpsError para o cliente
     throw new HttpsError(
       "internal",
-      "Ocorreu um erro inesperado no servidor.",
+      "Ocorreu um erro inesperado no servidor ao processar sua solicitação.",
       error.message
     );
   }
@@ -463,10 +464,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     dataLimite.setDate(hoje.getDate() + 14); // Busca horários nos próximos 14 dias
     const dataLimiteISO = dataLimite.toISOString().split("T")[0];
 
-    console.log(
-      `Buscando horários de triagem de ${hojeISO} até ${dataLimiteISO}`
-    );
-
     const agendaSnapshot = await db
       .collection("agendaServicoSocial")
       .where("tipo", "==", "triagem")
@@ -478,14 +475,13 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       .get();
 
     if (agendaSnapshot.empty) {
-      console.log("Nenhum horário de triagem aberto e disponível encontrado.");
       return { horarios: [] };
     }
 
     const horariosDisponiveis = agendaSnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
-        agendaId: doc.id, // ID único do slot, crucial para o agendamento
+        agendaId: doc.id,
         data: data.data,
         hora: data.hora,
         modalidade: data.modalidade,
@@ -495,9 +491,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       };
     });
 
-    console.log(
-      `${horariosDisponiveis.length} horários de triagem encontrados.`
-    );
     return { horarios: horariosDisponiveis };
   } catch (error) {
     console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
