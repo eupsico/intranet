@@ -5,20 +5,16 @@
     <title>Painel Administrativo - EuPsico</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    
     <link rel="stylesheet" href="../../../assets/css/design-system.css">
     <link rel="stylesheet" href="../css/administrativo.css">
     <link rel="stylesheet" href="../css/grade.css">
 
-     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <div id="app">
-        <div id="login-view"></div>
-<div id="app">
-
         <div id="login-view"></div>
 
         <div id="dashboard-view">
@@ -40,7 +36,7 @@
                         <img src="../../../assets/img/logo-branca.png" alt="Logo EuPsico" class="header-logo">
                         
                         <div id="page-title-container">
-                            </div>
+                        </div>
                     </div>
                     <div class="user-profile-header">
                         <img id="user-photo-header" src="https://www.eupsico.org.br/wp-content/uploads/2024/02/user-1.png" alt="Foto do usuário">
@@ -57,8 +53,45 @@
             </div>
         </div>
     </div>
+    
+    <div class="modal fade" id="agendaModal" tabindex="-1" aria-labelledby="agendaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title" id="agendaModalLabel">Abrir Agenda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Configure abaixo quais dias serão abertos para <strong>Triagem</strong> e quais serão para <strong>Reavaliação</strong>.</p>
+                    <div id="agenda-config-content">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveAgendaButton">
+                        <i class="fas fa-calendar-check me-2"></i>Salvar e Abrir Agenda
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="feedbackModalLabel">Status da Operação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="feedbackModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
