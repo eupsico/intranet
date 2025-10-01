@@ -639,7 +639,7 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   }
 });
 exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
-  // 1. Validação de permissão
+  // 1. Validação de permissão (sem alterações)
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
@@ -651,7 +651,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     );
   }
 
-  // 2. Validação dos dados recebidos
+  // 2. Validação dos dados recebidos (sem alterações)
   const { assistenteId, mes, modalidade, dias } = request.data;
   if (
     !assistenteId ||
@@ -686,24 +686,35 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
 
     const disponibilidadeOriginal =
       dispoDoc.data().disponibilidade?.[mes]?.[modalidade];
+
+    // --- CORREÇÃO PRINCIPAL AQUI ---
+    // Verifica se a disponibilidade e os horários existem antes de prosseguir
     if (
       !disponibilidadeOriginal ||
       !disponibilidadeOriginal.inicio ||
       !disponibilidadeOriginal.fim
     ) {
+      // Loga o erro no servidor para depuração futura
+      console.error("Dados de disponibilidade ausentes ou malformados para:", {
+        assistenteId,
+        mes,
+        modalidade,
+      });
+      // Retorna um erro claro para o frontend
       throw new HttpsError(
         "not-found",
-        `Horários de início/fim não encontrados para ${mes}/${modalidade}.`
+        `Horários de início/fim não encontrados para ${mes}/${modalidade}. Verifique o cadastro de disponibilidade desta assistente.`
       );
     }
+    // --- FIM DA CORREÇÃO ---
+
     const assistenteNome = assistenteDoc.data().nome;
     const { inicio, fim } = disponibilidadeOriginal;
 
-    // 4. Salvar cada dia configurado em um novo documento
+    // 4. Salvar cada dia configurado em um novo documento (sem alterações)
     const batch = db.batch();
     dias.forEach((configDia) => {
       const { dia, tipo } = configDia;
-      // Usamos um ID de documento previsível para evitar duplicatas
       const docId = `${dia}_${assistenteId}`;
       const docRef = db.collection("agendaConfigurada").doc(docId);
 
@@ -712,8 +723,8 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
         {
           assistenteId,
           assistenteNome,
-          data: dia, // Formato "YYYY-MM-DD"
-          tipo, // "triagem" ou "reavaliação"
+          data: dia,
+          tipo,
           modalidade,
           inicio,
           fim,
@@ -721,7 +732,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
           configuradoEm: new Date(),
         },
         { merge: true }
-      ); // Merge: true permite sobrescrever se já existir
+      );
     });
 
     await batch.commit();
@@ -732,7 +743,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     };
   } catch (error) {
     console.error("Erro em definirTipoAgenda:", error);
-    if (error instanceof HttpsError) throw error;
+    if (error instanceof HttpsError) throw error; // Se já for um erro formatado, apenas o relança
     throw new HttpsError(
       "internal",
       "Ocorreu um erro interno ao salvar a configuração."
