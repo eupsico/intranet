@@ -1,7 +1,7 @@
 // Arquivo: assets/js/app.js
 // Versão: 2.0.3 (Adicionado carregamento do módulo Trilha do Paciente)
 
-import { auth, db } from "./firebase-init.js";
+import { auth, db, functions } from "./firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", function () {
   const loginView = document.getElementById("login-view");
