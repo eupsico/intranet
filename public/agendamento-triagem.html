@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento de Triagem - EuPsico</title>
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos Gerais */
+        body { font-family: 'Comfortaa', sans-serif; background-color: #003366; color: #FFFFFF; text-align: center; margin: 0; padding: 0 10px; }
+        .container { max-width: 800px; margin: 20px auto; padding: 20px; text-align: left; }
+        h1, .subtitle { text-align: center; }
+        .image-container { width: 100%; display: flex; justify-content: center; margin: 20px 0; }
+        .image-container img { max-width: 100%; height: auto; border-radius: 8px; }
+        .text-content p { margin-bottom: 10px; }
+
+        /* Estilos da Seção de Agendamento */
+        #agendamento-section h2 { text-align: center; }
+        .horarios-container { text-align: left; margin-top: 20px; }
+        .modalidade-titulo {
+            font-size: 1.5em;
+            color: #FFFFFF;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .data-grupo { margin-top: 15px; }
+        .data-grupo h4 { font-size: 1.1em; margin-bottom: 10px; }
+        .horarios-botoes { display: flex; flex-wrap: wrap; gap: 10px; }
+        .horario-btn { background-color: #FFFFFF; color: #003366; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
+        .horario-btn:hover { background-color: #e0e0e0; }
+
+        /* Estilos do Modal (já existentes no design-system.css, mas com ajustes) */
+        #agendamento-modal .modal-content { max-width: 500px; }
+        #cpf-feedback { font-size: 0.9em; margin-top: 5px; min-height: 1.2em; }
+
+        /* Seção de Confirmação */
+        #confirmacao-section { text-align: center; padding: 20px; background-color: #e8f5e9; color: #2e7d32; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💡 Agendamento Online - EuPsico</h1>
+        <div class="image-container">
+            <img src="https://live.staticflickr.com/65535/54562908390_26bf27dd46_b.jpg" alt="Mulher de 50 anos sentada em frente a um notebook">
+        </div>
+        <div class="text-content">
+            <p class="subtitle">Informações Importantes sobre a Triagem:</p>
+            <p>🔸 A contribuição de <strong>R$ 30,00</strong> refere-se exclusivamente à triagem inicial.</p>
+            <p>🔸 Como Funciona: Nossa equipe de assistentes sociais realizará uma avaliação socioeconômica para definir o valor da sua mensalidade para o acompanhamento terapêutico.</p>
+            <p class="subtitle">📅 Regras para Reagendamento:</p>
+            <p>🔸 Caso não possa comparecer na data e horário agendados, você poderá solicitar o reagendamento apenas uma vez.</p>
+            <p>🔸 Para isso, pedimos que nos avise com antecedência mínima de 24 horas.</p>
+            <p>🔸 Importante: Caso falte ao reagendamento, será necessário iniciar o processo de triagem novamente.</p>
+            <p class="subtitle">💻 Triagem Online:</p>
+            <p>🔸 A triagem será realizada somente online.</p>
+            <p>Após a triagem, a EuPsico terá um prazo de até 30 dias úteis para dar seguimento ao seu atendimento. ⏳</p>
+            <p>O primeiro contato será o plantão psicológico, um momento para entendermos suas necessidades e realizarmos o encaminhamento adequado. Este plantão poderá ter até 4 sessões, e o pagamento da contribuição definida na triagem terá início. 🤝</p>
+            <p>Após o plantão, você será encaminhado para a terapia mais adequada, de acordo com o que identificamos juntos. ➡️</p>
+        </div>
+
+        <hr style="margin: 30px 0; border-color: rgba(255,255,255,0.2);">
+
+        <div id="agendamento-section">
+            <h2>Escolha um Horário para sua Triagem</h2>
+            <div id="horarios-container">
+                <div class="loading-spinner" style="border-top-color: white;"></div>
+                <p style="text-align: center;">Carregando horários disponíveis...</p>
+            </div>
+        </div>
+
+        <div id="confirmacao-section" style="display: none;">
+            <h2>Agendamento Confirmado!</h2>
+            <p>Sua triagem foi agendada com sucesso. Em breve, nossa equipe entrará em contato.</p>
+            <p><strong>Paciente:</strong> <span id="confirm-paciente-nome"></span></p>
+            <p><strong>Assistente Social:</strong> <span id="confirm-assistente"></span></p>
+            <p><strong>Data:</strong> <span id="confirm-data"></span></p>
+            <p><strong>Horário:</strong> <span id="confirm-horario"></span></p>
+        </div>
+    </div>
+
+    <div id="agendamento-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="agendamento-modal-title">Confirmar Agendamento</h2>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Você selecionou o horário das <strong id="modal-horario-selecionado"></strong>. Para continuar, por favor, informe os dados do paciente.</p>
+                <div class="form-group">
+                    <label for="paciente-cpf">CPF do Paciente <span class="required-asterisk">*</span></label>
+                    <input type="text" id="paciente-cpf" class="form-control" placeholder="Digite apenas números e aguarde" required>
+                    <div id="cpf-feedback"></div>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-nome">Nome Completo do Paciente <span class="required-asterisk">*</span></label>
+                    <input type="text" id="paciente-nome" class="form-control" placeholder="Será preenchido ou digite aqui" required>
+                </div>
+                 <div class="form-group">
+                    <label for="paciente-telefone">Telefone de Contato (com DDD) <span class="required-asterisk">*</span></label>
+                    <input type="tel" id="paciente-telefone" class="form-control" placeholder="(xx) xxxxx-xxxx" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-button secondary-button" id="modal-cancel-btn">Cancelar</button>
+                <button type="button" id="modal-confirm-agendamento-btn" class="action-button">Confirmar Agendamento</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
+    
+    <script type="module" src="../assets/js/firebase-init.js"></script>
+    <script type="module" src="../assets/js/agendamento-publico.js"></script>
+</body>
+</html>
