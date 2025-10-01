@@ -1,8 +1,11 @@
+// Arquivo: /functions/index.js
+// Versão: 1.3 (Final Corrigida e Completa)
+// Descrição: Contém todas as funções do backend, com correções de duplicidade e
+// validações aprimoradas.
+
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
-const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const cors = require("cors")({ origin: true });
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -189,7 +192,7 @@ exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
 });
 
 // -------------------------------------------------------------------
-// Função para criar um card na Trilha do Paciente
+// (TRIGGER) Função para criar um card na Trilha do Paciente
 // -------------------------------------------------------------------
 exports.criarCardTrilhaPaciente = onDocumentCreated(
   "inscricoes/{inscricaoId}",
@@ -226,227 +229,12 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
   }
 );
 
-// FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
 // -------------------------------------------------------------------
-exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
-  try {
-    console.log("[LOG INICIAL] Função getHorariosTriagem iniciada.");
-
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    const dataLimite = new Date(hoje);
-    dataLimite.setDate(hoje.getDate() + 7); // Ajustado para 7 dias
-
-    const assistentesSnapshot = await db
-      .collection("usuarios")
-      .where("funcoes", "array-contains", "servico_social")
-      .where("inativo", "==", false)
-      .get();
-
-    if (assistentesSnapshot.empty) {
-      console.log(
-        "[LOG] Nenhum assistente social ativo encontrado. Retornando vazio."
-      );
-      return { horarios: [] };
-    }
-
-    const assistentesIds = assistentesSnapshot.docs.map((doc) => doc.id);
-    const assistentesMap = new Map(
-      assistentesSnapshot.docs.map((doc) => [doc.id, doc.data()])
-    );
-    console.log(`[LOG] Encontrados ${assistentesIds.length} assistentes.`);
-
-    const disponibilidadesSnapshot = await db
-      .collection("disponibilidadeAssistentes")
-      .where(admin.firestore.FieldPath.documentId(), "in", assistentesIds)
-      .get();
-
-    const hojeISO = hoje.toISOString().split("T")[0];
-    const dataLimiteISO = dataLimite.toISOString().split("T")[0];
-
-    const agendamentosSnapshot = await db
-      .collection("trilhaPaciente")
-      .where("status", "==", "triagem_agendada")
-      .where("dataTriagem", ">=", hojeISO)
-      .where("dataTriagem", "<=", dataLimiteISO)
-      .get();
-
-    const agendamentosExistentes = new Set();
-    agendamentosSnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.dataTriagem && data.horaTriagem) {
-        agendamentosExistentes.add(`${data.dataTriagem}T${data.horaTriagem}`);
-      }
-    });
-    console.log(
-      `[LOG] ${agendamentosExistentes.size} agendamentos existentes no período.`
-    );
-
-    const horariosDisponiveis = [];
-    disponibilidadesSnapshot.forEach((doc) => {
-      const userId = doc.id;
-      const assistente = assistentesMap.get(userId);
-      const dispoData = doc.data().disponibilidade;
-
-      console.log(
-        `[LOG] Processando assistente: ${assistente.nome} (ID: ${userId})`
-      );
-
-      if (assistente && dispoData) {
-        for (const mesKey in dispoData) {
-          console.log(`  [LOG] Mês: ${mesKey}`);
-          const dadosDoMes = dispoData[mesKey];
-          for (const modalidadeKey in dadosDoMes) {
-            console.log(`    [LOG] Modalidade: ${modalidadeKey}`);
-            const modalidadeNome =
-              modalidadeKey.charAt(0).toUpperCase() + modalidadeKey.slice(1);
-            const dispoModalidade = dadosDoMes[modalidadeKey];
-
-            console.log(
-              `      [LOG] Dados da Disponibilidade:`,
-              JSON.stringify(dispoModalidade)
-            );
-
-            const inicioParts = dispoModalidade.inicio
-              ? dispoModalidade.inicio.split(":")
-              : [];
-            const fimParts = dispoModalidade.fim
-              ? dispoModalidade.fim.split(":")
-              : [];
-
-            if (
-              dispoModalidade &&
-              dispoModalidade.dias &&
-              Array.isArray(dispoModalidade.dias) &&
-              inicioParts.length === 2 && // Garante que tem hora e minuto
-              fimParts.length === 2 // Garante que tem hora e minuto
-            ) {
-              const horaInicio = parseInt(inicioParts[0]);
-              const minutoInicio = parseInt(inicioParts[1]);
-              const horaFim = parseInt(fimParts[0]);
-
-              if (isNaN(horaInicio) || isNaN(minutoInicio) || isNaN(horaFim)) {
-                console.warn(
-                  `      [AVISO] Formato de hora inválido para ${assistente.nome}, modalidade ${modalidadeKey}. Pulando.`
-                );
-                continue; // Pula para a próxima modalidade
-              }
-
-              dispoModalidade.dias.forEach((diaISO) => {
-                const dataDisponivel = new Date(diaISO + "T03:00:00");
-                if (dataDisponivel >= hoje && dataDisponivel <= dataLimite) {
-                  let h = horaInicio;
-                  let m = minutoInicio;
-                  while (h < horaFim) {
-                    const horaSlot = `${String(h).padStart(2, "0")}:${String(
-                      m
-                    ).padStart(2, "0")}`;
-                    const chaveAgendamento = `${diaISO}T${horaSlot}`;
-                    if (!agendamentosExistentes.has(chaveAgendamento)) {
-                      horariosDisponiveis.push({
-                        data: diaISO,
-                        hora: horaSlot,
-                        modalidade: modalidadeNome,
-                        assistenteNome: assistente.nome,
-                        assistenteId: userId,
-                      });
-                    }
-                    m += 30;
-                    if (m >= 60) {
-                      h++;
-                      m = 0;
-                    }
-                  }
-                }
-              });
-            } else {
-              console.warn(
-                `      [AVISO] Dados de disponibilidade malformados para ${assistente.nome}, modalidade ${modalidadeKey}. Pulando.`
-              );
-            }
-          }
-        }
-      }
-    });
-
-    horariosDisponiveis.sort(
-      (a, b) =>
-        new Date(`${a.data}T${a.hora}`) - new Date(`${b.data}T${b.hora}`)
-    );
-    console.log(
-      `[LOG FINAL] Função concluída. ${horariosDisponiveis.length} horários encontrados.`
-    );
-    return { horarios: horariosDisponiveis };
-  } catch (error) {
-    console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
-    throw new HttpsError(
-      "internal",
-      "Ocorreu um erro inesperado ao processar os horários. Verifique os logs da função no Firebase.",
-      error.message
-    );
-  }
-});
-
-exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
-  const dados = request.data;
-
-  if (!dados || !dados.horarioSelecionado || !dados.cpf || !dados.nome) {
-    console.error("Tentativa de agendamento com dados incompletos:", dados);
-    throw new HttpsError(
-      "invalid-argument",
-      "Dados do agendamento estão incompletos."
-    );
-  }
-
-  const { pacienteExistenteId, cpf, nome, telefone, horarioSelecionado } =
-    dados;
-
-  const dadosAgendamento = {
-    status: "triagem_agendada",
-    dataTriagem: horarioSelecionado.data,
-    horaTriagem: horarioSelecionado.hora,
-    modalidadeTriagem: horarioSelecionado.modalidade,
-    assistenteSocialNome: horarioSelecionado.assistenteNome,
-    assistenteSocialId: horarioSelecionado.assistenteId,
-    lastUpdate: new Date(),
-  };
-
-  try {
-    if (pacienteExistenteId) {
-      const docRef = db.collection("trilhaPaciente").doc(pacienteExistenteId);
-      await docRef.update(dadosAgendamento);
-      console.log(
-        `Agendamento atualizado para paciente existente: ${pacienteExistenteId}`
-      );
-    } else {
-      const novoPaciente = {
-        ...dadosAgendamento,
-        nomeCompleto: nome,
-        cpf: cpf,
-        telefoneCelular: telefone,
-        status: "triagem_agendada", // Garante o status inicial correto
-        timestamp: new Date(),
-      };
-      await db.collection("trilhaPaciente").add(novoPaciente);
-      console.log(`Novo agendamento criado para o paciente: ${nome}`);
-    }
-
-    return { success: true, message: "Agendamento confirmado com sucesso!" };
-  } catch (error) {
-    console.error("Erro grave ao salvar agendamento via função:", error);
-    throw new HttpsError(
-      "internal",
-      "Ocorreu um erro interno ao salvar o agendamento.",
-      error.message
-    );
-  }
-});
-
+// (ADMIN) Busca todas as disponibilidades para o painel de gestão.
+// -------------------------------------------------------------------
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
-    console.log("Função 'getTodasDisponibilidadesAssistentes' foi chamada.");
     if (!request.auth) {
       throw new HttpsError(
         "unauthenticated",
@@ -458,7 +246,7 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
       const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
       if (
         !adminUserDoc.exists ||
-        !(adminUserDoc.data().funcoes || []).includes("admin")
+        !adminUserDoc.data().funcoes?.includes("admin")
       ) {
         throw new HttpsError(
           "permission-denied",
@@ -498,15 +286,12 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
         if (assistentesAtivosMap.has(doc.id)) {
           const assistenteInfo = assistentesAtivosMap.get(doc.id);
           todasDisponibilidades.push({
-            id: doc.id, // ID da assistente, crucial para o frontend
+            id: doc.id,
             nome: assistenteInfo.nome,
             disponibilidade: doc.data().disponibilidade,
           });
         }
       });
-      console.log(
-        `Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
-      );
       return todasDisponibilidades;
     } catch (error) {
       console.error("Erro em getTodasDisponibilidadesAssistentes:", error);
@@ -519,12 +304,13 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
   }
 );
 
-/**
- * (ADMIN) Processa a configuração do admin e cria a agenda pública de horários.
- */
+// -------------------------------------------------------------------
+// (ADMIN) Processa a configuração e cria a agenda pública.
+// -------------------------------------------------------------------
 exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
-  if (!request.auth)
+  if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
+  }
 
   const adminUid = request.auth.uid;
   const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
@@ -563,12 +349,16 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
   }
 
   const disponibilidade = dispoDoc.data().disponibilidade[mes]?.[modalidade];
-  if (!disponibilidade) {
+
+  // ### CORREÇÃO APLICADA AQUI ###
+  // Validação para evitar o erro 'INTERNAL' se o horário de início/fim não estiver definido.
+  if (!disponibilidade || !disponibilidade.inicio || !disponibilidade.fim) {
     throw new HttpsError(
       "not-found",
-      `Configuração de disponibilidade para ${mes}/${modalidade} não encontrada.`
+      `A configuração de disponibilidade (incluindo horário de início e fim) para ${mes}/${modalidade} não foi encontrada ou está incompleta.`
     );
   }
+
   const assistenteNome = assistenteDoc.data().nome;
 
   const batch = db.batch();
@@ -593,7 +383,7 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
         data: dia,
         hora: horaSlot,
         modalidade: modalidade.charAt(0).toUpperCase() + modalidade.slice(1),
-        tipo, // "triagem" ou "reavaliacao"
+        tipo,
         agendado: false,
         createdAt: new Date(),
       };
@@ -618,22 +408,19 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
   };
 });
 
-/**
- * (PÚBLICO) Busca horários de TRIAGEM disponíveis na agenda aberta pelo admin.
- */
-exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
+// -------------------------------------------------------------------
+// (PÚBLICO) Busca horários de TRIAGEM disponíveis na agenda aberta pelo admin.
+// ### FUNÇÃO RENOMEADA E CORRIGIDA ###
+// -------------------------------------------------------------------
+exports.getHorariosTriagemPublicos = onCall({ cors: true }, async (request) => {
   try {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     const hojeISO = hoje.toISOString().split("T")[0];
 
     const dataLimite = new Date(hoje);
-    dataLimite.setDate(hoje.getDate() + 14); // Busca horários nos próximos 14 dias
+    dataLimite.setDate(hoje.getDate() + 14);
     const dataLimiteISO = dataLimite.toISOString().split("T")[0];
-
-    console.log(
-      `Buscando horários de triagem de ${hojeISO} até ${dataLimiteISO}`
-    );
 
     const agendaSnapshot = await db
       .collection("agendaServicoSocial")
@@ -646,14 +433,13 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       .get();
 
     if (agendaSnapshot.empty) {
-      console.log("Nenhum horário de triagem aberto e disponível encontrado.");
       return { horarios: [] };
     }
 
     const horariosDisponiveis = agendaSnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
-        agendaId: doc.id, // ID único do slot, crucial para o agendamento
+        agendaId: doc.id,
         data: data.data,
         hora: data.hora,
         modalidade: data.modalidade,
@@ -663,12 +449,12 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       };
     });
 
-    console.log(
-      `${horariosDisponiveis.length} horários de triagem encontrados.`
-    );
     return { horarios: horariosDisponiveis };
   } catch (error) {
-    console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
+    console.error(
+      "### ERRO GRAVE NA FUNÇÃO getHorariosTriagemPublicos ###:",
+      error
+    );
     throw new HttpsError(
       "internal",
       "Ocorreu um erro ao buscar os horários.",
@@ -677,9 +463,10 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
   }
 });
 
-/**
- * (PÚBLICO) Agenda um horário de triagem, usando transação para garantir a vaga.
- */
+// -------------------------------------------------------------------
+// (PÚBLICO) Agenda um horário de triagem usando transação.
+// ### VERSÃO CORRETA E FINAL ###
+// -------------------------------------------------------------------
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const { pacienteExistenteId, cpf, nome, telefone, horarioSelecionado } =
     request.data;
