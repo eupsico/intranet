@@ -229,9 +229,6 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
 // FUNÇÃO ATUALIZADA: Buscar horários de triagem disponíveis
 // -------------------------------------------------------------------
 exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
-  // ### LOG PODEROSO - INÍCIO DO BLOCO TRY/CATCH ###
-  // Este bloco irá capturar qualquer erro que acontecer na função
-  // e irá logar o erro completo no console do Firebase.
   try {
     console.log("[LOG INICIAL] Função getHorariosTriagem iniciada.");
 
@@ -292,32 +289,25 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
       const assistente = assistentesMap.get(userId);
       const dispoData = doc.data().disponibilidade;
 
-      // ### LOG PODEROSO - DADOS DO ASSISTENTE ###
       console.log(
         `[LOG] Processando assistente: ${assistente.nome} (ID: ${userId})`
       );
 
       if (assistente && dispoData) {
         for (const mesKey in dispoData) {
-          // ### LOG PODEROSO - DADOS DO MÊS ###
           console.log(`  [LOG] Mês: ${mesKey}`);
           const dadosDoMes = dispoData[mesKey];
           for (const modalidadeKey in dadosDoMes) {
-            // ### LOG PODEROSO - DADOS DA MODALIDADE ###
             console.log(`    [LOG] Modalidade: ${modalidadeKey}`);
             const modalidadeNome =
               modalidadeKey.charAt(0).toUpperCase() + modalidadeKey.slice(1);
             const dispoModalidade = dadosDoMes[modalidadeKey];
 
-            // ### LOG PODEROSO - DADOS COMPLETOS DA DISPONIBILIDADE ###
-            // Este é o log mais importante. Ele mostrará o objeto exato que pode estar causando o erro.
             console.log(
               `      [LOG] Dados da Disponibilidade:`,
               JSON.stringify(dispoModalidade)
             );
 
-            // ### CORREÇÃO DEFINITIVA E ROBUSTEZ ###
-            // Verifica se 'inicio' e 'fim' são strings e se contêm o formato "HH:mm"
             const inicioParts = dispoModalidade.inicio
               ? dispoModalidade.inicio.split(":")
               : [];
@@ -336,7 +326,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
               const minutoInicio = parseInt(inicioParts[1]);
               const horaFim = parseInt(fimParts[0]);
 
-              // Validação final para evitar NaN (Not-a-Number) que causa o loop infinito
               if (isNaN(horaInicio) || isNaN(minutoInicio) || isNaN(horaFim)) {
                 console.warn(
                   `      [AVISO] Formato de hora inválido para ${assistente.nome}, modalidade ${modalidadeKey}. Pulando.`
@@ -372,7 +361,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
                 }
               });
             } else {
-              // ### LOG PODEROSO - AVISA SOBRE DADOS INVÁLIDOS ###
               console.warn(
                 `      [AVISO] Dados de disponibilidade malformados para ${assistente.nome}, modalidade ${modalidadeKey}. Pulando.`
               );
@@ -391,10 +379,7 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
     );
     return { horarios: horariosDisponiveis };
   } catch (error) {
-    // ### LOG PODEROSO - CAPTURA DE ERRO ###
-    // Se a função falhar, este log vai mostrar o erro exato no console do Firebase.
     console.error("### ERRO GRAVE NA FUNÇÃO getHorariosTriagem ###:", error);
-    // Re-lança o erro para o cliente receber a resposta de falha.
     throw new HttpsError(
       "internal",
       "Ocorreu um erro inesperado ao processar os horários. Verifique os logs da função no Firebase.",
@@ -406,7 +391,6 @@ exports.getHorariosTriagem = onCall({ cors: true }, async (request) => {
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const dados = request.data;
 
-  // Validação mais robusta dos dados recebidos do frontend
   if (!dados || !dados.horarioSelecionado || !dados.cpf || !dados.nome) {
     console.error("Tentativa de agendamento com dados incompletos:", dados);
     throw new HttpsError(
@@ -430,14 +414,12 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
 
   try {
     if (pacienteExistenteId) {
-      // Se o paciente já existe, apenas atualizamos o agendamento
       const docRef = db.collection("trilhaPaciente").doc(pacienteExistenteId);
       await docRef.update(dadosAgendamento);
       console.log(
         `Agendamento atualizado para paciente existente: ${pacienteExistenteId}`
       );
     } else {
-      // Se for um novo paciente, criamos um novo registro completo
       const novoPaciente = {
         ...dadosAgendamento,
         nomeCompleto: nome,
@@ -461,53 +443,78 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   }
 });
 
-// Substitua a função getTodasDisponibilidadesAssistentes existente por esta versão corrigida
-
-exports.getTodasDisponibilidadesAssistentes = functions.https.onCall(
-  async (data, context) => {
-    // 1. Validação de segurança usando o 'context' da v1
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
+// ===================================================================
+// FUNÇÃO CORRIGIDA: getTodasDisponibilidadesAssistentes
+// ===================================================================
+exports.getTodasDisponibilidadesAssistentes = onCall(
+  { cors: true },
+  async (request) => {
+    // LOG 1: Verifica se a função foi chamada e se há um contexto de autenticação.
+    console.log("Função 'getTodasDisponibilidadesAssistentes' foi chamada.");
+    if (!request.auth) {
+      console.error(
+        "[ERRO DE AUTENTICAÇÃO] A requisição não possui um token de autenticação."
+      );
+      throw new HttpsError(
         "unauthenticated",
         "Você precisa estar autenticado para acessar estes dados."
       );
     }
 
-    // 2. Busca os dados do usuário que está fazendo a chamada
-    const adminUid = context.auth.uid;
-    const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
-
-    // 3. Verifica se o usuário é 'admin' pelo campo 'funcoes' no Firestore
-    if (
-      !adminUserDoc.exists ||
-      !(adminUserDoc.data().funcoes || []).includes("admin")
-    ) {
-      throw new functions.https.HttpsError(
-        "permission-denied",
-        "Você não tem permissão para acessar estes dados."
-      );
-    }
+    // LOG 2: Identifica o usuário que está tentando acessar.
+    const adminUid = request.auth.uid;
+    console.log(`[INFO] UID do requisitante: ${adminUid}`);
 
     try {
-      console.log("Iniciando busca de disponibilidade (método robusto)...");
+      // 1. Busca o documento do usuário que está fazendo a chamada.
+      const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
+
+      // LOG 3: Verifica se o documento do usuário foi encontrado e quais são suas funções.
+      if (!adminUserDoc.exists) {
+        console.error(
+          `[FALHA DE PERMISSÃO] Documento do usuário com UID ${adminUid} não encontrado.`
+        );
+        throw new HttpsError(
+          "permission-denied",
+          "Seu usuário não foi encontrado no banco de dados."
+        );
+      }
+      const adminUserData = adminUserDoc.data();
+      console.log(
+        `[INFO] Funções do usuário ${adminUserData.nome}:`,
+        adminUserData.funcoes || "Nenhuma"
+      );
+
+      // 2. Verifica se o usuário tem a função 'admin' no array 'funcoes'.
+      if (!(adminUserData.funcoes || []).includes("admin")) {
+        console.error(
+          `[FALHA DE PERMISSÃO] O usuário ${adminUserData.nome} não possui a função 'admin'.`
+        );
+        throw new HttpsError(
+          "permission-denied",
+          "Você não tem permissão de administrador para acessar estes dados."
+        );
+      }
+
+      // LOG 4: Se passou pela verificação, confirma que o acesso foi concedido.
+      console.log(
+        `[SUCESSO DE PERMISSÃO] Acesso concedido para o admin: ${adminUserData.nome}. Iniciando busca de dados...`
+      );
+
+      // 3. Lógica de negócio da função (agora segura)
       const dispoSnapshot = await db
         .collection("disponibilidadeAssistentes")
         .get();
-
       if (dispoSnapshot.empty) {
-        console.log(
-          "Nenhum documento de disponibilidade encontrado na coleção."
-        );
+        console.log("Nenhum documento de disponibilidade encontrado.");
         return [];
       }
 
-      // 3. Extrai os IDs de todos que registraram disponibilidade.
       const assistentesComDispoIds = dispoSnapshot.docs.map((doc) => doc.id);
       if (assistentesComDispoIds.length === 0) {
         return [];
       }
 
-      // 4. Busca os dados dos usuários correspondentes a esses IDs.
       const usuariosSnapshot = await db
         .collection("usuarios")
         .where(
@@ -517,7 +524,6 @@ exports.getTodasDisponibilidadesAssistentes = functions.https.onCall(
         )
         .get();
 
-      // 5. Cria um mapa apenas com os usuários que são assistentes sociais e estão ativos.
       const assistentesAtivosMap = new Map();
       usuariosSnapshot.forEach((doc) => {
         const userData = doc.data();
@@ -528,10 +534,8 @@ exports.getTodasDisponibilidadesAssistentes = functions.https.onCall(
         }
       });
 
-      // 6. Monta o resultado final, combinando os dados.
       const todasDisponibilidades = [];
       dispoSnapshot.forEach((doc) => {
-        // Adiciona a disponibilidade apenas se o ID do documento pertencer a um assistente ativo
         if (assistentesAtivosMap.has(doc.id)) {
           const assistenteInfo = assistentesAtivosMap.get(doc.id);
           todasDisponibilidades.push({
@@ -541,16 +545,26 @@ exports.getTodasDisponibilidadesAssistentes = functions.https.onCall(
         }
       });
 
+      // LOG 5: Informa o resultado final antes de retornar.
       console.log(
-        `Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
+        `[INFO] Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
       );
       return todasDisponibilidades;
     } catch (error) {
-      console.error("Erro na busca robusta de disponibilidades:", error);
+      console.error(
+        "[ERRO GERAL] Erro na execução de getTodasDisponibilidadesAssistentes:",
+        error
+      );
+      if (error instanceof HttpsError) {
+        throw error; // Re-lança os erros de permissão que já tratamos.
+      }
       throw new HttpsError(
         "internal",
-        "Não foi possível buscar as disponibilidades."
+        "Ocorreu um erro interno ao buscar as disponibilidades."
       );
     }
   }
 );
+// ===================================================================
+// FIM DA FUNÇÃO: getTodasDisponibilidadesAssistentes
+// ===================================================================
