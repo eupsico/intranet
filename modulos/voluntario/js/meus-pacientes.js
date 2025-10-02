@@ -26,7 +26,6 @@ export function init(db, user, userData) {
   };
 
   async function carregarMeusPacientes() {
-    // ... (esta função continua a mesma)
     container.innerHTML = '<div class="loading-spinner"></div>';
     try {
       const queryPlantao = db
@@ -72,7 +71,6 @@ export function init(db, user, userData) {
   }
 
   function criarCardPaciente(id, data, tipo) {
-    // ... (esta função continua a mesma)
     const info = tipo === "plantao" ? data.plantaoInfo : data.pbInfo;
     const acaoLabel =
       tipo === "plantao" ? "Encerrar Plantão" : "Informar Horários (PB)";
@@ -84,22 +82,21 @@ export function init(db, user, userData) {
       : "N/A";
 
     return `
-      <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-          <h4>${data.nomeCompleto}</h4>
-          <p><strong>Status:</strong> ${
-            tipo === "plantao"
-              ? "Em Atendimento (Plantão)"
-              : "Aguardando Info Horários (PB)"
-          }</p>
-          <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-           <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-          <button class="action-button">${acaoLabel}</button>
-      </div>
-    `;
+              <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
+                  <h4>${data.nomeCompleto}</h4>
+                  <p><strong>Status:</strong> ${
+                    tipo === "plantao"
+                      ? "Em Atendimento (Plantão)"
+                      : "Aguardando Info Horários (PB)"
+                  }</p>
+                  <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+                   <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+                  <button class="action-button">${acaoLabel}</button>
+              </div>
+          `;
   }
 
   function adicionarEventListeners() {
-    // ... (esta função continua a mesma)
     document
       .querySelectorAll(".paciente-card .action-button")
       .forEach((button) => {
@@ -163,7 +160,6 @@ export function init(db, user, userData) {
 
     const reabilitarTodos = () => {
       encaminhamentoCheckboxes.forEach((cb) => {
-        // Não mexe nos que são inativos por padrão
         if (!cb.closest("label").classList.contains("disabled")) {
           cb.disabled = false;
           cb.parentElement.classList.remove("disabled");
@@ -171,7 +167,6 @@ export function init(db, user, userData) {
       });
     };
 
-    // Garante que todos comecem habilitados ao abrir o modal
     reabilitarTodos();
 
     encaminhamentoCheckboxes.forEach((checkbox) => {
@@ -179,11 +174,9 @@ export function init(db, user, userData) {
         const altaChecked = altaCheckbox.checked;
         const desistenciaChecked = desistenciaCheckbox.checked;
 
-        // Reabilita todos antes de aplicar a nova regra
         reabilitarTodos();
 
         if (altaChecked) {
-          // Desabilita todos, exceto 'Alta'
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Alta") {
               cb.checked = false;
@@ -194,7 +187,6 @@ export function init(db, user, userData) {
             }
           });
         } else if (desistenciaChecked) {
-          // Desabilita todos, exceto 'Desistência'
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Desistência") {
               cb.checked = false;
@@ -205,7 +197,6 @@ export function init(db, user, userData) {
             }
           });
         }
-        // Se nenhum dos dois estiver marcado, a função reabilitarTodos() no início já fez o trabalho.
       });
     });
     // --- FIM DA LÓGICA CORRIGIDA ---
@@ -214,7 +205,6 @@ export function init(db, user, userData) {
   }
 
   function abrirModalHorariosPb(pacienteId, data) {
-    // ... (esta função continua a mesma)
     const form = document.getElementById("horarios-pb-form");
     form.reset();
     document.getElementById("paciente-id-horarios-modal").value = pacienteId;
@@ -245,7 +235,6 @@ export function init(db, user, userData) {
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (e) => {
-      // ... (esta função continua a mesma)
       e.preventDefault();
       const form = e.target;
       const saveButton = form.querySelector(".save-btn");
@@ -299,7 +288,6 @@ export function init(db, user, userData) {
   document
     .getElementById("horarios-pb-form")
     .addEventListener("submit", async (e) => {
-      // ... (esta função continua a mesma)
       e.preventDefault();
       const form = e.target;
       const saveButton = form.querySelector(".save-btn");
@@ -324,7 +312,7 @@ export function init(db, user, userData) {
       } else {
         updateData = {
           status: "cadastrar_horario_psicomanager",
-          "pbInfo.horarioSessao": {
+          "pbInfo.horarioSessoes": {
             responsavelId: user.uid,
             responsavelNome: userData.nome,
             diaSemana: form.querySelector("#dia-semana-pb").value,
