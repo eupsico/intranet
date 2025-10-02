@@ -1,3 +1,6 @@
+// Arquivo: /modulos/trilha-paciente/js/stages/em_atendimento_plantao.js
+// Versão: 2.1 (CORRIGIDO)
+
 import { carregarProfissionais } from "../../../../assets/js/app.js";
 
 export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
@@ -88,19 +91,37 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
     "#continuacao-plantao-container"
   );
 
+  // ===== ALTERAÇÃO APLICADA AQUI =====
+  // A lógica foi refinada para garantir que os campos corretos sejam
+  // exibidos e que a validação 'required' seja aplicada corretamente.
   continuaTerapiaSelect.addEventListener("change", (e) => {
     const value = e.target.value;
+
+    // Controla a visibilidade das seções
     motivoContainer.classList.toggle("hidden", value !== "nao");
     continuacaoContainer.classList.toggle("hidden", value !== "sim");
 
-    // Toggle required fields
-    const continuacaoInputs = continuacaoContainer.querySelectorAll(
-      "select, input, textarea"
-    );
-    continuacaoInputs.forEach((input) => (input.required = value === "sim"));
+    // Zera a obrigatoriedade de todos os campos condicionais
+    motivoContainer.querySelector("textarea").required = false;
+    continuacaoContainer
+      .querySelectorAll("select, input, textarea")
+      .forEach((input) => {
+        // Apenas os campos marcados como 'required' no HTML original são alternados.
+        if (input.hasAttribute("required")) {
+          input.required = false;
+        }
+      });
 
-    const motivoInput = motivoContainer.querySelector("textarea");
-    motivoInput.required = value === "nao";
+    // Aplica a obrigatoriedade apenas para a seção visível
+    if (value === "sim") {
+      continuacaoContainer
+        .querySelectorAll("select[required], input[required]")
+        .forEach((input) => {
+          input.required = true;
+        });
+    } else if (value === "nao") {
+      motivoContainer.querySelector("textarea").required = true;
+    }
   });
 
   carregarProfissionais(
@@ -129,12 +150,12 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
           lastUpdate: new Date(),
         };
       } else if (continua === "sim") {
-        const profissionalId = element.querySelector(
+        const profissionalSelect = element.querySelector(
           "#profissional-plantao"
-        ).value;
-        const profissionalNome = element.querySelector("#profissional-plantao")
-          .options[element.querySelector("#profissional-plantao").selectedIndex]
-          .text;
+        );
+        const profissionalId = profissionalSelect.value;
+        const profissionalNome =
+          profissionalSelect.options[profissionalSelect.selectedIndex].text;
 
         updateData = {
           status: "em_atendimento_plantao",
@@ -161,9 +182,13 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
         };
       }
 
-      await db.collection("trilhaPaciente").doc(trilhaId).update(updateData);
-      alert("Status do paciente atualizado com sucesso!");
-      window.location.reload();
+      if (Object.keys(updateData).length > 0) {
+        await db.collection("trilhaPaciente").doc(trilhaId).update(updateData);
+        alert("Status do paciente atualizado com sucesso!");
+        window.location.reload();
+      } else {
+        alert("Nenhuma opção selecionada para salvar.");
+      }
     } catch (error) {
       console.error("Erro ao salvar informações do plantão:", error);
       alert("Erro ao salvar. Tente novamente.");
