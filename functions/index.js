@@ -464,9 +464,14 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     const dataInicio = hoje.toISOString().split("T")[0];
 
     const dataFim = new Date(hoje);
-    dataFim.setDate(hoje.getDate() + 7); // Busca horários para os próximos 7 dias
+    dataFim.setDate(hoje.getDate() + 7); // mantém 7 dias
     const dataFimISO = dataFim.toISOString().split("T")[0];
 
+    console.log(
+      `📅 Buscando horários de triagem entre ${dataInicio} e ${dataFimISO}`
+    );
+
+    // Busca configurações de agenda
     const configSnapshot = await db
       .collection("agendaConfigurada")
       .where("tipo", "==", "triagem")
@@ -475,6 +480,19 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       .get();
 
     if (configSnapshot.empty) {
+      console.log("⚠️ Nenhuma configuração encontrada no período.");
+      // Log no Firestore
+      await db.collection("logsSistema").add({
+        timestamp: new Date(),
+        usuario: request.auth?.uid || "publico",
+        acao: "Consulta de horários públicos",
+        status: "vazio",
+        detalhes: {
+          dataInicio,
+          dataFim: dataFimISO,
+          mensagem: "Nenhum horário configurado",
+        },
+      });
       return { horarios: [] };
     }
 
@@ -482,16 +500,22 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       id: doc.id,
       ...doc.data(),
     }));
+
     const slotsPotenciais = [];
 
     diasConfigurados.forEach((diaConfig) => {
-      const [hInicio] = diaConfig.inicio.split(":").map(Number);
-      const [hFim] = diaConfig.fim.split(":").map(Number);
+      if (!diaConfig.inicio || !diaConfig.fim) {
+        console.warn(`Documento ${diaConfig.id} sem horários definidos`);
+        return;
+      }
+
+      const [hInicio, mInicio = 0] = diaConfig.inicio.split(":").map(Number);
+      const [hFim, mFim = 0] = diaConfig.fim.split(":").map(Number);
 
       let hAtual = hInicio;
-      let mAtual = 0;
+      let mAtual = mInicio;
 
-      while (hAtual < hFim) {
+      while (hAtual < hFim || (hAtual === hFim && mAtual < mFim)) {
         const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
           mAtual
         ).padStart(2, "0")}`;
@@ -512,6 +536,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       }
     });
 
+    // Busca agendamentos já feitos
     const agendadosSnapshot = await db
       .collection("agendamentos")
       .where("data", ">=", dataInicio)
@@ -526,13 +551,45 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       );
     });
 
+    // Filtra apenas horários livres
     const horariosDisponiveis = slotsPotenciais.filter(
       (slot) => !idsAgendados.has(slot.id)
     );
 
+    console.log(
+      `✅ Encontrados ${horariosDisponiveis.length} horários disponíveis.`
+    );
+
+    // Log no Firestore
+    await db.collection("logsSistema").add({
+      timestamp: new Date(),
+      usuario: request.auth?.uid || "publico",
+      acao: "Consulta de horários públicos",
+      status: "success",
+      detalhes: {
+        dataInicio,
+        dataFim: dataFimISO,
+        totalConfigurados: diasConfigurados.length,
+        totalDisponiveis: horariosDisponiveis.length,
+      },
+    });
+
     return { horarios: horariosDisponiveis };
   } catch (error) {
-    console.error("Erro em getHorariosPublicos:", error);
+    console.error("🔥 Erro em getHorariosPublicos:", error);
+
+    // Log de erro no Firestore
+    await db.collection("logsSistema").add({
+      timestamp: new Date(),
+      usuario: request.auth?.uid || "publico",
+      acao: "Consulta de horários públicos",
+      status: "error",
+      detalhes: {
+        mensagem: error.message,
+        stack: error.stack,
+      },
+    });
+
     throw new HttpsError("internal", "Ocorreu um erro ao buscar os horários.");
   }
 });
