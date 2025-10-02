@@ -1,11 +1,9 @@
 // Arquivo: /modulos/trilha-paciente/js/stages/em_atendimento_plantao.js
-// Versão: 2.3 (CORREÇÃO DEFINITIVA da lógica de visibilidade e campos obrigatórios)
+// Versão: 2.5 (CORREÇÃO Focada em VISIBILIDADE - Esconder/Mostrar campos)
 
 import { carregarProfissionais } from "../../../../assets/js/app.js";
 
 export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
-  // ATENÇÃO: Os atributos 'required' foram restaurados nos campos condicionais.
-  // Isso é crucial para que o JavaScript saiba quais campos validar.
   const content = `
         <div class="patient-info-box">
             <h4>Dados do Paciente</h4>
@@ -39,17 +37,17 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
 
             <div id="motivo-desistencia-container" class="form-group hidden">
                 <label for="motivo-desistencia-plantao">Motivo da desistência:</label>
-                <textarea id="motivo-desistencia-plantao" rows="3" required></textarea>
+                <textarea id="motivo-desistencia-plantao" rows="3"></textarea>
             </div>
 
             <div id="continuacao-plantao-container" class="hidden">
                 <div class="form-group">
                     <label for="profissional-plantao">Selecione o nome profissional do Plantão:</label>
-                    <select id="profissional-plantao" required></select>
+                    <select id="profissional-plantao"></select>
                 </div>
                 <div class="form-group">
                     <label for="tipo-profissional-plantao">O profissional que irá atender o paciente é:</label>
-                    <select id="tipo-profissional-plantao" required>
+                    <select id="tipo-profissional-plantao">
                         <option value="">Selecione...</option>
                         <option value="Estagiária(o)">Estagiária(o)</option>
                         <option value="Voluntária(o)">Voluntária(o)</option>
@@ -57,19 +55,19 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
                 </div>
                 <div class="form-group">
                     <label for="data-encaminhamento-plantao">Data do encaminhamento para o Plantão:</label>
-                    <input type="date" id="data-encaminhamento-plantao" required>
+                    <input type="date" id="data-encaminhamento-plantao">
                 </div>
                 <div class="form-group">
                     <label for="data-primeira-sessao-plantao">Primeira sessão do Plantão agendada para o dia:</label>
-                    <input type="date" id="data-primeira-sessao-plantao" required>
+                    <input type="date" id="data-primeira-sessao-plantao">
                 </div>
                 <div class="form-group">
                     <label for="hora-primeira-sessao-plantao">Primeira sessão do Plantão agendada para o horário:</label>
-                    <input type="time" id="hora-primeira-sessao-plantao" required>
+                    <input type="time" id="hora-primeira-sessao-plantao">
                 </div>
                 <div class="form-group">
                     <label for="tipo-atendimento-plantao">O atendimento será:</label>
-                    <select id="tipo-atendimento-plantao" required>
+                    <select id="tipo-atendimento-plantao">
                         <option value="">Selecione...</option>
                         <option value="Presencial">Presencial</option>
                         <option value="Online">Online</option>
@@ -80,7 +78,6 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
                     <textarea id="observacoes-plantao" rows="3"></textarea>
                 </div>
             </div>
-            <button type="submit" class="save-btn">Salvar</button>
         </form>
     `;
 
@@ -96,32 +93,55 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
     "#continuacao-plantao-container"
   );
 
-  // Seleciona TODOS os campos que podem ser obrigatórios
   const motivoTextarea = motivoContainer.querySelector("textarea");
-  const continuacaoInputs = continuacaoContainer.querySelectorAll(
-    'select, input[type="date"], input[type="time"]'
-  );
+  const continuacaoInputs =
+    continuacaoContainer.querySelectorAll("select, input");
 
-  function toggleFields() {
-    const value = continuaTerapiaSelect.value;
-    const isSim = value === "sim";
-    const isNao = value === "nao";
+  // Mapeia os campos que devem ser obrigatórios
+  const camposObrigatoriosSim = [
+    "profissional-plantao",
+    "tipo-profissional-plantao",
+    "data-encaminhamento-plantao",
+    "data-primeira-sessao-plantao",
+    "hora-primeira-sessao-plantao",
+    "tipo-atendimento-plantao",
+  ];
 
-    // 1. Controla a visibilidade
-    continuacaoContainer.classList.toggle("hidden", !isSim);
-    motivoContainer.classList.toggle("hidden", !isNao);
+  continuaTerapiaSelect.addEventListener("change", () => {
+    const selection = continuaTerapiaSelect.value;
 
-    // 2. Controla o atributo 'disabled', que é a forma mais eficaz
-    // de remover um campo da validação do formulário.
-    continuacaoInputs.forEach((input) => (input.disabled = !isSim));
-    motivoTextarea.disabled = !isNao;
-  }
+    if (selection === "sim") {
+      // Mostra o formulário de continuação e esconde o de desistência
+      continuacaoContainer.classList.remove("hidden");
+      motivoContainer.classList.add("hidden");
 
-  // Adiciona o listener para o evento 'change'
-  continuaTerapiaSelect.addEventListener("change", toggleFields);
+      // Define os campos obrigatórios para o "Sim"
+      camposObrigatoriosSim.forEach((id) => {
+        element.querySelector(`#${id}`).required = true;
+      });
+      motivoTextarea.required = false; // Garante que o outro campo não é obrigatório
+    } else if (selection === "nao") {
+      // Mostra o formulário de desistência e esconde o de continuação
+      continuacaoContainer.classList.add("hidden");
+      motivoContainer.classList.remove("hidden");
 
-  // Chama a função uma vez no início para garantir o estado correto (tudo desabilitado)
-  toggleFields();
+      // Define o campo obrigatório para o "Não"
+      motivoTextarea.required = true;
+      camposObrigatoriosSim.forEach((id) => {
+        element.querySelector(`#${id}`).required = false; // Garante que os outros campos não são obrigatórios
+      });
+    } else {
+      // Esconde ambos se a seleção for vazia
+      continuacaoContainer.classList.add("hidden");
+      motivoContainer.classList.add("hidden");
+
+      // Nenhum campo é obrigatório
+      motivoTextarea.required = false;
+      camposObrigatoriosSim.forEach((id) => {
+        element.querySelector(`#${id}`).required = false;
+      });
+    }
+  });
   // === FIM DA CORREÇÃO ===
 
   carregarProfissionais(
@@ -131,10 +151,19 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
   );
 
   const form = element.querySelector("#plantao-form");
+  const saveButtonDoModal = document.getElementById("modal-save-btn");
+
+  const newSaveButton = saveButtonDoModal.cloneNode(true);
+  saveButtonDoModal.parentNode.replaceChild(newSaveButton, saveButtonDoModal);
+
+  newSaveButton.addEventListener("click", () => {
+    form.requestSubmit();
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const saveButton = form.querySelector(".save-btn");
+    const saveButton = document.getElementById("modal-save-btn");
     saveButton.disabled = true;
     saveButton.textContent = "Salvando...";
 
