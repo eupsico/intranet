@@ -1,5 +1,5 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 1.5 (Final, Completa e Corrigida para compatibilidade total)
+// Versão: 1.4 (Final para compatibilidade)
 
 // --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
 const firebaseConfig = {
@@ -14,6 +14,7 @@ const firebaseConfig = {
 
 // --- INICIALIZAÇÃO E EXPORTAÇÃO ---
 // Garante que o Firebase seja inicializado apenas uma vez
+// A variável 'firebase' agora existe globalmente, carregada pelo script no HTML.
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
@@ -22,10 +23,5 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 const functions = firebase.functions();
-const storage = firebase.storage(); // Adicionado para consistência
-const rtdb = firebase.database(); // Adicionado para consistência
 
-// Adiciona uma exportação global 'firebase' para garantir compatibilidade com scripts mais antigos
-window.firebase = firebase;
-
-export { auth, db, functions, storage, rtdb, firebase };
+export { auth, db, functions };
