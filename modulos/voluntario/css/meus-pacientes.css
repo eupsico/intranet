@@ -135,3 +135,17 @@
 #horarios-pb-modal .modal-body {
     padding-top: 15px;
 }
+
+/* CSS para alinhar os botões de rádio (Sim/Não) lado a lado */
+#horarios-pb-form .form-group div {
+    display: flex;
+    gap: 20px; /* Adiciona um espaço entre as opções */
+    align-items: center;
+}
+
+#horarios-pb-form .form-group div label {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Espaço entre o botão de rádio e o texto */
+    cursor: pointer;
+}
