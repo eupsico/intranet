@@ -126,3 +126,12 @@
 #encerramento-modal .modal-body {
     padding-top: 15px;
 }
+/* Remove o cabeçalho do modal de informar horários de PB */
+#horarios-pb-modal .modal-header {
+    display: none;
+}
+
+/* Ajuste opcional para remover o espaço extra no topo */
+#horarios-pb-modal .modal-body {
+    padding-top: 15px;
+}
