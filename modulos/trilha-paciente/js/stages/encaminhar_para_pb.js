@@ -1,6 +1,24 @@
+import { db } from "../../../../assets/js/firebase-config.js";
 import { carregarProfissionais } from "../../../../assets/js/app.js";
 
-export function setupEncaminharParaPb(db, functions, trilhaId, data) {
+/**
+ * Renderiza o conteúdo do modal para a etapa 'Encaminhar para PB'.
+ * @param {string} cardId - O ID do documento do paciente na coleção 'trilhaPaciente'.
+ * @param {string} cardTitle - O título do card (nome do paciente).
+ * @returns {HTMLElement} O elemento HTML com o formulário.
+ */
+export async function render(cardId, cardTitle) {
+  // 1. Busca os dados mais recentes do paciente
+  const docRef = db.collection("trilhaPaciente").doc(cardId);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    console.error("Documento do paciente não encontrado!");
+    return (document.createElement("div").textContent =
+      "Erro: Paciente não encontrado.");
+  }
+  const data = doc.data();
+
+  // 2. Monta o HTML do formulário
   const content = `
         <div class="patient-info-box">
             <h4>Encaminhar para Psicoterapia Breve (PB)</h4>
@@ -11,15 +29,13 @@ export function setupEncaminharParaPb(db, functions, trilhaId, data) {
               data.telefoneCelular || "Não informado"
             }</p>
             <p><strong>Disponibilidade:</strong> ${
-              data.disponibilidadeGeral
-                ? data.disponibilidadeGeral.join(", ")
-                : "Não informado"
+              data.disponibilidadeGeral?.join(", ") || "Não informado"
             }</p>
-             <p><strong>Tipo de Atendimento:</strong> ${
-               data.plantaoInfo?.tipoAtendimento ||
-               data.modalidadeAtendimento ||
-               "Não informado"
-             }</p>
+            <p><strong>Tipo de Atendimento:</strong> ${
+              data.plantaoInfo?.tipoAtendimento ||
+              data.modalidadeAtendimento ||
+              "Não informado"
+            }</p>
             <p><strong>Contribuição:</strong> ${
               data.valorContribuicao || "Não informado"
             }</p>
@@ -77,9 +93,11 @@ export function setupEncaminharParaPb(db, functions, trilhaId, data) {
             </div>
         </form>
     `;
+
   const element = document.createElement("div");
   element.innerHTML = content;
 
+  // 3. Adiciona a lógica interna do formulário
   const continuaTerapiaSelect = element.querySelector("#continua-terapia-pb");
   const motivoContainer = element.querySelector(
     "#motivo-desistencia-pb-container"
@@ -102,71 +120,62 @@ export function setupEncaminharParaPb(db, functions, trilhaId, data) {
     motivoInput.required = value === "nao";
   });
 
+  // Carrega a lista de profissionais no dropdown
   carregarProfissionais(
     db,
     "atendimento",
     element.querySelector("#profissional-pb")
   );
 
-  const form = element.querySelector("#pb-form");
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const saveButton = form.querySelector(".save-btn");
-    saveButton.disabled = true;
-    saveButton.textContent = "Salvando...";
-
-    try {
-      const continua = continuaTerapiaSelect.value;
-      let updateData = {};
-
-      if (continua === "nao") {
-        updateData = {
-          status: "desistencia",
-          desistenciaMotivo: `Desistiu antes do PB. Motivo: ${
-            element.querySelector("#motivo-desistencia-pb").value
-          }`,
-          lastUpdate: new Date(),
-        };
-      } else if (continua === "sim") {
-        const profissionalId = element.querySelector("#profissional-pb").value;
-        const profissionalNome =
-          element.querySelector("#profissional-pb").options[
-            element.querySelector("#profissional-pb").selectedIndex
-          ].text;
-
-        updateData = {
-          status: "aguardando_info_horarios",
-          pbInfo: {
-            profissionalId: profissionalId,
-            profissionalNome: profissionalNome,
-            tipoProfissional: element.querySelector("#tipo-profissional-pb")
-              .value,
-            dataEncaminhamento: element.querySelector("#data-encaminhamento-pb")
-              .value,
-            dataPrimeiraSessao: element.querySelector(
-              "#data-primeira-sessao-pb"
-            ).value,
-            horaPrimeiraSessao: element.querySelector(
-              "#hora-primeira-sessao-pb"
-            ).value,
-            tipoAtendimento: element.querySelector("#tipo-atendimento-pb")
-              .value,
-            observacoes: element.querySelector("#observacoes-pb").value,
-          },
-          lastUpdate: new Date(),
-        };
-      }
-
-      await db.collection("trilhaPaciente").doc(trilhaId).update(updateData);
-      alert("Paciente encaminhado para PB com sucesso!");
-      window.location.reload();
-    } catch (error) {
-      console.error("Erro ao encaminhar para PB:", error);
-      alert("Erro ao salvar. Tente novamente.");
-      saveButton.disabled = false;
-      saveButton.textContent = "Salvar";
-    }
-  });
-
   return element;
+}
+
+/**
+ * Salva os dados do formulário 'Encaminhar para PB'.
+ * @param {string} cardId - O ID do documento do paciente a ser atualizado.
+ */
+export async function save(cardId) {
+  const continua = document.getElementById("continua-terapia-pb").value;
+  let updateData = {};
+
+  if (continua === "nao") {
+    updateData = {
+      status: "desistencia",
+      desistenciaMotivo: `Desistiu antes do PB. Motivo: ${
+        document.getElementById("motivo-desistencia-pb").value
+      }`,
+      lastUpdate: new Date(),
+    };
+  } else if (continua === "sim") {
+    const profissionalSelect = document.getElementById("profissional-pb");
+    const profissionalId = profissionalSelect.value;
+    const profissionalNome =
+      profissionalSelect.options[profissionalSelect.selectedIndex].text;
+
+    updateData = {
+      status: "aguardando_info_horarios",
+      pbInfo: {
+        profissionalId: profissionalId,
+        profissionalNome: profissionalNome,
+        tipoProfissional: document.getElementById("tipo-profissional-pb").value,
+        dataEncaminhamento: document.getElementById("data-encaminhamento-pb")
+          .value,
+        dataPrimeiraSessao: document.getElementById("data-primeira-sessao-pb")
+          .value,
+        horaPrimeiraSessao: document.getElementById("hora-primeira-sessao-pb")
+          .value,
+        tipoAtendimento: document.getElementById("tipo-atendimento-pb").value,
+        observacoes: document.getElementById("observacoes-pb").value,
+      },
+      lastUpdate: new Date(),
+    };
+  } else {
+    // Se nenhuma opção for selecionada, lança um erro para o usuário
+    throw new Error(
+      "Por favor, selecione se o paciente deseja continuar com a terapia."
+    );
+  }
+
+  // Atualiza o documento no Firestore
+  await db.collection("trilhaPaciente").doc(cardId).update(updateData);
 }
