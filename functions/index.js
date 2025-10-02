@@ -356,10 +356,10 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       .doc(assistenteId)
       .get();
 
-    if (!dispoDoc.exists || !assistenteDoc.exists()) {
+    if (!dispoDoc.exists || !assistenteDoc.exists) {
       throw new HttpsError(
         "not-found",
-        "Assistente ou disponibilidade não encontrada."
+        "Assistente ou sua disponibilidade não encontrada."
       );
     }
 
