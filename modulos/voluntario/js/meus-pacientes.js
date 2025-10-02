@@ -91,9 +91,8 @@ export function init(db, user, userData) {
       emptyState.style.display = "block";
       emptyState.innerHTML =
         "<p>Ocorreu um erro ao carregar os pacientes. Tente novamente mais tarde.</p>";
-    } finally {
-      loading.style.display = "none";
     }
+    loading.style.display = "none";
   }
 
   // --- CRIAÇÃO DOS CARDS DE PACIENTE ---
