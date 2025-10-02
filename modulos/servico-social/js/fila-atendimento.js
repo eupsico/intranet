@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/fila-atendimento.js
-// Versão: 2.1 (Carrega dados completos da trilha, formata moeda e ajusta validações)
+// Versão: 2.3 (com logsSistema)
 
 export function init(db, user, userData, inscricaoId) {
   const patientDetailsContainer = document.getElementById(
@@ -17,6 +17,12 @@ export function init(db, user, userData, inscricaoId) {
       '<p class="error-message">ID da inscrição não fornecido na URL.</p>';
     return;
   }
+
+  // 🔑 Normaliza inscricaoId para string
+  const inscricaoIdStr =
+    typeof inscricaoId === "object" && inscricaoId.id
+      ? inscricaoId.id
+      : String(inscricaoId);
 
   let trilhaDocRef = null;
 
@@ -68,14 +74,13 @@ export function init(db, user, userData, inscricaoId) {
     }
     return html || "Nenhum horário detalhado informado.";
   }
-
   // --- FUNÇÃO PARA CARREGAR DADOS ---
   async function carregarDadosPaciente() {
     patientDetailsContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
       const trilhaQuery = await db
         .collection("trilhaPaciente")
-        .where("inscricaoId", "==", inscricaoId)
+        .where("inscricaoId", "==", inscricaoIdStr)
         .limit(1)
         .get();
 
@@ -93,72 +98,91 @@ export function init(db, user, userData, inscricaoId) {
           : "Não informado";
       const formatArray = (arr) =>
         arr && arr.length > 0 ? arr.join(", ") : "N/A";
-      // **CORREÇÃO**: Carrega todos os dados da ficha
+
       patientDetailsContainer.innerHTML = `
-                <div class="patient-info-group"><strong>Nome:</strong><p>${
-                  data.nomeCompleto || "N/A"
-                }</p></div>
-                <div class="patient-info-group"><strong>CPF:</strong><p>${
-                  data.cpf || "N/A"
-                }</p></div>
-                <div class="patient-info-group"><strong>Data de Nasc.:</strong><p>${formatDate(
-                  data.dataNascimento
-                )}</p></div>
-                <div class="patient-info-group"><strong>Telefone:</strong><p>${
-                  data.telefoneCelular || "N/A"
-                }</p></div>
-                <div class="patient-info-group"><strong>Email:</strong><p>${
-                  data.email || "N/A"
-                }</p></div>
-                ${
-                  data.responsavel?.nome
-                    ? `
-                <div class="patient-info-group"><strong>Responsável:</strong><p>${
-                  data.responsavel.nome
-                }</p></div>
-                <div class="patient-info-group"><strong>Contato Responsável:</strong><p>${
-                  data.responsavel.contato || "N/A"
-                }</p></div>`
-                    : ""
-                }
-                <hr>
-                <div class="patient-info-group"><strong>Endereço:</strong><p>${
-                  data.rua || "N/A"
-                }, ${data.numeroCasa || "S/N"} - ${data.bairro || "N/A"}, ${
+        <div class="patient-info-group"><strong>Nome:</strong><p>${
+          data.nomeCompleto || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>CPF:</strong><p>${
+          data.cpf || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Data de Nasc.:</strong><p>${formatDate(
+          data.dataNascimento
+        )}</p></div>
+        <div class="patient-info-group"><strong>Telefone:</strong><p>${
+          data.telefoneCelular || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Email:</strong><p>${
+          data.email || "N/A"
+        }</p></div>
+        ${
+          data.responsavel?.nome
+            ? `
+          <div class="patient-info-group"><strong>Responsável:</strong><p>${
+            data.responsavel.nome
+          }</p></div>
+          <div class="patient-info-group"><strong>Contato Responsável:</strong><p>${
+            data.responsavel.contato || "N/A"
+          }</p></div>
+        `
+            : ""
+        }
+        <hr>
+        <div class="patient-info-group"><strong>Endereço:</strong><p>${
+          data.rua || "N/A"
+        }, ${data.numeroCasa || "S/N"} - ${data.bairro || "N/A"}, ${
         data.cidade || "N/A"
       }</p></div>
-                <div class="patient-info-group"><strong>CEP:</strong><p>${
-                  data.cep || "N/A"
-                }</p></div>
-                <hr>
-                <div class="patient-info-group"><strong>Renda Individual:</strong><p>${
-                  data.rendaMensal || "N/A"
-                }</p></div>
-                <div class="patient-info-group"><strong>Renda Familiar:</strong><p>${
-                  data.rendaFamiliar || "N/A"
-                }</p></div>
-                <div class="patient-info-group"><strong>Moradia:</strong><p>${
-                  data.casaPropria || "N/A"
-                }</p></div>
-                <div class="patient-info-group"><strong>Pessoas na Moradia:</strong><p>${
-                  data.pessoasMoradia || "N/A"
-                }</p></div>
-                <hr>
-                <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${formatArray(
-                  data.disponibilidadeGeral
-                )}</p></div>
-                <div class="patient-info-group"><strong>Disponibilidade (Específica):</strong><p>${formatarDisponibilidadeEspecifica(
-                  data.disponibilidadeEspecifica
-                )}</p></div>
-                <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
-                  data.motivoBusca || "N/A"
-                }</p></div>
-            `;
+        <div class="patient-info-group"><strong>CEP:</strong><p>${
+          data.cep || "N/A"
+        }</p></div>
+        <hr>
+        <div class="patient-info-group"><strong>Renda Individual:</strong><p>${
+          data.rendaMensal || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Renda Familiar:</strong><p>${
+          data.rendaFamiliar || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Moradia:</strong><p>${
+          data.casaPropria || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Pessoas na Moradia:</strong><p>${
+          data.pessoasMoradia || "N/A"
+        }</p></div>
+        <hr>
+        <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${formatArray(
+          data.disponibilidadeGeral
+        )}</p></div>
+        <div class="patient-info-group"><strong>Disponibilidade (Específica):</strong><p>${formatarDisponibilidadeEspecifica(
+          data.disponibilidadeEspecifica
+        )}</p></div>
+        <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
+          data.motivoBusca || "N/A"
+        }</p></div>
+      `;
 
       document.getElementById("queixa-paciente").value = data.motivoBusca || "";
+
+      // Log de sucesso
+      await db.collection("logsSistema").add({
+        timestamp: new Date(),
+        usuario: user?.uid || "desconhecido",
+        acao: "Carregar dados paciente",
+        status: "success",
+        detalhes: { inscricaoId: inscricaoIdStr, paciente: data.nomeCompleto },
+      });
     } catch (error) {
       console.error("Erro ao carregar dados do paciente:", error);
       patientDetailsContainer.innerHTML = `<p class="error-message">Erro ao carregar dados: ${error.message}</p>`;
+
+      // Log de erro
+      await db.collection("logsSistema").add({
+        timestamp: new Date(),
+        usuario: user?.uid || "desconhecido",
+        acao: "Carregar dados paciente",
+        status: "error",
+        detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
+      });
     }
   }
   // --- LISTENERS DE EVENTOS ---
@@ -173,7 +197,6 @@ export function init(db, user, userData, inscricaoId) {
         ? "block"
         : "none";
 
-    // Torna os campos obrigatórios apenas se a seção estiver visível
     valorContribuicaoInput.required = selectedValue === "encaminhado";
     criteriosTextarea.required = selectedValue === "encaminhado";
     document.getElementById("observacao-geral").required =
@@ -189,7 +212,7 @@ export function init(db, user, userData, inscricaoId) {
   triagemForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // **CORREÇÃO**: Validação manual antes de prosseguir
+    // Validações manuais
     if (statusSelect.value === "encaminhado") {
       if (
         !valorContribuicaoInput.value ||
@@ -228,7 +251,7 @@ export function init(db, user, userData, inscricaoId) {
         dadosParaSalvar = {
           ...dadosParaSalvar,
           status: "encaminhar_para_plantao",
-          valorContribuicao: valorContribuicaoInput.value, // Salva o valor formatado
+          valorContribuicao: valorContribuicaoInput.value,
           criteriosValor: document.getElementById("criterios-valor").value,
           modalidadeAtendimento: document.getElementById(
             "modalidade-atendimento"
@@ -246,12 +269,25 @@ export function init(db, user, userData, inscricaoId) {
           }`,
         };
       } else {
-        dadosParaSalvar.statusTriagem = status; // Status intermediário, não muda de coluna
+        dadosParaSalvar.statusTriagem = status;
         dadosParaSalvar.observacoesTriagem =
           document.getElementById("observacao-geral").value;
       }
 
       await trilhaDocRef.update(dadosParaSalvar);
+
+      // Log de sucesso
+      await db.collection("logsSistema").add({
+        timestamp: new Date(),
+        usuario: user?.uid || "desconhecido",
+        acao: "Salvar triagem",
+        status: "success",
+        detalhes: {
+          inscricaoId: inscricaoIdStr,
+          status,
+          dados: dadosParaSalvar,
+        },
+      });
 
       alert(
         "Ficha de triagem salva com sucesso! O paciente foi atualizado na Trilha do Paciente."
@@ -259,11 +295,22 @@ export function init(db, user, userData, inscricaoId) {
       window.location.hash = "#agendamentos-triagem";
     } catch (error) {
       console.error("Erro ao salvar a triagem:", error);
+
+      // Log de erro
+      await db.collection("logsSistema").add({
+        timestamp: new Date(),
+        usuario: user?.uid || "desconhecido",
+        acao: "Salvar triagem",
+        status: "error",
+        detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
+      });
+
       alert("Ocorreu um erro ao salvar a ficha. Tente novamente.");
       saveButton.disabled = false;
       saveButton.textContent = "Salvar Triagem";
     }
   });
 
+  // --- CHAMADA INICIAL ---
   carregarDadosPaciente();
 }
