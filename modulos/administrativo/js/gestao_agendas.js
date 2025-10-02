@@ -16,6 +16,12 @@ export function init(dbRef, userRef, userDataRef) {
   if (saveButton) {
     saveButton.addEventListener("click", salvarConfiguracaoAgenda);
   }
+
+  // Se existir um painel de logs na página, carrega os logs
+  const logsTable = document.getElementById("logs-table");
+  if (logsTable) {
+    carregarLogsSistema();
+  }
 }
 
 async function carregarDisponibilidades() {
@@ -66,9 +72,10 @@ async function carregarDisponibilidades() {
           for (const modalidade in dadosDoMes) {
             const dispo = dadosDoMes[modalidade];
 
+            // Espera-se que dispo tenha: { dias: [...], inicio: "HH:mm", fim: "HH:mm" }
             if (dispo && Array.isArray(dispo.dias) && dispo.dias.length > 0) {
               hasData = true;
-              const diasOrdenados = dispo.dias.sort();
+              const diasOrdenados = [...dispo.dias].sort();
               const diasFormatados = diasOrdenados
                 .map((dia) => {
                   const [, month, day] = dia.split("-");
@@ -163,19 +170,19 @@ function abrirModalConfiguracao(
     );
     contentHTML += `
       <div class="col-md-6 col-lg-4">
-          <div class="card h-100">
-              <div class="card-body">
-                  <h6 class="card-title">${dataFormatada}</h6>
-                  <div class="form-check">
-                      <input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked>
-                      <label class="form-check-label" for="triagem-${dia}">Triagem</label>
-                  </div>
-                  <div class="form-check">
-                      <input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao">
-                      <label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label>
-                  </div>
-              </div>
+        <div class="card h-100">
+          <div class="card-body">
+            <h6 class="card-title">${dataFormatada}</h6>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked>
+              <label class="form-check-label" for="triagem-${dia}">Triagem</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao">
+              <label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label>
+            </div>
           </div>
+        </div>
       </div>`;
   });
   contentHTML += "</div>";
@@ -204,9 +211,9 @@ async function salvarConfiguracaoAgenda() {
   }
 
   if (
-    !currentAgendaConfig.assistenteId ||
-    !currentAgendaConfig.mes ||
-    !currentAgendaConfig.modalidade
+    !currentAgendaConfig?.assistenteId ||
+    !currentAgendaConfig?.mes ||
+    !currentAgendaConfig?.modalidade
   ) {
     alert("Dados da configuração estão incompletos.");
     button.disabled = false;
@@ -221,8 +228,25 @@ async function salvarConfiguracaoAgenda() {
     const definirTipoAgenda = httpsCallable(functions, "definirTipoAgenda");
     const result = await definirTipoAgenda(payload);
 
+    // Log local no Firestore (sucesso)
+    try {
+      await db.collection("logsSistema").add({
+        timestamp: new Date(),
+        usuario: user?.uid || "desconhecido",
+        acao: "Configuração de agenda via front-end",
+        status: "success",
+        detalhes: {
+          ...payload,
+          mensagem:
+            result.data?.message || "Configuração realizada com sucesso",
+        },
+      });
+    } catch (logError) {
+      console.warn("⚠️ Falha ao salvar log local (sucesso):", logError);
+    }
+
     const modalEl = document.getElementById("configurarAgendaModal");
-    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    const modalInstance = window.bootstrap?.Modal?.getInstance?.(modalEl);
     if (modalInstance) {
       modalInstance.hide();
     }
@@ -230,6 +254,24 @@ async function salvarConfiguracaoAgenda() {
     alert(result.data.message);
   } catch (error) {
     console.error("❌ Erro ao definir tipo da agenda:", error);
+
+    // Log local no Firestore (erro)
+    try {
+      await db.collection("logsSistema").add({
+        timestamp: new Date(),
+        usuario: user?.uid || "desconhecido",
+        acao: "Configuração de agenda via front-end",
+        status: "error",
+        detalhes: {
+          ...payload,
+          mensagem: error?.message || "Erro inesperado",
+          code: error?.code || null,
+        },
+      });
+    } catch (logError) {
+      console.warn("⚠️ Falha ao salvar log local (erro):", logError);
+    }
+
     if (error.code && error.message) {
       alert(`Erro (${error.code}): ${error.message}`);
     } else {
@@ -238,5 +280,67 @@ async function salvarConfiguracaoAgenda() {
   } finally {
     button.disabled = false;
     button.innerHTML = '<i class="fas fa-save me-2"></i>Salvar Configuração';
+  }
+}
+
+/* ===============================
+   Painel de logs (opcional)
+   - Se existir uma tabela com id="logs-table" e tbody id="logs-body",
+     estes logs serão carregados.
+================================= */
+async function carregarLogsSistema() {
+  const logsBody = document.getElementById("logs-body");
+  if (!logsBody) return;
+
+  logsBody.innerHTML = `
+    <tr><td colspan="5">
+      <span class="spinner-border spinner-border-sm me-2"></span> Carregando logs...
+    </td></tr>
+  `;
+
+  try {
+    const snapshot = await db
+      .collection("logsSistema")
+      .orderBy("timestamp", "desc")
+      .limit(100)
+      .get();
+
+    logsBody.innerHTML = "";
+
+    snapshot.forEach((doc) => {
+      const log = doc.data();
+      const dataFormatada =
+        typeof log.timestamp?.toDate === "function"
+          ? log.timestamp.toDate().toLocaleString("pt-BR")
+          : new Date(log.timestamp).toLocaleString("pt-BR");
+
+      const detalhesStr = (() => {
+        try {
+          return JSON.stringify(log.detalhes, null, 2);
+        } catch {
+          return String(log.detalhes);
+        }
+      })();
+
+      logsBody.insertAdjacentHTML(
+        "beforeend",
+        `
+        <tr>
+          <td>${dataFormatada}</td>
+          <td>${log.usuario || "N/A"}</td>
+          <td>${log.acao || "N/A"}</td>
+          <td class="${
+            log.status === "error" ? "text-danger" : "text-success"
+          }">${log.status || "N/A"}</td>
+          <td><pre class="mb-0" style="white-space: pre-wrap;">${detalhesStr}</pre></td>
+        </tr>
+      `
+      );
+    });
+  } catch (error) {
+    console.error("❌ Erro ao carregar logs:", error);
+    logsBody.innerHTML = `
+      <tr><td colspan="5" class="text-danger">Falha ao carregar logs. Verifique o console.</td></tr>
+    `;
   }
 }

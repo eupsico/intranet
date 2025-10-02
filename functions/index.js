@@ -314,28 +314,38 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
 // -------------------------------------------------------------------
 // (ADMIN) Salva a configuração de tipo de atendimento (Triagem/Reavaliação).
 // -------------------------------------------------------------------
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { getFirestore } = require("firebase-admin/firestore");
-const db = getFirestore();
-
 exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
   console.log("🔧 Iniciando definirTipoAgenda...");
 
+  // Verifica autenticação
   if (!request.auth) {
     console.error("❌ Requisição sem autenticação.");
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
-
   const adminUid = request.auth.uid;
-  console.log(`✅ Admin UID: ${adminUid}`);
+  console.log(`✅ Admin UID autenticado: ${adminUid}`);
 
   try {
+    // Verifica se dados foram enviados
     if (!request.data) {
+      console.error("❌ Nenhum dado enviado na requisição.");
       throw new HttpsError("invalid-argument", "Nenhum dado foi enviado.");
     }
 
-    const { assistenteId, mes, modalidade, dias } = request.data;
+    // Verifica se o usuário é admin
+    const adminDoc = await db.collection("usuarios").doc(adminUid).get();
+    const adminData = adminDoc.data();
+    if (!adminDoc.exists || !adminData?.funcoes?.includes("admin")) {
+      console.error("❌ Usuário não é administrador.");
+      throw new HttpsError(
+        "permission-denied",
+        "Apenas administradores podem executar esta ação."
+      );
+    }
+    console.log("✅ Validação de administrador OK.");
 
+    // Extrai dados da requisição
+    const { assistenteId, mes, modalidade, dias } = request.data;
     if (
       !assistenteId ||
       !mes ||
@@ -343,22 +353,20 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       !Array.isArray(dias) ||
       dias.length === 0
     ) {
+      console.error("❌ Dados insuficientes:", request.data);
       throw new HttpsError(
         "invalid-argument",
         "Dados insuficientes para configurar a agenda."
       );
     }
+    console.log("📦 Dados recebidos:", {
+      assistenteId,
+      mes,
+      modalidade,
+      dias: dias.length,
+    });
 
-    const adminDoc = await db.collection("usuarios").doc(adminUid).get();
-    const adminData = adminDoc.data();
-
-    if (!adminDoc.exists || !adminData?.funcoes?.includes("admin")) {
-      throw new HttpsError(
-        "permission-denied",
-        "Apenas administradores podem executar esta ação."
-      );
-    }
-
+    // Busca documentos do assistente
     const dispoDoc = await db
       .collection("disponibilidadeAssistentes")
       .doc(assistenteId)
@@ -369,120 +377,102 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       .get();
 
     if (!dispoDoc.exists || !assistenteDoc.exists()) {
+      console.error("❌ Assistente ou disponibilidade não encontrada.");
       throw new HttpsError(
         "not-found",
         "Assistente ou sua disponibilidade não encontrada."
       );
     }
+    console.log("✅ Documentos da assistente e disponibilidade encontrados.");
 
     const dispoData = dispoDoc.data();
-    const assistenteData = assistenteDoc.data();
+    if (!dispoData || typeof dispoData.disponibilidade !== "object") {
+      console.error("❌ Campo 'disponibilidade' ausente ou malformado.");
+      throw new HttpsError(
+        "not-found",
+        "Campo 'disponibilidade' ausente ou malformado no documento."
+      );
+    }
 
+    const disponibilidadeOriginal =
+      dispoData.disponibilidade?.[mes]?.[modalidade];
     if (
-      !dispoData?.disponibilidade ||
-      typeof dispoData.disponibilidade !== "object"
+      !disponibilidadeOriginal ||
+      !disponibilidadeOriginal.inicio ||
+      !disponibilidadeOriginal.fim
     ) {
+      console.error("❌ Dados de disponibilidade ausentes ou malformados:", {
+        assistenteId,
+        mes,
+        modalidade,
+        disponibilidadeOriginal,
+      });
       throw new HttpsError(
         "not-found",
-        "Campo 'disponibilidade' ausente ou malformado."
+        `Horários de início/fim não encontrados para ${mes}/${modalidade}.`
       );
     }
+    console.log("🕒 Horários encontrados:", {
+      inicio: disponibilidadeOriginal.inicio,
+      fim: disponibilidadeOriginal.fim,
+    });
 
-    const modalidadeData = dispoData.disponibilidade?.[mes]?.[modalidade];
-    if (!Array.isArray(modalidadeData) || modalidadeData.length === 0) {
-      throw new HttpsError(
-        "not-found",
-        `Nenhuma disponibilidade encontrada para ${mes}/${modalidade}.`
-      );
+    const assistenteData = assistenteDoc.data();
+    if (!assistenteData || !assistenteData.nome) {
+      console.error("❌ Nome do assistente não encontrado.");
+      throw new HttpsError("not-found", "Nome do assistente não encontrado.");
     }
-
-    const inicio = "08:00"; // Pode ser dinâmico se quiser
-    const fim = "18:00"; // Pode ser dinâmico se quiser
-    const assistenteNome = assistenteData?.nome || "Assistente";
+    const assistenteNome = assistenteData.nome;
+    const { inicio, fim } = disponibilidadeOriginal;
 
     const batch = db.batch();
 
-    dias.forEach((configDia, index) => {
-      const { dia, tipo } = configDia;
-      if (
-        !dia ||
-        !tipo ||
-        typeof dia !== "string" ||
-        typeof tipo !== "string"
-      ) {
-        throw new HttpsError(
-          "invalid-argument",
-          `Item inválido em dias[${index}]: ${JSON.stringify(configDia)}`
+    try {
+      dias.forEach((configDia, index) => {
+        const { dia, tipo } = configDia;
+        if (!dia || !tipo) {
+          console.error(`❌ Dia ou tipo ausente no item ${index}:`, configDia);
+          throw new HttpsError(
+            "invalid-argument",
+            "Cada dia deve conter 'dia' e 'tipo'."
+          );
+        }
+
+        const docId = `${dia}_${assistenteId}`;
+        const docRef = db.collection("agendaConfigurada").doc(docId);
+
+        batch.set(
+          docRef,
+          {
+            assistenteId,
+            assistenteNome,
+            data: dia,
+            tipo,
+            modalidade,
+            inicio,
+            fim,
+            configuradoPor: adminUid,
+            configuradoEm: new Date(),
+          },
+          { merge: true }
         );
-      }
-
-      const docId = `${dia}_${assistenteId}`;
-      const docRef = db.collection("agendaConfigurada").doc(docId);
-
-      batch.set(
-        docRef,
-        {
-          assistenteId,
-          assistenteNome,
-          data: dia,
-          tipo,
-          modalidade,
-          inicio,
-          fim,
-          configuradoPor: adminUid,
-          configuradoEm: new Date(),
-        },
-        { merge: true }
-      );
-    });
+      });
+      console.log(`📝 Batch montado para ${dias.length} dias.`);
+    } catch (e) {
+      console.error("❌ Erro ao montar batch:", e);
+      throw new HttpsError("internal", "Erro ao configurar os dias da agenda.");
+    }
 
     await batch.commit();
     console.log("✅ Batch commitado com sucesso.");
-
-    // Log da ação
-    try {
-      await db.collection("logsSistema").add({
-        timestamp: new Date(),
-        usuario: adminUid,
-        acao: "Configuração de agenda",
-        status: "success",
-        detalhes: { assistenteId, mes, modalidade, dias },
-      });
-    } catch (logError) {
-      console.warn("⚠️ Falha ao salvar log:", logError.message);
-    }
 
     return {
       status: "success",
       message: `${dias.length} dia(s) configurado(s) com sucesso para ${assistenteNome}!`,
     };
   } catch (error) {
-    console.error("🔥 ERRO GRAVE EM definirTipoAgenda:", {
-      message: error.message,
-      code: error.code,
-      name: error.name,
-      stack: error.stack,
-    });
-
-    // Log de erro
-    try {
-      await db.collection("logsSistema").add({
-        timestamp: new Date(),
-        usuario: request.auth?.uid || "desconhecido",
-        acao: "Configuração de agenda",
-        status: "error",
-        detalhes: {
-          assistenteId: request.data?.assistenteId,
-          mes: request.data?.mes,
-          modalidade: request.data?.modalidade,
-          dias: request.data?.dias,
-          mensagem: error.message,
-        },
-      });
-    } catch (logError) {
-      console.warn("⚠️ Falha ao salvar log de erro:", logError.message);
-    }
-
+    console.error("🔥 ERRO GRAVE EM definirTipoAgenda:", error);
+    console.error("📜 Stack:", error.stack);
     if (error instanceof HttpsError) {
       throw error;
     }
