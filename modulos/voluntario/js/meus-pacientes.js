@@ -552,7 +552,7 @@ export function init(db, user, userData) {
         };
       } else {
         updateData = {
-          status: "cadastrar_horario_psicomanager",
+          status: "cadastrar_horario_psicomanager", // Avança para a próxima etapa
           "pbInfo.horarioSessao": {
             responsavelId: user.uid,
             responsavelNome: userData.nome,
@@ -561,12 +561,11 @@ export function init(db, user, userData) {
             tipoAtendimento: form.querySelector(
               "#tipo-atendimento-pb-voluntario"
             ).value,
-            alterarGrade: form.querySelector(
-              'input[name="alterar-grade"]:checked'
-            ).value,
+            alterarGrade: form.querySelector("#alterar-grade-pb").value,
             frequencia: form.querySelector("#frequencia-atendimento-pb").value,
             salaAtendimento: form.querySelector("#sala-atendimento-pb").value,
             dataInicio: form.querySelector("#data-inicio-sessoes").value,
+            observacoes: form.querySelector("#observacoes-pb-horarios").value,
           },
           lastUpdate: new Date(),
         };
