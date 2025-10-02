@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.4 (CORRIGIDO E ATUALIZADO)
+// Versão: 3.5 (CORRIGIDO)
 
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
@@ -9,7 +9,6 @@ export function init(db, user, userData) {
   const horariosPbModal = document.getElementById("horarios-pb-modal");
   const closeButtons = document.querySelectorAll(".modal .close-button");
 
-  // Garante que os modais comecem escondidos
   if (encerramentoModal) encerramentoModal.style.display = "none";
   if (horariosPbModal) horariosPbModal.style.display = "none";
 
@@ -63,11 +62,9 @@ export function init(db, user, userData) {
       container.innerHTML = html;
       adicionarEventListeners();
     } catch (error) {
-      // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
       console.error("Erro ao carregar pacientes:", error);
       container.innerHTML =
         '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
-      // Esconde explicitamente os modais em caso de erro
       if (encerramentoModal) encerramentoModal.style.display = "none";
       if (horariosPbModal) horariosPbModal.style.display = "none";
     }
@@ -114,7 +111,10 @@ export function init(db, user, userData) {
             .collection("trilhaPaciente")
             .doc(pacienteId)
             .get();
-          if (!docSnap.exists()) {
+
+          // ===== ALTERAÇÃO APLICADA AQUI =====
+          // Corrigido de docSnap.exists() para docSnap.exists
+          if (!docSnap.exists) {
             alert("Paciente não encontrado!");
             return;
           }
