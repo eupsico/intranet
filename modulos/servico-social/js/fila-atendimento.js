@@ -232,7 +232,8 @@ export function init(db, user, userData, inscricaoId) {
         return;
       }
     }
-
+    console.log("🔍 inscricaoId recebido:", inscricaoId, typeof inscricaoId);
+    console.log("🔍 inscricaoId normalizado:", inscricaoIdStr);
     const saveButton = triagemForm.querySelector('button[type="submit"]');
     saveButton.disabled = true;
     saveButton.textContent = "Salvando...";
