@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
-// Versão: 2.1 (CORRIGIDO E ATUALIZADO)
+// Versão: 2.2 (CORRIGIDO)
 
 // Mapeamento dos status para os títulos das colunas
 const COLUMNS_CONFIG = {
@@ -7,7 +7,7 @@ const COLUMNS_CONFIG = {
   triagem_agendada: "Triagem Agendada",
   encaminhar_para_plantao: "Encaminhar para Plantão",
   em_atendimento_plantao: "Em Atendimento (Plantão)",
-  agendamento_confirmado_plantao: "Agendamento Confirmado (Plantão)", // Adicionado
+  agendamento_confirmado_plantao: "Agendamento Confirmado (Plantão)",
   encaminhar_para_pb: "Encaminhar para PB",
   aguardando_info_horarios: "Aguardando Info Horários",
   cadastrar_horario_psicomanager: "Cadastrar Horário Psicomanager",
@@ -18,13 +18,10 @@ const COLUMNS_CONFIG = {
   alta: "Alta",
 };
 
-let db, functions, user, userData; // Instâncias globais para o módulo
-let allCardsData = {}; // Cache para os dados dos cards
-let currentColumnFilter = []; // Filtro de colunas ativas
+let db, functions, user, userData;
+let allCardsData = {};
+let currentColumnFilter = [];
 
-/**
- * Função de inicialização do Kanban, chamada pelo painel.
- */
 export async function init(
   firestoreDb,
   authUser,
@@ -35,7 +32,7 @@ export async function init(
   db = firestoreDb;
   user = authUser;
   userData = authData;
-  // functions continua a ser pego de um escopo superior se disponível ou inicializado aqui.
+  functions = firebase.functions(); // Garante que 'functions' esteja disponível
   currentColumnFilter = columnFilter;
 
   try {
@@ -52,9 +49,6 @@ export async function init(
   }
 }
 
-/**
- * Cria as colunas do Kanban no DOM com base no filtro ativo.
- */
 function setupColumns() {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
@@ -76,9 +70,6 @@ function setupColumns() {
     .join("");
 }
 
-/**
- * Configura os botões e eventos do modal.
- */
 function setupModalControls() {
   const modal = document.getElementById("card-modal");
   const closeModalBtn = document.getElementById("close-modal-btn");
@@ -99,9 +90,6 @@ function setupModalControls() {
   });
 }
 
-/**
- * Carrega os cards do Firestore e os renderiza nas colunas visíveis.
- */
 function loadAndRenderCards() {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
@@ -134,9 +122,6 @@ function loadAndRenderCards() {
   );
 }
 
-/**
- * Cria o elemento HTML para um card individual.
- */
 function createCardElement(cardData) {
   const card = document.createElement("div");
   card.className = "kanban-card";
@@ -151,9 +136,6 @@ function createCardElement(cardData) {
   return card;
 }
 
-/**
- * Atualiza a contagem de cards em cada coluna visível.
- */
 function updateColumnCounts() {
   currentColumnFilter.forEach((statusKey) => {
     const container = document.getElementById(`cards-${statusKey}`);
@@ -164,9 +146,6 @@ function updateColumnCounts() {
   });
 }
 
-/**
- * Abre o modal com os detalhes de um card específico.
- */
 async function openCardModal(cardId) {
   const modal = document.getElementById("card-modal");
   const modalBody = document.getElementById("card-modal-body");
@@ -180,67 +159,72 @@ async function openCardModal(cardId) {
   modal.style.display = "flex";
   modalBody.innerHTML = '<div class="loading-spinner"></div>';
 
+  // Mostra o botão de salvar, que pode ser escondido pelo módulo se necessário
+  document.getElementById("modal-save-btn").style.display = "inline-block";
+
   try {
     // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
-    // Mapeia o status para a função setup correspondente.
-    const stageSetupFunctions = {
-      inscricao_documentos: () =>
-        import("./stages/inscricao_documentos.js").then(
-          (m) => m.setupInscricaoDocumentos
-        ),
-      triagem_agendada: () =>
-        import("./stages/triagem_agendada.js").then(
-          (m) => m.setupTriagemAgendada
-        ),
-      encaminhar_para_plantao: () =>
-        import("./stages/encaminhar_para_plantao.js").then(
-          (m) => m.setupEncaminharParaPlantao
-        ),
-      em_atendimento_plantao: () =>
-        import("./stages/em_atendimento_plantao.js").then(
-          (m) => m.setupEmAtendimentoPlantao
-        ),
-      agendamento_confirmado_plantao: () =>
-        import("./stages/agendamento_confirmado_plantao.js").then(
-          (m) => m.setupAgendamentoConfirmadoPlantao
-        ),
-      encaminhar_para_pb: () =>
-        import("./stages/encaminhar_para_pb.js").then(
-          (m) => m.setupEncaminharParaPb
-        ),
-      aguardando_info_horarios: () =>
-        import("./stages/aguardando_info_horarios.js").then(
-          (m) => m.setupAguardandoInfoHorarios
-        ),
-      cadastrar_horario_psicomanager: () =>
-        import("./stages/cadastrar_horario_psicomanager.js").then(
-          (m) => m.setupCadastrarHorarioPsicomanager
-        ),
+    // A lógica foi reescrita para importar o módulo e chamar a função 'setup' correta.
+
+    // Mapeamento de status para o nome da função de setup
+    const stageModules = {
+      encaminhar_para_plantao: {
+        name: "setupEmAtendimentoPlantao",
+        path: "./stages/em_atendimento_plantao.js",
+      },
+      em_atendimento_plantao: {
+        name: "setupAgendamentoConfirmadoPlantao",
+        path: "./stages/agendamento_confirmado_plantao.js",
+      },
+      encaminhar_para_pb: {
+        name: "setupEncaminharParaPb",
+        path: "./stages/encaminhar_para_pb.js",
+      },
+      aguardando_info_horarios: {
+        name: "setupAguardandoInfoHorarios", // Esta função ainda não existe, mas a estrutura está pronta
+        path: "./stages/aguardando_info_horarios.js",
+      },
+      cadastrar_horario_psicomanager: {
+        name: "setupCadastrarHorarioPsicomanager",
+        path: "./stages/cadastrar_horario_psicomanager.js",
+      },
+      // Adicione outros status aqui conforme for criando os arquivos
     };
 
-    const getSetupFunction = stageSetupFunctions[cardData.status];
+    const moduleInfo = stageModules[cardData.status];
 
-    if (getSetupFunction) {
-      const setupFunction = await getSetupFunction();
-      const contentElement = setupFunction(
-        db,
-        functions,
-        cardId,
-        cardData,
-        user,
-        userData
-      );
-      modalBody.innerHTML = "";
-      modalBody.appendChild(contentElement);
+    if (moduleInfo) {
+      const stageModule = await import(moduleInfo.path);
+      const setupFunction = stageModule[moduleInfo.name];
+
+      if (typeof setupFunction === "function") {
+        const contentElement = setupFunction(
+          db,
+          functions,
+          cardId,
+          cardData,
+          user,
+          userData
+        );
+        modalBody.innerHTML = "";
+        modalBody.appendChild(contentElement);
+      } else {
+        // Erro caso a função de setup não seja encontrada no módulo
+        throw new Error(
+          `A função ${moduleInfo.name} não foi encontrada no módulo ${moduleInfo.path}`
+        );
+      }
     } else {
-      // Fallback para status sem módulo JS customizado
+      // Comportamento padrão para status que não têm um módulo JS customizado
       modalBody.innerHTML = `<p><strong>Nome:</strong> ${
         cardData.nomeCompleto
       }</p>
                                    <p><strong>Status:</strong> ${
-                                     COLUMNS_CONFIG[cardData.status]
+                                     COLUMNS_CONFIG[cardData.status] ||
+                                     cardData.status
                                    }</p>
                                    <p>Nenhuma ação customizada para esta etapa.</p>`;
+      document.getElementById("modal-save-btn").style.display = "none";
     }
   } catch (error) {
     console.error(
