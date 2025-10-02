@@ -5,7 +5,7 @@ import { carregarProfissionais } from "../../../../assets/js/app.js";
  * Renderiza o conteúdo do modal para a etapa "Em Atendimento (Plantão)".
  * @param {string} cardId - O ID do documento do paciente.
  * @param {string} cardTitle - O nome do paciente.
- * @returns {HTMLElement} O elemento HTML com o formulário completo.
+ * @returns {HTMLElement} O elemento HTML com o formulário completo e funcional.
  */
 export async function render(cardId, cardTitle) {
   // Busca os dados mais recentes do paciente
@@ -13,7 +13,7 @@ export async function render(cardId, cardTitle) {
   const doc = await docRef.get();
   const data = doc.exists ? doc.data() : {};
 
-  // O HTML original fornecido por você foi mantido integralmente
+  // O HTML original que você forneceu foi mantido
   const content = `
     <div class="patient-info-box">
         <h4>Dados do Paciente</h4>
@@ -33,73 +33,74 @@ export async function render(cardId, cardTitle) {
           data.preferenciaAtendimento || "Não informado"
         }</p>
     </div>
-    <form id="plantao-form">
+    <form id="plantao-form-atendimento">
         <div class="form-group">
-            <label for="continua-terapia">Paciente deseja continuar com a terapia?</label>
-            <select id="continua-terapia" required>
+            <label for="continua-terapia-atendimento">Paciente deseja continuar com a terapia?</label>
+            <select id="continua-terapia-atendimento" required>
                 <option value="">Selecione...</option>
                 <option value="sim">Sim</option>
                 <option value="nao">Não</option>
             </select>
         </div>
 
-        <div id="motivo-desistencia-container" class="form-group hidden">
-            <label for="motivo-desistencia-plantao">Motivo da desistência:</label>
-            <textarea id="motivo-desistencia-plantao" rows="3"></textarea>
+        <div id="motivo-desistencia-container-atendimento" class="form-group hidden">
+            <label for="motivo-desistencia-plantao-atendimento">Motivo da desistência:</label>
+            <textarea id="motivo-desistencia-plantao-atendimento" rows="3"></textarea>
         </div>
 
-        <div id="continuacao-plantao-container" class="hidden">
+        <div id="continuacao-plantao-container-atendimento" class="hidden">
             <div class="form-group">
-                <label for="profissional-plantao">Selecione o nome profissional do Plantão:</label>
-                <select id="profissional-plantao"></select>
+                <label for="profissional-plantao-atendimento">Selecione o nome profissional do Plantão:</label>
+                <select id="profissional-plantao-atendimento"></select>
             </div>
             <div class="form-group">
-                <label for="tipo-profissional-plantao">O profissional que irá atender o paciente é:</label>
-                <select id="tipo-profissional-plantao">
+                <label for="tipo-profissional-plantao-atendimento">O profissional que irá atender o paciente é:</label>
+                <select id="tipo-profissional-plantao-atendimento">
                     <option value="">Selecione...</option>
                     <option value="Estagiária(o)">Estagiária(o)</option>
                     <option value="Voluntária(o)">Voluntária(o)</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="data-encaminhamento-plantao">Data do encaminhamento para o Plantão:</label>
-                <input type="date" id="data-encaminhamento-plantao">
+                <label for="data-encaminhamento-plantao-atendimento">Data do encaminhamento para o Plantão:</label>
+                <input type="date" id="data-encaminhamento-plantao-atendimento">
             </div>
             <div class="form-group">
-                <label for="data-primeira-sessao-plantao">Primeira sessão do Plantão agendada para o dia:</label>
-                <input type="date" id="data-primeira-sessao-plantao">
+                <label for="data-primeira-sessao-plantao-atendimento">Primeira sessão do Plantão agendada para o dia:</label>
+                <input type="date" id="data-primeira-sessao-plantao-atendimento">
             </div>
             <div class="form-group">
-                <label for="hora-primeira-sessao-plantao">Primeira sessão do Plantão agendada para o horário:</label>
-                <input type="time" id="hora-primeira-sessao-plantao">
+                <label for="hora-primeira-sessao-plantao-atendimento">Primeira sessão do Plantão agendada para o horário:</label>
+                <input type="time" id="hora-primeira-sessao-plantao-atendimento">
             </div>
             <div class="form-group">
-                <label for="tipo-atendimento-plantao">O atendimento será:</label>
-                <select id="tipo-atendimento-plantao">
+                <label for="tipo-atendimento-plantao-atendimento">O atendimento será:</label>
+                <select id="tipo-atendimento-plantao-atendimento">
                     <option value="">Selecione...</option>
                     <option value="Presencial">Presencial</option>
                     <option value="Online">Online</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="observacoes-plantao">Observações:</label>
-                <textarea id="observacoes-plantao" rows="3"></textarea>
+                <label for="observacoes-plantao-atendimento">Observações:</label>
+                <textarea id="observacoes-plantao-atendimento" rows="3"></textarea>
             </div>
         </div>
     </form>
   `;
 
-  // Cria um elemento e insere o HTML, corrigindo o erro original
   const element = document.createElement("div");
   element.innerHTML = content;
 
-  // Adiciona a lógica para mostrar e esconder os campos
-  const continuaTerapiaSelect = element.querySelector("#continua-terapia");
+  // Lógica para mostrar/esconder campos
+  const continuaTerapiaSelect = element.querySelector(
+    "#continua-terapia-atendimento"
+  );
   const motivoContainer = element.querySelector(
-    "#motivo-desistencia-container"
+    "#motivo-desistencia-container-atendimento"
   );
   const continuacaoContainer = element.querySelector(
-    "#continuacao-plantao-container"
+    "#continuacao-plantao-container-atendimento"
   );
 
   continuaTerapiaSelect.addEventListener("change", () => {
@@ -108,11 +109,11 @@ export async function render(cardId, cardTitle) {
     motivoContainer.classList.toggle("hidden", selection !== "nao");
   });
 
-  // Carrega a lista de profissionais
+  // Carrega profissionais
   await carregarProfissionais(
     db,
     "atendimento",
-    element.querySelector("#profissional-plantao")
+    element.querySelector("#profissional-plantao-atendimento")
   );
 
   return element;
@@ -123,10 +124,14 @@ export async function render(cardId, cardTitle) {
  * @param {string} cardId - O ID do documento do paciente a ser atualizado.
  */
 export async function save(cardId) {
-  const continua = document.getElementById("continua-terapia").value;
+  const continua = document.getElementById(
+    "continua-terapia-atendimento"
+  ).value;
 
   if (continua === "nao") {
-    const motivo = document.getElementById("motivo-desistencia-plantao").value;
+    const motivo = document.getElementById(
+      "motivo-desistencia-plantao-atendimento"
+    ).value;
     if (!motivo) {
       throw new Error("Por favor, informe o motivo da desistência.");
     }
@@ -140,7 +145,9 @@ export async function save(cardId) {
         lastUpdate: new Date(),
       });
   } else if (continua === "sim") {
-    const profissionalSelect = document.getElementById("profissional-plantao");
+    const profissionalSelect = document.getElementById(
+      "profissional-plantao-atendimento"
+    );
     const profissionalId = profissionalSelect.value;
     const profissionalNome =
       profissionalSelect.options[profissionalSelect.selectedIndex].text;
@@ -150,27 +157,28 @@ export async function save(cardId) {
     }
 
     const updateData = {
-      status: "em_atendimento_plantao", // Mantém ou define o status
-      profissionalAtualId: profissionalId, // Garante que o profissional está corretamente associado
+      status: "em_atendimento_plantao",
+      profissionalAtualId: profissionalId,
       "plantaoInfo.profissionalId": profissionalId,
       "plantaoInfo.profissionalNome": profissionalNome,
       "plantaoInfo.tipoProfissional": document.getElementById(
-        "tipo-profissional-plantao"
+        "tipo-profissional-plantao-atendimento"
       ).value,
       "plantaoInfo.dataEncaminhamento": document.getElementById(
-        "data-encaminhamento-plantao"
+        "data-encaminhamento-plantao-atendimento"
       ).value,
       "plantaoInfo.dataPrimeiraSessao": document.getElementById(
-        "data-primeira-sessao-plantao"
+        "data-primeira-sessao-plantao-atendimento"
       ).value,
       "plantaoInfo.horaPrimeiraSessao": document.getElementById(
-        "hora-primeira-sessao-plantao"
+        "hora-primeira-sessao-plantao-atendimento"
       ).value,
       "plantaoInfo.tipoAtendimento": document.getElementById(
-        "tipo-atendimento-plantao"
+        "tipo-atendimento-plantao-atendimento"
       ).value,
-      "plantaoInfo.observacoes": document.getElementById("observacoes-plantao")
-        .value,
+      "plantaoInfo.observacoes": document.getElementById(
+        "observacoes-plantao-atendimento"
+      ).value,
       lastUpdate: new Date(),
     };
     await db.collection("trilhaPaciente").doc(cardId).update(updateData);
