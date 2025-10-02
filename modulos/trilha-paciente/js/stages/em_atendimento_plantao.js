@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/stages/em_atendimento_plantao.js
-// Versão: 2.1 (CORRIGIDO)
+// Versão: 2.2 (Lógica de visibilidade e campos obrigatórios CORRIGIDA)
 
 import { carregarProfissionais } from "../../../../assets/js/app.js";
 
@@ -41,11 +41,11 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
             <div id="continuacao-plantao-container" class="hidden">
                 <div class="form-group">
                     <label for="profissional-plantao">Selecione o nome profissional do Plantão:</label>
-                    <select id="profissional-plantao" required></select>
+                    <select id="profissional-plantao"></select>
                 </div>
                 <div class="form-group">
                     <label for="tipo-profissional-plantao">O profissional que irá atender o paciente é:</label>
-                    <select id="tipo-profissional-plantao" required>
+                    <select id="tipo-profissional-plantao">
                         <option value="">Selecione...</option>
                         <option value="Estagiária(o)">Estagiária(o)</option>
                         <option value="Voluntária(o)">Voluntária(o)</option>
@@ -53,19 +53,19 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
                 </div>
                 <div class="form-group">
                     <label for="data-encaminhamento-plantao">Data do encaminhamento para o Plantão:</label>
-                    <input type="date" id="data-encaminhamento-plantao" required>
+                    <input type="date" id="data-encaminhamento-plantao">
                 </div>
                 <div class="form-group">
                     <label for="data-primeira-sessao-plantao">Primeira sessão do Plantão agendada para o dia:</label>
-                    <input type="date" id="data-primeira-sessao-plantao" required>
+                    <input type="date" id="data-primeira-sessao-plantao">
                 </div>
                 <div class="form-group">
                     <label for="hora-primeira-sessao-plantao">Primeira sessão do Plantão agendada para o horário:</label>
-                    <input type="time" id="hora-primeira-sessao-plantao" required>
+                    <input type="time" id="hora-primeira-sessao-plantao">
                 </div>
                 <div class="form-group">
                     <label for="tipo-atendimento-plantao">O atendimento será:</label>
-                    <select id="tipo-atendimento-plantao" required>
+                    <select id="tipo-atendimento-plantao">
                         <option value="">Selecione...</option>
                         <option value="Presencial">Presencial</option>
                         <option value="Online">Online</option>
@@ -83,6 +83,7 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
   const element = document.createElement("div");
   element.innerHTML = content;
 
+  // === INÍCIO DA CORREÇÃO APLICADA AQUI ===
   const continuaTerapiaSelect = element.querySelector("#continua-terapia");
   const motivoContainer = element.querySelector(
     "#motivo-desistencia-container"
@@ -91,38 +92,33 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
     "#continuacao-plantao-container"
   );
 
-  // ===== ALTERAÇÃO APLICADA AQUI =====
-  // A lógica foi refinada para garantir que os campos corretos sejam
-  // exibidos e que a validação 'required' seja aplicada corretamente.
+  // Mapeia os campos que devem ser obrigatórios para cada caso
+  const camposObrigatoriosSim = [
+    "profissional-plantao",
+    "tipo-profissional-plantao",
+    "data-encaminhamento-plantao",
+    "data-primeira-sessao-plantao",
+    "hora-primeira-sessao-plantao",
+    "tipo-atendimento-plantao",
+  ];
+  const campoObrigatorioNao = "motivo-desistencia-plantao";
+
   continuaTerapiaSelect.addEventListener("change", (e) => {
     const value = e.target.value;
+    const isSim = value === "sim";
+    const isNao = value === "nao";
 
-    // Controla a visibilidade das seções
-    motivoContainer.classList.toggle("hidden", value !== "nao");
-    continuacaoContainer.classList.toggle("hidden", value !== "sim");
+    // 1. Controla a visibilidade das seções
+    continuacaoContainer.classList.toggle("hidden", !isSim);
+    motivoContainer.classList.toggle("hidden", !isNao);
 
-    // Zera a obrigatoriedade de todos os campos condicionais
-    motivoContainer.querySelector("textarea").required = false;
-    continuacaoContainer
-      .querySelectorAll("select, input, textarea")
-      .forEach((input) => {
-        // Apenas os campos marcados como 'required' no HTML original são alternados.
-        if (input.hasAttribute("required")) {
-          input.required = false;
-        }
-      });
-
-    // Aplica a obrigatoriedade apenas para a seção visível
-    if (value === "sim") {
-      continuacaoContainer
-        .querySelectorAll("select[required], input[required]")
-        .forEach((input) => {
-          input.required = true;
-        });
-    } else if (value === "nao") {
-      motivoContainer.querySelector("textarea").required = true;
-    }
+    // 2. Define quais campos são obrigatórios com base na seleção
+    camposObrigatoriosSim.forEach((id) => {
+      element.querySelector(`#${id}`).required = isSim;
+    });
+    element.querySelector(`#${campoObrigatorioNao}`).required = isNao;
   });
+  // === FIM DA CORREÇÃO ===
 
   carregarProfissionais(
     db,
@@ -133,6 +129,14 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
   const form = element.querySelector("#plantao-form");
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    // Verifica a validação do formulário antes de continuar
+    if (!form.checkValidity()) {
+      alert("Por favor, preencha todos os campos obrigatórios.");
+      form.reportValidity(); // Mostra qual campo está inválido
+      return;
+    }
+
     const saveButton = form.querySelector(".save-btn");
     saveButton.disabled = true;
     saveButton.textContent = "Salvando...";
@@ -192,6 +196,8 @@ export function setupEmAtendimentoPlantao(db, functions, trilhaId, data) {
     } catch (error) {
       console.error("Erro ao salvar informações do plantão:", error);
       alert("Erro ao salvar. Tente novamente.");
+    } finally {
+      // Garante que o botão seja reativado mesmo em caso de erro
       saveButton.disabled = false;
       saveButton.textContent = "Salvar";
     }
