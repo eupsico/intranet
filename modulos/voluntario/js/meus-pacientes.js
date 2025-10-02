@@ -1,3 +1,6 @@
+// Arquivo: /modulos/voluntario/js/meus-pacientes.js
+// Versão: 3.3 (CORRIGIDO E ATUALIZADO)
+
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
   if (!container) return;
@@ -9,8 +12,8 @@ export function init(db, user, userData) {
   closeButtons.forEach(
     (btn) =>
       (btn.onclick = () => {
-        encerramentoModal.style.display = "none";
-        horariosPbModal.style.display = "none";
+        if (encerramentoModal) encerramentoModal.style.display = "none";
+        if (horariosPbModal) horariosPbModal.style.display = "none";
       })
   );
   window.onclick = (event) => {
@@ -37,9 +40,13 @@ export function init(db, user, userData) {
         queryPb.get(),
       ]);
 
+      // ===== ALTERAÇÃO APLICADA AQUI =====
       if (plantaoSnapshot.empty && pbSnapshot.empty) {
         container.innerHTML =
           "<p>Você não tem pacientes designados no momento.</p>";
+        // Esconde os modais se não houver pacientes, para evitar que apareçam vazios.
+        if (encerramentoModal) encerramentoModal.style.display = "none";
+        if (horariosPbModal) horariosPbModal.style.display = "none";
         return;
       }
 
@@ -69,6 +76,13 @@ export function init(db, user, userData) {
         ? "Encerrar Atendimento (Plantão)"
         : "Informar Horários (PB)";
 
+    // Garante que 'info' não seja nulo antes de tentar acessar suas propriedades
+    const dataEncaminhamento = info?.dataEncaminhamento
+      ? new Date(info.dataEncaminhamento + "T00:00:00").toLocaleDateString(
+          "pt-BR"
+        )
+      : "N/A";
+
     return `
             <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
                 <h4>${data.nomeCompleto}</h4>
@@ -78,13 +92,7 @@ export function init(db, user, userData) {
                     : "Aguardando Info Horários (PB)"
                 }</p>
                 <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-                 <p><strong>Data Encaminhamento:</strong> ${
-                   info.dataEncaminhamento
-                     ? new Date(
-                         info.dataEncaminhamento + "T00:00:00"
-                       ).toLocaleDateString("pt-BR")
-                     : "N/A"
-                 }</p>
+                 <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
                 <button class="action-button">${acaoLabel}</button>
             </div>
         `;
@@ -103,7 +111,7 @@ export function init(db, user, userData) {
             .collection("trilhaPaciente")
             .doc(pacienteId)
             .get();
-          if (!docSnap.exists) {
+          if (!docSnap.exists()) {
             alert("Paciente não encontrado!");
             return;
           }
@@ -125,7 +133,6 @@ export function init(db, user, userData) {
     document.getElementById("disponibilidade-atual").textContent =
       data.disponibilidadeGeral?.join(", ") || "Não informada";
 
-    // Lógica para mostrar/ocultar campos
     const pagRadio = form.querySelectorAll(
       'input[name="pagamento-contribuicao"]'
     );
@@ -149,7 +156,6 @@ export function init(db, user, userData) {
           document
             .getElementById("nova-disponibilidade-container")
             .classList.toggle("hidden", radio.value !== "nao");
-          // Se precisar carregar o HTML da disponibilidade, faça aqui
         })
     );
 
@@ -184,7 +190,6 @@ export function init(db, user, userData) {
     horariosPbModal.style.display = "block";
   }
 
-  // Handlers de submit
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (e) => {
@@ -211,7 +216,6 @@ export function init(db, user, userData) {
         },
         lastUpdate: new Date(),
       };
-      // Lógica para atualizar disponibilidade se necessário
 
       try {
         await db
