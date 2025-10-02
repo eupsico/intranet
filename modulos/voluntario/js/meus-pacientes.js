@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.5 (CORRIGIDO)
+// Versão: 3.6 (CORRIGIDO E ATUALIZADO com a lógica de checkboxes)
 
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
@@ -73,9 +73,7 @@ export function init(db, user, userData) {
   function criarCardPaciente(id, data, tipo) {
     const info = tipo === "plantao" ? data.plantaoInfo : data.pbInfo;
     const acaoLabel =
-      tipo === "plantao"
-        ? "Encerrar Atendimento (Plantão)"
-        : "Informar Horários (PB)";
+      tipo === "plantao" ? "Encerrar Plantão" : "Informar Horários (PB)";
 
     const dataEncaminhamento = info?.dataEncaminhamento
       ? new Date(info.dataEncaminhamento + "T03:00:00").toLocaleDateString(
@@ -84,18 +82,18 @@ export function init(db, user, userData) {
       : "N/A";
 
     return `
-            <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-                <h4>${data.nomeCompleto}</h4>
-                <p><strong>Status:</strong> ${
-                  tipo === "plantao"
-                    ? "Em Atendimento (Plantão)"
-                    : "Aguardando Info Horários (PB)"
-                }</p>
-                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-                 <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-                <button class="action-button">${acaoLabel}</button>
-            </div>
-        `;
+              <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
+                  <h4>${data.nomeCompleto}</h4>
+                  <p><strong>Status:</strong> ${
+                    tipo === "plantao"
+                      ? "Em Atendimento (Plantão)"
+                      : "Aguardando Info Horários (PB)"
+                  }</p>
+                  <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+                   <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+                  <button class="action-button">${acaoLabel}</button>
+              </div>
+          `;
   }
 
   function adicionarEventListeners() {
@@ -112,8 +110,6 @@ export function init(db, user, userData) {
             .doc(pacienteId)
             .get();
 
-          // ===== ALTERAÇÃO APLICADA AQUI =====
-          // Corrigido de docSnap.exists() para docSnap.exists
           if (!docSnap.exists) {
             alert("Paciente não encontrado!");
             return;
@@ -129,6 +125,7 @@ export function init(db, user, userData) {
       });
   }
 
+  // ===== FUNÇÃO ATUALIZADA =====
   function abrirModalEncerramento(pacienteId, data) {
     const form = document.getElementById("encerramento-form");
     form.reset();
@@ -136,31 +133,68 @@ export function init(db, user, userData) {
     document.getElementById("disponibilidade-atual").textContent =
       data.disponibilidadeGeral?.join(", ") || "Não informada";
 
-    const pagRadio = form.querySelectorAll(
-      'input[name="pagamento-contribuicao"]'
-    );
-    pagRadio.forEach(
-      (radio) =>
-        (radio.onchange = () => {
-          document
-            .getElementById("motivo-nao-pagamento-container")
-            .classList.toggle("hidden", radio.value !== "nao");
-          document.getElementById("motivo-nao-pagamento").required =
-            radio.value === "nao";
-        })
+    // Lógica para o select de pagamento
+    const pagamentoSelect = form.querySelector("#pagamento-contribuicao");
+    pagamentoSelect.onchange = () => {
+      document
+        .getElementById("motivo-nao-pagamento-container")
+        .classList.toggle("hidden", pagamentoSelect.value !== "nao");
+      document.getElementById("motivo-nao-pagamento").required =
+        pagamentoSelect.value === "nao";
+    };
+
+    // Lógica para o select de disponibilidade
+    const dispSelect = form.querySelector("#manter-disponibilidade");
+    dispSelect.onchange = () => {
+      document
+        .getElementById("nova-disponibilidade-container")
+        .classList.toggle("hidden", dispSelect.value !== "nao");
+      // Adicionar aqui a lógica para carregar o HTML de disponibilidade se necessário
+    };
+
+    // Lógica para os checkboxes de encaminhamento
+    const encaminhamentoCheckboxes = form.querySelectorAll(
+      'input[name="encaminhamento"]'
     );
 
-    const dispRadio = form.querySelectorAll(
-      'input[name="manter-disponibilidade"]'
-    );
-    dispRadio.forEach(
-      (radio) =>
-        (radio.onchange = () => {
-          document
-            .getElementById("nova-disponibilidade-container")
-            .classList.toggle("hidden", radio.value !== "nao");
-        })
-    );
+    // Garante que todos os checkboxes comecem habilitados
+    encaminhamentoCheckboxes.forEach((cb) => {
+      if (!cb.closest("label").classList.contains("disabled")) {
+        cb.disabled = false;
+        cb.parentElement.classList.remove("disabled");
+      }
+    });
+
+    encaminhamentoCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        const altaChecked = form.querySelector('input[value="Alta"]').checked;
+        const desistenciaChecked = form.querySelector(
+          'input[value="Desistência"]'
+        ).checked;
+
+        if (altaChecked || desistenciaChecked) {
+          // Se Alta ou Desistência estiver marcado, desmarca e desabilita os outros
+          encaminhamentoCheckboxes.forEach((cb) => {
+            if (cb.value !== "Alta" && cb.value !== "Desistência") {
+              cb.checked = false;
+              cb.disabled = true;
+              if (!cb.closest("label").classList.contains("disabled")) {
+                // Não adiciona a classe se já for inativo
+                cb.parentElement.classList.add("disabled");
+              }
+            }
+          });
+        } else {
+          // Se nenhum dos dois estiver marcado, habilita todos
+          encaminhamentoCheckboxes.forEach((cb) => {
+            if (!cb.closest("label").classList.contains("disabled")) {
+              cb.disabled = false;
+              cb.parentElement.classList.remove("disabled");
+            }
+          });
+        }
+      });
+    });
 
     encerramentoModal.style.display = "block";
   }
@@ -193,6 +227,7 @@ export function init(db, user, userData) {
     horariosPbModal.style.display = "block";
   }
 
+  // ===== EVENT LISTENER DO SUBMIT ATUALIZADO =====
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (e) => {
@@ -202,18 +237,29 @@ export function init(db, user, userData) {
       saveButton.disabled = true;
 
       const pacienteId = document.getElementById("paciente-id-modal").value;
+
+      // Coleta os valores de todos os checkboxes que estão marcados
+      const encaminhamentosSelecionados = Array.from(
+        form.querySelectorAll('input[name="encaminhamento"]:checked')
+      ).map((cb) => cb.value);
+
+      // Validação para garantir que pelo menos uma opção foi marcada
+      if (encaminhamentosSelecionados.length === 0) {
+        alert("Por favor, selecione ao menos uma opção de encaminhamento.");
+        saveButton.disabled = false;
+        return;
+      }
+
       const updateData = {
         status: "encaminhar_para_pb",
         "plantaoInfo.encerramento": {
           responsavelId: user.uid,
           responsavelNome: userData.nome,
-          encaminhamento: form.querySelector("#encerramento-encaminhamento")
-            .value,
+          encaminhamento: encaminhamentosSelecionados, // Salva o array de valores
           dataEncerramento: form.querySelector("#data-encerramento").value,
           sessoesRealizadas: form.querySelector("#quantidade-sessoes").value,
-          pagamentoEfetuado: form.querySelector(
-            'input[name="pagamento-contribuicao"]:checked'
-          ).value,
+          pagamentoEfetuado: form.querySelector("#pagamento-contribuicao")
+            .value,
           motivoNaoPagamento: form.querySelector("#motivo-nao-pagamento").value,
           relato: form.querySelector("#relato-encerramento").value,
         },

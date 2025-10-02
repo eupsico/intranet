@@ -8,28 +8,29 @@
 <div id="encerramento-modal" class="modal">
     <div class="modal-content">
         <span class="close-button">&times;</span>
-        <h3>Encerrar Atendimento do Paciente</h3>
+        <h3>Encerrar Plantão</h3>
         <form id="encerramento-form">
             <input type="hidden" id="paciente-id-modal">
+            
             <div class="form-group">
                 <label for="encerramento-encaminhamento">Encaminhamento:</label>
-                <select id="encerramento-encaminhamento" required>
-                    <option value="">Selecione...</option>
-                    <option value="Alta">Alta</option>
-                    <option value="Desistência">Desistência</option>
-                    <option value="Atendimento Psicológico">Atendimento Psicológico</option>
-                    <option value="Atendimento Psicopedagógico">Atendimento Psicopedagógico</option>
-                    <option value="Atendimento com musicoterapeuta">Atendimento com musicoterapeuta</option>
-                    <option value="RAPS">RAPS</option>
-                    <option value="Grupo Questões de peso">Grupo Questões de peso</option>
-                    <option value="Grupo papo de adolescente" disabled>Grupo papo de adolescente (Inativo)</option>
-                    <option value="Grupo de apoio à família" disabled>Grupo de apoio à família (Inativo)</option>
-                    <option value="Grupo Funcional">Grupo Funcional</option>
-                    <option value="Grupo Envelhecimento Ativo">Grupo Envelhecimento Ativo</option>
-                    <option value="Grupo TransVivências" disabled>Grupo TransVivências (Inativo)</option>
-                    <option value="Grupo Reexista">Grupo Reexista</option>
-                </select>
+                <div id="encerramento-encaminhamento" class="checkbox-group">
+                    <label><input type="checkbox" name="encaminhamento" value="Alta"> Alta</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Desistência"> Desistência</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Atendimento Psicológico"> Atendimento Psicológico</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Atendimento Psicopedagógico"> Atendimento Psicopedagógico</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Atendimento com musicoterapeuta"> Atendimento com musicoterapeuta</label>
+                    <label><input type="checkbox" name="encaminhamento" value="RAPS"> RAPS</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Grupo Questões de peso"> Grupo Questões de peso</label>
+                    <label class="disabled"><input type="checkbox" name="encaminhamento" value="Grupo papo de adolescente" disabled> Grupo papo de adolescente (Inativo)</label>
+                    <label class="disabled"><input type="checkbox" name="encaminhamento" value="Grupo de apoio à família" disabled> Grupo de apoio à família (Inativo)</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Grupo Funcional"> Grupo Funcional</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Grupo Envelhecimento Ativo"> Grupo Envelhecimento Ativo</label>
+                    <label class="disabled"><input type="checkbox" name="encaminhamento" value="Grupo TransVivências" disabled> Grupo TransVivências (Inativo)</label>
+                    <label><input type="checkbox" name="encaminhamento" value="Grupo Reexista"> Grupo Reexista</label>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="data-encerramento">Data de encerramento/alta/desistência:</label>
                 <input type="date" id="data-encerramento" required>
@@ -38,24 +39,32 @@
                 <label for="quantidade-sessoes">Quantidade de sessões do plantão:</label>
                 <input type="number" id="quantidade-sessoes" required>
             </div>
+
             <div class="form-group">
-                <label>O paciente efetuou o pagamento da contribuição?</label>
-                <input type="radio" name="pagamento-contribuicao" value="sim" required> Sim
-                <input type="radio" name="pagamento-contribuicao" value="nao"> Não
+                <label for="pagamento-contribuicao">O paciente efetuou o pagamento da contribuição?</label>
+                <select id="pagamento-contribuicao" required>
+                    <option value="">Selecione...</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não</option>
+                </select>
             </div>
+
             <div id="motivo-nao-pagamento-container" class="form-group hidden">
                 <label for="motivo-nao-pagamento">Motivo do não pagamento:</label>
                 <textarea id="motivo-nao-pagamento" rows="3"></textarea>
             </div>
             <div class="form-group">
                 <label for="relato-encerramento">Breve relato (alta, desistência ou encaminhamento):</label>
-                <textarea id="relato-encerramento" rows="4" placeholder="Utilize esse campo para informar o que houve com o processo de plantão desse paciente. Em caso de desistência informar como se deu essa desistência. Alta ou encaminhamento faça o relato da queixa e motivo da alta ou encaminhamento." required></textarea>
+                <textarea id="relato-encerramento" rows="4" placeholder="Utilize esse campo para informar o que houve com o processo de plantão desse paciente..." required></textarea>
             </div>
             <div class="form-group">
                 <label>A disponibilidade de atendimento continua a mesma?</label>
                 <p id="disponibilidade-atual"></p>
-                <input type="radio" name="manter-disponibilidade" value="sim" required> Sim
-                <input type="radio" name="manter-disponibilidade" value="nao"> Não
+                <select id="manter-disponibilidade" required>
+                    <option value="">Selecione...</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não</option>
+                </select>
             </div>
             <div id="nova-disponibilidade-container" class="hidden">
                  </div>
