@@ -2,9 +2,8 @@ import { functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
 let db, user, userData;
-let currentAgendaConfig = null; // Armazena os dados da agenda que está sendo configurada
+let currentAgendaConfig = null;
 
-// Função de inicialização do módulo
 export function init(dbRef, userRef, userDataRef) {
   db = dbRef;
   user = userRef;
@@ -13,14 +12,12 @@ export function init(dbRef, userRef, userDataRef) {
   console.log("Módulo de Gestão de Agendas iniciado.");
   carregarDisponibilidades();
 
-  // Adiciona o listener de evento para o botão de salvar no modal
   const saveButton = document.getElementById("saveConfigButton");
   if (saveButton) {
     saveButton.addEventListener("click", salvarConfiguracaoAgenda);
   }
 }
 
-// Função para carregar e renderizar as disponibilidades
 async function carregarDisponibilidades() {
   const spinner = document.getElementById("loading-spinner");
   const table = document.getElementById("disponibilidades-table");
@@ -55,6 +52,8 @@ async function carregarDisponibilidades() {
     }
 
     let hasData = false;
+    // **CORREÇÃO APLICADA AQUI**
+    // Laços de repetição para navegar na estrutura de dados aninhada
     disponibilidadesPorAssistente.forEach((assistente) => {
       const {
         id: assistenteId,
@@ -63,58 +62,48 @@ async function carregarDisponibilidades() {
       } = assistente;
 
       if (disponibilidade && typeof disponibilidade === "object") {
-        // Itera sobre os meses (ex: "2025-10")
         for (const mes in disponibilidade) {
           const dadosDoMes = disponibilidade[mes];
-          // Itera sobre as modalidades (ex: "online", "presencial")
           for (const modalidade in dadosDoMes) {
             const dispo = dadosDoMes[modalidade];
 
-            // Verifica se existe uma lista de dias com pelo menos um dia
             if (dispo && Array.isArray(dispo.dias) && dispo.dias.length > 0) {
               hasData = true;
               const diasOrdenados = dispo.dias.sort();
               const diasFormatados = diasOrdenados
                 .map((dia) => {
-                  const [year, month, day] = dia.split("-");
+                  const [, month, day] = dia.split("-");
                   return `${day}/${month}`;
                 })
                 .join(", ");
 
               const row = `
-                                <tr>
-                                    <td>${
-                                      assistenteNome || "Nome não informado"
-                                    }</td>
-                                    <td>${mes || "N/A"}</td>
-                                    <td class="text-capitalize">${
-                                      modalidade || "N/A"
-                                    }</td>
-                                    <td class="text-wrap" style="max-width: 300px;">${diasFormatados}</td>
-                                    <td>${dispo.inicio || "N/A"} - ${
-                dispo.fim || "N/A"
-              }</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm config-btn" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#configurarAgendaModal"
-                                            data-assistente-id="${assistenteId}"
-                                            data-assistente-nome="${assistenteNome}"
-                                            data-mes="${mes}"
-                                            data-modalidade="${modalidade}"
-                                            data-dias='${JSON.stringify(
-                                              diasOrdenados
-                                            )}'>
-                                            <i class="fas fa-cog me-1"></i> Configurar
-                                        </button>
-                                    </td>
-                                </tr>`;
+                <tr>
+                  <td>${assistenteNome || "N/A"}</td>
+                  <td>${mes || "N/A"}</td>
+                  <td class="text-capitalize">${modalidade || "N/A"}</td>
+                  <td class="text-wrap" style="max-width: 300px;">${diasFormatados}</td>
+                  <td>${dispo.inicio || "N/A"} - ${dispo.fim || "N/A"}</td>
+                  <td>
+                    <button class="btn btn-primary btn-sm config-btn" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#configurarAgendaModal"
+                        data-assistente-id="${assistenteId}"
+                        data-assistente-nome="${assistenteNome}"
+                        data-mes="${mes}"
+                        data-modalidade="${modalidade}"
+                        data-dias='${JSON.stringify(diasOrdenados)}'>
+                        <i class="fas fa-cog me-1"></i> Configurar
+                    </button>
+                  </td>
+                </tr>`;
               tableBody.innerHTML += row;
             }
           }
         }
       }
     });
+    // Fim da correção
 
     if (hasData) {
       table.style.display = "table";
@@ -144,7 +133,6 @@ async function carregarDisponibilidades() {
   }
 }
 
-// Abre e popula o modal com os dados do dia a ser configurado
 function abrirModalConfiguracao(
   assistenteId,
   assistenteNome,
@@ -153,40 +141,41 @@ function abrirModalConfiguracao(
   dias
 ) {
   currentAgendaConfig = { assistenteId, mes, modalidade };
-
   const modalTitle = document.getElementById("configurarAgendaModalLabel");
   const modalContent = document.getElementById("agenda-config-content");
 
   modalTitle.textContent = `Configurar Agenda de ${assistenteNome} (${modalidade} - ${mes})`;
-
   let contentHTML = '<div class="row g-3">';
   dias.forEach((dia) => {
     const dataFormatada = new Date(dia + "T03:00:00").toLocaleDateString(
       "pt-BR",
-      { weekday: "long", day: "2-digit", month: "2-digit" }
+      {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+      }
     );
     contentHTML += `
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h6 class="card-title">${dataFormatada}</h6>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked>
-                            <label class="form-check-label" for="triagem-${dia}">Triagem</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao">
-                            <label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
+      <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+              <div class="card-body">
+                  <h6 class="card-title">${dataFormatada}</h6>
+                  <div class="form-check">
+                      <input class="form-check-input" type="radio" name="tipo-${dia}" id="triagem-${dia}" value="triagem" checked>
+                      <label class="form-check-label" for="triagem-${dia}">Triagem</label>
+                  </div>
+                  <div class="form-check">
+                      <input class="form-check-input" type="radio" name="tipo-${dia}" id="reavaliacao-${dia}" value="reavaliacao">
+                      <label class="form-check-label" for="reavaliacao-${dia}">Reavaliação</label>
+                  </div>
+              </div>
+          </div>
+      </div>`;
   });
   contentHTML += "</div>";
   modalContent.innerHTML = contentHTML;
 }
 
-// Salva a configuração feita no modal
 async function salvarConfiguracaoAgenda() {
   const button = document.getElementById("saveConfigButton");
   button.disabled = true;
@@ -213,14 +202,12 @@ async function salvarConfiguracaoAgenda() {
   try {
     const definirTipoAgenda = httpsCallable(functions, "definirTipoAgenda");
     const result = await definirTipoAgenda(payload);
-
     const modalEl = document.getElementById("configurarAgendaModal");
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
     if (modalInstance) {
       modalInstance.hide();
     }
-
-    alert(result.data.message); // Usando alert simples para feedback
+    alert(result.data.message);
   } catch (error) {
     console.error("Erro ao definir tipo da agenda:", error);
     alert(`Não foi possível salvar a configuração: ${error.message}`);
