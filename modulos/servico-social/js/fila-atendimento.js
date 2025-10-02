@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/fila-atendimento.js
-// Versão: 2.3 (com logsSistema)
+// Versão: 2.4 (com logsSistema e debug de inscricaoId)
 
 export function init(db, user, userData, inscricaoId) {
   const patientDetailsContainer = document.getElementById(
@@ -24,6 +24,9 @@ export function init(db, user, userData, inscricaoId) {
       ? inscricaoId.id
       : String(inscricaoId);
 
+  console.log("🔍 inscricaoId recebido:", inscricaoId);
+  console.log("🔍 inscricaoId normalizado:", inscricaoIdStr);
+
   let trilhaDocRef = null;
 
   // --- FUNÇÃO DE FORMATAÇÃO DE MOEDA ---
@@ -40,10 +43,9 @@ export function init(db, user, userData, inscricaoId) {
     input.value = value;
   }
 
-  valorContribuicaoInput.addEventListener("input", () =>
+  valorContribuicaoInput?.addEventListener("input", () =>
     formatarMoeda(valorContribuicaoInput)
   );
-
   // --- FUNÇÃO PARA FORMATAR A DISPONIBILIDADE ESPECÍFICA ---
   function formatarDisponibilidadeEspecifica(disponibilidade) {
     if (!disponibilidade || disponibilidade.length === 0) {
@@ -74,20 +76,27 @@ export function init(db, user, userData, inscricaoId) {
     }
     return html || "Nenhum horário detalhado informado.";
   }
+
   // --- FUNÇÃO PARA CARREGAR DADOS ---
   async function carregarDadosPaciente() {
     patientDetailsContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
+      console.log(
+        "🔎 Executando query em trilhaPaciente com inscricaoId:",
+        inscricaoIdStr
+      );
+
       const trilhaQuery = await db
         .collection("trilhaPaciente")
         .where("inscricaoId", "==", inscricaoIdStr)
         .limit(1)
         .get();
 
+      console.log("📊 Documentos retornados:", trilhaQuery.size);
+
       if (trilhaQuery.empty) {
         throw new Error("Paciente não encontrado na trilha.");
       }
-
       const trilhaDoc = trilhaQuery.docs[0];
       trilhaDocRef = trilhaDoc.ref;
       const data = trilhaDoc.data();
@@ -164,25 +173,39 @@ export function init(db, user, userData, inscricaoId) {
       document.getElementById("queixa-paciente").value = data.motivoBusca || "";
 
       // Log de sucesso
-      await db.collection("logsSistema").add({
-        timestamp: new Date(),
-        usuario: user?.uid || "desconhecido",
-        acao: "Carregar dados paciente",
-        status: "success",
-        detalhes: { inscricaoId: inscricaoIdStr, paciente: data.nomeCompleto },
-      });
+      try {
+        await db.collection("logsSistema").add({
+          timestamp: new Date(),
+          usuario: user?.uid || "desconhecido",
+          acao: "Carregar dados paciente",
+          status: "success",
+          detalhes: {
+            inscricaoId: inscricaoIdStr,
+            paciente: data.nomeCompleto,
+          },
+        });
+      } catch (logErr) {
+        console.warn(
+          "⚠️ Não foi possível gravar log em logsSistema:",
+          logErr.message
+        );
+      }
     } catch (error) {
       console.error("Erro ao carregar dados do paciente:", error);
       patientDetailsContainer.innerHTML = `<p class="error-message">Erro ao carregar dados: ${error.message}</p>`;
 
       // Log de erro
-      await db.collection("logsSistema").add({
-        timestamp: new Date(),
-        usuario: user?.uid || "desconhecido",
-        acao: "Carregar dados paciente",
-        status: "error",
-        detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
-      });
+      try {
+        await db.collection("logsSistema").add({
+          timestamp: new Date(),
+          usuario: user?.uid || "desconhecido",
+          acao: "Carregar dados paciente",
+          status: "error",
+          detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
+        });
+      } catch (logErr) {
+        console.warn("⚠️ Não foi possível gravar log de erro:", logErr.message);
+      }
     }
   }
   // --- LISTENERS DE EVENTOS ---
@@ -198,9 +221,12 @@ export function init(db, user, userData, inscricaoId) {
         : "none";
 
     valorContribuicaoInput.required = selectedValue === "encaminhado";
-    criteriosTextarea.required = selectedValue === "encaminhado";
-    document.getElementById("observacao-geral").required =
-      selectedValue === "nao_realizada" || selectedValue === "desistiu";
+    if (criteriosTextarea)
+      criteriosTextarea.required = selectedValue === "encaminhado";
+    const obs = document.getElementById("observacao-geral");
+    if (obs)
+      obs.required =
+        selectedValue === "nao_realizada" || selectedValue === "desistiu";
   });
 
   btnVoltar.addEventListener(
@@ -211,32 +237,6 @@ export function init(db, user, userData, inscricaoId) {
   // --- LÓGICA DE SALVAMENTO ---
   triagemForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    // Validações manuais
-    if (statusSelect.value === "encaminhado") {
-      if (
-        !valorContribuicaoInput.value ||
-        !document.getElementById("criterios-valor").value.trim()
-      ) {
-        alert(
-          'Os campos "Valor da contribuição" e "Critérios" são obrigatórios.'
-        );
-        return;
-      }
-    } else if (
-      statusSelect.value === "nao_realizada" ||
-      statusSelect.value === "desistiu"
-    ) {
-      if (!document.getElementById("observacao-geral").value.trim()) {
-        alert('O campo "Observação" é obrigatório para este status.');
-        return;
-      }
-    }
-    console.log("🔍 inscricaoId recebido:", inscricaoId, typeof inscricaoId);
-    console.log("🔍 inscricaoId normalizado:", inscricaoIdStr);
-    const saveButton = triagemForm.querySelector('button[type="submit"]');
-    saveButton.disabled = true;
-    saveButton.textContent = "Salvando...";
 
     try {
       if (!trilhaDocRef)
@@ -253,62 +253,73 @@ export function init(db, user, userData, inscricaoId) {
           ...dadosParaSalvar,
           status: "encaminhar_para_plantao",
           valorContribuicao: valorContribuicaoInput.value,
-          criteriosValor: document.getElementById("criterios-valor").value,
-          modalidadeAtendimento: document.getElementById(
-            "modalidade-atendimento"
-          ).value,
+          criteriosValor:
+            document.getElementById("criterios-valor")?.value || "",
+          modalidadeAtendimento:
+            document.getElementById("modalidade-atendimento")?.value || "",
           preferenciaAtendimento:
-            document.getElementById("preferencia-genero").value,
-          queixaPrincipal: document.getElementById("queixa-paciente").value,
+            document.getElementById("preferencia-genero")?.value || "",
+          queixaPrincipal:
+            document.getElementById("queixa-paciente")?.value || "",
         };
       } else if (status === "desistiu") {
         dadosParaSalvar = {
           ...dadosParaSalvar,
           status: "desistencia",
           desistenciaMotivo: `Desistiu na etapa de triagem. Motivo: ${
-            document.getElementById("observacao-geral").value
+            document.getElementById("observacao-geral")?.value || ""
           }`,
         };
       } else {
         dadosParaSalvar.statusTriagem = status;
         dadosParaSalvar.observacoesTriagem =
-          document.getElementById("observacao-geral").value;
+          document.getElementById("observacao-geral")?.value || "";
       }
 
       await trilhaDocRef.update(dadosParaSalvar);
 
       // Log de sucesso
-      await db.collection("logsSistema").add({
-        timestamp: new Date(),
-        usuario: user?.uid || "desconhecido",
-        acao: "Salvar triagem",
-        status: "success",
-        detalhes: {
-          inscricaoId: inscricaoIdStr,
-          status,
-          dados: dadosParaSalvar,
-        },
-      });
+      try {
+        await db.collection("logsSistema").add({
+          timestamp: new Date(),
+          usuario: user?.uid || "desconhecido",
+          acao: "Salvar triagem",
+          status: "success",
+          detalhes: {
+            inscricaoId: inscricaoIdStr,
+            status,
+            dados: dadosParaSalvar,
+          },
+        });
+      } catch (logErr) {
+        console.warn(
+          "⚠️ Não foi possível gravar log de salvamento:",
+          logErr.message
+        );
+      }
 
-      alert(
-        "Ficha de triagem salva com sucesso! O paciente foi atualizado na Trilha do Paciente."
-      );
+      alert("Ficha de triagem salva com sucesso!");
       window.location.hash = "#agendamentos-triagem";
     } catch (error) {
       console.error("Erro ao salvar a triagem:", error);
 
       // Log de erro
-      await db.collection("logsSistema").add({
-        timestamp: new Date(),
-        usuario: user?.uid || "desconhecido",
-        acao: "Salvar triagem",
-        status: "error",
-        detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
-      });
+      try {
+        await db.collection("logsSistema").add({
+          timestamp: new Date(),
+          usuario: user?.uid || "desconhecido",
+          acao: "Salvar triagem",
+          status: "error",
+          detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
+        });
+      } catch (logErr) {
+        console.warn(
+          "⚠️ Não foi possível gravar log de erro no salvamento:",
+          logErr.message
+        );
+      }
 
       alert("Ocorreu um erro ao salvar a ficha. Tente novamente.");
-      saveButton.disabled = false;
-      saveButton.textContent = "Salvar Triagem";
     }
   });
 
