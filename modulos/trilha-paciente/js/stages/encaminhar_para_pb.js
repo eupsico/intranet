@@ -75,7 +75,6 @@ export function setupEncaminharParaPb(db, functions, trilhaId, data) {
                     <textarea id="observacoes-pb" rows="3"></textarea>
                 </div>
             </div>
-            <button type="submit" class="save-btn">Salvar</button>
         </form>
     `;
   const element = document.createElement("div");
