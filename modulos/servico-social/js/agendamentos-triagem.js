@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/agendamentos-triagem.js
-// Versão: 2.0 (Integração com a Trilha do Paciente)
+// Versão: 2.1 (CORRIGIDO)
 
 export function init(db, user, userData) {
   const tableBody = document.getElementById("triagem-table-body");
@@ -12,13 +12,11 @@ export function init(db, user, userData) {
       '<tr><td colspan="10"><div class="loading-spinner"></div></td></tr>';
 
     try {
-      // **CORREÇÃO PRINCIPAL**: A consulta agora busca na coleção 'trilhaPaciente'.
       let query = db
         .collection("trilhaPaciente")
         .where("status", "==", "triagem_agendada")
         .orderBy("lastUpdate", "asc");
 
-      // Se o usuário não for admin, filtra para ver apenas os agendamentos atribuídos a ele.
       if (!isAdmin) {
         query = query.where("assistenteSocialNome", "==", userData.nome);
       }
@@ -38,6 +36,9 @@ export function init(db, user, userData) {
           ? new Date(data.dataTriagem + "T03:00:00").toLocaleDateString("pt-BR")
           : "Não definida";
 
+        // ===== ALTERAÇÃO APLICADA AQUI =====
+        // Trocamos 'data.inscricaoId' por 'doc.id'.
+        // Agora, passamos o ID do próprio documento da trilha, que é mais direto.
         rowsHtml += `
                     <tr>
                         <td>${data.tipoTriagem || "N/A"}</td>
@@ -49,7 +50,7 @@ export function init(db, user, userData) {
                         <td>${data.assistenteSocialNome || "N/A"}</td>
                         <td>
                             <a href="#fila-atendimento/${
-                              data.inscricaoId
+                              doc.id
                             }" class="action-button">
                                 Preencher Ficha
                             </a>
