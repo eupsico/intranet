@@ -129,8 +129,26 @@ export function init(db, user, userData) {
     const form = document.getElementById("encerramento-form");
     form.reset();
     document.getElementById("paciente-id-modal").value = pacienteId;
+    // --- CORREÇÃO DA EXIBIÇÃO DE DISPONIBILIDADE ---
+    const disponibilidadeEspecifica = data.disponibilidadeEspecifica || [];
+    const textoDisponibilidade =
+      disponibilidadeEspecifica.length > 0
+        ? disponibilidadeEspecifica
+            .map((item) => {
+              // Formata "manha-semana_8:00" para "Manhã (Semana) 8:00"
+              const [periodo, hora] = item.split("_");
+              const periodoFormatado =
+                periodo.replace("-", " (").replace("-", " ") + ")";
+              return `${
+                periodoFormatado.charAt(0).toUpperCase() +
+                periodoFormatado.slice(1)
+              } ${hora}`;
+            })
+            .join(", ")
+        : "Nenhuma disponibilidade específica informada.";
+
     document.getElementById("disponibilidade-atual").textContent =
-      data.disponibilidadeGeral?.join(", ") || "Não informada";
+      textoDisponibilidade;
 
     const pagamentoSelect = form.querySelector("#pagamento-contribuicao");
     pagamentoSelect.onchange = () => {
@@ -150,47 +168,62 @@ export function init(db, user, userData) {
       'input[value="Desistência"]'
     );
 
+    // Função para reabilitar todos os checkboxes (exceto os permanentemente desabilitados)
     const reabilitarTodos = () => {
       encaminhamentoCheckboxes.forEach((cb) => {
+        // A classe 'disabled' no HTML indica um campo que nunca deve ser habilitado
         if (!cb.closest("label").classList.contains("disabled")) {
           cb.disabled = false;
-          cb.parentElement.classList.remove("disabled");
+          cb.parentElement.classList.remove("disabled-temp"); // Usamos uma classe temporária
         }
       });
     };
-
-    reabilitarTodos(); // Garante que todos comecem habilitados
 
     encaminhamentoCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
         const altaChecked = altaCheckbox.checked;
         const desistenciaChecked = desistenciaCheckbox.checked;
 
+        // 1. Sempre reabilita todos os campos no início de cada mudança
         reabilitarTodos();
 
+        // 2. Se 'Alta' estiver marcada, desabilita os outros
         if (altaChecked) {
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Alta") {
               cb.checked = false;
               cb.disabled = true;
               if (!cb.closest("label").classList.contains("disabled")) {
-                cb.parentElement.classList.add("disabled");
+                cb.parentElement.classList.add("disabled-temp");
               }
             }
           });
-        } else if (desistenciaChecked) {
+        }
+        // 3. Se 'Desistência' estiver marcada, desabilita os outros
+        else if (desistenciaChecked) {
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Desistência") {
               cb.checked = false;
               cb.disabled = true;
               if (!cb.closest("label").classList.contains("disabled")) {
-                cb.parentElement.classList.add("disabled");
+                cb.parentElement.classList.add("disabled-temp");
               }
             }
           });
         }
       });
     });
+
+    // Adicione este CSS para estilizar os campos desabilitados temporariamente
+    const style = document.createElement("style");
+    style.textContent = `
+    .checkbox-group label.disabled-temp {
+        color: #999;
+        cursor: not-allowed;
+        text-decoration: line-through;
+    }
+`;
+    document.head.appendChild(style);
 
     // --- LÓGICA DA DISPONIBILIDADE ---
     const dispSelect = form.querySelector("#manter-disponibilidade");

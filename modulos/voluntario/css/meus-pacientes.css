@@ -117,4 +117,12 @@
     cursor: not-allowed;
     text-decoration: line-through;
 }
+/* Oculta o cabeçalho do modal de encerramento */
+#encerramento-modal .modal-header {
+    display: none;
+}
 
+/* Opcional: Remove o padding superior do corpo do modal para compensar a remoção do header */
+#encerramento-modal .modal-body {
+    padding-top: 15px;
+}
