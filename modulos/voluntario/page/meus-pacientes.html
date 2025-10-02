@@ -1,0 +1,147 @@
+<div class="container">
+    <h2>Meus Pacientes</h2>
+    <div id="meus-pacientes-container">
+        <p>Carregando pacientes...</p>
+    </div>
+</div>
+
+<div id="encerramento-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h3>Encerrar Atendimento do Paciente</h3>
+        <form id="encerramento-form">
+            <input type="hidden" id="paciente-id-modal">
+            <div class="form-group">
+                <label for="encerramento-encaminhamento">Encaminhamento:</label>
+                <select id="encerramento-encaminhamento" required>
+                    <option value="">Selecione...</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Desistência">Desistência</option>
+                    <option value="Atendimento Psicológico">Atendimento Psicológico</option>
+                    <option value="Atendimento Psicopedagógico">Atendimento Psicopedagógico</option>
+                    <option value="Atendimento com musicoterapeuta">Atendimento com musicoterapeuta</option>
+                    <option value="RAPS">RAPS</option>
+                    <option value="Grupo Questões de peso">Grupo Questões de peso</option>
+                    <option value="Grupo papo de adolescente" disabled>Grupo papo de adolescente (Inativo)</option>
+                    <option value="Grupo de apoio à família" disabled>Grupo de apoio à família (Inativo)</option>
+                    <option value="Grupo Funcional">Grupo Funcional</option>
+                    <option value="Grupo Envelhecimento Ativo">Grupo Envelhecimento Ativo</option>
+                    <option value="Grupo TransVivências" disabled>Grupo TransVivências (Inativo)</option>
+                    <option value="Grupo Reexista">Grupo Reexista</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="data-encerramento">Data de encerramento/alta/desistência:</label>
+                <input type="date" id="data-encerramento" required>
+            </div>
+            <div class="form-group">
+                <label for="quantidade-sessoes">Quantidade de sessões do plantão:</label>
+                <input type="number" id="quantidade-sessoes" required>
+            </div>
+            <div class="form-group">
+                <label>O paciente efetuou o pagamento da contribuição?</label>
+                <input type="radio" name="pagamento-contribuicao" value="sim" required> Sim
+                <input type="radio" name="pagamento-contribuicao" value="nao"> Não
+            </div>
+            <div id="motivo-nao-pagamento-container" class="form-group hidden">
+                <label for="motivo-nao-pagamento">Motivo do não pagamento:</label>
+                <textarea id="motivo-nao-pagamento" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="relato-encerramento">Breve relato (alta, desistência ou encaminhamento):</label>
+                <textarea id="relato-encerramento" rows="4" placeholder="Utilize esse campo para informar o que houve com o processo de plantão desse paciente. Em caso de desistência informar como se deu essa desistência. Alta ou encaminhamento faça o relato da queixa e motivo da alta ou encaminhamento." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>A disponibilidade de atendimento continua a mesma?</label>
+                <p id="disponibilidade-atual"></p>
+                <input type="radio" name="manter-disponibilidade" value="sim" required> Sim
+                <input type="radio" name="manter-disponibilidade" value="nao"> Não
+            </div>
+            <div id="nova-disponibilidade-container" class="hidden">
+                 </div>
+            <button type="submit" class="save-btn">Salvar Encerramento</button>
+        </form>
+    </div>
+</div>
+
+<div id="horarios-pb-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h3>Informar Horários - Psicoterapia Breve (PB)</h3>
+        <form id="horarios-pb-form">
+            <input type="hidden" id="paciente-id-horarios-modal">
+             <div class="form-group">
+                <label>Paciente iniciou o atendimento em PB?</label>
+                <input type="radio" name="iniciou-pb" value="sim" required> Sim
+                <input type="radio" name="iniciou-pb" value="nao"> Não
+            </div>
+            <div id="motivo-nao-inicio-pb-container" class="form-group hidden">
+                <label for="motivo-nao-inicio-pb">Motivo:</label>
+                <textarea id="motivo-nao-inicio-pb" rows="3"></textarea>
+            </div>
+            <div id="form-continuacao-pb" class="hidden">
+                <div class="form-group">
+                    <label for="dia-semana-pb">Dia da semana:</label>
+                    <select id="dia-semana-pb" required>
+                        <option value="Segunda-feira">Segunda-feira</option>
+                        <option value="Terça-feira">Terça-feira</option>
+                        <option value="Quarta-feira">Quarta-feira</option>
+                        <option value="Quinta-feira">Quinta-feira</option>
+                        <option value="Sexta-feira">Sexta-feira</option>
+                        <option value="Sábado">Sábado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="horario-pb">Horário da sessão:</label>
+                     <select id="horario-pb" required>
+                        <option value="07:00">07:00</option><option value="08:00">08:00</option>
+                        <option value="09:00">09:00</option><option value="10:00">10:00</option>
+                        <option value="11:00">11:00</option><option value="12:00">12:00</option>
+                        <option value="13:00">13:00</option><option value="14:00">14:00</option>
+                        <option value="15:00">15:00</option><option value="16:00">16:00</option>
+                        <option value="17:00">17:00</option><option value="18:00">18:00</option>
+                        <option value="19:00">19:00</option><option value="20:00">20:00</option>
+                        <option value="21:00">21:00</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipo-atendimento-pb-voluntario">Tipo de atendimento:</label>
+                    <select id="tipo-atendimento-pb-voluntario" required>
+                        <option value="On-line">On-line</option>
+                        <option value="Presencial">Presencial</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Será preciso alterar ou incluir o novo horário na grade?</label>
+                    <input type="radio" name="alterar-grade" value="sim" required> Sim
+                    <input type="radio" name="alterar-grade" value="nao"> Não
+                </div>
+                <div class="form-group">
+                    <label for="frequencia-atendimento-pb">O atendimento será realizado:</label>
+                    <select id="frequencia-atendimento-pb" required>
+                        <option value="Semanal">Semanal</option>
+                        <option value="Quinzenal">Quinzenal</option>
+                        <option value="Mensal">Mensal</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sala-atendimento-pb">Sala de atendimento:</label>
+                    <select id="sala-atendimento-pb" required>
+                         <option value="Online">Online (para atendimentos online)</option>
+                        <option value="Christian Dunker">Christian Dunker</option>
+                        <option value="Leila Tardivo">Leila Tardivo</option>
+                        <option value="Leonardo Abrahão">Leonardo Abrahão</option>
+                        <option value="Karina Okajima Fukumitsu">Karina Okajima Fukumitsu</option>
+                        <option value="Maria Célia Malaquias (Grupo)">Maria Célia Malaquias (Grupo)</option>
+                        <option value="Maria Júlia Kovacs">Maria Júlia Kovacs</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="data-inicio-sessoes">Informe a partir de qual data deve ser criada as novas sessões:</label>
+                    <input type="date" id="data-inicio-sessoes" required>
+                </div>
+            </div>
+            <button type="submit" class="save-btn">Salvar Horários</button>
+        </form>
+    </div>
+</div>
