@@ -1,7 +1,35 @@
 // Arquivo: assets/js/app.js
-// Versão: 2.0.3 (Adicionado carregamento do módulo Trilha do Paciente)
+// Versão: 2.1 (CORRIGIDO E ATUALIZADO)
 
 import { auth, db, functions } from "./firebase-init.js";
+
+// Função exportada para uso em outros módulos
+export async function carregarProfissionais(db, funcao, selectElement) {
+  if (!selectElement) return;
+  try {
+    const snapshot = await db
+      .collection("usuarios")
+      .where("funcoes", "array-contains", funcao)
+      .orderBy("nome")
+      .get();
+    if (snapshot.empty) {
+      selectElement.innerHTML =
+        '<option value="">Nenhum profissional encontrado</option>';
+      return;
+    }
+    let options = '<option value="">Selecione um profissional</option>';
+    snapshot.forEach((doc) => {
+      options += `<option value="${doc.id}">${doc.data().nome}</option>`;
+    });
+    selectElement.innerHTML = options;
+  } catch (error) {
+    console.error(
+      `Erro ao carregar profissionais com a função ${funcao}:`,
+      error
+    );
+    selectElement.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
 
 document.addEventListener("DOMContentLoaded", function () {
   const loginView = document.getElementById("login-view");
@@ -57,15 +85,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const pathPrefix = isSubPage ? "../../../" : "./";
 
     loginView.innerHTML = `
-              <div class="login-container">
-                  <div class="login-card">
-                      <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
-                      <h2>Intranet EuPsico</h2>
-                      <p>${message}</p>
-                    <p class="login-email-info" style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
-                    <button id="login-button" class="action-button login-button">Login EuPsico</button>
-                  </div>
-              </div>`;
+                    <div class="login-container">
+                        <div class="login-card">
+                            <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                            <h2>Intranet EuPsico</h2>
+                            <p>${message}</p>
+                          <p class="login-email-info" style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
+                          <button id="login-button" class="action-button login-button">Login EuPsico</button>
+                        </div>
+                    </div>`;
     document.getElementById("login-button").addEventListener("click", () => {
       loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -133,9 +161,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                      <h1>Painel Financeiro</h1>
-                      <p>Gestão de pagamentos, cobranças e relatórios.</p>
-                  `;
+                            <h1>Painel Financeiro</h1>
+                            <p>Gestão de pagamentos, cobranças e relatórios.</p>
+                        `;
       }
       try {
         const financeModule = await import(
@@ -155,9 +183,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                      <h2>Painel Administrativo</h2>
-                      <p>Gestão de configurações e dados dos usuários.</p>
-                  `;
+                            <h2>Painel Administrativo</h2>
+                            <p>Gestão de configurações e dados dos usuários.</p>
+                        `;
       }
       try {
         const administrativoModule = await import(
@@ -177,9 +205,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                      <h2>Trilha do Paciente</h2>
-                      <p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>
-                  `;
+                            <h2>Trilha do Paciente</h2>
+                            <p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>
+                        `;
       }
       try {
         const trilhaModule = await import(
@@ -199,9 +227,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                      <h2>Serviço Social</h2>
-                      <p>Gestão de triagens, reavaliações.</p>
-                  `;
+                            <h2>Serviço Social</h2>
+                            <p>Gestão de triagens, reavaliações.</p>
+                        `;
       }
       try {
         const socialModule = await import(
@@ -219,9 +247,9 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = `
-                      <h2>Recursos Humanos</h2>
-                      <p>Gestão de profissionais, vagas e comunicados.</p>
-                  `;
+                            <h2>Recursos Humanos</h2>
+                            <p>Gestão de profissionais, vagas e comunicados.</p>
+                        `;
       }
       try {
         const rhModule = await import("../../modulos/rh/js/rh-painel.js");
@@ -324,7 +352,9 @@ document.addEventListener("DOMContentLoaded", function () {
       supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
       servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
       trilha_paciente: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>`,
+      meus_pacientes: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
     };
+
     const areas = {
       portal_voluntario: {
         titulo: "Portal do Voluntário",
@@ -332,6 +362,14 @@ document.addEventListener("DOMContentLoaded", function () {
         url: "./modulos/voluntario/page/portal-voluntario.html",
         roles: ["todos"],
         icon: icons.intranet,
+      },
+      // ===== ALTERAÇÃO APLICADA AQUI =====
+      meus_pacientes: {
+        titulo: "Meus Pacientes",
+        descricao: "Acesse e gerencie os pacientes designados a você.",
+        url: "./modulos/voluntario/page/portal-voluntario.html#meus-pacientes", // Aponta para a nova view
+        roles: ["atendimento"], // Somente para quem tem a função de atendimento
+        icon: icons.meus_pacientes,
       },
       administrativo: {
         titulo: "Administrativo",
@@ -345,7 +383,7 @@ document.addEventListener("DOMContentLoaded", function () {
         descricao:
           "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
         url: "./modulos/trilha-paciente/page/trilha-paciente-painel.html",
-        roles: ["admin", "assistente"], // Permitido para admin e serviço social
+        roles: ["admin", "assistente"],
         icon: icons.trilha_paciente,
       },
       captacao: {
@@ -394,6 +432,7 @@ document.addEventListener("DOMContentLoaded", function () {
         icon: icons.servico_social,
       },
     };
+
     const userFuncoes = (userData.funcoes || []).map((f) => f.toLowerCase());
     let modulesToShow = [];
     for (const key in areas) {
