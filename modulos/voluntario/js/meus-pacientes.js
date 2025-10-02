@@ -30,7 +30,7 @@ export function init(db, user, userData) {
     });
   }
 
-  // --- LÓGICA PRINCIPAL DE CARREGAMENTO DE PACIENTES ---
+  // --- FUNÇÃO PARA CARREGAR PACIENTES DO PROFISSIONAL ---
   async function carregarMeusPacientes(userId) {
     const container = document.getElementById("pacientes-cards-container");
     const loading = document.getElementById("loading-pacientes");
@@ -43,6 +43,9 @@ export function init(db, user, userData) {
     emptyState.style.display = "none";
 
     try {
+      // 🔍 Loga o userId recebido
+      console.log("🔑 userId recebido:", userId);
+
       // Consulta 1: Pacientes de PLANTÃO sob responsabilidade do profissional.
       const queryPlantao = db
         .collection("trilhaPaciente")
@@ -50,7 +53,6 @@ export function init(db, user, userData) {
         .where("status", "==", "em_atendimento_plantao");
 
       // Consulta 2: Pacientes de PB sob responsabilidade do profissional.
-      // Busca todos que não estão nos status finais de 'alta' ou 'desistencia'.
       const queryPb = db
         .collection("trilhaPaciente")
         .where("pbInfo.profissionalId", "==", userId)
@@ -60,6 +62,17 @@ export function init(db, user, userData) {
         queryPlantao.get(),
         queryPb.get(),
       ]);
+
+      // 🔍 Logs de debug
+      console.log("📊 Plantão encontrados:", snapshotPlantao.size);
+      snapshotPlantao.forEach((doc) => {
+        console.log("   → Plantão doc:", doc.id, "status:", doc.data().status);
+      });
+
+      console.log("📊 PB encontrados:", snapshotPb.size);
+      snapshotPb.forEach((doc) => {
+        console.log("   → PB doc:", doc.id, "status:", doc.data().status);
+      });
 
       const pacientesMap = new Map();
 
@@ -87,11 +100,12 @@ export function init(db, user, userData) {
         adicionarEventListeners(); // Adiciona os listeners aos novos cards
       }
     } catch (error) {
-      console.error("Erro ao carregar seus pacientes:", error);
+      console.error("❌ Erro ao carregar seus pacientes:", error);
       emptyState.style.display = "block";
       emptyState.innerHTML =
         "<p>Ocorreu um erro ao carregar os pacientes. Tente novamente mais tarde.</p>";
     }
+
     loading.style.display = "none";
   }
 
@@ -143,8 +157,6 @@ export function init(db, user, userData) {
       </div>
     `;
   }
-
-  // --- EVENT LISTENERS PARA OS BOTÕES DOS CARDS ---
   function adicionarEventListeners() {
     document
       .querySelectorAll(".paciente-card .action-button")
@@ -177,8 +189,6 @@ export function init(db, user, userData) {
         });
       });
   }
-
-  // --- LÓGICA DO MODAL DE ENCERRAMENTO (Plantão) ---
   function abrirModalEncerramento(pacienteId, data) {
     const form = document.getElementById("encerramento-form");
     form.reset();
@@ -189,8 +199,6 @@ export function init(db, user, userData) {
 
     encerramentoModal.style.display = "block";
   }
-
-  // --- LÓGICA DO MODAL DE HORÁRIOS (PB) ---
   function abrirModalHorariosPb(pacienteId, data) {
     const form = document.getElementById("horarios-pb-form");
     form.reset();
@@ -201,10 +209,6 @@ export function init(db, user, userData) {
 
     horariosPbModal.style.display = "block";
   }
-
-  // --- LÓGICA DE SUBMISSÃO DOS FORMULÁRIOS ---
-
-  // Listener do formulário de ENCERRAMENTO DE PLANTÃO
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (e) => {
@@ -311,7 +315,6 @@ export function init(db, user, userData) {
       }
     });
 
-  // --- INICIALIZAÇÃO ---
   setupModalControls();
   carregarMeusPacientes(user.uid);
 }
