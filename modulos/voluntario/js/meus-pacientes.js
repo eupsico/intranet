@@ -27,46 +27,78 @@ export function init(db, user, userData) {
     if (event.target == horariosPbModal) horariosPbModal.style.display = "none";
   });
 
-  async function carregarMeusPacientes() {
-    container.innerHTML = '<div class="loading-spinner"></div>';
+  async function carregarMeusPacientes(userId) {
+    const container = document.getElementById("pacientes-cards-container");
+    const loading = document.getElementById("loading-pacientes");
+    const emptyState = document.getElementById("empty-state-pacientes");
+
+    if (!container || !loading || !emptyState) return;
+
+    loading.style.display = "block";
+    container.innerHTML = "";
+    emptyState.style.display = "none";
+
     try {
+      // CORREÇÃO: A lista de status foi expandida para incluir todo o fluxo de PB.
+      // O paciente só sairá da lista se o status for 'alta' ou 'desistencia'.
+      const statusesRelevantes = [
+        "em_atendimento_plantao",
+        "agendamento_confirmado_plantao",
+        "aguardando_info_horarios",
+        "cadastrar_horario_psicomanager",
+        "em_atendimento_pb",
+      ];
+
+      // Consulta 1: Pacientes onde o profissional é o responsável pelo Plantão
       const queryPlantao = db
         .collection("trilhaPaciente")
-        .where("status", "==", "em_atendimento_plantao")
-        .where("plantaoInfo.profissionalId", "==", user.uid);
+        .where("plantaoInfo.profissionalId", "==", userId)
+        .where("status", "in", statusesRelevantes);
 
+      // Consulta 2: Pacientes onde o profissional é o responsável pela PB
       const queryPb = db
         .collection("trilhaPaciente")
-        .where("status", "==", "aguardando_info_horarios")
-        .where("pbInfo.profissionalId", "==", user.uid);
+        .where("pbInfo.profissionalId", "==", userId)
+        .where("status", "in", statusesRelevantes);
 
-      const [plantaoSnapshot, pbSnapshot] = await Promise.all([
+      const [snapshotPlantao, snapshotPb] = await Promise.all([
         queryPlantao.get(),
         queryPb.get(),
       ]);
 
-      if (plantaoSnapshot.empty && pbSnapshot.empty) {
-        container.innerHTML =
-          "<p>Você não tem pacientes designados no momento.</p>";
-        return;
+      const pacientesMap = new Map();
+
+      snapshotPlantao.forEach((doc) => {
+        if (!pacientesMap.has(doc.id)) {
+          pacientesMap.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+
+      snapshotPb.forEach((doc) => {
+        if (!pacientesMap.has(doc.id)) {
+          pacientesMap.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+
+      const pacientes = Array.from(pacientesMap.values());
+
+      if (pacientes.length === 0) {
+        emptyState.style.display = "block";
+      } else {
+        pacientes.sort((a, b) =>
+          (a.nomeCompleto || "").localeCompare(b.nomeCompleto || "")
+        );
+        pacientes.forEach((data) => {
+          const card = criarCardPaciente(data.id, data);
+          container.appendChild(card);
+        });
       }
-
-      let html = "";
-      plantaoSnapshot.forEach((doc) => {
-        const data = doc.data();
-        html += criarCardPaciente(doc.id, data, "plantao");
-      });
-      pbSnapshot.forEach((doc) => {
-        const data = doc.data();
-        html += criarCardPaciente(doc.id, data, "pb");
-      });
-
-      container.innerHTML = html;
-      adicionarEventListeners();
     } catch (error) {
-      console.error("Erro ao carregar pacientes:", error);
+      console.error("Erro ao carregar seus pacientes:", error);
       container.innerHTML =
-        '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
+        "<p>Ocorreu um erro ao carregar os pacientes. Tente novamente mais tarde.</p>";
+    } finally {
+      loading.style.display = "none";
     }
   }
 
