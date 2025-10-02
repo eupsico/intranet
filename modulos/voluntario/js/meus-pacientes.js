@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.6 (CORRIGIDO E ATUALIZADO com a lógica de checkboxes)
+// Versão: 3.7 (Lógica dos checkboxes de encaminhamento corrigida)
 
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
@@ -26,6 +26,7 @@ export function init(db, user, userData) {
   };
 
   async function carregarMeusPacientes() {
+    // ... (esta função continua a mesma)
     container.innerHTML = '<div class="loading-spinner"></div>';
     try {
       const queryPlantao = db
@@ -71,6 +72,7 @@ export function init(db, user, userData) {
   }
 
   function criarCardPaciente(id, data, tipo) {
+    // ... (esta função continua a mesma)
     const info = tipo === "plantao" ? data.plantaoInfo : data.pbInfo;
     const acaoLabel =
       tipo === "plantao" ? "Encerrar Plantão" : "Informar Horários (PB)";
@@ -82,21 +84,22 @@ export function init(db, user, userData) {
       : "N/A";
 
     return `
-              <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-                  <h4>${data.nomeCompleto}</h4>
-                  <p><strong>Status:</strong> ${
-                    tipo === "plantao"
-                      ? "Em Atendimento (Plantão)"
-                      : "Aguardando Info Horários (PB)"
-                  }</p>
-                  <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-                   <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-                  <button class="action-button">${acaoLabel}</button>
-              </div>
-          `;
+      <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
+          <h4>${data.nomeCompleto}</h4>
+          <p><strong>Status:</strong> ${
+            tipo === "plantao"
+              ? "Em Atendimento (Plantão)"
+              : "Aguardando Info Horários (PB)"
+          }</p>
+          <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+           <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+          <button class="action-button">${acaoLabel}</button>
+      </div>
+    `;
   }
 
   function adicionarEventListeners() {
+    // ... (esta função continua a mesma)
     document
       .querySelectorAll(".paciente-card .action-button")
       .forEach((button) => {
@@ -133,7 +136,6 @@ export function init(db, user, userData) {
     document.getElementById("disponibilidade-atual").textContent =
       data.disponibilidadeGeral?.join(", ") || "Não informada";
 
-    // Lógica para o select de pagamento
     const pagamentoSelect = form.querySelector("#pagamento-contribuicao");
     pagamentoSelect.onchange = () => {
       document
@@ -143,63 +145,76 @@ export function init(db, user, userData) {
         pagamentoSelect.value === "nao";
     };
 
-    // Lógica para o select de disponibilidade
     const dispSelect = form.querySelector("#manter-disponibilidade");
     dispSelect.onchange = () => {
       document
         .getElementById("nova-disponibilidade-container")
         .classList.toggle("hidden", dispSelect.value !== "nao");
-      // Adicionar aqui a lógica para carregar o HTML de disponibilidade se necessário
     };
 
-    // Lógica para os checkboxes de encaminhamento
+    // --- INÍCIO DA LÓGICA CORRIGIDA ---
     const encaminhamentoCheckboxes = form.querySelectorAll(
       'input[name="encaminhamento"]'
     );
+    const altaCheckbox = form.querySelector('input[value="Alta"]');
+    const desistenciaCheckbox = form.querySelector(
+      'input[value="Desistência"]'
+    );
 
-    // Garante que todos os checkboxes comecem habilitados
-    encaminhamentoCheckboxes.forEach((cb) => {
-      if (!cb.closest("label").classList.contains("disabled")) {
-        cb.disabled = false;
-        cb.parentElement.classList.remove("disabled");
-      }
-    });
+    const reabilitarTodos = () => {
+      encaminhamentoCheckboxes.forEach((cb) => {
+        // Não mexe nos que são inativos por padrão
+        if (!cb.closest("label").classList.contains("disabled")) {
+          cb.disabled = false;
+          cb.parentElement.classList.remove("disabled");
+        }
+      });
+    };
+
+    // Garante que todos comecem habilitados ao abrir o modal
+    reabilitarTodos();
 
     encaminhamentoCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
-        const altaChecked = form.querySelector('input[value="Alta"]').checked;
-        const desistenciaChecked = form.querySelector(
-          'input[value="Desistência"]'
-        ).checked;
+        const altaChecked = altaCheckbox.checked;
+        const desistenciaChecked = desistenciaCheckbox.checked;
 
-        if (altaChecked || desistenciaChecked) {
-          // Se Alta ou Desistência estiver marcado, desmarca e desabilita os outros
+        // Reabilita todos antes de aplicar a nova regra
+        reabilitarTodos();
+
+        if (altaChecked) {
+          // Desabilita todos, exceto 'Alta'
           encaminhamentoCheckboxes.forEach((cb) => {
-            if (cb.value !== "Alta" && cb.value !== "Desistência") {
+            if (cb.value !== "Alta") {
               cb.checked = false;
               cb.disabled = true;
               if (!cb.closest("label").classList.contains("disabled")) {
-                // Não adiciona a classe se já for inativo
                 cb.parentElement.classList.add("disabled");
               }
             }
           });
-        } else {
-          // Se nenhum dos dois estiver marcado, habilita todos
+        } else if (desistenciaChecked) {
+          // Desabilita todos, exceto 'Desistência'
           encaminhamentoCheckboxes.forEach((cb) => {
-            if (!cb.closest("label").classList.contains("disabled")) {
-              cb.disabled = false;
-              cb.parentElement.classList.remove("disabled");
+            if (cb.value !== "Desistência") {
+              cb.checked = false;
+              cb.disabled = true;
+              if (!cb.closest("label").classList.contains("disabled")) {
+                cb.parentElement.classList.add("disabled");
+              }
             }
           });
         }
+        // Se nenhum dos dois estiver marcado, a função reabilitarTodos() no início já fez o trabalho.
       });
     });
+    // --- FIM DA LÓGICA CORRIGIDA ---
 
     encerramentoModal.style.display = "block";
   }
 
   function abrirModalHorariosPb(pacienteId, data) {
+    // ... (esta função continua a mesma)
     const form = document.getElementById("horarios-pb-form");
     form.reset();
     document.getElementById("paciente-id-horarios-modal").value = pacienteId;
@@ -227,10 +242,10 @@ export function init(db, user, userData) {
     horariosPbModal.style.display = "block";
   }
 
-  // ===== EVENT LISTENER DO SUBMIT ATUALIZADO =====
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (e) => {
+      // ... (esta função continua a mesma)
       e.preventDefault();
       const form = e.target;
       const saveButton = form.querySelector(".save-btn");
@@ -238,12 +253,10 @@ export function init(db, user, userData) {
 
       const pacienteId = document.getElementById("paciente-id-modal").value;
 
-      // Coleta os valores de todos os checkboxes que estão marcados
       const encaminhamentosSelecionados = Array.from(
         form.querySelectorAll('input[name="encaminhamento"]:checked')
       ).map((cb) => cb.value);
 
-      // Validação para garantir que pelo menos uma opção foi marcada
       if (encaminhamentosSelecionados.length === 0) {
         alert("Por favor, selecione ao menos uma opção de encaminhamento.");
         saveButton.disabled = false;
@@ -255,7 +268,7 @@ export function init(db, user, userData) {
         "plantaoInfo.encerramento": {
           responsavelId: user.uid,
           responsavelNome: userData.nome,
-          encaminhamento: encaminhamentosSelecionados, // Salva o array de valores
+          encaminhamento: encaminhamentosSelecionados,
           dataEncerramento: form.querySelector("#data-encerramento").value,
           sessoesRealizadas: form.querySelector("#quantidade-sessoes").value,
           pagamentoEfetuado: form.querySelector("#pagamento-contribuicao")
@@ -286,6 +299,7 @@ export function init(db, user, userData) {
   document
     .getElementById("horarios-pb-form")
     .addEventListener("submit", async (e) => {
+      // ... (esta função continua a mesma)
       e.preventDefault();
       const form = e.target;
       const saveButton = form.querySelector(".save-btn");
