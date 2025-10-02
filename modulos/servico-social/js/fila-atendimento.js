@@ -1,7 +1,8 @@
 // Arquivo: /modulos/servico-social/js/fila-atendimento.js
-// Versão: 2.4 (com logsSistema e debug de inscricaoId)
+// Versão: 2.2 (CORRIGIDO)
 
-export function init(db, user, userData, inscricaoId) {
+export function init(db, user, userData, trilhaId) {
+  // Renomeado para 'trilhaId' por clareza
   const patientDetailsContainer = document.getElementById(
     "patient-details-container"
   );
@@ -12,24 +13,15 @@ export function init(db, user, userData, inscricaoId) {
   const btnVoltar = document.getElementById("btn-voltar-lista");
   const valorContribuicaoInput = document.getElementById("valor-contribuicao");
 
-  if (!inscricaoId) {
+  if (!trilhaId) {
     patientDetailsContainer.innerHTML =
-      '<p class="error-message">ID da inscrição não fornecido na URL.</p>';
+      '<p class="error-message">ID do paciente não fornecido na URL.</p>';
     return;
   }
 
-  // 🔑 Normaliza inscricaoId para string
-  const inscricaoIdStr =
-    typeof inscricaoId === "object" && inscricaoId.id
-      ? inscricaoId.id
-      : String(inscricaoId);
-
-  console.log("🔍 inscricaoId recebido:", inscricaoId);
-  console.log("🔍 inscricaoId normalizado:", inscricaoIdStr);
-
   let trilhaDocRef = null;
 
-  // --- FUNÇÃO DE FORMATAÇÃO DE MOEDA ---
+  // --- FUNÇÕES AUXILIARES (sem alterações) ---
   function formatarMoeda(input) {
     let value = input.value.replace(/\D/g, "");
     if (value === "") {
@@ -42,30 +34,26 @@ export function init(db, user, userData, inscricaoId) {
     });
     input.value = value;
   }
-
-  valorContribuicaoInput?.addEventListener("input", () =>
+  valorContribuicaoInput.addEventListener("input", () =>
     formatarMoeda(valorContribuicaoInput)
   );
-  // --- FUNÇÃO PARA FORMATAR A DISPONIBILIDADE ESPECÍFICA ---
+
   function formatarDisponibilidadeEspecifica(disponibilidade) {
     if (!disponibilidade || disponibilidade.length === 0) {
       return "Nenhum horário detalhado informado.";
     }
-
     const dias = {
       "manha-semana": { label: "Manhã (Semana)", horarios: [] },
       "tarde-semana": { label: "Tarde (Semana)", horarios: [] },
       "noite-semana": { label: "Noite (Semana)", horarios: [] },
       "manha-sabado": { label: "Manhã (Sábado)", horarios: [] },
     };
-
     disponibilidade.forEach((item) => {
       const [periodo, hora] = item.split("_");
       if (dias[periodo]) {
         dias[periodo].horarios.push(hora);
       }
     });
-
     let html = "";
     for (const key in dias) {
       if (dias[key].horarios.length > 0) {
@@ -77,30 +65,28 @@ export function init(db, user, userData, inscricaoId) {
     return html || "Nenhum horário detalhado informado.";
   }
 
-  // --- FUNÇÃO PARA CARREGAR DADOS ---
+  // --- FUNÇÃO PARA CARREGAR DADOS (CORRIGIDA) ---
   async function carregarDadosPaciente() {
     patientDetailsContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
-      console.log(
-        "🔎 Executando query em trilhaPaciente com inscricaoId:",
-        inscricaoIdStr
-      );
-
-      const trilhaQuery = await db
+      // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
+      // Substituímos a consulta .where() por uma busca direta .doc().get().
+      // Isso é mais rápido e garante que estamos buscando pelo ID correto do documento.
+      const trilhaDoc = await db
         .collection("trilhaPaciente")
-        .where("inscricaoId", "==", inscricaoIdStr)
-        .limit(1)
+        .doc(trilhaId)
         .get();
 
-      console.log("📊 Documentos retornados:", trilhaQuery.size);
-
-      if (trilhaQuery.empty) {
-        throw new Error("Paciente não encontrado na trilha.");
+      if (!trilhaDoc.exists) {
+        throw new Error(
+          "Paciente não encontrado na trilha com o ID fornecido."
+        );
       }
-      const trilhaDoc = trilhaQuery.docs[0];
+
       trilhaDocRef = trilhaDoc.ref;
       const data = trilhaDoc.data();
 
+      // O restante da lógica para exibir os dados permanece o mesmo.
       const formatDate = (dateStr) =>
         dateStr
           ? new Date(dateStr + "T03:00:00").toLocaleDateString("pt-BR")
@@ -109,124 +95,86 @@ export function init(db, user, userData, inscricaoId) {
         arr && arr.length > 0 ? arr.join(", ") : "N/A";
 
       patientDetailsContainer.innerHTML = `
-        <div class="patient-info-group"><strong>Nome:</strong><p>${
-          data.nomeCompleto || "N/A"
-        }</p></div>
-        <div class="patient-info-group"><strong>CPF:</strong><p>${
-          data.cpf || "N/A"
-        }</p></div>
-        <div class="patient-info-group"><strong>Data de Nasc.:</strong><p>${formatDate(
-          data.dataNascimento
-        )}</p></div>
-        <div class="patient-info-group"><strong>Telefone:</strong><p>${
-          data.telefoneCelular || "N/A"
-        }</p></div>
-        <div class="patient-info-group"><strong>Email:</strong><p>${
-          data.email || "N/A"
-        }</p></div>
-        ${
-          data.responsavel?.nome
-            ? `
+          <div class="patient-info-group"><strong>Nome:</strong><p>${
+            data.nomeCompleto || "N/A"
+          }</p></div>
+          <div class="patient-info-group"><strong>CPF:</strong><p>${
+            data.cpf || "N/A"
+          }</p></div>
+          <div class="patient-info-group"><strong>Data de Nasc.:</strong><p>${formatDate(
+            data.dataNascimento
+          )}</p></div>
+          <div class="patient-info-group"><strong>Telefone:</strong><p>${
+            data.telefoneCelular || "N/A"
+          }</p></div>
+          <div class="patient-info-group"><strong>Email:</strong><p>${
+            data.email || "N/A"
+          }</p></div>
+          ${
+            data.responsavel?.nome
+              ? `
           <div class="patient-info-group"><strong>Responsável:</strong><p>${
             data.responsavel.nome
           }</p></div>
           <div class="patient-info-group"><strong>Contato Responsável:</strong><p>${
             data.responsavel.contato || "N/A"
-          }</p></div>
-        `
-            : ""
-        }
-        <hr>
-        <div class="patient-info-group"><strong>Endereço:</strong><p>${
-          data.rua || "N/A"
-        }, ${data.numeroCasa || "S/N"} - ${data.bairro || "N/A"}, ${
+          }</p></div>`
+              : ""
+          }
+          <hr>
+          <div class="patient-info-group"><strong>Endereço:</strong><p>${
+            data.rua || "N/A"
+          }, ${data.numeroCasa || "S/N"} - ${data.bairro || "N/A"}, ${
         data.cidade || "N/A"
       }</p></div>
-        <div class="patient-info-group"><strong>CEP:</strong><p>${
-          data.cep || "N/A"
-        }</p></div>
-        <hr>
-        <div class="patient-info-group"><strong>Renda Individual:</strong><p>${
-          data.rendaMensal || "N/A"
-        }</p></div>
-        <div class="patient-info-group"><strong>Renda Familiar:</strong><p>${
-          data.rendaFamiliar || "N/A"
-        }</p></div>
-        <div class="patient-info-group"><strong>Moradia:</strong><p>${
-          data.casaPropria || "N/A"
-        }</p></div>
-        <div class="patient-info-group"><strong>Pessoas na Moradia:</strong><p>${
-          data.pessoasMoradia || "N/A"
-        }</p></div>
-        <hr>
-        <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${formatArray(
-          data.disponibilidadeGeral
-        )}</p></div>
-        <div class="patient-info-group"><strong>Disponibilidade (Específica):</strong><p>${formatarDisponibilidadeEspecifica(
-          data.disponibilidadeEspecifica
-        )}</p></div>
-        <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
-          data.motivoBusca || "N/A"
-        }</p></div>
+          <div class="patient-info-group"><strong>CEP:</strong><p>${
+            data.cep || "N/A"
+          }</p></div>
+          <hr>
+          <div class="patient-info-group"><strong>Renda Individual:</strong><p>${
+            data.rendaMensal || "N/A"
+          }</p></div>
+          <div class="patient-info-group"><strong>Renda Familiar:</strong><p>${
+            data.rendaFamiliar || "N/A"
+          }</p></div>
+          <div class="patient-info-group"><strong>Moradia:</strong><p>${
+            data.casaPropria || "N/A"
+          }</p></div>
+          <div class="patient-info-group"><strong>Pessoas na Moradia:</strong><p>${
+            data.pessoasMoradia || "N/A"
+          }</p></div>
+          <hr>
+          <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${formatArray(
+            data.disponibilidadeGeral
+          )}</p></div>
+          <div class="patient-info-group"><strong>Disponibilidade (Específica):</strong><p>${formatarDisponibilidadeEspecifica(
+            data.disponibilidadeEspecifica
+          )}</p></div>
+          <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
+            data.motivoBusca || "N/A"
+          }</p></div>
       `;
-
       document.getElementById("queixa-paciente").value = data.motivoBusca || "";
-
-      // Log de sucesso
-      try {
-        await db.collection("logsSistema").add({
-          timestamp: new Date(),
-          usuario: user?.uid || "desconhecido",
-          acao: "Carregar dados paciente",
-          status: "success",
-          detalhes: {
-            inscricaoId: inscricaoIdStr,
-            paciente: data.nomeCompleto,
-          },
-        });
-      } catch (logErr) {
-        console.warn(
-          "⚠️ Não foi possível gravar log em logsSistema:",
-          logErr.message
-        );
-      }
     } catch (error) {
       console.error("Erro ao carregar dados do paciente:", error);
       patientDetailsContainer.innerHTML = `<p class="error-message">Erro ao carregar dados: ${error.message}</p>`;
-
-      // Log de erro
-      try {
-        await db.collection("logsSistema").add({
-          timestamp: new Date(),
-          usuario: user?.uid || "desconhecido",
-          acao: "Carregar dados paciente",
-          status: "error",
-          detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
-        });
-      } catch (logErr) {
-        console.warn("⚠️ Não foi possível gravar log de erro:", logErr.message);
-      }
     }
   }
-  // --- LISTENERS DE EVENTOS ---
+
+  // --- LISTENERS E LÓGICA DE SALVAMENTO (sem alterações) ---
   statusSelect.addEventListener("change", () => {
     const selectedValue = statusSelect.value;
     const criteriosTextarea = document.getElementById("criterios-valor");
-
     camposEncaminhado.style.display =
       selectedValue === "encaminhado" ? "block" : "none";
     camposObservacao.style.display =
       selectedValue === "nao_realizada" || selectedValue === "desistiu"
         ? "block"
         : "none";
-
     valorContribuicaoInput.required = selectedValue === "encaminhado";
-    if (criteriosTextarea)
-      criteriosTextarea.required = selectedValue === "encaminhado";
-    const obs = document.getElementById("observacao-geral");
-    if (obs)
-      obs.required =
-        selectedValue === "nao_realizada" || selectedValue === "desistiu";
+    criteriosTextarea.required = selectedValue === "encaminhado";
+    document.getElementById("observacao-geral").required =
+      selectedValue === "nao_realizada" || selectedValue === "desistiu";
   });
 
   btnVoltar.addEventListener(
@@ -234,95 +182,76 @@ export function init(db, user, userData, inscricaoId) {
     () => (window.location.hash = "#agendamentos-triagem")
   );
 
-  // --- LÓGICA DE SALVAMENTO ---
   triagemForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
+    if (statusSelect.value === "encaminhado") {
+      if (
+        !valorContribuicaoInput.value ||
+        !document.getElementById("criterios-valor").value.trim()
+      ) {
+        alert(
+          'Os campos "Valor da contribuição" e "Critérios" são obrigatórios.'
+        );
+        return;
+      }
+    } else if (
+      statusSelect.value === "nao_realizada" ||
+      statusSelect.value === "desistiu"
+    ) {
+      if (!document.getElementById("observacao-geral").value.trim()) {
+        alert('O campo "Observação" é obrigatório para este status.');
+        return;
+      }
+    }
+    const saveButton = triagemForm.querySelector('button[type="submit"]');
+    saveButton.disabled = true;
+    saveButton.textContent = "Salvando...";
     try {
       if (!trilhaDocRef)
         throw new Error("Referência do documento não encontrada.");
-
       const status = statusSelect.value;
       let dadosParaSalvar = {
         lastUpdate: new Date(),
         assistenteSocialTriagem: { uid: user.uid, nome: userData.nome },
       };
-
       if (status === "encaminhado") {
         dadosParaSalvar = {
           ...dadosParaSalvar,
           status: "encaminhar_para_plantao",
           valorContribuicao: valorContribuicaoInput.value,
-          criteriosValor:
-            document.getElementById("criterios-valor")?.value || "",
-          modalidadeAtendimento:
-            document.getElementById("modalidade-atendimento")?.value || "",
+          criteriosValor: document.getElementById("criterios-valor").value,
+          modalidadeAtendimento: document.getElementById(
+            "modalidade-atendimento"
+          ).value,
           preferenciaAtendimento:
-            document.getElementById("preferencia-genero")?.value || "",
-          queixaPrincipal:
-            document.getElementById("queixa-paciente")?.value || "",
+            document.getElementById("preferencia-genero").value,
+          queixaPrincipal: document.getElementById("queixa-paciente").value,
         };
       } else if (status === "desistiu") {
         dadosParaSalvar = {
           ...dadosParaSalvar,
           status: "desistencia",
           desistenciaMotivo: `Desistiu na etapa de triagem. Motivo: ${
-            document.getElementById("observacao-geral")?.value || ""
+            document.getElementById("observacao-geral").value
           }`,
         };
       } else {
         dadosParaSalvar.statusTriagem = status;
         dadosParaSalvar.observacoesTriagem =
-          document.getElementById("observacao-geral")?.value || "";
+          document.getElementById("observacao-geral").value;
       }
-
       await trilhaDocRef.update(dadosParaSalvar);
-
-      // Log de sucesso
-      try {
-        await db.collection("logsSistema").add({
-          timestamp: new Date(),
-          usuario: user?.uid || "desconhecido",
-          acao: "Salvar triagem",
-          status: "success",
-          detalhes: {
-            inscricaoId: inscricaoIdStr,
-            status,
-            dados: dadosParaSalvar,
-          },
-        });
-      } catch (logErr) {
-        console.warn(
-          "⚠️ Não foi possível gravar log de salvamento:",
-          logErr.message
-        );
-      }
-
-      alert("Ficha de triagem salva com sucesso!");
+      alert(
+        "Ficha de triagem salva com sucesso! O paciente foi atualizado na Trilha do Paciente."
+      );
       window.location.hash = "#agendamentos-triagem";
     } catch (error) {
       console.error("Erro ao salvar a triagem:", error);
-
-      // Log de erro
-      try {
-        await db.collection("logsSistema").add({
-          timestamp: new Date(),
-          usuario: user?.uid || "desconhecido",
-          acao: "Salvar triagem",
-          status: "error",
-          detalhes: { inscricaoId: inscricaoIdStr, mensagem: error.message },
-        });
-      } catch (logErr) {
-        console.warn(
-          "⚠️ Não foi possível gravar log de erro no salvamento:",
-          logErr.message
-        );
-      }
-
       alert("Ocorreu um erro ao salvar a ficha. Tente novamente.");
+      saveButton.disabled = false;
+      saveButton.textContent = "Salvar Triagem";
     }
   });
 
-  // --- CHAMADA INICIAL ---
   carregarDadosPaciente();
 }
