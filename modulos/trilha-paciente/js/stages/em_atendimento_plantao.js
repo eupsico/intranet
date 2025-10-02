@@ -53,9 +53,8 @@ export async function render(cardId, cardTitle) {
         <p><strong>Contribuição:</strong> R$ ${
           data.valorContribuicao || "0,00"
         }</p>
-        <hr>
-        <p><strong>Link para preencher após o plantão:</strong></p>
-        <p><a href="${linkFormulario}" target="_blank">Acessar Portal do Voluntário</a></p>
+
+        
     </div>
     <p class="description-box" style="margin-top: 20px;">
         Esta etapa é de responsabilidade do profissional de atendimento. 
