@@ -9,7 +9,7 @@ export function init(dbRef, userRef, userDataRef) {
   user = userRef;
   userData = userDataRef;
 
-  console.log("Módulo de Gestão de Agendas iniciado.");
+  console.log("🚀 Módulo de Gestão de Agendas iniciado.");
   carregarDisponibilidades();
 
   const saveButton = document.getElementById("saveConfigButton");
@@ -38,7 +38,7 @@ async function carregarDisponibilidades() {
     const disponibilidadesPorAssistente = result.data;
 
     console.log(
-      "Dados recebidos da Cloud Function:",
+      "📦 Dados recebidos da Cloud Function:",
       JSON.stringify(disponibilidadesPorAssistente, null, 2)
     );
 
@@ -52,8 +52,7 @@ async function carregarDisponibilidades() {
     }
 
     let hasData = false;
-    // **CORREÇÃO APLICADA AQUI**
-    // Laços de repetição para navegar na estrutura de dados aninhada
+
     disponibilidadesPorAssistente.forEach((assistente) => {
       const {
         id: assistenteId,
@@ -97,25 +96,32 @@ async function carregarDisponibilidades() {
                     </button>
                   </td>
                 </tr>`;
-              tableBody.innerHTML += row;
+              tableBody.insertAdjacentHTML("beforeend", row);
             }
           }
         }
       }
     });
-    // Fim da correção
 
     if (hasData) {
       table.style.display = "table";
       document.querySelectorAll(".config-btn").forEach((button) => {
         button.addEventListener("click", (event) => {
           const data = event.currentTarget.dataset;
+          let dias = [];
+          try {
+            dias = JSON.parse(data.dias);
+          } catch (e) {
+            console.error("❌ Erro ao interpretar dias:", e);
+            alert("Erro ao abrir configuração. Dias inválidos.");
+            return;
+          }
           abrirModalConfiguracao(
             data.assistenteId,
             data.assistenteNome,
             data.mes,
             data.modalidade,
-            JSON.parse(data.dias)
+            dias
           );
         });
       });
@@ -123,7 +129,7 @@ async function carregarDisponibilidades() {
       noDataMessage.style.display = "block";
     }
   } catch (error) {
-    console.error("Erro detalhado ao carregar disponibilidades:", error);
+    console.error("❌ Erro detalhado ao carregar disponibilidades:", error);
     noDataMessage.textContent =
       "Erro ao carregar dados. Verifique o console para mais detalhes.";
     noDataMessage.classList.replace("alert-info", "alert-danger");
@@ -197,20 +203,38 @@ async function salvarConfiguracaoAgenda() {
     return;
   }
 
+  if (
+    !currentAgendaConfig.assistenteId ||
+    !currentAgendaConfig.mes ||
+    !currentAgendaConfig.modalidade
+  ) {
+    alert("Dados da configuração estão incompletos.");
+    button.disabled = false;
+    button.innerHTML = '<i class="fas fa-save me-2"></i>Salvar Configuração';
+    return;
+  }
+
   const payload = { ...currentAgendaConfig, dias: diasConfig };
+  console.log("📤 Payload enviado à função definirTipoAgenda:", payload);
 
   try {
     const definirTipoAgenda = httpsCallable(functions, "definirTipoAgenda");
     const result = await definirTipoAgenda(payload);
+
     const modalEl = document.getElementById("configurarAgendaModal");
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
     if (modalInstance) {
       modalInstance.hide();
     }
+
     alert(result.data.message);
   } catch (error) {
-    console.error("Erro ao definir tipo da agenda:", error);
-    alert(`Não foi possível salvar a configuração: ${error.message}`);
+    console.error("❌ Erro ao definir tipo da agenda:", error);
+    if (error.code && error.message) {
+      alert(`Erro (${error.code}): ${error.message}`);
+    } else {
+      alert("Erro inesperado ao salvar a configuração.");
+    }
   } finally {
     button.disabled = false;
     button.innerHTML = '<i class="fas fa-save me-2"></i>Salvar Configuração';
