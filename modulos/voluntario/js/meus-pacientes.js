@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.3 (CORRIGIDO E ATUALIZADO)
+// Versão: 3.4 (CORRIGIDO E ATUALIZADO)
 
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
@@ -8,6 +8,10 @@ export function init(db, user, userData) {
   const encerramentoModal = document.getElementById("encerramento-modal");
   const horariosPbModal = document.getElementById("horarios-pb-modal");
   const closeButtons = document.querySelectorAll(".modal .close-button");
+
+  // Garante que os modais comecem escondidos
+  if (encerramentoModal) encerramentoModal.style.display = "none";
+  if (horariosPbModal) horariosPbModal.style.display = "none";
 
   closeButtons.forEach(
     (btn) =>
@@ -40,13 +44,9 @@ export function init(db, user, userData) {
         queryPb.get(),
       ]);
 
-      // ===== ALTERAÇÃO APLICADA AQUI =====
       if (plantaoSnapshot.empty && pbSnapshot.empty) {
         container.innerHTML =
           "<p>Você não tem pacientes designados no momento.</p>";
-        // Esconde os modais se não houver pacientes, para evitar que apareçam vazios.
-        if (encerramentoModal) encerramentoModal.style.display = "none";
-        if (horariosPbModal) horariosPbModal.style.display = "none";
         return;
       }
 
@@ -63,9 +63,13 @@ export function init(db, user, userData) {
       container.innerHTML = html;
       adicionarEventListeners();
     } catch (error) {
+      // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
       console.error("Erro ao carregar pacientes:", error);
       container.innerHTML =
         '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
+      // Esconde explicitamente os modais em caso de erro
+      if (encerramentoModal) encerramentoModal.style.display = "none";
+      if (horariosPbModal) horariosPbModal.style.display = "none";
     }
   }
 
@@ -76,9 +80,8 @@ export function init(db, user, userData) {
         ? "Encerrar Atendimento (Plantão)"
         : "Informar Horários (PB)";
 
-    // Garante que 'info' não seja nulo antes de tentar acessar suas propriedades
     const dataEncaminhamento = info?.dataEncaminhamento
-      ? new Date(info.dataEncaminhamento + "T00:00:00").toLocaleDateString(
+      ? new Date(info.dataEncaminhamento + "T03:00:00").toLocaleDateString(
           "pt-BR"
         )
       : "N/A";
