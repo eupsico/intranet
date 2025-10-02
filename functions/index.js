@@ -2,8 +2,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const cors = require("cors")({ origin: true });
-
+// A inicialização do admin só precisa acontecer uma vez.
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -12,6 +11,12 @@ const db = admin.firestore();
 // -----------------------------
 // Função auxiliar para username
 // -----------------------------
+/**
+ * Gera um username único baseado no nome completo informado.
+ * @param {string} nomeCompleto - O nome completo do usuário.
+ * @return {Promise<string>} - Um username único.
+ * @throws {HttpsError} - Se não for possível gerar um username único.
+ */
 async function gerarUsernameUnico(nomeCompleto) {
   const partesNome = nomeCompleto
     .trim()
@@ -275,11 +280,25 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
       dispoSnapshot.forEach((doc) => {
         if (assistentesAtivosMap.has(doc.id)) {
           const assistenteInfo = assistentesAtivosMap.get(doc.id);
-          todasDisponibilidades.push({
-            id: doc.id,
-            nome: assistenteInfo.nome,
-            disponibilidade: doc.data().disponibilidade,
-          });
+          const dispoData = doc.data();
+
+          // Transforma a estrutura aninhada em uma lista plana para o frontend
+          if (dispoData.disponibilidade) {
+            for (const mes in dispoData.disponibilidade) {
+              for (const modalidade in dispoData.disponibilidade[mes]) {
+                const detalhes = dispoData.disponibilidade[mes][modalidade];
+                todasDisponibilidades.push({
+                  assistenteId: doc.id,
+                  assistenteNome: assistenteInfo.nome,
+                  mes: mes,
+                  modalidade: modalidade,
+                  dias: detalhes.dias || [],
+                  inicio: detalhes.inicio || "",
+                  fim: detalhes.fim || "",
+                });
+              }
+            }
+          }
         }
       });
       return todasDisponibilidades;
@@ -295,25 +314,25 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
 );
 
 // -------------------------------------------------------------------
-// (ADMIN) Processa a configuração do admin e cria a agenda pública.
+// (ADMIN) Salva a configuração de tipo de atendimento (Triagem/Reavaliação).
 // -------------------------------------------------------------------
-exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
+exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
+  console.log("Iniciando definirTipoAgenda...");
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
-
   const adminUid = request.auth.uid;
+  console.log(`Admin UID: ${adminUid}`);
+
   try {
-    const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
-    if (
-      !adminUserDoc.exists ||
-      !adminUserDoc.data().funcoes?.includes("admin")
-    ) {
+    const adminDoc = await db.collection("usuarios").doc(adminUid).get();
+    if (!adminDoc.exists || !adminDoc.data().funcoes?.includes("admin")) {
       throw new HttpsError(
         "permission-denied",
-        "Você não tem permissão para executar esta ação."
+        "Apenas administradores podem executar esta ação."
       );
     }
+    console.log("Validação de admin OK.");
 
     const { assistenteId, mes, modalidade, dias } = request.data;
     if (
@@ -325,147 +344,106 @@ exports.abrirAgendaServicoSocial = onCall({ cors: true }, async (request) => {
     ) {
       throw new HttpsError(
         "invalid-argument",
-        "Dados insuficientes para abrir a agenda."
+        "Dados insuficientes para configurar a agenda."
       );
     }
+    console.log("Dados recebidos:", {
+      assistenteId,
+      mes,
+      modalidade,
+      dias: dias.length,
+    });
 
-    const dispoDocRef = db
+    const dispoDoc = await db
       .collection("disponibilidadeAssistentes")
-      .doc(assistenteId);
-    const assistenteDocRef = db.collection("usuarios").doc(assistenteId);
-
-    const [dispoDoc, assistenteDoc] = await Promise.all([
-      dispoDocRef.get(),
-      assistenteDocRef.get(),
-    ]);
+      .doc(assistenteId)
+      .get();
+    const assistenteDoc = await db
+      .collection("usuarios")
+      .doc(assistenteId)
+      .get();
 
     if (!dispoDoc.exists() || !assistenteDoc.exists()) {
       throw new HttpsError(
         "not-found",
-        "Disponibilidade ou assistente não encontrada."
+        "Assistente ou sua disponibilidade não encontrada."
       );
     }
-    const assistenteNome = assistenteDoc.data().nome;
+    console.log("Documentos da assistente e disponibilidade encontrados.");
+
     const dispoData = dispoDoc.data();
-
-    if (!dispoData || !dispoData.disponibilidade) {
+    if (!dispoData || typeof dispoData.disponibilidade !== "object") {
       throw new HttpsError(
         "not-found",
-        `Nenhum registro de 'disponibilidade' encontrado para '${assistenteNome}'.`
-      );
-    }
-    if (!dispoData.disponibilidade[mes]) {
-      throw new HttpsError(
-        "not-found",
-        `Nenhuma configuração de disponibilidade para o mês '${mes}' encontrada para '${assistenteNome}'.`
-      );
-    }
-    if (!dispoData.disponibilidade[mes][modalidade]) {
-      throw new HttpsError(
-        "not-found",
-        `Nenhuma configuração para a modalidade '${modalidade}' no mês '${mes}' encontrada para '${assistenteNome}'.`
+        "Campo 'disponibilidade' ausente ou malformado no documento."
       );
     }
 
-    const disponibilidade = dispoData.disponibilidade[mes][modalidade];
+    const disponibilidadeOriginal =
+      dispoData.disponibilidade?.[mes]?.[modalidade];
 
     if (
-      !disponibilidade.inicio || // <-- Adicionado
-      !disponibilidade.fim || // <-- Adicionado
-      typeof disponibilidade.inicio !== "string" ||
-      typeof disponibilidade.fim !== "string" ||
-      !disponibilidade.inicio.includes(":") ||
-      !disponibilidade.fim.includes(":")
+      !disponibilidadeOriginal ||
+      !disponibilidadeOriginal.inicio ||
+      !disponibilidadeOriginal.fim
     ) {
-      console.error("Dados de disponibilidade malformados:", {
+      console.error("Dados de disponibilidade ausentes ou malformados para:", {
         assistenteId,
         mes,
         modalidade,
-        data: disponibilidade,
       });
       throw new HttpsError(
-        "invalid-argument",
-        `O formato do horário de início/fim para a assistente '${assistenteNome}' é inválido. Verifique o cadastro. O formato esperado é "HH:MM".`
+        "not-found",
+        `Horários de início/fim não encontrados para ${mes}/${modalidade}. Verifique o cadastro de disponibilidade.`
       );
     }
+    console.log("Horários de início/fim encontrados:", {
+      inicio: disponibilidadeOriginal.inicio,
+      fim: disponibilidadeOriginal.fim,
+    });
+
+    const assistenteNome = assistenteDoc.data().nome;
+    const { inicio, fim } = disponibilidadeOriginal;
 
     const batch = db.batch();
-    let slotsCriados = 0;
-
-    for (const configDia of dias) {
+    dias.forEach((configDia) => {
       const { dia, tipo } = configDia;
+      const docId = `${dia}_${assistenteId}`;
+      const docRef = db.collection("agendaConfigurada").doc(docId);
 
-      let hInicio;
-      let mInicio;
-      let hFim;
-      try {
-        [hInicio, mInicio] = disponibilidade.inicio.split(":").map(Number);
-        [hFim] = disponibilidade.fim.split(":").map(Number);
-        if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim)) {
-          throw new Error(
-            "Valor não numérico encontrado ao converter horário."
-          );
-        }
-      } catch (e) {
-        console.error("Não foi possível processar os horários:", {
-          inicio: disponibilidade.inicio,
-          fim: disponibilidade.fim,
-          error: e,
-        });
-        throw new HttpsError(
-          "invalid-argument",
-          `Os horários '${disponibilidade.inicio}' ou '${disponibilidade.fim}' não puderam ser processados. Verifique o formato.`
-        );
-      }
-
-      let hAtual = hInicio;
-      let mAtual = mInicio;
-
-      while (hAtual < hFim) {
-        const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
-          mAtual
-        ).padStart(2, "0")}`;
-        const slotData = {
+      batch.set(
+        docRef,
+        {
           assistenteId,
           assistenteNome,
           data: dia,
-          hora: horaSlot,
-          modalidade: modalidade.charAt(0).toUpperCase() + modalidade.slice(1),
           tipo,
-          agendado: false,
-          createdAt: new Date(),
-        };
-
-        const slotRef = db.collection("agendaServicoSocial").doc();
-        batch.set(slotRef, slotData);
-        slotsCriados++;
-
-        mAtual += 30;
-        if (mAtual >= 60) {
-          hAtual++;
-          mAtual = 0;
-        }
-      }
-    }
+          modalidade,
+          inicio,
+          fim,
+          configuradoPor: adminUid,
+          configuradoEm: new Date(),
+        },
+        { merge: true }
+      );
+    });
+    console.log(`Batch montado para ${dias.length} dias.`);
 
     await batch.commit();
+    console.log("Batch commitado com sucesso.");
 
     return {
       status: "success",
-      message: `Agenda aberta com sucesso! ${slotsCriados} horários para ${assistenteNome} foram disponibilizados.`,
+      message: `${dias.length} dia(s) configurado(s) com sucesso para ${assistenteNome}!`,
     };
   } catch (error) {
-    console.error(
-      "### ERRO GRAVE NA FUNÇÃO abrirAgendaServicoSocial ###:",
-      error
-    );
+    console.error("### ERRO GRAVE EM definirTipoAgenda ###:", error);
     if (error instanceof HttpsError) {
       throw error;
     }
     throw new HttpsError(
       "internal",
-      "Ocorreu um erro inesperado no servidor ao processar sua solicitação.",
-      { originalMessage: error.message }
+      "Ocorreu um erro interno ao salvar a configuração."
     );
   }
 });
@@ -483,7 +461,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     dataFim.setDate(hoje.getDate() + 7); // Busca horários para os próximos 7 dias
     const dataFimISO = dataFim.toISOString().split("T")[0];
 
-    // 1. Busca os dias configurados como 'triagem' para os próximos 7 dias
     const configSnapshot = await db
       .collection("agendaConfigurada")
       .where("tipo", "==", "triagem")
@@ -501,7 +478,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     }));
     const slotsPotenciais = [];
 
-    // 2. Gera todos os slots de 30 minutos para os dias configurados
     diasConfigurados.forEach((diaConfig) => {
       const [hInicio] = diaConfig.inicio.split(":").map(Number);
       const [hFim] = diaConfig.fim.split(":").map(Number);
@@ -514,7 +490,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
           mAtual
         ).padStart(2, "0")}`;
         slotsPotenciais.push({
-          id: `${diaConfig.data}_${horaSlot}_${diaConfig.assistenteId}`, // ID único para o slot
+          id: `${diaConfig.data}_${horaSlot}_${diaConfig.assistenteId}`,
           data: diaConfig.data,
           hora: horaSlot,
           modalidade: diaConfig.modalidade,
@@ -530,7 +506,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       }
     });
 
-    // 3. Busca os horários que JÁ foram agendados para remover da lista
     const agendadosSnapshot = await db
       .collection("agendamentos")
       .where("data", ">=", dataInicio)
@@ -545,7 +520,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       );
     });
 
-    // 4. Filtra e retorna apenas os slots que não foram agendados
     const horariosDisponiveis = slotsPotenciais.filter(
       (slot) => !idsAgendados.has(slot.id)
     );
@@ -558,7 +532,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 });
 
 // -------------------------------------------------------------------
-// (PÚBLICO) Agenda um horário de triagem, usando transação para garantir a vaga.
+// (PÚBLICO) Agenda um horário de triagem.
 // -------------------------------------------------------------------
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const { pacienteExistenteId, cpf, nome, telefone, horarioSelecionado } =
@@ -571,7 +545,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     );
   }
 
-  // O ID do slot (ex: "2025-10-20_09:30_assistenteUID") será o ID do nosso documento
   const agendamentoId = horarioSelecionado.id;
   const agendamentoRef = db.collection("agendamentos").doc(agendamentoId);
 
@@ -579,7 +552,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     await db.runTransaction(async (transaction) => {
       const agendamentoDoc = await transaction.get(agendamentoRef);
 
-      // Se o documento já existe, significa que o slot foi agendado.
       if (agendamentoDoc.exists) {
         throw new HttpsError(
           "already-exists",
@@ -587,22 +559,18 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
         );
       }
 
-      // Se não existe, podemos criar o agendamento
       const dadosAgendamento = {
-        // Dados do horário
         data: horarioSelecionado.data,
         hora: horarioSelecionado.hora,
         modalidade: horarioSelecionado.modalidade,
         assistenteId: horarioSelecionado.assistenteId,
         assistenteNome: horarioSelecionado.assistenteNome,
         tipo: "triagem",
-        // Dados do paciente
         paciente: { nome, cpf, telefone },
         agendadoEm: new Date(),
       };
       transaction.set(agendamentoRef, dadosAgendamento);
 
-      // Atualiza a Trilha do Paciente
       const dadosTrilha = {
         status: "triagem_agendada",
         dataTriagem: horarioSelecionado.data,
@@ -635,118 +603,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     throw new HttpsError(
       "internal",
       "Ocorreu um erro interno ao salvar o agendamento."
-    );
-  }
-});
-exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
-  // 1. Validação de permissão (sem alterações)
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
-  }
-  const adminDoc = await db.collection("usuarios").doc(request.auth.uid).get();
-  if (!adminDoc.exists || !adminDoc.data().funcoes?.includes("admin")) {
-    throw new HttpsError(
-      "permission-denied",
-      "Apenas administradores podem executar esta ação."
-    );
-  }
-
-  // 2. Validação dos dados recebidos (sem alterações)
-  const { assistenteId, mes, modalidade, dias } = request.data;
-  if (
-    !assistenteId ||
-    !mes ||
-    !modalidade ||
-    !Array.isArray(dias) ||
-    dias.length === 0
-  ) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Dados insuficientes para configurar a agenda."
-    );
-  }
-
-  try {
-    // 3. Buscar os horários de início e fim da disponibilidade original
-    const dispoDoc = await db
-      .collection("disponibilidadeAssistentes")
-      .doc(assistenteId)
-      .get();
-    const assistenteDoc = await db
-      .collection("usuarios")
-      .doc(assistenteId)
-      .get();
-
-    if (!dispoDoc.exists() || !assistenteDoc.exists()) {
-      throw new HttpsError(
-        "not-found",
-        "Assistente ou sua disponibilidade não encontrada."
-      );
-    }
-
-    const disponibilidadeOriginal =
-      dispoDoc.data().disponibilidade?.[mes]?.[modalidade];
-
-    // --- CORREÇÃO PRINCIPAL AQUI ---
-    // Verifica se a disponibilidade e os horários existem antes de prosseguir
-    if (
-      !disponibilidadeOriginal ||
-      !disponibilidadeOriginal.inicio ||
-      !disponibilidadeOriginal.fim
-    ) {
-      // Loga o erro no servidor para depuração futura
-      console.error("Dados de disponibilidade ausentes ou malformados para:", {
-        assistenteId,
-        mes,
-        modalidade,
-      });
-      // Retorna um erro claro para o frontend
-      throw new HttpsError(
-        "not-found",
-        `Horários de início/fim não encontrados para ${mes}/${modalidade}. Verifique o cadastro de disponibilidade desta assistente.`
-      );
-    }
-    // --- FIM DA CORREÇÃO ---
-
-    const assistenteNome = assistenteDoc.data().nome;
-    const { inicio, fim } = disponibilidadeOriginal;
-
-    // 4. Salvar cada dia configurado em um novo documento (sem alterações)
-    const batch = db.batch();
-    dias.forEach((configDia) => {
-      const { dia, tipo } = configDia;
-      const docId = `${dia}_${assistenteId}`;
-      const docRef = db.collection("agendaConfigurada").doc(docId);
-
-      batch.set(
-        docRef,
-        {
-          assistenteId,
-          assistenteNome,
-          data: dia,
-          tipo,
-          modalidade,
-          inicio,
-          fim,
-          configuradoPor: request.auth.uid,
-          configuradoEm: new Date(),
-        },
-        { merge: true }
-      );
-    });
-
-    await batch.commit();
-
-    return {
-      status: "success",
-      message: `${dias.length} dia(s) configurado(s) com sucesso para ${assistenteNome}!`,
-    };
-  } catch (error) {
-    console.error("Erro em definirTipoAgenda:", error);
-    if (error instanceof HttpsError) throw error; // Se já for um erro formatado, apenas o relança
-    throw new HttpsError(
-      "internal",
-      "Ocorreu um erro interno ao salvar a configuração."
     );
   }
 });
