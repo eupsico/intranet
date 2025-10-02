@@ -252,7 +252,12 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
       const dispoSnapshot = await db
         .collection("disponibilidadeAssistentes")
         .get();
-      if (dispoSnapshot.empty) return [];
+      if (dispoSnapshot.empty) {
+        console.log(
+          "Nenhum documento encontrado em 'disponibilidadeAssistentes'."
+        );
+        return [];
+      }
 
       const assistentesComDispoIds = dispoSnapshot.docs.map((doc) => doc.id);
       if (assistentesComDispoIds.length === 0) return [];
@@ -265,42 +270,35 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
           assistentesComDispoIds
         )
         .get();
-      const assistentesAtivosMap = new Map();
+      const assistentesMap = new Map();
       usuariosSnapshot.forEach((doc) => {
         const userData = doc.data();
+        // Lógica original de filtragem que você confirmou estar correta.
         if (
           userData.funcoes?.includes("servico_social") &&
           userData.inativo === false
         ) {
-          assistentesAtivosMap.set(doc.id, userData);
+          assistentesMap.set(doc.id, userData);
         }
       });
 
       const todasDisponibilidades = [];
       dispoSnapshot.forEach((doc) => {
-        if (assistentesAtivosMap.has(doc.id)) {
-          const assistenteInfo = assistentesAtivosMap.get(doc.id);
-          const dispoData = doc.data();
-
-          // Transforma a estrutura aninhada em uma lista plana para o frontend
-          if (dispoData.disponibilidade) {
-            for (const mes in dispoData.disponibilidade) {
-              for (const modalidade in dispoData.disponibilidade[mes]) {
-                const detalhes = dispoData.disponibilidade[mes][modalidade];
-                todasDisponibilidades.push({
-                  assistenteId: doc.id,
-                  assistenteNome: assistenteInfo.nome,
-                  mes: mes,
-                  modalidade: modalidade,
-                  dias: detalhes.dias || [],
-                  inicio: detalhes.inicio || "",
-                  fim: detalhes.fim || "",
-                });
-              }
-            }
-          }
+        // Apenas inclui na resposta se a assistente passou no filtro acima
+        if (assistentesMap.has(doc.id)) {
+          const assistenteInfo = assistentesMap.get(doc.id);
+          // ** LÓGICA RESTAURADA PARA RETORNAR DADOS ANINHADOS **
+          todasDisponibilidades.push({
+            id: doc.id,
+            nome: assistenteInfo.nome,
+            disponibilidade: doc.data().disponibilidade,
+          });
         }
       });
+
+      console.log(
+        `Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
+      );
       return todasDisponibilidades;
     } catch (error) {
       console.error("Erro em getTodasDisponibilidadesAssistentes:", error);
