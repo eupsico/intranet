@@ -1,9 +1,13 @@
+// Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
+// Versão: 2.1 (CORRIGIDO E ATUALIZADO)
+
 // Mapeamento dos status para os títulos das colunas
 const COLUMNS_CONFIG = {
   inscricao_documentos: "Inscrição e Documentos",
   triagem_agendada: "Triagem Agendada",
   encaminhar_para_plantao: "Encaminhar para Plantão",
   em_atendimento_plantao: "Em Atendimento (Plantão)",
+  agendamento_confirmado_plantao: "Agendamento Confirmado (Plantão)", // Adicionado
   encaminhar_para_pb: "Encaminhar para PB",
   aguardando_info_horarios: "Aguardando Info Horários",
   cadastrar_horario_psicomanager: "Cadastrar Horário Psicomanager",
@@ -14,26 +18,24 @@ const COLUMNS_CONFIG = {
   alta: "Alta",
 };
 
-let db; // Instância do Firestore
+let db, functions, user, userData; // Instâncias globais para o módulo
 let allCardsData = {}; // Cache para os dados dos cards
 let currentColumnFilter = []; // Filtro de colunas ativas
 
 /**
  * Função de inicialização do Kanban, chamada pelo painel.
- * @param {object} firestoreDb - Instância do Firestore
- * @param {object} user - Dados do usuário autenticado
- * @param {object} userData - Dados do perfil do usuário
- * @param {HTMLElement} container - O elemento onde o Kanban será renderizado.
- * @param {string[]} columnFilter - Um array com os status das colunas a serem exibidas.
  */
 export async function init(
   firestoreDb,
-  user,
-  userData,
+  authUser,
+  authData,
   container,
   columnFilter
 ) {
   db = firestoreDb;
+  user = authUser;
+  userData = authData;
+  // functions continua a ser pego de um escopo superior se disponível ou inicializado aqui.
   currentColumnFilter = columnFilter;
 
   try {
@@ -57,14 +59,13 @@ function setupColumns() {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
 
-  // Filtra as colunas a serem exibidas
   kanbanBoard.innerHTML = currentColumnFilter
     .map(
       (statusKey) => `
         <div class="kanban-column" id="column-${statusKey}" data-status="${statusKey}">
             <div class="kanban-column-header">
                 <h3 class="kanban-column-title">
-                    ${COLUMNS_CONFIG[statusKey]}
+                    ${COLUMNS_CONFIG[statusKey] || statusKey}
                     <span class="kanban-column-count" id="count-${statusKey}">0</span>
                 </h3>
             </div>
@@ -79,7 +80,6 @@ function setupColumns() {
  * Configura os botões e eventos do modal.
  */
 function setupModalControls() {
-  // ... (Esta função permanece exatamente a mesma da versão anterior)
   const modal = document.getElementById("card-modal");
   const closeModalBtn = document.getElementById("close-modal-btn");
   const cancelModalBtn = document.getElementById("modal-cancel-btn");
@@ -117,7 +117,6 @@ function loadAndRenderCards() {
         const cardData = { id: doc.id, ...doc.data() };
         allCardsData[cardData.id] = cardData;
 
-        // Só renderiza o card se a sua coluna estiver no filtro atual
         if (currentColumnFilter.includes(cardData.status)) {
           const cardElement = createCardElement(cardData);
           const container = document.getElementById(`cards-${cardData.status}`);
@@ -137,11 +136,8 @@ function loadAndRenderCards() {
 
 /**
  * Cria o elemento HTML para um card individual.
- * @param {object} cardData - Dados do paciente/card.
- * @returns {HTMLElement} O elemento do card.
  */
 function createCardElement(cardData) {
-  // ... (Esta função permanece exatamente a mesma da versão anterior)
   const card = document.createElement("div");
   card.className = "kanban-card";
   card.dataset.id = cardData.id;
@@ -170,10 +166,8 @@ function updateColumnCounts() {
 
 /**
  * Abre o modal com os detalhes de um card específico.
- * @param {string} cardId - O ID do documento do card no Firestore.
  */
 async function openCardModal(cardId) {
-  // ... (Esta função permanece a mesma, mas adicionei a importação do CSS para o painel)
   const modal = document.getElementById("card-modal");
   const modalBody = document.getElementById("card-modal-body");
   const cardData = allCardsData[cardId];
@@ -184,17 +178,69 @@ async function openCardModal(cardId) {
   }
 
   modal.style.display = "flex";
+  modalBody.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    const stageModule = await import(`./stages/${cardData.status}.js`);
-    if (stageModule && typeof stageModule.render === "function") {
-      stageModule.render(modalBody, cardData, db);
+    // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
+    // Mapeia o status para a função setup correspondente.
+    const stageSetupFunctions = {
+      inscricao_documentos: () =>
+        import("./stages/inscricao_documentos.js").then(
+          (m) => m.setupInscricaoDocumentos
+        ),
+      triagem_agendada: () =>
+        import("./stages/triagem_agendada.js").then(
+          (m) => m.setupTriagemAgendada
+        ),
+      encaminhar_para_plantao: () =>
+        import("./stages/encaminhar_para_plantao.js").then(
+          (m) => m.setupEncaminharParaPlantao
+        ),
+      em_atendimento_plantao: () =>
+        import("./stages/em_atendimento_plantao.js").then(
+          (m) => m.setupEmAtendimentoPlantao
+        ),
+      agendamento_confirmado_plantao: () =>
+        import("./stages/agendamento_confirmado_plantao.js").then(
+          (m) => m.setupAgendamentoConfirmadoPlantao
+        ),
+      encaminhar_para_pb: () =>
+        import("./stages/encaminhar_para_pb.js").then(
+          (m) => m.setupEncaminharParaPb
+        ),
+      aguardando_info_horarios: () =>
+        import("./stages/aguardando_info_horarios.js").then(
+          (m) => m.setupAguardandoInfoHorarios
+        ),
+      cadastrar_horario_psicomanager: () =>
+        import("./stages/cadastrar_horario_psicomanager.js").then(
+          (m) => m.setupCadastrarHorarioPsicomanager
+        ),
+    };
+
+    const getSetupFunction = stageSetupFunctions[cardData.status];
+
+    if (getSetupFunction) {
+      const setupFunction = await getSetupFunction();
+      const contentElement = setupFunction(
+        db,
+        functions,
+        cardId,
+        cardData,
+        user,
+        userData
+      );
+      modalBody.innerHTML = "";
+      modalBody.appendChild(contentElement);
     } else {
+      // Fallback para status sem módulo JS customizado
       modalBody.innerHTML = `<p><strong>Nome:</strong> ${
         cardData.nomeCompleto
-      }</p><p><strong>Status:</strong> ${
-        COLUMNS_CONFIG[cardData.status]
-      }</p><p>Nenhuma ação customizada para esta etapa.</p>`;
+      }</p>
+                                   <p><strong>Status:</strong> ${
+                                     COLUMNS_CONFIG[cardData.status]
+                                   }</p>
+                                   <p>Nenhuma ação customizada para esta etapa.</p>`;
     }
   } catch (error) {
     console.error(
