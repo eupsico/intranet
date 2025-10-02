@@ -319,26 +319,134 @@ export function init(db, user, userData) {
     document.getElementById("paciente-id-horarios-modal").value = pacienteId;
 
     const iniciouRadio = form.querySelectorAll('input[name="iniciou-pb"]');
-    iniciouRadio.forEach(
-      (radio) =>
-        (radio.onchange = () => {
-          const naoIniciou = radio.value === "nao";
-          document
-            .getElementById("motivo-nao-inicio-pb-container")
-            .classList.toggle("hidden", !naoIniciou);
-          document
-            .getElementById("form-continuacao-pb")
-            .classList.toggle("hidden", naoIniciou);
-          document.getElementById("motivo-nao-inicio-pb").required = naoIniciou;
-          form
-            .querySelectorAll(
-              "#form-continuacao-pb select, #form-continuacao-pb input"
-            )
-            .forEach((el) => (el.required = !naoIniciou));
-        })
+    const motivoContainer = document.getElementById(
+      "motivo-nao-inicio-pb-container"
     );
+    const continuacaoContainer = document.getElementById("form-continuacao-pb");
+
+    // Limpa o container do formulário para garantir que não haja duplicatas
+    continuacaoContainer.innerHTML = "";
+
+    iniciouRadio.forEach((radio) => {
+      radio.onchange = () => {
+        const mostrarFormulario = radio.value === "sim" && radio.checked;
+        const mostrarMotivo = radio.value === "nao" && radio.checked;
+
+        motivoContainer.classList.toggle("hidden", !mostrarMotivo);
+        continuacaoContainer.classList.toggle("hidden", !mostrarFormulario);
+
+        document.getElementById("motivo-nao-inicio-pb").required =
+          mostrarMotivo;
+
+        // Se o formulário de continuação deve ser mostrado, o construímos
+        if (mostrarFormulario && continuacaoContainer.innerHTML === "") {
+          continuacaoContainer.innerHTML = construirFormularioHorarios(
+            userData.nome
+          );
+        }
+
+        // Torna os campos do formulário de continuação obrigatórios ou não
+        continuacaoContainer
+          .querySelectorAll("select, input, textarea")
+          .forEach((el) => {
+            // O campo de observações nunca é obrigatório
+            if (el.id !== "observacoes-pb-horarios") {
+              el.required = mostrarFormulario;
+            }
+          });
+      };
+    });
 
     horariosPbModal.style.display = "block";
+  }
+
+  // ADICIONE ESTA NOVA FUNÇÃO ABAIXO DA FUNÇÃO 'abrirModalHorariosPb'
+
+  function construirFormularioHorarios(nomeProfissional) {
+    let horasOptions = "";
+    for (let i = 8; i <= 21; i++) {
+      const hora = `${String(i).padStart(2, "0")}:00`;
+      horasOptions += `<option value="${hora}">${hora}</option>`;
+    }
+
+    const salas = [
+      "Christian Dunker",
+      "Leila Tardivo",
+      "Leonardo Abrahão",
+      "Karina Okajima Fukumitsu",
+      "Maria Célia Malaquias (Grupo)",
+      "Maria Júlia Kovacs",
+      "Online",
+    ];
+    let salasOptions = salas
+      .map((sala) => `<option value="${sala}">${sala}</option>`)
+      .join("");
+
+    return `
+        <div class="form-group">
+            <label for="nome-profissional-pb">Nome Profissional:</label>
+            <input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="dia-semana-pb">Informe o dia da semana que você irá atender o paciente:</label>
+            <select id="dia-semana-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Segunda-feira">Segunda-feira</option>
+                <option value="Terça-feira">Terça-feira</option>
+                <option value="Quarta-feira">Quarta-feira</option>
+                <option value="Quinta-feira">Quinta-feira</option>
+                <option value="Sexta-feira">Sexta-feira</option>
+                <option value="Sábado">Sábado</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="horario-pb">Selecione o horário da sessão:</label>
+            <select id="horario-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                ${horasOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="tipo-atendimento-pb-voluntario">Informe o tipo de atendimento:</label>
+            <select id="tipo-atendimento-pb-voluntario" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Presencial">Presencial</option>
+                <option value="Online">Online</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
+            <select id="alterar-grade-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Sim">Sim</option>
+                <option value="Não">Não</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="frequencia-atendimento-pb">O atendimento será realizado:</label>
+            <select id="frequencia-atendimento-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Semanal">Semanal</option>
+                <option value="Quinzenal">Quinzenal</option>
+                <option value="Mensal">Mensal</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="sala-atendimento-pb">Selecione abaixo a sala que você atende no dia e horário informado:<br><small>Para atendimentos online selecione a opção Online.</small></label>
+            <select id="sala-atendimento-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                ${salasOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="data-inicio-sessoes">Informe a partir de qual data devem ser criadas as novas sessões:</label>
+            <input type="date" id="data-inicio-sessoes" class="form-control" required>
+        </div>
+         <div class="form-group">
+            <label for="observacoes-pb-horarios">Observações:</label>
+            <textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea>
+        </div>
+    `;
   }
 
   document
