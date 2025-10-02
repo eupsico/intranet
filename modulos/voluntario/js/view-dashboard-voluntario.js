@@ -28,16 +28,10 @@ export function init(db, user, userData) {
     sabado: "Sábado",
   };
   const userRoles = userData.funcoes || [];
-  // Esta variável verifica se o usuário tem permissão para ver dados financeiros
   const hasFinanceAccess =
     userRoles.includes("admin") || userRoles.includes("financeiro");
 
-  /**
-   * Busca as configurações de valores do financeiro no Firestore, APENAS se o usuário tiver permissão.
-   */
   async function fetchValoresConfig() {
-    // ===== CORREÇÃO APLICADA AQUI =====
-    // Se o usuário não tiver acesso, define valores padrão e não tenta ler o Firestore.
     if (!hasFinanceAccess) {
       console.log(
         "Usuário sem permissão para acessar dados financeiros. Pulando cálculo de valores."
@@ -63,9 +57,6 @@ export function init(db, user, userData) {
     }
   }
 
-  /**
-   * Renderiza o painel "Meu Resumo Semanal".
-   */
   function renderSummaryPanel() {
     if (!userData || !userData.username) {
       summaryContainer.innerHTML =
@@ -73,7 +64,7 @@ export function init(db, user, userData) {
       return;
     }
 
-    const { username: userUsername, name: userFullName } = userData; // Adicionado userFullName para mais robustez
+    const { username: userUsername, name: userFullName } = userData;
     let horasOnline = 0;
     let horasPresencial = 0;
     const agendamentosOnline = [];
@@ -81,7 +72,6 @@ export function init(db, user, userData) {
 
     for (const path in dadosDasGrades) {
       const nomeNaGrade = dadosDasGrades[path];
-      // Verifica tanto pelo username quanto pelo nome completo
       if (nomeNaGrade === userUsername || nomeNaGrade === userFullName) {
         const parts = path.split(".");
         if (parts.length === 4) {
@@ -104,8 +94,6 @@ export function init(db, user, userData) {
     const totalHoras = horasOnline + horasPresencial;
 
     let financeiroHtml = "";
-    // ===== CORREÇÃO APLICADA AQUI =====
-    // O HTML financeiro só é montado se o usuário tiver permissão.
     if (hasFinanceAccess) {
       const valorOnline = valoresConfig.online || 0;
       const valorPresencial = valoresConfig.presencial || 0;
@@ -164,9 +152,6 @@ export function init(db, user, userData) {
             </div>`;
   }
 
-  /**
-   * Renderiza os cards de informações gerais. (FUNÇÃO MANTIDA)
-   */
   function renderInfoCard() {
     infoCardContainer.innerHTML = `
             <div class="info-card-grid">
@@ -179,13 +164,10 @@ export function init(db, user, userData) {
             </div>`;
   }
 
-  /**
-   * Função principal que orquestra o carregamento e a renderização do dashboard.
-   */
   async function start() {
     summaryContainer.innerHTML = '<div class="loading-spinner"></div>';
-    renderInfoCard(); // Função mantida
-    await fetchValoresConfig(); // Função agora verifica a permissão internamente
+    renderInfoCard();
+    await fetchValoresConfig();
 
     const gradesDocRef = doc(db, "administrativo", "grades");
     onSnapshot(

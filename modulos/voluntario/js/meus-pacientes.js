@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.7 (Lógica dos checkboxes de encaminhamento corrigida)
+// Versão: 3.8 (Corrige lógica de checkboxes e implementa alteração de disponibilidade)
 
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
@@ -7,23 +7,25 @@ export function init(db, user, userData) {
 
   const encerramentoModal = document.getElementById("encerramento-modal");
   const horariosPbModal = document.getElementById("horarios-pb-modal");
-  const closeButtons = document.querySelectorAll(".modal .close-button");
 
-  if (encerramentoModal) encerramentoModal.style.display = "none";
-  if (horariosPbModal) horariosPbModal.style.display = "none";
+  // Configura botões de fechar e cancelar dos modais
+  document
+    .querySelectorAll(
+      ".modal .close-button, #modal-cancel-btn, [data-close-modal]"
+    )
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        encerramentoModal.style.display = "none";
+        horariosPbModal.style.display = "none";
+      });
+    });
 
-  closeButtons.forEach(
-    (btn) =>
-      (btn.onclick = () => {
-        if (encerramentoModal) encerramentoModal.style.display = "none";
-        if (horariosPbModal) horariosPbModal.style.display = "none";
-      })
-  );
-  window.onclick = (event) => {
+  // Fecha o modal ao clicar fora dele
+  window.addEventListener("click", (event) => {
     if (event.target == encerramentoModal)
       encerramentoModal.style.display = "none";
     if (event.target == horariosPbModal) horariosPbModal.style.display = "none";
-  };
+  });
 
   async function carregarMeusPacientes() {
     container.innerHTML = '<div class="loading-spinner"></div>';
@@ -65,8 +67,6 @@ export function init(db, user, userData) {
       console.error("Erro ao carregar pacientes:", error);
       container.innerHTML =
         '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
-      if (encerramentoModal) encerramentoModal.style.display = "none";
-      if (horariosPbModal) horariosPbModal.style.display = "none";
     }
   }
 
@@ -82,18 +82,18 @@ export function init(db, user, userData) {
       : "N/A";
 
     return `
-              <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-                  <h4>${data.nomeCompleto}</h4>
-                  <p><strong>Status:</strong> ${
-                    tipo === "plantao"
-                      ? "Em Atendimento (Plantão)"
-                      : "Aguardando Info Horários (PB)"
-                  }</p>
-                  <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-                   <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-                  <button class="action-button">${acaoLabel}</button>
-              </div>
-          `;
+            <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
+                <h4>${data.nomeCompleto}</h4>
+                <p><strong>Status:</strong> ${
+                  tipo === "plantao"
+                    ? "Em Atendimento (Plantão)"
+                    : "Aguardando Info Horários (PB)"
+                }</p>
+                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+                <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+                <button class="action-button">${acaoLabel}</button>
+            </div>
+        `;
   }
 
   function adicionarEventListeners() {
@@ -125,8 +125,7 @@ export function init(db, user, userData) {
       });
   }
 
-  // ===== FUNÇÃO ATUALIZADA =====
-  function abrirModalEncerramento(pacienteId, data) {
+  async function abrirModalEncerramento(pacienteId, data) {
     const form = document.getElementById("encerramento-form");
     form.reset();
     document.getElementById("paciente-id-modal").value = pacienteId;
@@ -142,14 +141,7 @@ export function init(db, user, userData) {
         pagamentoSelect.value === "nao";
     };
 
-    const dispSelect = form.querySelector("#manter-disponibilidade");
-    dispSelect.onchange = () => {
-      document
-        .getElementById("nova-disponibilidade-container")
-        .classList.toggle("hidden", dispSelect.value !== "nao");
-    };
-
-    // --- INÍCIO DA LÓGICA CORRIGIDA ---
+    // --- LÓGICA CORRIGIDA DOS CHECKBOXES ---
     const encaminhamentoCheckboxes = form.querySelectorAll(
       'input[name="encaminhamento"]'
     );
@@ -167,7 +159,7 @@ export function init(db, user, userData) {
       });
     };
 
-    reabilitarTodos();
+    reabilitarTodos(); // Garante que todos comecem habilitados
 
     encaminhamentoCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
@@ -199,9 +191,93 @@ export function init(db, user, userData) {
         }
       });
     });
-    // --- FIM DA LÓGICA CORRIGIDA ---
+
+    // --- LÓGICA DA DISPONIBILIDADE ---
+    const dispSelect = form.querySelector("#manter-disponibilidade");
+    const novaDisponibilidadeContainer = document.getElementById(
+      "nova-disponibilidade-container"
+    );
+
+    dispSelect.onchange = async () => {
+      const mostrar = dispSelect.value === "nao";
+      novaDisponibilidadeContainer.classList.toggle("hidden", !mostrar);
+      if (mostrar && novaDisponibilidadeContainer.innerHTML.trim() === "") {
+        novaDisponibilidadeContainer.innerHTML =
+          '<div class="loading-spinner"></div>';
+        try {
+          const response = await fetch(
+            "../../../public/fichas-de-inscricao.html"
+          );
+          const text = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, "text/html");
+          const disponibilidadeHtml = doc.getElementById(
+            "disponibilidade-section"
+          ).innerHTML;
+          novaDisponibilidadeContainer.innerHTML = disponibilidadeHtml;
+          addDisponibilidadeListeners(novaDisponibilidadeContainer);
+        } catch (error) {
+          console.error("Erro ao carregar HTML da disponibilidade:", error);
+          novaDisponibilidadeContainer.innerHTML =
+            '<p class="error-message">Erro ao carregar opções.</p>';
+        }
+      }
+    };
+    // Reseta o campo ao abrir o modal
+    dispSelect.value = "";
+    novaDisponibilidadeContainer.classList.add("hidden");
+    novaDisponibilidadeContainer.innerHTML = "";
 
     encerramentoModal.style.display = "block";
+  }
+
+  function addDisponibilidadeListeners(container) {
+    const horariosCheckboxes = container.querySelectorAll(
+      'input[name="horario"]'
+    );
+    horariosCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", (e) => {
+        const periodo = e.target.value;
+        const detalheContainer = container.querySelector(
+          `#container-${periodo}`
+        );
+        if (e.target.checked) {
+          gerarHorarios(periodo, detalheContainer);
+          detalheContainer.classList.remove("hidden-section");
+        } else {
+          detalheContainer.innerHTML = "";
+          detalheContainer.classList.add("hidden-section");
+        }
+      });
+    });
+  }
+
+  function gerarHorarios(periodo, container) {
+    let horarios = [],
+      label = "";
+    switch (periodo) {
+      case "manha-semana":
+        label = "Manhã (Seg-Sex):";
+        for (let i = 8; i < 12; i++) horarios.push(`${i}:00`);
+        break;
+      case "tarde-semana":
+        label = "Tarde (Seg-Sex):";
+        for (let i = 12; i < 18; i++) horarios.push(`${i}:00`);
+        break;
+      case "noite-semana":
+        label = "Noite (Seg-Sex):";
+        for (let i = 18; i < 21; i++) horarios.push(`${i}:00`);
+        break;
+      case "manha-sabado":
+        label = "Manhã (Sábado):";
+        for (let i = 8; i < 13; i++) horarios.push(`${i}:00`);
+        break;
+    }
+    let html = `<label class="horario-detalhe-label">${label}</label><div class="horario-detalhe-grid">`;
+    horarios.forEach((hora) => {
+      html += `<div><label><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</label></div>`;
+    });
+    container.innerHTML = html + `</div>`;
   }
 
   function abrirModalHorariosPb(pacienteId, data) {
@@ -237,7 +313,7 @@ export function init(db, user, userData) {
     .addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
-      const saveButton = form.querySelector(".save-btn");
+      const saveButton = document.getElementById("modal-save-btn");
       saveButton.disabled = true;
 
       const pacienteId = document.getElementById("paciente-id-modal").value;
@@ -252,8 +328,15 @@ export function init(db, user, userData) {
         return;
       }
 
-      const updateData = {
-        status: "encaminhar_para_pb",
+      let novoStatus = "encaminhar_para_pb";
+      if (encaminhamentosSelecionados.includes("Alta")) {
+        novoStatus = "alta";
+      } else if (encaminhamentosSelecionados.includes("Desistência")) {
+        novoStatus = "desistencia";
+      }
+
+      let updateData = {
+        status: novoStatus,
         "plantaoInfo.encerramento": {
           responsavelId: user.uid,
           responsavelNome: userData.nome,
@@ -268,19 +351,36 @@ export function init(db, user, userData) {
         lastUpdate: new Date(),
       };
 
+      if (form.querySelector("#manter-disponibilidade").value === "nao") {
+        const novaDisponibilidadeContainer = form.querySelector(
+          "#nova-disponibilidade-container"
+        );
+        updateData.disponibilidadeGeral = Array.from(
+          novaDisponibilidadeContainer.querySelectorAll(
+            'input[name="horario"]:checked'
+          )
+        ).map((cb) => cb.parentElement.textContent.trim());
+        updateData.disponibilidadeEspecifica = Array.from(
+          novaDisponibilidadeContainer.querySelectorAll(
+            'input[name="horario-especifico"]:checked'
+          )
+        ).map((cb) => cb.value);
+      }
+
       try {
         await db
           .collection("trilhaPaciente")
           .doc(pacienteId)
           .update(updateData);
         alert(
-          "Encerramento salvo com sucesso! Paciente movido para a próxima etapa."
+          "Encerramento salvo com sucesso! O status do paciente foi atualizado."
         );
         encerramentoModal.style.display = "none";
         carregarMeusPacientes();
       } catch (error) {
         console.error("Erro ao salvar encerramento:", error);
         alert("Erro ao salvar. Tente novamente.");
+      } finally {
         saveButton.disabled = false;
       }
     });
@@ -290,7 +390,7 @@ export function init(db, user, userData) {
     .addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
-      const saveButton = form.querySelector(".save-btn");
+      const saveButton = horariosPbModal.querySelector('button[type="submit"]');
       saveButton.disabled = true;
 
       const pacienteId = document.getElementById(
@@ -312,7 +412,7 @@ export function init(db, user, userData) {
       } else {
         updateData = {
           status: "cadastrar_horario_psicomanager",
-          "pbInfo.horarioSessoes": {
+          "pbInfo.horarioSessao": {
             responsavelId: user.uid,
             responsavelNome: userData.nome,
             diaSemana: form.querySelector("#dia-semana-pb").value,
@@ -342,6 +442,7 @@ export function init(db, user, userData) {
       } catch (error) {
         console.error("Erro ao salvar horários:", error);
         alert("Erro ao salvar. Tente novamente.");
+      } finally {
         saveButton.disabled = false;
       }
     });
