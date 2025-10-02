@@ -320,12 +320,10 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
-
   const adminUid = request.auth.uid;
 
   try {
     const { assistenteId, mes, modalidade, dias } = request.data;
-
     if (
       !assistenteId ||
       !mes ||
@@ -339,6 +337,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       );
     }
 
+    // Verifica se é admin
     const adminDoc = await db.collection("usuarios").doc(adminUid).get();
     if (!adminDoc.exists || !adminDoc.data()?.funcoes?.includes("admin")) {
       throw new HttpsError(
@@ -347,55 +346,39 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       );
     }
 
-    const dispoDoc = await db
+    // Busca disponibilidade e dados do assistente
+    const dispoSnap = await db
       .collection("disponibilidadeAssistentes")
       .doc(assistenteId)
       .get();
-    const assistenteDoc = await db
+    const assistenteSnap = await db
       .collection("usuarios")
       .doc(assistenteId)
       .get();
-
-    if (!dispoDoc.exists || !assistenteDoc.exists) {
+    if (!dispoSnap.exists || !assistenteSnap.exists) {
       throw new HttpsError(
         "not-found",
-        "Assistente ou sua disponibilidade não encontrada."
+        "Assistente ou disponibilidade não encontrada."
       );
     }
 
-    const dispoData = dispoDoc.data();
-    const assistenteData = assistenteDoc.data();
+    const dispoData = dispoSnap.data();
+    const assistenteData = assistenteSnap.data();
+    const assistenteNome = assistenteData?.nome || "Assistente";
 
-    // 🔑 Ajuste: disponibilidade pode ser array (mês) ou objeto (modalidade isolada)
-    let diasDisponiveis = dispoData.disponibilidade?.[mes];
-    if (Array.isArray(diasDisponiveis)) {
-      // caso normal: mês com array de dias
-      console.log(
-        "📅 Disponibilidade encontrada para o mês:",
-        mes,
-        diasDisponiveis
-      );
-    } else if (Array.isArray(dispoData.disponibilidade?.[modalidade])) {
-      // caso especial: modalidade isolada
-      diasDisponiveis = dispoData.disponibilidade[modalidade];
-      console.log(
-        "📅 Disponibilidade encontrada para modalidade:",
-        modalidade,
-        diasDisponiveis
-      );
-    } else {
+    // 🔑 Aqui está o formato certo
+    const bloco = dispoData.disponibilidade?.[mes]?.[modalidade];
+    if (!bloco || !Array.isArray(bloco.dias) || !bloco.inicio || !bloco.fim) {
       throw new HttpsError(
         "not-found",
         `Nenhuma disponibilidade encontrada para ${mes}/${modalidade}.`
       );
     }
 
-    const assistenteNome = assistenteData?.nome || "Assistente";
-    const inicio = "08:00";
-    const fim = "18:00";
+    const { dias: diasDisponiveis, inicio, fim } = bloco;
 
+    // Monta batch
     const batch = db.batch();
-
     dias.forEach(({ dia, tipo }, index) => {
       if (!dia || !tipo) {
         throw new HttpsError(
@@ -403,7 +386,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
           `Item inválido em dias[${index}]`
         );
       }
-
       if (!diasDisponiveis.includes(dia)) {
         throw new HttpsError(
           "invalid-argument",
@@ -434,7 +416,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     await batch.commit();
     console.log("✅ Batch commitado com sucesso.");
 
-    // Log no servidor (não no cliente)
+    // Log no servidor
     await db.collection("logsSistema").add({
       timestamp: new Date(),
       usuario: adminUid,
