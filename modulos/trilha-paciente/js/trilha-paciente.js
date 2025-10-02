@@ -1,7 +1,8 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
-// Versão: 2.2 (CORRIGIDO)
+// Versão: 3.0 (Estrutura de Módulos Padronizada)
 
-// Mapeamento dos status para os títulos das colunas
+import { db } from "../../../assets/js/firebase-init.js";
+
 const COLUMNS_CONFIG = {
   inscricao_documentos: "Inscrição e Documentos",
   triagem_agendada: "Triagem Agendada",
@@ -18,7 +19,6 @@ const COLUMNS_CONFIG = {
   alta: "Alta",
 };
 
-let db, functions, user, userData;
 let allCardsData = {};
 let currentColumnFilter = [];
 
@@ -29,10 +29,6 @@ export async function init(
   container,
   columnFilter
 ) {
-  db = firestoreDb;
-  user = authUser;
-  userData = authData;
-  functions = firebase.functions(); // Garante que 'functions' esteja disponível
   currentColumnFilter = columnFilter;
 
   try {
@@ -84,9 +80,7 @@ function setupModalControls() {
   closeModalBtn.addEventListener("click", closeModal);
   cancelModalBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeModal();
-    }
+    if (event.target === modal) closeModal();
   });
 }
 
@@ -102,21 +96,22 @@ function loadAndRenderCards() {
       allCardsData = {};
 
       snapshot.forEach((doc) => {
-        const cardData = { id: doc.id, ...doc.data() };
+        const cardData = {
+          id: doc.id,
+          ...doc.data(),
+        };
         allCardsData[cardData.id] = cardData;
 
         if (currentColumnFilter.includes(cardData.status)) {
           const cardElement = createCardElement(cardData);
           const container = document.getElementById(`cards-${cardData.status}`);
-          if (container) {
-            container.appendChild(cardElement);
-          }
+          if (container) container.appendChild(cardElement);
         }
       });
       updateColumnCounts();
     },
     (error) => {
-      console.error("Erro ao buscar cards do Firestore:", error);
+      console.error("Erro ao buscar cards:", error);
       kanbanBoard.innerHTML = `<div class="error-message">Não foi possível carregar os dados.</div>`;
     }
   );
@@ -148,83 +143,53 @@ function updateColumnCounts() {
 
 async function openCardModal(cardId) {
   const modal = document.getElementById("card-modal");
+  const modalTitle = document.getElementById("card-modal-title");
   const modalBody = document.getElementById("card-modal-body");
+  const saveButton = document.getElementById("modal-save-btn");
   const cardData = allCardsData[cardId];
 
-  if (!cardData) {
-    console.error("Dados do card não encontrados:", cardId);
-    return;
-  }
+  if (!cardData) return;
 
+  modalTitle.textContent = `Detalhes do Paciente: ${cardData.nomeCompleto}`;
   modal.style.display = "flex";
   modalBody.innerHTML = '<div class="loading-spinner"></div>';
-
-  // Mostra o botão de salvar, que pode ser escondido pelo módulo se necessário
-  document.getElementById("modal-save-btn").style.display = "inline-block";
+  saveButton.style.display = "inline-block";
 
   try {
-    // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
-    // A lógica foi reescrita para importar o módulo e chamar a função 'setup' correta.
+    const stage = cardData.status;
+    const stageModule = await import(`./stages/${stage}.js`);
 
-    // Mapeamento de status para o nome da função de setup
-    const stageModules = {
-      encaminhar_para_plantao: {
-        name: "setupEmAtendimentoPlantao",
-        path: "./stages/em_atendimento_plantao.js",
-      },
-      em_atendimento_plantao: {
-        name: "setupAgendamentoConfirmadoPlantao",
-        path: "./stages/agendamento_confirmado_plantao.js",
-      },
-      encaminhar_para_pb: {
-        name: "setupEncaminharParaPb",
-        path: "./stages/encaminhar_para_pb.js",
-      },
-      aguardando_info_horarios: {
-        name: "setupAguardandoInfoHorarios", // Esta função ainda não existe, mas a estrutura está pronta
-        path: "./stages/aguardando_info_horarios.js",
-      },
-      cadastrar_horario_psicomanager: {
-        name: "setupCadastrarHorarioPsicomanager",
-        path: "./stages/cadastrar_horario_psicomanager.js",
-      },
-      // Adicione outros status aqui conforme for criando os arquivos
-    };
+    // Chama a função render e insere o conteúdo no modal
+    const contentElement = await stageModule.render(
+      cardId,
+      cardData.nomeCompleto
+    );
+    modalBody.innerHTML = "";
+    modalBody.appendChild(contentElement);
 
-    const moduleInfo = stageModules[cardData.status];
+    // Clona o botão Salvar para remover listeners antigos e adiciona o novo
+    const newSaveButton = saveButton.cloneNode(true);
+    saveButton.parentNode.replaceChild(newSaveButton, saveButton);
 
-    if (moduleInfo) {
-      const stageModule = await import(moduleInfo.path);
-      const setupFunction = stageModule[moduleInfo.name];
-
-      if (typeof setupFunction === "function") {
-        const contentElement = setupFunction(
-          db,
-          functions,
-          cardId,
-          cardData,
-          user,
-          userData
-        );
-        modalBody.innerHTML = "";
-        modalBody.appendChild(contentElement);
-      } else {
-        // Erro caso a função de setup não seja encontrada no módulo
-        throw new Error(
-          `A função ${moduleInfo.name} não foi encontrada no módulo ${moduleInfo.path}`
-        );
-      }
+    if (typeof stageModule.save === "function") {
+      newSaveButton.addEventListener("click", async () => {
+        newSaveButton.disabled = true;
+        newSaveButton.textContent = "Salvando...";
+        try {
+          await stageModule.save(cardId);
+          modal.style.display = "none";
+          // A atualização dos cards é automática pelo onSnapshot
+        } catch (error) {
+          console.error("Erro ao salvar:", error);
+          alert("Erro ao salvar: " + error.message);
+        } finally {
+          newSaveButton.disabled = false;
+          newSaveButton.textContent = "Salvar";
+        }
+      });
     } else {
-      // Comportamento padrão para status que não têm um módulo JS customizado
-      modalBody.innerHTML = `<p><strong>Nome:</strong> ${
-        cardData.nomeCompleto
-      }</p>
-                                   <p><strong>Status:</strong> ${
-                                     COLUMNS_CONFIG[cardData.status] ||
-                                     cardData.status
-                                   }</p>
-                                   <p>Nenhuma ação customizada para esta etapa.</p>`;
-      document.getElementById("modal-save-btn").style.display = "none";
+      // Se não houver função save, esconde o botão
+      newSaveButton.style.display = "none";
     }
   } catch (error) {
     console.error(
@@ -232,5 +197,6 @@ async function openCardModal(cardId) {
       error
     );
     modalBody.innerHTML = `<div class="error-message">Não foi possível carregar os detalhes desta etapa.</div>`;
+    saveButton.style.display = "none";
   }
 }
