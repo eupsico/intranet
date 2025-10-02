@@ -1,8 +1,8 @@
 // Arquivo: /modulos/servico-social/js/fila-atendimento.js
-// Versão: 2.2 (CORRIGIDO)
+// Versão: 2.3 (CORRIGIDO)
 
-export function init(db, user, userData, trilhaId) {
-  // Renomeado para 'trilhaId' por clareza
+// ALTERAÇÃO: Adicionado o parâmetro 'functions' na assinatura da função.
+export function init(db, user, userData, functions, trilhaId) {
   const patientDetailsContainer = document.getElementById(
     "patient-details-container"
   );
@@ -21,7 +21,6 @@ export function init(db, user, userData, trilhaId) {
 
   let trilhaDocRef = null;
 
-  // --- FUNÇÕES AUXILIARES (sem alterações) ---
   function formatarMoeda(input) {
     let value = input.value.replace(/\D/g, "");
     if (value === "") {
@@ -65,13 +64,10 @@ export function init(db, user, userData, trilhaId) {
     return html || "Nenhum horário detalhado informado.";
   }
 
-  // --- FUNÇÃO PARA CARREGAR DADOS (CORRIGIDA) ---
   async function carregarDadosPaciente() {
     patientDetailsContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
-      // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
-      // Substituímos a consulta .where() por uma busca direta .doc().get().
-      // Isso é mais rápido e garante que estamos buscando pelo ID correto do documento.
+      // Esta linha agora funcionará, pois 'trilhaId' será a string correta.
       const trilhaDoc = await db
         .collection("trilhaPaciente")
         .doc(trilhaId)
@@ -86,7 +82,6 @@ export function init(db, user, userData, trilhaId) {
       trilhaDocRef = trilhaDoc.ref;
       const data = trilhaDoc.data();
 
-      // O restante da lógica para exibir os dados permanece o mesmo.
       const formatDate = (dateStr) =>
         dateStr
           ? new Date(dateStr + "T03:00:00").toLocaleDateString("pt-BR")
@@ -161,7 +156,6 @@ export function init(db, user, userData, trilhaId) {
     }
   }
 
-  // --- LISTENERS E LÓGICA DE SALVAMENTO (sem alterações) ---
   statusSelect.addEventListener("change", () => {
     const selectedValue = statusSelect.value;
     const criteriosTextarea = document.getElementById("criterios-valor");
