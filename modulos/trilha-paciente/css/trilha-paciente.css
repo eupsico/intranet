@@ -128,8 +128,8 @@
 .hidden-section {
     display: none;
 }
-/* Adicionar ao final de trilha-paciente.css */
 
+/* Adicionar ao final de trilha-paciente.css */
 .form-grid-2-col {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -163,8 +163,8 @@
         grid-template-columns: 1fr;
     }
 }
-/* --- ESTILOS PARA O NOVO PAINEL COM SUBMENU --- */
 
+/* --- ESTILOS PARA O NOVO PAINEL COM SUBMENU --- */
 .module-panel-container {
     display: grid;
     grid-template-columns: 220px 1fr; /* Coluna do menu e área de conteúdo */
@@ -214,31 +214,19 @@
 }
 
 /* --- Responsividade para o painel --- */
-@media (max-width: 992px) {
+
+/* --- CORREÇÃO: Classe usada pelo JS para ocultar campos --- */
+.hidden {
+    display: none !important;
+}
+@media (max-width: 768px) {
     .module-panel-container {
-        grid-template-columns: 1fr; /* Empilha o menu e o conteúdo */
-        height: auto;
+        grid-template-columns: 1fr; /* Apenas uma coluna em telas pequenas */
+        height: auto; /* Altura automática para telas menores */
     }
+
     .module-submenu {
         border-right: none;
         border-bottom: 1px solid var(--cor-borda);
-        margin-bottom: 20px;
     }
-    .module-submenu ul {
-        display: flex;
-        overflow-x: auto;
-        gap: 10px;
-    }
-     .module-submenu ul li a {
-        white-space: nowrap;
-    }
-}
-/* Adicionar ao final de trilha-paciente.css */
-.column-static-info {
-    padding: 15px;
-    font-size: 0.9em;
-    color: var(--cor-texto-secundario);
-    background-color: var(--cor-fundo);
-    height: 100%;
-    border-radius: 0 0 var(--borda-radius) var(--borda-radius);
 }
