@@ -1,12 +1,10 @@
-import { db } from "./firebase-init.js";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase-init.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
 
-// Inicializa a função
-const functions = getFunctions();
+// Instância da Cloud Function
 const assinarContrato = httpsCallable(functions, "assinarContrato");
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Pega o ID do paciente da URL (ex: ...html?id=DOCUMENTO_ID)
   const urlParams = new URLSearchParams(window.location.search);
   const pacienteId = urlParams.get("id");
 
@@ -40,7 +38,6 @@ async function loadContractData(pacienteId) {
 
     const data = docSnap.data();
 
-    // Verifica se o contrato já foi assinado
     if (data.contratoAssinado && data.contratoAssinado.assinadoEm) {
       displayAlreadySigned(data);
       return;
