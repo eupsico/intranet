@@ -1,19 +1,13 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 4.0 (Adiciona busca por 'em_atendimento_pb' e funcionalidade 'Enviar Contrato')
+// Versão: 4.1 (Substitui cópia de link por botão de enviar via WhatsApp)
 
 export function init(db, user, userData) {
   console.log(
     "%c[ANÁLISE] Etapa 1: Módulo 'meus-pacientes.js' iniciado.",
     "color: blue; font-weight: bold;"
   );
-
   const container = document.getElementById("pacientes-cards-container");
-  if (!container) {
-    console.error(
-      "[ANÁLISE ERRO] Container '#pacientes-cards-container' não encontrado."
-    );
-    return;
-  }
+  if (!container) return;
 
   const encerramentoModal = document.getElementById("encerramento-modal");
   const horariosPbModal = document.getElementById("horarios-pb-modal");
@@ -35,7 +29,6 @@ export function init(db, user, userData) {
       if (modal && event.target == modal) modal.style.display = "none";
     });
   });
-  // --- Fim do controle de modais ---
 
   async function carregarMeusPacientes() {
     container.innerHTML = '<div class="loading-spinner"></div>';
@@ -43,23 +36,19 @@ export function init(db, user, userData) {
       "%c[ANÁLISE] Etapa 2: Iniciando busca de pacientes...",
       "color: blue; font-weight: bold;"
     );
-
     try {
-      // Unifica as buscas para maior clareza e abrangência
       const statusDeInteresse = [
         "em_atendimento_plantao",
         "encaminhar_para_pb",
         "aguardando_info_horarios",
         "cadastrar_horario_psicomanager",
-        "em_atendimento_pb", // <-- NOVO STATUS ADICIONADO PARA O CONTRATO
+        "em_atendimento_pb",
       ];
-
       console.log(
         `[ANÁLISE] Buscando pacientes com status em: [${statusDeInteresse.join(
           ", "
         )}]`
       );
-
       const queryPlantao = db
         .collection("trilhaPaciente")
         .where("plantaoInfo.profissionalId", "==", user.uid);
@@ -79,7 +68,6 @@ export function init(db, user, userData) {
       const processarSnapshot = (snapshot) => {
         snapshot.forEach((doc) => {
           const data = doc.data();
-          // Adiciona apenas se o status for um dos que queremos ver e não for duplicado
           if (
             statusDeInteresse.includes(data.status) &&
             !pacientesProcessados.has(doc.id)
@@ -92,10 +80,6 @@ export function init(db, user, userData) {
 
       processarSnapshot(plantaoSnapshot);
       processarSnapshot(pbSnapshot);
-
-      console.log(
-        `[ANÁLISE] Encontrados ${todosPacientes.length} pacientes únicos.`
-      );
 
       if (todosPacientes.length === 0) {
         container.innerHTML =
@@ -110,9 +94,9 @@ export function init(db, user, userData) {
         .map((paciente) => criarCardPaciente(paciente.id, paciente))
         .join("");
 
-      adicionarEventListeners(todosPacientes);
+      adicionarEventListeners();
     } catch (error) {
-      console.error("[ANÁLISE ERRO] Falha crítica ao buscar pacientes.", error);
+      console.error("Falha crítica ao buscar pacientes.", error);
       container.innerHTML =
         '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
     }
@@ -149,7 +133,7 @@ export function init(db, user, userData) {
         acao: "Enviar Contrato",
         tipo: "contrato",
         ativo: true,
-      }, // <-- NOVA AÇÃO
+      },
     };
 
     const info = statusMap[data.status] || {
@@ -159,7 +143,6 @@ export function init(db, user, userData) {
       ativo: false,
     };
 
-    // Mostra a data de encaminhamento do plantão ou da PB
     const infoContato = data.pbInfo?.dataEncaminhamento
       ? data.pbInfo
       : data.plantaoInfo;
@@ -169,11 +152,16 @@ export function init(db, user, userData) {
         ).toLocaleDateString("pt-BR")
       : "N/A";
 
+    // Adiciona o telefone do paciente como um data attribute no card
     return `
-            <div class="paciente-card" data-id="${id}" data-tipo="${info.tipo}">
+            <div class="paciente-card" data-id="${id}" data-tipo="${
+      info.tipo
+    }" data-telefone="${data.telefoneCelular || ""}">
                 <h4>${data.nomeCompleto}</h4>
                 <p><strong>Status:</strong> ${info.label}</p>
-                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+                <p><strong>Telefone:</strong> ${
+                  data.telefoneCelular || "Não informado"
+                }</p>
                 <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
                 <button class="action-button" data-id="${id}" data-tipo="${
       info.tipo
@@ -185,21 +173,14 @@ export function init(db, user, userData) {
   }
 
   function adicionarEventListeners() {
-    console.log(
-      "%c[ANÁLISE] Etapa 5: Adicionando interatividade.",
-      "color: blue; font-weight: bold;"
-    );
-
     container.addEventListener("click", async (event) => {
       const button = event.target.closest(".action-button:not([disabled])");
       if (!button) return;
 
+      const card = button.closest(".paciente-card");
       const pacienteId = button.dataset.id;
       const tipo = button.dataset.tipo;
-
-      console.log(
-        `[ANÁLISE] Botão de ação clicado para o paciente ID: ${pacienteId} (Tipo: ${tipo})`
-      );
+      const telefone = card.dataset.telefone; // Pega o telefone do card
 
       try {
         const docSnap = await db
@@ -220,7 +201,11 @@ export function init(db, user, userData) {
             abrirModalHorariosPb(pacienteId, pacienteData);
             break;
           case "contrato":
-            handleEnviarContrato(pacienteId);
+            handleEnviarContrato(
+              pacienteId,
+              telefone,
+              pacienteData.nomeCompleto
+            ); // Passa mais dados
             break;
         }
       } catch (error) {
@@ -230,29 +215,29 @@ export function init(db, user, userData) {
     });
   }
 
-  function handleEnviarContrato(pacienteId) {
-    // Constrói a URL completa para a página do contrato
+  // ***** FUNÇÃO ALTERADA *****
+  function handleEnviarContrato(pacienteId, telefone, nomePaciente) {
+    const numeroLimpo = telefone ? telefone.replace(/\D/g, "") : "";
+    if (!numeroLimpo || numeroLimpo.length < 10) {
+      alert(
+        "O número de telefone do paciente não é válido para envio via WhatsApp."
+      );
+      return;
+    }
+
     const contractUrl = `${window.location.origin}/public/contrato-terapeutico.html?id=${pacienteId}`;
 
-    // Tenta copiar para a área de transferência
-    navigator.clipboard
-      .writeText(contractUrl)
-      .then(() => {
-        alert(
-          `Link do contrato copiado para a área de transferência!\n\nEnvie este link para o paciente:\n${contractUrl}`
-        );
-      })
-      .catch((err) => {
-        console.error("Falha ao copiar o link: ", err);
-        // Se a cópia falhar, exibe o link em um prompt para cópia manual
-        window.prompt(
-          "Não foi possível copiar o link automaticamente. Copie manualmente:",
-          contractUrl
-        );
-      });
+    const mensagem = `Olá, ${nomePaciente}! Tudo bem?\n\nSegue o link para leitura e aceite do nosso contrato terapêutico. Por favor, preencha ao final para darmos continuidade.\n\n${contractUrl}\n\nQualquer dúvida, estou à disposição!`;
+
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=55${numeroLimpo}&text=${encodeURIComponent(
+      mensagem
+    )}`;
+
+    // Abre o link do WhatsApp em uma nova aba
+    window.open(whatsappUrl, "_blank");
   }
 
-  // (O restante do código, com as funções de modal, permanece exatamente o mesmo)
+  // (O restante do seu código, com as funções de modal, permanece exatamente o mesmo)
   // ... (abrirModalEncerramento, abrirModalHorariosPb, etc.)
 
   async function abrirModalEncerramento(pacienteId, data) {
@@ -335,11 +320,11 @@ export function init(db, user, userData) {
 
     const style = document.createElement("style");
     style.textContent = `
-    .checkbox-group label.disabled-temp {
-        color: #999;
-        cursor: not-allowed;
-        text-decoration: line-through;
-    }
+    .checkbox-group label.disabled-temp {
+        color: #999;
+        cursor: not-allowed;
+        text-decoration: line-through;
+    }
 `;
     document.head.appendChild(style);
     const dispSelect = form.querySelector("#manter-disponibilidade");
@@ -492,70 +477,70 @@ export function init(db, user, userData) {
       .join("");
 
     return `
-        <div class="form-group">
-            <label for="nome-profissional-pb">Nome Profissional:</label>
-            <input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly>
-        </div>
-        <div class="form-group">
-            <label for="dia-semana-pb">Informe o dia da semana que você irá atender o paciente:</label>
-            <select id="dia-semana-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Segunda-feira">Segunda-feira</option>
-                <option value="Terça-feira">Terça-feira</option>
-                <option value="Quarta-feira">Quarta-feira</option>
-                <option value="Quinta-feira">Quinta-feira</option>
-                <option value="Sexta-feira">Sexta-feira</option>
-                <option value="Sábado">Sábado</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="horario-pb">Selecione o horário da sessão:</label>
-            <select id="horario-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                ${horasOptions}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="tipo-atendimento-pb-voluntario">Informe o tipo de atendimento:</label>
-            <select id="tipo-atendimento-pb-voluntario" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Presencial">Presencial</option>
-                <option value="Online">Online</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
-            <select id="alterar-grade-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Sim">Sim</option>
-                <option value="Não">Não</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="frequencia-atendimento-pb">O atendimento será realizado:</label>
-            <select id="frequencia-atendimento-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Semanal">Semanal</option>
-                <option value="Quinzenal">Quinzenal</option>
-                <option value="Mensal">Mensal</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="sala-atendimento-pb">Selecione abaixo a sala que você atende no dia e horário informado:<br><small>Para atendimentos online selecione a opção Online.</small></label>
-            <select id="sala-atendimento-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                ${salasOptions}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="data-inicio-sessoes">Informe a partir de qual data devem ser criadas as novas sessões:</label>
-            <input type="date" id="data-inicio-sessoes" class="form-control" required>
-        </div>
-         <div class="form-group">
-            <label for="observacoes-pb-horarios">Observações:</label>
-            <textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea>
-        </div>
-    `;
+        <div class="form-group">
+            <label for="nome-profissional-pb">Nome Profissional:</label>
+            <input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="dia-semana-pb">Informe o dia da semana que você irá atender o paciente:</label>
+            <select id="dia-semana-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Segunda-feira">Segunda-feira</option>
+                <option value="Terça-feira">Terça-feira</option>
+                <option value="Quarta-feira">Quarta-feira</option>
+                <option value="Quinta-feira">Quinta-feira</option>
+                <option value="Sexta-feira">Sexta-feira</option>
+                <option value="Sábado">Sábado</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="horario-pb">Selecione o horário da sessão:</label>
+            <select id="horario-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                ${horasOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="tipo-atendimento-pb-voluntario">Informe o tipo de atendimento:</label>
+            <select id="tipo-atendimento-pb-voluntario" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Presencial">Presencial</option>
+                <option value="Online">Online</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
+            <select id="alterar-grade-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Sim">Sim</option>
+                <option value="Não">Não</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="frequencia-atendimento-pb">O atendimento será realizado:</label>
+            <select id="frequencia-atendimento-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Semanal">Semanal</option>
+                <option value="Quinzenal">Quinzenal</option>
+                <option value="Mensal">Mensal</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="sala-atendimento-pb">Selecione abaixo a sala que você atende no dia e horário informado:<br><small>Para atendimentos online selecione a opção Online.</small></label>
+            <select id="sala-atendimento-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                ${salasOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="data-inicio-sessoes">Informe a partir de qual data devem ser criadas as novas sessões:</label>
+            <input type="date" id="data-inicio-sessoes" class="form-control" required>
+        </div>
+         <div class="form-group">
+            <label for="observacoes-pb-horarios">Observações:</label>
+            <textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea>
+        </div>
+    `;
   }
 
   document
@@ -695,7 +680,8 @@ export function init(db, user, userData) {
       } finally {
         saveButton.disabled = false;
       }
-    }); // Ponto de partida da execução da lógica da página
+    });
 
+  // Ponto de partida
   carregarMeusPacientes();
 }
