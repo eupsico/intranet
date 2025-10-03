@@ -29,7 +29,7 @@ async function loadContractData(pacienteId) {
     const docRef = db.collection("trilhaPaciente").doc(pacienteId);
     const docSnap = await docRef.get();
 
-    if (!docSnap.exists()) {
+    if (!docSnap.exists) {
       throw new Error(
         "Paciente não encontrado. Verifique se o link está correto."
       );
