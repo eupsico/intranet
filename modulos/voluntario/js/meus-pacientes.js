@@ -1,7 +1,6 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.8.1 (Diagnóstico Avançado com Logs)
+// Versão: 3.8.2 (CORREÇÃO FINAL: Alinha o ID do container com o HTML)
 
-// A função 'init' é o ponto de entrada, chamada pelo portal-voluntario.js
 export function init(db, user, userData) {
   // --- LOG DE DIAGNÓSTICO [ETAPA 1: INICIALIZAÇÃO] ---
   console.log(
@@ -13,16 +12,20 @@ export function init(db, user, userData) {
     userName: userData.nome,
   });
 
-  const container = document.getElementById("meus-pacientes-container");
+  // ***** CORREÇÃO APLICADA AQUI *****
+  // O ID foi alterado de 'meus-pacientes-container' para 'pacientes-cards-container'
+  // para corresponder exatamente ao que está no seu arquivo HTML.
+  const container = document.getElementById("pacientes-cards-container");
+
   if (!container) {
     // --- LOG DE ERRO CRÍTICO ---
     console.error(
-      "[ANÁLISE ERRO] Não foi possível encontrar o elemento container '#meus-pacientes-container'. O script não pode continuar. Verifique se o ID está correto no arquivo meus-pacientes.html."
+      "[ANÁLISE ERRO] Não foi possível encontrar o elemento container '#pacientes-cards-container'. O script não pode continuar. Verifique se o ID está correto no arquivo meus-pacientes.html."
     );
     return;
   }
   console.log(
-    "[ANÁLISE] Elemento container '#meus-pacientes-container' encontrado com sucesso."
+    "[ANÁLISE] Elemento container '#pacientes-cards-container' encontrado com sucesso. O script continuará."
   );
 
   const encerramentoModal = document.getElementById("encerramento-modal");
@@ -56,7 +59,6 @@ export function init(db, user, userData) {
 
     try {
       // --- LOG DE DIAGNÓSTICO [ETAPA 2.1: CONSTRUÇÃO DAS CONSULTAS] ---
-      // Esta é a parte mais importante. Verificamos exatamente o que está sendo pedido.
       console.log(
         "[ANÁLISE] Construindo consulta para pacientes de PLANTÃO com as seguintes condições:"
       );
@@ -79,7 +81,6 @@ export function init(db, user, userData) {
         .where("status", "==", "aguardando_info_horarios")
         .where("pbInfo.profissionalId", "==", user.uid);
 
-      // Executando as consultas
       console.log("[ANÁLISE] Enviando as duas consultas para o Firestore...");
       const [plantaoSnapshot, pbSnapshot] = await Promise.all([
         queryPlantao.get(),
@@ -99,12 +100,11 @@ export function init(db, user, userData) {
         `[ANÁLISE] A consulta de PB retornou: ${pbSnapshot.size} paciente(s).`
       );
 
-      // HIPÓTESE DE DIAGNÓSTICO AUTOMÁTICO
       if (plantaoSnapshot.empty && pbSnapshot.empty) {
         console.warn(
           "[DIAGNÓSTICO] AMBAS as consultas não retornaram resultados. Isso significa que NENHUM paciente associado a você ('" +
             user.uid +
-            "') possui o status EXATO de 'em_atendimento_plantao' ou 'aguardando_info_horarios'. Verifique no banco de dados se os pacientes não estão em um status ligeiramente diferente (ex: 'agendamento_confirmado_plantao') ou se há algum erro de digitação nos dados."
+            "') possui o status EXATO de 'em_atendimento_plantao' ou 'aguardando_info_horarios'. Verifique no banco de dados se os pacientes não estão em um status ligeiramente diferente."
         );
         container.innerHTML =
           "<p>Você não tem pacientes designados nos estágios de atendimento ativo no momento.</p>";
@@ -134,15 +134,17 @@ export function init(db, user, userData) {
       container.innerHTML = html;
       adicionarEventListeners();
     } catch (error) {
-      // --- LOG DE ERRO CRÍTICO ---
       console.error(
-        "[ANÁLISE ERRO] Uma falha crítica ocorreu durante a busca ou renderização dos pacientes. Erro detalhado abaixo:"
+        "[ANÁLISE ERRO] Uma falha crítica ocorreu durante a busca ou renderização dos pacientes.",
+        error
       );
-      console.error(error);
       container.innerHTML =
         '<p class="error-message">Ocorreu um erro ao carregar seus pacientes. Verifique o console para detalhes técnicos.</p>';
     }
   }
+
+  // O restante do código permanece inalterado, pois a lógica interna está correta.
+  // ... (todas as outras funções: criarCardPaciente, adicionarEventListeners, abrirModais, etc.)
 
   function criarCardPaciente(id, data, tipo) {
     const info = tipo === "plantao" ? data.plantaoInfo : data.pbInfo;
@@ -156,25 +158,22 @@ export function init(db, user, userData) {
       : "N/A";
 
     return `
-            <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-                <h4>${data.nomeCompleto}</h4>
-                <p><strong>Status:</strong> ${
-                  tipo === "plantao"
-                    ? "Em Atendimento (Plantão)"
-                    : "Aguardando Info Horários (PB)"
-                }</p>
-                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-                <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-                <button class="action-button">${acaoLabel}</button>
-            </div>
-        `;
+            <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
+                <h4>${data.nomeCompleto}</h4>
+                <p><strong>Status:</strong> ${
+      tipo === "plantao"
+        ? "Em Atendimento (Plantão)"
+        : "Aguardando Info Horários (PB)"
+    }</p>
+                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+                <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+                <button class="action-button">${acaoLabel}</button>
+            </div>
+        `;
   }
 
   function adicionarEventListeners() {
-    console.log(
-      "%c[ANÁLISE] Etapa 5: Adicionando interatividade aos botões dos cards.",
-      "color: blue; font-weight: bold;"
-    );
+    console.log("[ANÁLISE] Etapa 5: Adicionando interatividade aos botões.");
     document
       .querySelectorAll(".paciente-card .action-button")
       .forEach((button) => {
@@ -182,9 +181,6 @@ export function init(db, user, userData) {
           const card = e.target.closest(".paciente-card");
           const pacienteId = card.dataset.id;
           const tipo = card.dataset.tipo;
-          console.log(
-            `[ANÁLISE] Botão de ação clicado para o paciente ID: ${pacienteId} (Tipo: ${tipo})`
-          );
 
           const docSnap = await db
             .collection("trilhaPaciente")
@@ -206,14 +202,10 @@ export function init(db, user, userData) {
       });
   }
 
-  // O restante do seu código (funções de modal, forms, etc.) permanece o mesmo.
-  // Colei-o abaixo para garantir a integridade do arquivo.
-
   async function abrirModalEncerramento(pacienteId, data) {
     const form = document.getElementById("encerramento-form");
     form.reset();
-    document.getElementById("paciente-id-modal").value = pacienteId;
-    // --- CORREÇÃO DA EXIBIÇÃO DE DISPONIBILIDADE ---
+    document.getElementById("paciente-id-modal").value = pacienteId; // --- CORREÇÃO DA EXIBIÇÃO DE DISPONIBILIDADE ---
     const disponibilidadeEspecifica = data.disponibilidadeEspecifica || [];
     const textoDisponibilidade =
       disponibilidadeEspecifica.length > 0
@@ -241,18 +233,16 @@ export function init(db, user, userData) {
         .classList.toggle("hidden", pagamentoSelect.value !== "nao");
       document.getElementById("motivo-nao-pagamento").required =
         pagamentoSelect.value === "nao";
-    };
+    }; // --- LÓGICA CORRIGIDA DOS CHECKBOXES ---
 
-    // --- LÓGICA CORRIGIDA DOS CHECKBOXES ---
     const encaminhamentoCheckboxes = form.querySelectorAll(
       'input[name="encaminhamento"]'
     );
     const altaCheckbox = form.querySelector('input[value="Alta"]');
     const desistenciaCheckbox = form.querySelector(
       'input[value="Desistência"]'
-    );
+    ); // Função para reabilitar todos os checkboxes (exceto os permanentemente desabilitados)
 
-    // Função para reabilitar todos os checkboxes (exceto os permanentemente desabilitados)
     const reabilitarTodos = () => {
       encaminhamentoCheckboxes.forEach((cb) => {
         // A classe 'disabled' no HTML indica um campo que nunca deve ser habilitado
@@ -266,12 +256,10 @@ export function init(db, user, userData) {
     encaminhamentoCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
         const altaChecked = altaCheckbox.checked;
-        const desistenciaChecked = desistenciaCheckbox.checked;
+        const desistenciaChecked = desistenciaCheckbox.checked; // 1. Sempre reabilita todos os campos no início de cada mudança
 
-        // 1. Sempre reabilita todos os campos no início de cada mudança
-        reabilitarTodos();
+        reabilitarTodos(); // 2. Se 'Alta' estiver marcada, desabilita os outros
 
-        // 2. Se 'Alta' estiver marcada, desabilita os outros
         if (altaChecked) {
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Alta") {
@@ -282,8 +270,7 @@ export function init(db, user, userData) {
               }
             }
           });
-        }
-        // 3. Se 'Desistência' estiver marcada, desabilita os outros
+        } // 3. Se 'Desistência' estiver marcada, desabilita os outros
         else if (desistenciaChecked) {
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Desistência") {
@@ -296,20 +283,18 @@ export function init(db, user, userData) {
           });
         }
       });
-    });
+    }); // Adicione este CSS para estilizar os campos desabilitados temporariamente
 
-    // Adicione este CSS para estilizar os campos desabilitados temporariamente
     const style = document.createElement("style");
     style.textContent = `
-    .checkbox-group label.disabled-temp {
-        color: #999;
-        cursor: not-allowed;
-        text-decoration: line-through;
-    }
+    .checkbox-group label.disabled-temp {
+        color: #999;
+        cursor: not-allowed;
+        text-decoration: line-through;
+    }
 `;
-    document.head.appendChild(style);
+    document.head.appendChild(style); // --- LÓGICA DA DISPONIBILIDADE ---
 
-    // --- LÓGICA DA DISPONIBILIDADE ---
     const dispSelect = form.querySelector("#manter-disponibilidade");
     const novaDisponibilidadeContainer = document.getElementById(
       "nova-disponibilidade-container"
@@ -339,8 +324,7 @@ export function init(db, user, userData) {
             '<p class="error-message">Erro ao carregar opções.</p>';
         }
       }
-    };
-    // Reseta o campo ao abrir o modal
+    }; // Reseta o campo ao abrir o modal
     dispSelect.value = "";
     novaDisponibilidadeContainer.classList.add("hidden");
     novaDisponibilidadeContainer.innerHTML = "";
@@ -406,9 +390,8 @@ export function init(db, user, userData) {
     const motivoContainer = document.getElementById(
       "motivo-nao-inicio-pb-container"
     );
-    const continuacaoContainer = document.getElementById("form-continuacao-pb");
+    const continuacaoContainer = document.getElementById("form-continuacao-pb"); // Limpa o container do formulário para garantir que não haja duplicatas
 
-    // Limpa o container do formulário para garantir que não haja duplicatas
     continuacaoContainer.innerHTML = "";
 
     iniciouRadio.forEach((radio) => {
@@ -420,16 +403,14 @@ export function init(db, user, userData) {
         continuacaoContainer.classList.toggle("hidden", !mostrarFormulario);
 
         document.getElementById("motivo-nao-inicio-pb").required =
-          mostrarMotivo;
+          mostrarMotivo; // Se o formulário de continuação deve ser mostrado, o construímos
 
-        // Se o formulário de continuação deve ser mostrado, o construímos
         if (mostrarFormulario && continuacaoContainer.innerHTML === "") {
           continuacaoContainer.innerHTML = construirFormularioHorarios(
             userData.nome
           );
-        }
+        } // Torna os campos do formulário de continuação obrigatórios ou não
 
-        // Torna os campos do formulário de continuação obrigatórios ou não
         continuacaoContainer
           .querySelectorAll("select, input, textarea")
           .forEach((el) => {
@@ -465,70 +446,70 @@ export function init(db, user, userData) {
       .join("");
 
     return `
-        <div class="form-group">
-            <label for="nome-profissional-pb">Nome Profissional:</label>
-            <input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly>
-        </div>
-        <div class="form-group">
-            <label for="dia-semana-pb">Informe o dia da semana que você irá atender o paciente:</label>
-            <select id="dia-semana-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Segunda-feira">Segunda-feira</option>
-                <option value="Terça-feira">Terça-feira</option>
-                <option value="Quarta-feira">Quarta-feira</option>
-                <option value="Quinta-feira">Quinta-feira</option>
-                <option value="Sexta-feira">Sexta-feira</option>
-                <option value="Sábado">Sábado</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="horario-pb">Selecione o horário da sessão:</label>
-            <select id="horario-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                ${horasOptions}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="tipo-atendimento-pb-voluntario">Informe o tipo de atendimento:</label>
-            <select id="tipo-atendimento-pb-voluntario" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Presencial">Presencial</option>
-                <option value="Online">Online</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
-            <select id="alterar-grade-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Sim">Sim</option>
-                <option value="Não">Não</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="frequencia-atendimento-pb">O atendimento será realizado:</label>
-            <select id="frequencia-atendimento-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                <option value="Semanal">Semanal</option>
-                <option value="Quinzenal">Quinzenal</option>
-                <option value="Mensal">Mensal</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="sala-atendimento-pb">Selecione abaixo a sala que você atende no dia e horário informado:<br><small>Para atendimentos online selecione a opção Online.</small></label>
-            <select id="sala-atendimento-pb" class="form-control" required>
-                <option value="">Selecione...</option>
-                ${salasOptions}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="data-inicio-sessoes">Informe a partir de qual data devem ser criadas as novas sessões:</label>
-            <input type="date" id="data-inicio-sessoes" class="form-control" required>
-        </div>
-         <div class="form-group">
-            <label for="observacoes-pb-horarios">Observações:</label>
-            <textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea>
-        </div>
-    `;
+        <div class="form-group">
+            <label for="nome-profissional-pb">Nome Profissional:</label>
+            <input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="dia-semana-pb">Informe o dia da semana que você irá atender o paciente:</label>
+            <select id="dia-semana-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Segunda-feira">Segunda-feira</option>
+                <option value="Terça-feira">Terça-feira</option>
+                <option value="Quarta-feira">Quarta-feira</option>
+                <option value="Quinta-feira">Quinta-feira</option>
+                <option value="Sexta-feira">Sexta-feira</option>
+                <option value="Sábado">Sábado</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="horario-pb">Selecione o horário da sessão:</label>
+            <select id="horario-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                ${horasOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="tipo-atendimento-pb-voluntario">Informe o tipo de atendimento:</label>
+            <select id="tipo-atendimento-pb-voluntario" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Presencial">Presencial</option>
+                <option value="Online">Online</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
+            <select id="alterar-grade-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Sim">Sim</option>
+                <option value="Não">Não</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="frequencia-atendimento-pb">O atendimento será realizado:</label>
+            <select id="frequencia-atendimento-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="Semanal">Semanal</option>
+                <option value="Quinzenal">Quinzenal</option>
+                <option value="Mensal">Mensal</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="sala-atendimento-pb">Selecione abaixo a sala que você atende no dia e horário informado:<br><small>Para atendimentos online selecione a opção Online.</small></label>
+            <select id="sala-atendimento-pb" class="form-control" required>
+                <option value="">Selecione...</option>
+                ${salasOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="data-inicio-sessoes">Informe a partir de qual data devem ser criadas as novas sessões:</label>
+            <input type="date" id="data-inicio-sessoes" class="form-control" required>
+        </div>
+         <div class="form-group">
+            <label for="observacoes-pb-horarios">Observações:</label>
+            <textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea>
+        </div>
+    `;
   }
 
   document
@@ -670,6 +651,5 @@ export function init(db, user, userData) {
       }
     });
 
-  // Ponto de partida da execução da lógica da página
   carregarMeusPacientes();
 }
