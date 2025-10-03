@@ -36,50 +36,64 @@ export function init(db, user, userData) {
     const loading = document.getElementById("loading-pacientes");
     const emptyState = document.getElementById("empty-state-pacientes");
 
-    if (!container || !loading || !emptyState) return;
+    if (!container || !loading || !emptyState) {
+      console.warn("❗ Elementos do DOM não encontrados:", {
+        container: !!container,
+        loading: !!loading,
+        emptyState: !!emptyState,
+      });
+      return;
+    }
+
+    console.log("🔄 Iniciando carregamento de pacientes para userId:", userId);
 
     loading.style.display = "block";
     container.innerHTML = "";
     emptyState.style.display = "none";
 
     try {
-      // 🔍 Loga o userId recebido
-      console.log("🔑 userId recebido:", userId);
+      // Timeout de segurança (10s)
+      const timeout = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("⏱ Timeout na consulta Firebase")),
+          10000
+        )
+      );
 
-      // Consulta 1: Pacientes de PLANTÃO sob responsabilidade do profissional.
+      // Consultas
       const queryPlantao = db
         .collection("trilhaPaciente")
         .where("plantaoInfo.profissionalId", "==", userId)
         .where("status", "==", "em_atendimento_plantao");
 
-      // Consulta 2: Pacientes de PB sob responsabilidade do profissional.
       const queryPb = db
         .collection("trilhaPaciente")
         .where("pbInfo.profissionalId", "==", userId)
         .where("status", "not-in", ["alta", "desistencia"]);
 
-      const [snapshotPlantao, snapshotPb] = await Promise.all([
-        queryPlantao.get(),
-        queryPb.get(),
+      console.log("📡 Executando consultas no Firestore...");
+
+      const [snapshotPlantao, snapshotPb] = await Promise.race([
+        Promise.all([queryPlantao.get(), queryPb.get()]),
+        timeout,
       ]);
 
-      // 🔍 Logs de debug
-      console.log("📊 Plantão encontrados:", snapshotPlantao.size);
-      snapshotPlantao.forEach((doc) => {
-        console.log("   → Plantão doc:", doc.id, "status:", doc.data().status);
-      });
+      console.log("📊 Resultados recebidos:");
+      console.log("   → Plantão encontrados:", snapshotPlantao.size);
+      snapshotPlantao.forEach((doc) =>
+        console.log("      •", doc.id, "| status:", doc.data().status)
+      );
 
-      console.log("📊 PB encontrados:", snapshotPb.size);
-      snapshotPb.forEach((doc) => {
-        console.log("   → PB doc:", doc.id, "status:", doc.data().status);
-      });
+      console.log("   → PB encontrados:", snapshotPb.size);
+      snapshotPb.forEach((doc) =>
+        console.log("      •", doc.id, "| status:", doc.data().status)
+      );
 
+      // Unificação dos pacientes
       const pacientesMap = new Map();
-
       snapshotPlantao.forEach((doc) => {
         pacientesMap.set(doc.id, { id: doc.id, ...doc.data() });
       });
-
       snapshotPb.forEach((doc) => {
         pacientesMap.set(doc.id, { id: doc.id, ...doc.data() });
       });
@@ -87,26 +101,41 @@ export function init(db, user, userData) {
       const pacientes = Array.from(pacientesMap.values());
 
       if (pacientes.length === 0) {
+        console.log("ℹ️ Nenhum paciente encontrado.");
         emptyState.style.display = "block";
       } else {
+        console.log("✅ Renderizando", pacientes.length, "pacientes...");
         pacientes.sort((a, b) =>
           (a.nomeCompleto || "").localeCompare(b.nomeCompleto || "")
         );
-        container.innerHTML = ""; // Limpa antes de renderizar
+        container.innerHTML = "";
         pacientes.forEach((data) => {
-          const cardHtml = criarCardPaciente(data.id, data);
-          container.insertAdjacentHTML("beforeend", cardHtml);
+          try {
+            const cardHtml = criarCardPaciente(data.id, data);
+            container.insertAdjacentHTML("beforeend", cardHtml);
+          } catch (err) {
+            console.error("⚠️ Erro ao criar card do paciente:", data.id, err);
+          }
         });
-        adicionarEventListeners(); // Adiciona os listeners aos novos cards
+
+        try {
+          adicionarEventListeners();
+        } catch (err) {
+          console.error("⚠️ Erro ao adicionar event listeners:", err);
+        }
       }
     } catch (error) {
-      console.error("❌ Erro ao carregar seus pacientes:", error);
+      console.error("❌ Erro ao carregar pacientes:", {
+        message: error.message,
+        stack: error.stack,
+      });
       emptyState.style.display = "block";
       emptyState.innerHTML =
         "<p>Ocorreu um erro ao carregar os pacientes. Tente novamente mais tarde.</p>";
+    } finally {
+      loading.style.display = "none";
+      console.log("🔚 Finalizado processo de carregamento.");
     }
-
-    loading.style.display = "none";
   }
 
   // --- CRIAÇÃO DOS CARDS DE PACIENTE ---
