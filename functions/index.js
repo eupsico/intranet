@@ -673,45 +673,35 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
 // -------------------------------------------------------------------
 // (PÚBLICO) Assinatura do contrato terapêutico.
 // -------------------------------------------------------------------
-exports.assinarContrato = functions.https.onCall(async (data, context) => {
-  const { pacienteId, nomeSignatario, cpfSignatario } = data;
+exports.assinarContrato = onCall({ cors: true }, async (request) => {
+  const { pacienteId, nomeSignatario, cpfSignatario, versaoContrato, ip } =
+    request.data;
 
-  // 🔒 Validações básicas
   if (!pacienteId || !nomeSignatario || !cpfSignatario) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Dados obrigatórios ausentes."
-    );
+    throw new HttpsError("invalid-argument", "Dados obrigatórios ausentes.");
   }
 
-  // 🔒 Validação simples de CPF (apenas tamanho, você pode reforçar depois)
   if (cpfSignatario.length !== 11) {
-    throw new functions.https.HttpsError("invalid-argument", "CPF inválido.");
+    throw new HttpsError("invalid-argument", "CPF inválido.");
   }
 
-  // Monta objeto de assinatura
   const assinatura = {
     contratoAssinado: {
       assinadoEm: admin.firestore.Timestamp.now(),
       nomeSignatario,
       cpfSignatario,
-      versaoContrato: "1.0",
-      ip: context.rawRequest.ip || "não identificado",
+      versaoContrato: versaoContrato || "1.0",
+      ip: ip || "não identificado",
     },
     lastUpdate: admin.firestore.Timestamp.now(),
   };
 
   try {
-    await admin
-      .firestore()
-      .collection("trilhaPaciente")
-      .doc(pacienteId)
-      .update(assinatura);
-
+    await db.collection("trilhaPaciente").doc(pacienteId).update(assinatura);
     return { success: true, message: "Contrato assinado com sucesso." };
   } catch (error) {
     console.error("Erro ao salvar assinatura:", error);
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "internal",
       "Erro ao salvar assinatura no banco de dados."
     );
