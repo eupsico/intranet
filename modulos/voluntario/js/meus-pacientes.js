@@ -1,161 +1,120 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.9 (Amplia a busca para incluir status intermediários de PB)
+// Versão: 4.0 (Adiciona busca por 'em_atendimento_pb' e funcionalidade 'Enviar Contrato')
 
 export function init(db, user, userData) {
-  // --- LOG DE DIAGNÓSTICO [ETAPA 1: INICIALIZAÇÃO] ---
   console.log(
     "%c[ANÁLISE] Etapa 1: Módulo 'meus-pacientes.js' iniciado.",
     "color: blue; font-weight: bold;"
   );
-  console.log("[ANÁLISE] Dados recebidos:", {
-    userId: user.uid,
-    userName: userData.nome,
-  });
 
   const container = document.getElementById("pacientes-cards-container");
   if (!container) {
     console.error(
-      "[ANÁLISE ERRO] Não foi possível encontrar o elemento container '#pacientes-cards-container'."
+      "[ANÁLISE ERRO] Container '#pacientes-cards-container' não encontrado."
     );
     return;
   }
-  console.log(
-    "[ANÁLISE] Elemento container '#pacientes-cards-container' encontrado com sucesso."
-  );
 
   const encerramentoModal = document.getElementById("encerramento-modal");
   const horariosPbModal = document.getElementById("horarios-pb-modal");
 
-  // Configura botões de fechar e cancelar dos modais
+  // --- Funções de controle de modais ---
+  const allModals = [encerramentoModal, horariosPbModal];
   document
-    .querySelectorAll(
-      ".modal .close-button, #modal-cancel-btn, [data-close-modal]"
-    )
+    .querySelectorAll(".modal .close-button, [data-close-modal]")
     .forEach((btn) => {
       btn.addEventListener("click", () => {
-        encerramentoModal.style.display = "none";
-        horariosPbModal.style.display = "none";
+        allModals.forEach((modal) => {
+          if (modal) modal.style.display = "none";
+        });
       });
     });
 
-  // Fecha o modal ao clicar fora dele
   window.addEventListener("click", (event) => {
-    if (event.target == encerramentoModal)
-      encerramentoModal.style.display = "none";
-    if (event.target == horariosPbModal) horariosPbModal.style.display = "none";
+    allModals.forEach((modal) => {
+      if (modal && event.target == modal) modal.style.display = "none";
+    });
   });
+  // --- Fim do controle de modais ---
 
   async function carregarMeusPacientes() {
     container.innerHTML = '<div class="loading-spinner"></div>';
     console.log(
-      "%c[ANÁLISE] Etapa 2: Iniciando busca de pacientes no Firestore...",
+      "%c[ANÁLISE] Etapa 2: Iniciando busca de pacientes...",
       "color: blue; font-weight: bold;"
     );
 
     try {
-      // ***** ALTERAÇÃO PRINCIPAL APLICADA AQUI *****
-      // Agora buscamos múltiplos status usando o operador 'in'
-      const statusPlantaoEPosPlantao = [
+      // Unifica as buscas para maior clareza e abrangência
+      const statusDeInteresse = [
         "em_atendimento_plantao",
-        "encaminhar_para_pb", // <-- NOVO STATUS ADICIONADO
-      ];
-
-      const statusPB = [
+        "encaminhar_para_pb",
         "aguardando_info_horarios",
-        "cadastrar_horario_psicomanager", // <-- NOVO STATUS ADICIONADO
+        "cadastrar_horario_psicomanager",
+        "em_atendimento_pb", // <-- NOVO STATUS ADICIONADO PARA O CONTRATO
       ];
 
       console.log(
-        "[ANÁLISE] Construindo consulta 1 (Plantão e Pós-Plantão) com as condições:"
+        `[ANÁLISE] Buscando pacientes com status em: [${statusDeInteresse.join(
+          ", "
+        )}]`
       );
-      console.log(
-        `  - status DEVE ESTAR EM: [${statusPlantaoEPosPlantao.join(", ")}]`
-      );
-      console.log(
-        `  - plantaoInfo.profissionalId DEVE SER IGUAL A: '${user.uid}'`
-      );
+
       const queryPlantao = db
         .collection("trilhaPaciente")
-        .where("status", "in", statusPlantaoEPosPlantao)
         .where("plantaoInfo.profissionalId", "==", user.uid);
 
-      console.log(
-        "[ANÁLISE] Construindo consulta 2 (Psicoterapia Breve) com as condições:"
-      );
-      console.log(`  - status DEVE ESTAR EM: [${statusPB.join(", ")}]`);
-      console.log(`  - pbInfo.profissionalId DEVE SER IGUAL A: '${user.uid}'`);
       const queryPb = db
         .collection("trilhaPaciente")
-        .where("status", "in", statusPB)
         .where("pbInfo.profissionalId", "==", user.uid);
 
-      console.log("[ANÁLISE] Enviando as duas consultas para o Firestore...");
       const [plantaoSnapshot, pbSnapshot] = await Promise.all([
         queryPlantao.get(),
         queryPb.get(),
       ]);
-      console.log("[ANÁLISE] Respostas do Firestore recebidas.");
-
-      // --- LOG DE DIAGNÓSTICO [ETAPA 3: ANÁLISE DOS RESULTADOS] ---
-      console.log(
-        "%c[ANÁLISE] Etapa 3: Analisando resultados das consultas.",
-        "color: blue; font-weight: bold;"
-      );
-      console.log(
-        `[ANÁLISE] A consulta de PLANTÃO E PÓS-PLANTÃO retornou: ${plantaoSnapshot.size} paciente(s).`
-      );
-      console.log(
-        `[ANÁLISE] A consulta de PB retornou: ${pbSnapshot.size} paciente(s).`
-      );
 
       const todosPacientes = [];
-      const pacientesProcessados = new Set(); // Para evitar duplicatas
+      const pacientesProcessados = new Set();
 
-      plantaoSnapshot.forEach((doc) => {
-        if (!pacientesProcessados.has(doc.id)) {
-          todosPacientes.push({ id: doc.id, ...doc.data() });
-          pacientesProcessados.add(doc.id);
-        }
-      });
-      pbSnapshot.forEach((doc) => {
-        if (!pacientesProcessados.has(doc.id)) {
-          todosPacientes.push({ id: doc.id, ...doc.data() });
-          pacientesProcessados.add(doc.id);
-        }
-      });
+      const processarSnapshot = (snapshot) => {
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          // Adiciona apenas se o status for um dos que queremos ver e não for duplicado
+          if (
+            statusDeInteresse.includes(data.status) &&
+            !pacientesProcessados.has(doc.id)
+          ) {
+            todosPacientes.push({ id: doc.id, ...data });
+            pacientesProcessados.add(doc.id);
+          }
+        });
+      };
+
+      processarSnapshot(plantaoSnapshot);
+      processarSnapshot(pbSnapshot);
+
+      console.log(
+        `[ANÁLISE] Encontrados ${todosPacientes.length} pacientes únicos.`
+      );
 
       if (todosPacientes.length === 0) {
-        console.warn(
-          "[DIAGNÓSTICO] Nenhuma das consultas retornou resultados. Verifique se os pacientes associados a você estão em algum dos seguintes status: " +
-            [...statusPlantaoEPosPlantao, ...statusPB].join(", ")
-        );
         container.innerHTML =
           "<p>Você não tem pacientes designados nos estágios de atendimento ativo no momento.</p>";
         return;
       }
 
-      console.log(
-        `%c[ANÁLISE] Etapa 4: Renderizando ${todosPacientes.length} card(s) de pacientes.`,
-        "color: blue; font-weight: bold;"
-      );
-
-      // Ordena os pacientes por nome para uma exibição consistente
       todosPacientes.sort((a, b) =>
         a.nomeCompleto.localeCompare(b.nomeCompleto)
       );
-
       container.innerHTML = todosPacientes
         .map((paciente) => criarCardPaciente(paciente.id, paciente))
         .join("");
 
-      adicionarEventListeners();
+      adicionarEventListeners(todosPacientes);
     } catch (error) {
-      console.error(
-        "[ANÁLISE ERRO] Uma falha crítica ocorreu durante a busca ou renderização dos pacientes.",
-        error
-      );
+      console.error("[ANÁLISE ERRO] Falha crítica ao buscar pacientes.", error);
       container.innerHTML =
-        '<p class="error-message">Ocorreu um erro ao carregar seus pacientes. Verifique o console para detalhes técnicos.</p>';
+        '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
     }
   }
 
@@ -185,6 +144,12 @@ export function init(db, user, userData) {
         tipo: "info",
         ativo: false,
       },
+      em_atendimento_pb: {
+        label: "Em Atendimento (PB)",
+        acao: "Enviar Contrato",
+        tipo: "contrato",
+        ativo: true,
+      }, // <-- NOVA AÇÃO
     };
 
     const info = statusMap[data.status] || {
@@ -193,9 +158,11 @@ export function init(db, user, userData) {
       tipo: "info",
       ativo: false,
     };
-    const infoContato =
-      data.status === "em_atendimento_plantao" ? data.plantaoInfo : data.pbInfo;
 
+    // Mostra a data de encaminhamento do plantão ou da PB
+    const infoContato = data.pbInfo?.dataEncaminhamento
+      ? data.pbInfo
+      : data.plantaoInfo;
     const dataEncaminhamento = infoContato?.dataEncaminhamento
       ? new Date(
           infoContato.dataEncaminhamento + "T03:00:00"
@@ -208,61 +175,95 @@ export function init(db, user, userData) {
                 <p><strong>Status:</strong> ${info.label}</p>
                 <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
                 <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-                <button class="action-button" ${
-                  !info.ativo ? "disabled" : ""
-                }>${info.acao}</button>
+                <button class="action-button" data-id="${id}" data-tipo="${
+      info.tipo
+    }" ${!info.ativo ? "disabled" : ""}>
+                    ${info.acao}
+                </button>
             </div>
         `;
   }
 
   function adicionarEventListeners() {
     console.log(
-      "%c[ANÁLISE] Etapa 5: Adicionando interatividade aos botões dos cards.",
+      "%c[ANÁLISE] Etapa 5: Adicionando interatividade.",
       "color: blue; font-weight: bold;"
     );
-    document
-      .querySelectorAll(".paciente-card .action-button:not([disabled])") // Apenas botões ativos
-      .forEach((button) => {
-        button.addEventListener("click", async (e) => {
-          const card = e.target.closest(".paciente-card");
-          const pacienteId = card.dataset.id;
-          const tipo = card.dataset.tipo;
-          console.log(
-            `[ANÁLISE] Botão de ação clicado para o paciente ID: ${pacienteId} (Tipo: ${tipo})`
-          );
 
-          const docSnap = await db
-            .collection("trilhaPaciente")
-            .doc(pacienteId)
-            .get();
+    container.addEventListener("click", async (event) => {
+      const button = event.target.closest(".action-button:not([disabled])");
+      if (!button) return;
 
-          if (!docSnap.exists) {
-            alert("Paciente não encontrado!");
-            return;
-          }
-          const pacienteData = docSnap.data();
+      const pacienteId = button.dataset.id;
+      const tipo = button.dataset.tipo;
 
-          if (tipo === "plantao") {
+      console.log(
+        `[ANÁLISE] Botão de ação clicado para o paciente ID: ${pacienteId} (Tipo: ${tipo})`
+      );
+
+      try {
+        const docSnap = await db
+          .collection("trilhaPaciente")
+          .doc(pacienteId)
+          .get();
+        if (!docSnap.exists) {
+          alert("Paciente não encontrado!");
+          return;
+        }
+        const pacienteData = docSnap.data();
+
+        switch (tipo) {
+          case "plantao":
             abrirModalEncerramento(pacienteId, pacienteData);
-          } else if (tipo === "pb") {
+            break;
+          case "pb":
             abrirModalHorariosPb(pacienteId, pacienteData);
-          }
-        });
+            break;
+          case "contrato":
+            handleEnviarContrato(pacienteId);
+            break;
+        }
+      } catch (error) {
+        console.error("Erro ao processar ação do card:", error);
+        alert("Ocorreu um erro ao buscar os dados do paciente.");
+      }
+    });
+  }
+
+  function handleEnviarContrato(pacienteId) {
+    // Constrói a URL completa para a página do contrato
+    const contractUrl = `${window.location.origin}/public/contrato-terapeutico.html?id=${pacienteId}`;
+
+    // Tenta copiar para a área de transferência
+    navigator.clipboard
+      .writeText(contractUrl)
+      .then(() => {
+        alert(
+          `Link do contrato copiado para a área de transferência!\n\nEnvie este link para o paciente:\n${contractUrl}`
+        );
+      })
+      .catch((err) => {
+        console.error("Falha ao copiar o link: ", err);
+        // Se a cópia falhar, exibe o link em um prompt para cópia manual
+        window.prompt(
+          "Não foi possível copiar o link automaticamente. Copie manualmente:",
+          contractUrl
+        );
       });
   }
 
   // (O restante do código, com as funções de modal, permanece exatamente o mesmo)
+  // ... (abrirModalEncerramento, abrirModalHorariosPb, etc.)
 
   async function abrirModalEncerramento(pacienteId, data) {
     const form = document.getElementById("encerramento-form");
     form.reset();
-    document.getElementById("paciente-id-modal").value = pacienteId; // --- CORREÇÃO DA EXIBIÇÃO DE DISPONIBILIDADE ---
+    document.getElementById("paciente-id-modal").value = pacienteId;
     const disponibilidadeEspecifica = data.disponibilidadeEspecifica || [];
     const textoDisponibilidade =
       disponibilidadeEspecifica.length > 0
         ? disponibilidadeEspecifica
             .map((item) => {
-              // Formata "manha-semana_8:00" para "Manhã (Semana) 8:00"
               const [periodo, hora] = item.split("_");
               const periodoFormatado =
                 periodo.replace("-", " (").replace("-", " ") + ")";
@@ -284,7 +285,7 @@ export function init(db, user, userData) {
         .classList.toggle("hidden", pagamentoSelect.value !== "nao");
       document.getElementById("motivo-nao-pagamento").required =
         pagamentoSelect.value === "nao";
-    }; // --- LÓGICA CORRIGIDA DOS CHECKBOXES ---
+    };
 
     const encaminhamentoCheckboxes = form.querySelectorAll(
       'input[name="encaminhamento"]'
@@ -292,14 +293,13 @@ export function init(db, user, userData) {
     const altaCheckbox = form.querySelector('input[value="Alta"]');
     const desistenciaCheckbox = form.querySelector(
       'input[value="Desistência"]'
-    ); // Função para reabilitar todos os checkboxes (exceto os permanentemente desabilitados)
+    );
 
     const reabilitarTodos = () => {
       encaminhamentoCheckboxes.forEach((cb) => {
-        // A classe 'disabled' no HTML indica um campo que nunca deve ser habilitado
         if (!cb.closest("label").classList.contains("disabled")) {
           cb.disabled = false;
-          cb.parentElement.classList.remove("disabled-temp"); // Usamos uma classe temporária
+          cb.parentElement.classList.remove("disabled-temp");
         }
       });
     };
@@ -307,10 +307,8 @@ export function init(db, user, userData) {
     encaminhamentoCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
         const altaChecked = altaCheckbox.checked;
-        const desistenciaChecked = desistenciaCheckbox.checked; // 1. Sempre reabilita todos os campos no início de cada mudança
-
-        reabilitarTodos(); // 2. Se 'Alta' estiver marcada, desabilita os outros
-
+        const desistenciaChecked = desistenciaCheckbox.checked;
+        reabilitarTodos();
         if (altaChecked) {
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Alta") {
@@ -321,8 +319,7 @@ export function init(db, user, userData) {
               }
             }
           });
-        } // 3. Se 'Desistência' estiver marcada, desabilita os outros
-        else if (desistenciaChecked) {
+        } else if (desistenciaChecked) {
           encaminhamentoCheckboxes.forEach((cb) => {
             if (cb.value !== "Desistência") {
               cb.checked = false;
@@ -334,7 +331,7 @@ export function init(db, user, userData) {
           });
         }
       });
-    }); // Adicione este CSS para estilizar os campos desabilitados temporariamente
+    });
 
     const style = document.createElement("style");
     style.textContent = `
@@ -344,8 +341,7 @@ export function init(db, user, userData) {
         text-decoration: line-through;
     }
 `;
-    document.head.appendChild(style); // --- LÓGICA DA DISPONIBILIDADE ---
-
+    document.head.appendChild(style);
     const dispSelect = form.querySelector("#manter-disponibilidade");
     const novaDisponibilidadeContainer = document.getElementById(
       "nova-disponibilidade-container"
@@ -375,7 +371,7 @@ export function init(db, user, userData) {
             '<p class="error-message">Erro ao carregar opções.</p>';
         }
       }
-    }; // Reseta o campo ao abrir o modal
+    };
     dispSelect.value = "";
     novaDisponibilidadeContainer.classList.add("hidden");
     novaDisponibilidadeContainer.innerHTML = "";
@@ -441,7 +437,7 @@ export function init(db, user, userData) {
     const motivoContainer = document.getElementById(
       "motivo-nao-inicio-pb-container"
     );
-    const continuacaoContainer = document.getElementById("form-continuacao-pb"); // Limpa o container do formulário para garantir que não haja duplicatas
+    const continuacaoContainer = document.getElementById("form-continuacao-pb");
 
     continuacaoContainer.innerHTML = "";
 
@@ -454,18 +450,17 @@ export function init(db, user, userData) {
         continuacaoContainer.classList.toggle("hidden", !mostrarFormulario);
 
         document.getElementById("motivo-nao-inicio-pb").required =
-          mostrarMotivo; // Se o formulário de continuação deve ser mostrado, o construímos
+          mostrarMotivo;
 
         if (mostrarFormulario && continuacaoContainer.innerHTML === "") {
           continuacaoContainer.innerHTML = construirFormularioHorarios(
             userData.nome
           );
-        } // Torna os campos do formulário de continuação obrigatórios ou não
+        }
 
         continuacaoContainer
           .querySelectorAll("select, input, textarea")
           .forEach((el) => {
-            // O campo de observações nunca é obrigatório
             if (el.id !== "observacoes-pb-horarios") {
               el.required = mostrarFormulario;
             }
@@ -700,8 +695,7 @@ export function init(db, user, userData) {
       } finally {
         saveButton.disabled = false;
       }
-    });
+    }); // Ponto de partida da execução da lógica da página
 
-  // Ponto de partida da execução da lógica da página
   carregarMeusPacientes();
 }
