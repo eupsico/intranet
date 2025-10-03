@@ -155,12 +155,15 @@ exports.criarNovoProfissional = onCall(async (request) => {
 // -----------------------------
 exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
   const cpf = request.data.cpf;
-  if (!cpf || cpf.length < 11) {
-    throw new HttpsError("invalid-argument", "CPF inválido ou não fornecido.");
+  // Apenas verifica se o campo não está vazio. A lógica de validação mais complexa
+  // foi movida para o frontend. O backend confia que recebeu um CPF válido ou um ID TEMP.
+  if (!cpf) {
+    throw new HttpsError("invalid-argument", "CPF/ID não fornecido.");
   }
 
   try {
     const trilhaRef = db.collection("trilhaPaciente");
+    // Esta consulta agora funcionará para ambos os casos
     const snapshot = await trilhaRef.where("cpf", "==", cpf).limit(1).get();
 
     if (snapshot.empty) {
@@ -181,7 +184,7 @@ exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
     console.error("Erro ao verificar CPF na trilha:", error);
     throw new HttpsError(
       "internal",
-      "Erro interno do servidor ao verificar CPF."
+      "Erro interno do servidor ao verificar CPF/ID."
     );
   }
 });
