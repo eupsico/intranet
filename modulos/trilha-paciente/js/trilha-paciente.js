@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
-// Versão: 3.3 (Implementa botão 'Mover' dentro do modal)
+// Versão: 3.4 (Passa dados do usuário para a função render)
 
 import { db } from "../../../assets/js/firebase-init.js";
 
@@ -39,7 +39,7 @@ export async function init(
     container.innerHTML = await response.text();
 
     setupColumns();
-    setupAllModalControls(); // <-- Alterado
+    setupAllModalControls();
     setupEventListeners();
     loadAndRenderCards();
   } catch (error) {
@@ -238,10 +238,12 @@ async function openCardModal(cardId) {
       `./stages/${stage}.js?v=${new Date().getTime()}`
     );
 
+    // ***** ALTERAÇÃO APLICADA AQUI *****
+    // Agora passamos os dados do usuário logado (currentUserData) para a função render.
     const contentElement = await stageModule.render(
       cardId,
-      cardData.nomeCompleto,
-      cardData
+      cardData,
+      currentUserData
     );
     modalBody.innerHTML = "";
     modalBody.appendChild(contentElement);
