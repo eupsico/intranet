@@ -90,10 +90,19 @@ function populateContractFields(data) {
   document.getElementById("data-paciente-nascimento").textContent = formatDate(
     data.dataNascimento
   );
-  document.getElementById("data-contribuicao").textContent =
-    data.valorContribuicao
-      ? parseFloat(data.valorContribuicao).toFixed(2).replace(".", ",")
-      : "Não informado";
+
+  const valor = data.valorContribuicao
+    ? data.valorContribuicao
+        .replace("R$", "") // remove símbolo
+        .replace(/\s/g, "") // remove espaços
+        .replace(/\./g, "") // remove pontos de milhar
+        .replace(",", ".") // troca vírgula por ponto
+    : null;
+
+  const exibicao = valor
+    ? "R$ " + parseFloat(valor).toFixed(2).replace(".", ",")
+    : "";
+  document.getElementById("data-contribuicao").textContent = exibicao;
 
   document.getElementById("data-dia-sessao").textContent =
     horarioInfo.diaSemana || "A definir";
