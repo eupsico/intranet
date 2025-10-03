@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
-// Versão: 3.0 (Estrutura de Módulos Padronizada)
+// Versão: 3.1 (Adiciona funcionalidade de mover card para a etapa anterior)
 
 import { db } from "../../../assets/js/firebase-init.js";
 
@@ -21,6 +21,7 @@ const COLUMNS_CONFIG = {
 
 let allCardsData = {};
 let currentColumnFilter = [];
+let currentUserData = {}; // Armazena dados do usuário logado
 
 export async function init(
   firestoreDb,
@@ -30,6 +31,7 @@ export async function init(
   columnFilter
 ) {
   currentColumnFilter = columnFilter;
+  currentUserData = authData; // Salva os dados do usuário para logs
 
   try {
     const response = await fetch("../page/trilha-paciente.html");
@@ -38,6 +40,7 @@ export async function init(
 
     setupColumns();
     setupModalControls();
+    setupEventListeners(); // <-- NOVO: Centraliza os event listeners
     loadAndRenderCards();
   } catch (error) {
     console.error("Erro ao inicializar o Kanban:", error);
@@ -84,6 +87,71 @@ function setupModalControls() {
   });
 }
 
+// NOVO: Função para centralizar os event listeners, usando delegação de eventos
+function setupEventListeners() {
+  const kanbanBoard = document.getElementById("kanban-board");
+  if (!kanbanBoard) return;
+
+  kanbanBoard.addEventListener("click", (event) => {
+    const cardElement = event.target.closest(".kanban-card");
+    if (!cardElement) return;
+
+    const actionElement = event.target.closest("[data-action]");
+
+    if (actionElement) {
+      // Se um elemento de ação (como o botão de voltar) foi clicado
+      const action = actionElement.dataset.action;
+      const cardId = cardElement.dataset.id;
+
+      if (action === "move-back") {
+        handleMoveBack(cardId);
+      }
+    } else {
+      // Se o corpo do card foi clicado (e não um botão de ação)
+      const cardId = cardElement.dataset.id;
+      openCardModal(cardId);
+    }
+  });
+}
+
+async function handleMoveBack(cardId) {
+  const cardData = allCardsData[cardId];
+  if (!cardData) {
+    console.error("Dados do card não encontrados para mover.");
+    return;
+  }
+
+  const currentStatusIndex = currentColumnFilter.indexOf(cardData.status);
+
+  if (currentStatusIndex > 0) {
+    const previousStatus = currentColumnFilter[currentStatusIndex - 1];
+    const previousStatusName = COLUMNS_CONFIG[previousStatus] || previousStatus;
+
+    if (
+      confirm(
+        `Tem certeza que deseja retornar o paciente "${cardData.nomeCompleto}" para a etapa "${previousStatusName}"?`
+      )
+    ) {
+      try {
+        await db
+          .collection("trilhaPaciente")
+          .doc(cardId)
+          .update({
+            status: previousStatus,
+            lastUpdate: new Date(),
+            lastUpdatedBy: currentUserData.nome || "N/A",
+          });
+        console.log(
+          `Paciente ${cardId} movido para ${previousStatus} por ${currentUserData.nome}`
+        );
+      } catch (error) {
+        console.error("Erro ao mover o card:", error);
+        alert("Ocorreu um erro ao tentar mover o paciente. Tente novamente.");
+      }
+    }
+  }
+}
+
 function loadAndRenderCards() {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
@@ -121,13 +189,29 @@ function createCardElement(cardData) {
   const card = document.createElement("div");
   card.className = "kanban-card";
   card.dataset.id = cardData.id;
+
+  // Verifica se o card pode ser movido para trás
+  const currentStatusIndex = currentColumnFilter.indexOf(cardData.status);
+  const canMoveBack = currentStatusIndex > 0;
+
+  // Ícone de seta para voltar
+  const moveBackIcon = `
+    <div class="card-actions">
+        <span class="action-icon" data-action="move-back" title="Retornar para etapa anterior">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        </span>
+    </div>
+  `;
+
   card.innerHTML = `
+      <div class="card-content">
         <p class="card-patient-name">${
           cardData.nomeCompleto || "Nome não informado"
         }</p>
         <p class="card-patient-cpf">CPF: ${cardData.cpf || "Não informado"}</p>
+      </div>
+      ${canMoveBack ? moveBackIcon : ""}
     `;
-  card.addEventListener("click", () => openCardModal(cardData.id));
   return card;
 }
 
@@ -157,7 +241,10 @@ async function openCardModal(cardId) {
 
   try {
     const stage = cardData.status;
-    const stageModule = await import(`./stages/${stage}.js`);
+    // Adiciona um sufixo para evitar cache do navegador ao carregar módulos
+    const stageModule = await import(
+      `./stages/${stage}.js?v=${new Date().getTime()}`
+    );
 
     // Chama a função render e insere o conteúdo no modal
     const contentElement = await stageModule.render(
@@ -176,7 +263,8 @@ async function openCardModal(cardId) {
         newSaveButton.disabled = true;
         newSaveButton.textContent = "Salvando...";
         try {
-          await stageModule.save(cardId);
+          // Passa os dados do usuário para a função save
+          await stageModule.save(cardId, currentUserData);
           modal.style.display = "none";
           // A atualização dos cards é automática pelo onSnapshot
         } catch (error) {
