@@ -1,9 +1,20 @@
 <div class="container">
-    <h2>Meus Pacientes</h2>
-    <div id="meus-pacientes-container">
-        <p>Carregando pacientes...</p>
-    </div>
+  <h2>Meus Pacientes</h2>
+
+  <!-- Loading -->
+  <div id="loading-pacientes" style="display:none">
+    <p>Carregando pacientes...</p>
+  </div>
+
+  <!-- Container dos cards -->
+  <div id="pacientes-cards-container"></div>
+
+  <!-- Estado vazio -->
+  <div id="empty-state-pacientes" style="display:none">
+    <p>Nenhum paciente encontrado.</p>
+  </div>
 </div>
+
 
 <div id="encerramento-modal" class="modal">
     <div class="modal-content">
