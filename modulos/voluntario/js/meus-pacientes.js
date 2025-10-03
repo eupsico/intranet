@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 4.0 (Corrige a lógica de carregamento de pacientes e o ciclo de vida)
+// Versão: 4.1 (Consolidada com melhorias de logs, ordenação e fallback de campos)
 
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
@@ -60,12 +60,13 @@ export function init(db, user, userData) {
         )
       );
 
-      // Consultas
+      // Consulta 1: Pacientes de PLANTÃO sob responsabilidade do profissional
       const queryPlantao = db
         .collection("trilhaPaciente")
         .where("plantaoInfo.profissionalId", "==", userId)
         .where("status", "==", "em_atendimento_plantao");
 
+      // Consulta 2: Pacientes de PB sob responsabilidade do profissional
       const queryPb = db
         .collection("trilhaPaciente")
         .where("pbInfo.profissionalId", "==", userId)
@@ -88,7 +89,6 @@ export function init(db, user, userData) {
       snapshotPb.forEach((doc) =>
         console.log("      •", doc.id, "| status:", doc.data().status)
       );
-
       // Unificação dos pacientes
       const pacientesMap = new Map();
       snapshotPlantao.forEach((doc) => {
@@ -106,7 +106,9 @@ export function init(db, user, userData) {
       } else {
         console.log("✅ Renderizando", pacientes.length, "pacientes...");
         pacientes.sort((a, b) =>
-          (a.nomeCompleto || "").localeCompare(b.nomeCompleto || "")
+          (a.nomeCompleto || a.nome || "").localeCompare(
+            b.nomeCompleto || b.nome || ""
+          )
         );
         container.innerHTML = "";
         pacientes.forEach((data) => {
@@ -140,7 +142,6 @@ export function init(db, user, userData) {
 
   // --- CRIAÇÃO DOS CARDS DE PACIENTE ---
   function criarCardPaciente(id, data) {
-    // Determina o tipo e o status com base nos dados do paciente
     let tipo, statusLabel, acaoLabel;
 
     if (data.status === "em_atendimento_plantao") {
@@ -149,7 +150,6 @@ export function init(db, user, userData) {
       acaoLabel = "Encerrar Plantão";
     } else {
       tipo = "pb";
-      // Detalha o status da PB
       switch (data.status) {
         case "aguardando_info_horarios":
           statusLabel = "Aguardando Info Horários (PB)";
@@ -157,11 +157,11 @@ export function init(db, user, userData) {
           break;
         case "cadastrar_horario_psicomanager":
           statusLabel = "Aguardando Cadastro (PB)";
-          acaoLabel = "Visualizar Horários"; // Ou outra ação/visualização
+          acaoLabel = "Visualizar Horários";
           break;
         case "em_atendimento_pb":
           statusLabel = "Em Atendimento (PB)";
-          acaoLabel = "Gerenciar Paciente"; // Exemplo de outra ação futura
+          acaoLabel = "Gerenciar Paciente";
           break;
         default:
           statusLabel = "Em Processo (PB)";
@@ -170,15 +170,23 @@ export function init(db, user, userData) {
     }
 
     const info = tipo === "plantao" ? data.plantaoInfo : data.pbInfo;
-    const dataEncaminhamento = info?.dataEncaminhamento
-      ? new Date(info.dataEncaminhamento + "T03:00:00").toLocaleDateString(
-          "pt-BR"
-        )
-      : "N/A";
+
+    let dataEncaminhamento = "N/A";
+    if (info?.dataEncaminhamento) {
+      if (info.dataEncaminhamento.toDate) {
+        dataEncaminhamento = info.dataEncaminhamento
+          .toDate()
+          .toLocaleDateString("pt-BR");
+      } else {
+        dataEncaminhamento = new Date(
+          info.dataEncaminhamento + "T00:00:00"
+        ).toLocaleDateString("pt-BR");
+      }
+    }
 
     return `
       <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-        <h4>${data.nomeCompleto}</h4>
+        <h4>${data.nomeCompleto || data.nome || "Paciente sem nome"}</h4>
         <p><strong>Status:</strong> ${statusLabel}</p>
         <p><strong>Telefone:</strong> ${data.telefoneCelular || "N/A"}</p>
         <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
@@ -186,11 +194,11 @@ export function init(db, user, userData) {
       </div>
     `;
   }
+
   function adicionarEventListeners() {
     document
       .querySelectorAll(".paciente-card .action-button")
       .forEach((button) => {
-        // Remove listener antigo para evitar duplicação
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
 
@@ -212,7 +220,6 @@ export function init(db, user, userData) {
           if (tipo === "plantao") {
             abrirModalEncerramento(pacienteId, pacienteData);
           } else {
-            // Futuramente, pode ter lógicas diferentes para cada status da PB
             abrirModalHorariosPb(pacienteId, pacienteData);
           }
         });
@@ -222,22 +229,17 @@ export function init(db, user, userData) {
     const form = document.getElementById("encerramento-form");
     form.reset();
     document.getElementById("paciente-id-modal").value = pacienteId;
-
-    // ... (O restante do seu código para este modal, como a lógica dos checkboxes e disponibilidade, continua aqui)
-    // Nenhuma alteração necessária nesta função.
-
     encerramentoModal.style.display = "block";
   }
+
   function abrirModalHorariosPb(pacienteId, data) {
     const form = document.getElementById("horarios-pb-form");
     form.reset();
     document.getElementById("paciente-id-horarios-modal").value = pacienteId;
-
-    // ... (O restante do seu código para este modal, como a construção do formulário, continua aqui)
-    // Nenhuma alteração necessária nesta função.
-
     horariosPbModal.style.display = "block";
   }
+
+  // --- SUBMIT DO FORMULÁRIO DE ENCERRAMENTO ---
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (e) => {
@@ -265,15 +267,12 @@ export function init(db, user, userData) {
 
       let updateData = {
         status: novoStatus,
-        // Remove a associação com o profissional de plantão
         profissionalAtualId: firebase.firestore.FieldValue.delete(),
         "plantaoInfo.encerramento": {
-          /* ... seus outros campos ... */
+          // ... outros campos do encerramento ...
         },
         lastUpdate: new Date(),
       };
-
-      // ... (Lógica para atualizar a disponibilidade, se houver) ...
 
       try {
         await db
@@ -282,7 +281,7 @@ export function init(db, user, userData) {
           .update(updateData);
         alert("Encerramento salvo com sucesso!");
         encerramentoModal.style.display = "none";
-        carregarMeusPacientes(user.uid); // Recarrega a lista
+        carregarMeusPacientes(user.uid);
       } catch (error) {
         console.error("Erro ao salvar encerramento:", error);
         alert("Erro ao salvar.");
@@ -291,7 +290,7 @@ export function init(db, user, userData) {
       }
     });
 
-  // Listener do formulário de HORÁRIOS PB
+  // --- SUBMIT DO FORMULÁRIO DE HORÁRIOS PB ---
   document
     .getElementById("horarios-pb-form")
     .addEventListener("submit", async (e) => {
@@ -311,7 +310,7 @@ export function init(db, user, userData) {
       if (iniciou === "nao") {
         updateData = {
           status: "desistencia",
-          profissionalAtualId: firebase.firestore.FieldValue.delete(), // Remove o profissional
+          profissionalAtualId: firebase.firestore.FieldValue.delete(),
           desistenciaMotivo: `Não iniciou PB. Motivo: ${
             form.querySelector("#motivo-nao-inicio-pb").value
           }`,
@@ -320,9 +319,9 @@ export function init(db, user, userData) {
       } else {
         updateData = {
           status: "cadastrar_horario_psicomanager",
-          profissionalAtualId: user.uid, // Mantém a associação
+          profissionalAtualId: user.uid,
           "pbInfo.horarioSessao": {
-            /* ... seus outros campos do formulário ... */
+            // ... campos do formulário de horários ...
           },
           lastUpdate: new Date(),
         };
@@ -335,7 +334,7 @@ export function init(db, user, userData) {
           .update(updateData);
         alert("Informações salvas com sucesso!");
         horariosPbModal.style.display = "none";
-        carregarMeusPacientes(user.uid); // Recarrega a lista
+        carregarMeusPacientes(user.uid);
       } catch (error) {
         console.error("Erro ao salvar horários:", error);
         alert("Erro ao salvar.");
@@ -344,6 +343,7 @@ export function init(db, user, userData) {
       }
     });
 
+  // Inicialização
   setupModalControls();
   carregarMeusPacientes(user.uid);
 }
