@@ -1,11 +1,13 @@
 /* Arquivo: /modulos/voluntario/css/meus-pacientes.css */
 
+/* Container principal */
 #meus-pacientes-container {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
+/* Card de paciente */
 .paciente-card {
     background-color: var(--cor-surface);
     border: 1px solid var(--cor-borda);
@@ -13,6 +15,8 @@
     padding: 20px;
     border-radius: var(--borda-radius);
     box-shadow: var(--sombra-padrao);
+    display: flex;
+    flex-direction: column;
 }
 
 .paciente-card h4 {
@@ -28,9 +32,10 @@
 
 .paciente-card .action-button {
     margin-top: 15px;
-    float: right;
+    align-self: flex-end; /* substitui float:right */
 }
 
+/* Mensagem de erro */
 .error-message {
     padding: 20px;
     background-color: #f8d7da;
@@ -45,7 +50,7 @@
     display: none;
 }
 
-/* Estilos para os modais (janelas de formulário) */
+/* Estilos para os modais */
 .modal {
     display: none; 
     position: fixed; 
@@ -66,6 +71,10 @@
     width: 90%;
     max-width: 700px;
     box-shadow: var(--sombra-padrao);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* altura máxima */
+    overflow-y: auto; /* garante rolagem */
 }
 
 .modal-content .close-button {
@@ -75,14 +84,6 @@
     font-weight: bold;
     cursor: pointer;
 }
-/* Arquivo: /modulos/voluntario/css/meus-pacientes.css (ADICIONAR/ALTERAR) */
-
-/* Garante que o corpo do modal tenha rolagem se o conteúdo for maior que a tela */
-.modal-content {
-    display: flex;
-    flex-direction: column;
-    max-height: 90vh; /* Altura máxima de 90% da tela */
-}
 
 .modal .modal-content h3 {
     margin-top: 0;
@@ -90,11 +91,11 @@
 }
 
 .modal .modal-content form {
-    overflow-y: auto; /* Adiciona rolagem APENAS ao formulário */
-    padding-right: 15px; /* Espaço para a barra de rolagem */
+    overflow-y: auto;
+    padding-right: 15px;
 }
 
-/* Estilo para o grupo de checkboxes */
+/* Grupo de checkboxes */
 .checkbox-group {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -111,41 +112,48 @@
     cursor: pointer;
 }
 
-/* Estilo para checkboxes e labels desabilitados */
+/* Checkboxes desabilitados */
 .checkbox-group label.disabled {
     color: #999;
     cursor: not-allowed;
     text-decoration: line-through;
 }
-/* Oculta o cabeçalho do modal de encerramento */
+
+/* Oculta cabeçalho do modal de encerramento */
 #encerramento-modal .modal-header {
     display: none;
 }
 
-/* Opcional: Remove o padding superior do corpo do modal para compensar a remoção do header */
 #encerramento-modal .modal-body {
     padding-top: 15px;
 }
-/* Remove o cabeçalho do modal de informar horários de PB */
+
+/* Oculta cabeçalho do modal de horários PB */
 #horarios-pb-modal .modal-header {
     display: none;
 }
 
-/* Ajuste opcional para remover o espaço extra no topo */
 #horarios-pb-modal .modal-body {
     padding-top: 15px;
 }
 
-/* CSS para alinhar os botões de rádio (Sim/Não) lado a lado */
+/* Botões de rádio lado a lado */
 #horarios-pb-form .form-group div {
     display: flex;
-    gap: 20px; /* Adiciona um espaço entre as opções */
+    gap: 20px;
     align-items: center;
 }
 
 #horarios-pb-form .form-group div label {
     display: flex;
     align-items: center;
-    gap: 5px; /* Espaço entre o botão de rádio e o texto */
+    gap: 5px;
     cursor: pointer;
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+  .paciente-card {
+    padding: 12px;
+  }
 }
