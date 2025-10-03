@@ -25,7 +25,6 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 const functions = firebase.functions();
-const storage = firebase.storage();
 const rtdb = firebase.database();
 
 // A variável 'firebase' já é global, então não a exportamos. Apenas os serviços.
