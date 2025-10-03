@@ -576,3 +576,133 @@ export function init(db, user, userData) {
 
   carregarMeusPacientes();
 }
+// Adicione este código em modulos/voluntario/js/meus-pacientes.js
+
+document.addEventListener("DOMContentLoaded", () => {
+  // --- Seletores dos elementos do formulário ---
+  const desfechoSelect = document.getElementById("desfecho-acompanhamento");
+  const motivoAltaDesistenciaContainer = document.getElementById(
+    "motivo-alta-desistencia-container"
+  );
+  const encaminhamentoContainer = document.getElementById(
+    "encaminhamento-container"
+  );
+  const btnSalvar = document.getElementById("btn-salvar-desfecho");
+  const btnCancelar = document.getElementById("btn-cancelar-desfecho");
+
+  // --- Lógica para exibir/ocultar campos ---
+  desfechoSelect.addEventListener("change", () => {
+    const valor = desfechoSelect.value;
+
+    // Oculta todos os containers dinâmicos
+    motivoAltaDesistenciaContainer.style.display = "none";
+    encaminhamentoContainer.style.display = "none";
+
+    if (valor === "Alta" || valor === "Desistencia") {
+      motivoAltaDesistenciaContainer.style.display = "block";
+    } else if (valor === "Encaminhamento") {
+      encaminhamentoContainer.style.display = "block";
+    }
+  });
+
+  // --- Lógica para o botão Salvar ---
+  btnSalvar.addEventListener("click", async () => {
+    // Obtenha o ID do paciente que está sendo editado
+    const pacienteId = document.getElementById("form-atendimento-pb").dataset
+      .pacienteId;
+
+    if (!pacienteId) {
+      alert("Erro: ID do paciente não encontrado.");
+      return;
+    }
+
+    const dadosDesfecho = {
+      desfecho: desfechoSelect.value,
+      motivoAltaDesistencia: document.getElementById("motivo-alta-desistencia")
+        .value,
+      encaminhadoPara: document.getElementById("encaminhado-para").value,
+      motivoEncaminhamento: document.getElementById("motivo-encaminhamento")
+        .value,
+      demandaPaciente: document.getElementById("demanda-paciente").value,
+      continuaAtendimento: document.getElementById("continua-atendimento")
+        .value,
+      relatoCaso: document.getElementById("relato-caso").value,
+      data: new Date(), // Salva a data do registro
+    };
+
+    try {
+      // Adiciona o registro de desfecho em uma subcoleção do paciente
+      await db
+        .collection("trilhaPaciente")
+        .doc(pacienteId)
+        .collection("desfechos")
+        .add(dadosDesfecho);
+
+      // Se for um encaminhamento, cria uma nova trilha
+      if (dadosDesfecho.desfecho === "Encaminhamento") {
+        // Aqui você pode definir a lógica para criar a nova trilha
+        // Por exemplo, atualizar o status do paciente atual e criar um novo registro
+        // em uma coleção 'encaminhamentos'
+        await db.collection("encaminhamentos").add({
+          pacienteId: pacienteId,
+          encaminhadoPara: dadosDesfecho.encaminhadoPara,
+          motivo: dadosDesfecho.motivoEncaminhamento,
+          dataEncaminhamento: new Date(),
+          status: "Aguardando designação de novo profissional",
+        });
+
+        // Atualiza o status do paciente na trilha principal
+        await db.collection("trilhaPaciente").doc(pacienteId).update({
+          status: "Aguardando Encaminhamento",
+        });
+      }
+
+      alert("Dados salvos com sucesso!");
+      // Feche o formulário/modal aqui
+      document.getElementById("form-atendimento-pb").style.display = "none";
+    } catch (error) {
+      console.error("Erro ao salvar os dados: ", error);
+      alert("Ocorreu um erro ao salvar. Tente novamente.");
+    }
+  });
+
+  // --- Lógica para o botão Cancelar ---
+  btnCancelar.addEventListener("click", () => {
+    // Limpe e feche o formulário/modal
+    document.getElementById("form-atendimento-pb").style.display = "none";
+  });
+});
+
+// --- Função para abrir e preencher o formulário ---
+// Você precisará chamar esta função quando o profissional clicar para
+// registrar o desfecho de um paciente.
+
+function abrirFormularioAtendimento(pacienteId) {
+  const form = document.getElementById("form-atendimento-pb");
+  form.dataset.pacienteId = pacienteId; // Armazena o ID do paciente no formulário
+
+  // Busca os dados do paciente e do profissional para preencher o formulário
+  db.collection("trilhaPaciente")
+    .doc(pacienteId)
+    .get()
+    .then((doc) => {
+      if (doc.exists) {
+        const paciente = doc.data();
+        const usuarioLogado = auth.currentUser; // Supondo que você tenha o usuário logado
+
+        document.getElementById("profissional-nome").value =
+          usuarioLogado.displayName;
+        document.getElementById("paciente-nome").value = paciente.nomeCompleto;
+        document.getElementById("valor-contribuicao").value =
+          paciente.valorContribuicao || "Não informado";
+        document.getElementById("data-inicio-atendimento").value = new Date(
+          paciente.pbInfo.dataInicio
+        ).toLocaleDateString("pt-BR");
+
+        // Exibe o formulário
+        form.style.display = "block";
+      } else {
+        alert("Paciente não encontrado.");
+      }
+    });
+}

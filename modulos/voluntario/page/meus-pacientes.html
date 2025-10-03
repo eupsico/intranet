@@ -122,3 +122,87 @@
         </div>
     </div>
 </div>
+<div id="form-atendimento-pb" class="form-container" style="display: none;">
+    <h3>Registro de Atendimento e Desfecho</h3>
+
+    <div class="form-field">
+        <label for="profissional-nome">Nome do Profissional:</label>
+        <input type="text" id="profissional-nome" readonly>
+    </div>
+
+    <div class="form-field">
+        <label for="paciente-nome">Nome do Paciente:</label>
+        <input type="text" id="paciente-nome" readonly>
+    </div>
+
+    <div class="form-field">
+        <label for="valor-contribuicao">Valor da Contribuição:</label>
+        <input type="text" id="valor-contribuicao" readonly>
+    </div>
+
+    <div class="form-field">
+        <label for="data-inicio-atendimento">Data de Início do Atendimento:</label>
+        <input type="text" id="data-inicio-atendimento" readonly>
+    </div>
+
+    <div class="form-field">
+        <label for="desfecho-acompanhamento">Qual foi o desfecho do acompanhamento?</label>
+        <select id="desfecho-acompanhamento">
+            <option value="">Selecione...</option>
+            <option value="Alta">Alta</option>
+            <option value="Desistencia">Desistência</option>
+            <option value="Encaminhamento">Encaminhamento</option>
+        </select>
+    </div>
+
+    <div id="motivo-alta-desistencia-container" class="form-field" style="display: none;">
+        <label for="motivo-alta-desistencia">Descreva brevemente os motivos:</label>
+        <textarea id="motivo-alta-desistencia" rows="4"></textarea>
+    </div>
+
+    <div id="encaminhamento-container" style="display: none;">
+        <div class="form-field">
+            <label for="encaminhado-para">Encaminhado para:</label>
+            <select id="encaminhado-para">
+                <option value="">Selecione...</option>
+                <option value="Psicologo">Psicólogo</option>
+                <option value="Psicopedagogo">Psicopedagogo</option>
+                <option value="Grupo papo de adolescente">Grupo papo de adolescente</option>
+                <option value="Grupo envelhecimento ativo">Grupo envelhecimento ativo</option>
+                <option value="Grupo familia">Grupo família</option>
+                <option value="Grupo Questões de peso">Grupo Questões de peso</option>
+                <option value="Musicoterapeuta">Musicoterapeuta</option>
+                <option value="Grupo Funcional">Grupo Funcional</option>
+                <option value="Assistente Social">Assistente Social</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="motivo-encaminhamento">Informe o motivo do encaminhamento:</label>
+            <textarea id="motivo-encaminhamento" rows="4"></textarea>
+        </div>
+
+        <div class="form-field">
+            <label for="demanda-paciente">Informe a demanda do paciente:</label>
+            <textarea id="demanda-paciente" rows="4"></textarea>
+        </div>
+
+        <div class="form-field">
+            <label for="continua-atendimento">O paciente continuará a ser atendido por você?</label>
+            <select id="continua-atendimento">
+                <option value="Nao">Não</option>
+                <option value="Sim">Sim</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-field">
+        <label for="relato-caso">Faça um breve relato sobre o caso do paciente:</label>
+        <textarea id="relato-caso" rows="6" placeholder="Qual a queixa inicial, qual a queixa identificada, quais procedimentos utilizados no tratamento e como ele está atualmente."></textarea>
+    </div>
+
+    <div class="form-actions">
+        <button id="btn-salvar-desfecho" class="btn-salvar">Salvar</button>
+        <button id="btn-cancelar-desfecho" class="btn-cancelar">Cancelar</button>
+    </div>
+</div>
