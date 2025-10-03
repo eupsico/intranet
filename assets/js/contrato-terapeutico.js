@@ -158,17 +158,25 @@ function setupSignatureForm(pacienteId, pacienteData) {
       button.disabled = false;
       return;
     }
+
+    const versaoContrato = "1.0";
+    const ip = "cliente"; // ou use uma lib para tentar capturar IP real
+
     console.log("Dados enviados para a função:", {
       pacienteId,
       nomeSignatario: signerName,
       cpfSignatario: signerCpf,
+      versaoContrato,
+      ip,
     });
+
     try {
-      // 🔄 Chamada da Cloud Function
       const result = await assinarContrato({
         pacienteId,
         nomeSignatario: signerName,
         cpfSignatario: signerCpf,
+        versaoContrato,
+        ip,
       });
 
       console.log(result.data.message);
