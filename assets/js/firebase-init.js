@@ -29,6 +29,6 @@ const storage = firebase.storage();
 const rtdb = firebase.database();
 
 // A variável 'firebase' já é global, então não a exportamos. Apenas os serviços.
-export { auth, db, functions, storage, rtdb };
+export { auth, db, functions, rtdb };
 // Fim do arquivo firebase-init.js
 // Versão: 1.7 (Correção Crítica de Sintaxe)
