@@ -95,22 +95,31 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function buscarPacientePorCPF() {
-    const cpf = cpfInput.value.replace(/\D/g, "");
+    const cpfValue = cpfInput.value.trim(); // Pega o valor completo do campo
     cpfFeedback.textContent = "Verificando...";
     cpfFeedback.style.color = "gray";
     nomeInput.value = "";
     nomeInput.readOnly = false;
     pacienteExistenteId = null;
 
-    if (cpf.length !== 11) {
-      cpfFeedback.textContent = "CPF inválido.";
-      cpfFeedback.style.color = "red";
-      return;
+    let cpfParaBusca;
+
+    // VERIFICA SE É UM ID TEMPORÁRIO OU UM CPF NORMAL
+    if (cpfValue.toUpperCase().startsWith("TEMP-")) {
+      cpfParaBusca = cpfValue; // Usa o ID temporário completo
+    } else {
+      cpfParaBusca = cpfValue.replace(/\D/g, ""); // Limpa como antes para CPFs normais
+      if (cpfParaBusca.length !== 11) {
+        cpfFeedback.textContent = "CPF inválido.";
+        cpfFeedback.style.color = "red";
+        return;
+      }
     }
 
     try {
       const verificarCpf = httpsCallable(functions, "verificarCpfExistente");
-      const result = await verificarCpf({ cpf: cpf });
+      // Envia o valor correto para a função (seja o CPF de 11 dígitos ou o ID 'TEMP-...')
+      const result = await verificarCpf({ cpf: cpfParaBusca });
       const data = result.data;
 
       if (data.exists) {
@@ -123,12 +132,12 @@ document.addEventListener("DOMContentLoaded", () => {
         cpfFeedback.style.color = "green";
       } else {
         cpfFeedback.textContent =
-          "CPF não encontrado. Preencha seus dados para um novo cadastro.";
+          "CPF ou ID não encontrado. Preencha seus dados para um novo cadastro.";
         cpfFeedback.style.color = "orange";
       }
     } catch (error) {
       console.error("Erro ao chamar a função verificarCpfExistente:", error);
-      cpfFeedback.textContent = "Erro ao verificar o CPF. Tente novamente.";
+      cpfFeedback.textContent = "Erro ao verificar o CPF/ID. Tente novamente.";
       cpfFeedback.style.color = "red";
     }
   }
