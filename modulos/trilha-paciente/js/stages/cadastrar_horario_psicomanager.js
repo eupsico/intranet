@@ -1,18 +1,44 @@
+// Arquivo: /modulos/trilha-paciente/js/stages/cadastrar_horario_psicomanager.js
+// Versão: 2.1 (Ajustes de layout e preenchimento automático do nome)
+
 import { db } from "../../../../assets/js/firebase-init.js";
 
 /**
  * Renderiza o conteúdo do modal para a etapa 'Cadastrar Horário Psicomanager'.
  * @param {string} cardId - O ID do documento do paciente.
- * @param {string} patientName - O nome do paciente.
  * @param {object} cardData - Objeto com todos os dados do paciente.
+ * @param {object} currentUserData - Dados do usuário logado.
  * @returns {HTMLElement} - O elemento HTML para ser inserido no corpo do modal.
  */
-export async function render(cardId, patientName, cardData) {
+export async function render(cardId, cardData, currentUserData) {
   const pbInfo = cardData.pbInfo || {};
   const horarioInfo = pbInfo.horarioSessao || {};
 
   const element = document.createElement("div");
-  element.innerHTML = `
+
+  // Adiciona um estilo para o layout em grade
+  const style = document.createElement("style");
+  style.textContent = `
+    .info-grid {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 8px 16px;
+      align-items: center;
+    }
+    .info-grid p {
+      margin: 0;
+    }
+    .form-separator {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      border: 0;
+      border-top: 1px solid #eee;
+    }
+  `;
+  element.appendChild(style);
+
+  // Constrói o HTML com o novo layout
+  element.innerHTML += `
     <div class="patient-info-box confirmation">
         <h4>Resumo para Cadastro na Psicomanager</h4>
         <div class="info-grid">
@@ -46,10 +72,15 @@ export async function render(cardId, patientName, cardData) {
             }</p>
         </div>
     </div>
+
+    <hr class="form-separator">
+
     <form id="psicomanager-form" class="stage-form">
         <div class="form-group">
             <label for="atendente-nome">Nome do Atendente:</label>
-            <input type="text" id="atendente-nome" class="form-control" readonly>
+            <input type="text" id="atendente-nome" class="form-control" value="${
+              currentUserData.nome || "Usuário não identificado"
+            }" readonly>
         </div>
         <div class="form-group">
             <label for="data-cadastro-psicomanager">Informe a data que o cadastro foi realizado na Psicomanager:</label>
@@ -76,15 +107,12 @@ export async function save(cardId, currentUserData) {
   }
 
   const updateData = {
-    status: "em_atendimento_pb", // <-- ATUALIZADO: Move para a próxima etapa correta
+    status: "em_atendimento_pb",
     "pbInfo.dataCadastroPsicomanager": dataCadastro,
-    "pbInfo.responsavelCadastroPsicomanager": currentUserData.nome || "N/A", // <-- NOVO: Registra quem fez a ação
+    "pbInfo.responsavelCadastroPsicomanager": currentUserData.nome || "N/A",
     lastUpdate: new Date(),
     lastUpdatedBy: currentUserData.nome || "N/A",
   };
 
   await db.collection("trilhaPaciente").doc(cardId).update(updateData);
-  console.log(
-    `Cadastro na Psicomanager para o paciente ${cardId} registrado por ${currentUserData.nome}. Paciente movido para 'Em Atendimento (PB)'.`
-  );
 }
