@@ -150,14 +150,19 @@ function setupSignatureForm(pacienteId, pacienteData) {
     const signerName = document.getElementById("signer-name").value.trim();
     const signerCpf = document.getElementById("signer-cpf").value.trim();
 
-    if (!signerName || !signerCpf) {
+    if (!pacienteId || !signerName || !signerCpf) {
+      console.warn("Dados ausentes:", { pacienteId, signerName, signerCpf });
       feedbackDiv.textContent =
-        "Por favor, preencha o nome e o CPF para assinar.";
+        "Erro interno: dados obrigatórios não foram capturados corretamente.";
       feedbackDiv.style.color = "var(--cor-erro)";
       button.disabled = false;
       return;
     }
-
+    console.log("Dados enviados para a função:", {
+      pacienteId,
+      nomeSignatario: signerName,
+      cpfSignatario: signerCpf,
+    });
     try {
       // 🔄 Chamada da Cloud Function
       const result = await assinarContrato({
