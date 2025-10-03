@@ -25,9 +25,10 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 const functions = firebase.functions();
+const storage = firebase.storage();
 const rtdb = firebase.database();
 
 // A variável 'firebase' já é global, então não a exportamos. Apenas os serviços.
-export { auth, db, functions, rtdb };
+export { auth, db, functions, storage, rtdb };
 // Fim do arquivo firebase-init.js
 // Versão: 1.7 (Correção Crítica de Sintaxe)
