@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.7 (Lógica dos checkboxes de encaminhamento corrigida)
+// Versão: 3.4 (CORRIGIDO E ATUALIZADO)
 
 export function init(db, user, userData) {
   const container = document.getElementById("meus-pacientes-container");
@@ -9,6 +9,7 @@ export function init(db, user, userData) {
   const horariosPbModal = document.getElementById("horarios-pb-modal");
   const closeButtons = document.querySelectorAll(".modal .close-button");
 
+  // Garante que os modais comecem escondidos
   if (encerramentoModal) encerramentoModal.style.display = "none";
   if (horariosPbModal) horariosPbModal.style.display = "none";
 
@@ -26,7 +27,6 @@ export function init(db, user, userData) {
   };
 
   async function carregarMeusPacientes() {
-    // ... (esta função continua a mesma)
     container.innerHTML = '<div class="loading-spinner"></div>';
     try {
       const queryPlantao = db
@@ -63,19 +63,22 @@ export function init(db, user, userData) {
       container.innerHTML = html;
       adicionarEventListeners();
     } catch (error) {
+      // ===== ALTERAÇÃO PRINCIPAL APLICADA AQUI =====
       console.error("Erro ao carregar pacientes:", error);
       container.innerHTML =
         '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
+      // Esconde explicitamente os modais em caso de erro
       if (encerramentoModal) encerramentoModal.style.display = "none";
       if (horariosPbModal) horariosPbModal.style.display = "none";
     }
   }
 
   function criarCardPaciente(id, data, tipo) {
-    // ... (esta função continua a mesma)
     const info = tipo === "plantao" ? data.plantaoInfo : data.pbInfo;
     const acaoLabel =
-      tipo === "plantao" ? "Encerrar Plantão" : "Informar Horários (PB)";
+      tipo === "plantao"
+        ? "Encerrar Atendimento (Plantão)"
+        : "Informar Horários (PB)";
 
     const dataEncaminhamento = info?.dataEncaminhamento
       ? new Date(info.dataEncaminhamento + "T03:00:00").toLocaleDateString(
@@ -84,22 +87,21 @@ export function init(db, user, userData) {
       : "N/A";
 
     return `
-      <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-          <h4>${data.nomeCompleto}</h4>
-          <p><strong>Status:</strong> ${
-            tipo === "plantao"
-              ? "Em Atendimento (Plantão)"
-              : "Aguardando Info Horários (PB)"
-          }</p>
-          <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-           <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-          <button class="action-button">${acaoLabel}</button>
-      </div>
-    `;
+            <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
+                <h4>${data.nomeCompleto}</h4>
+                <p><strong>Status:</strong> ${
+                  tipo === "plantao"
+                    ? "Em Atendimento (Plantão)"
+                    : "Aguardando Info Horários (PB)"
+                }</p>
+                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+                 <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+                <button class="action-button">${acaoLabel}</button>
+            </div>
+        `;
   }
 
   function adicionarEventListeners() {
-    // ... (esta função continua a mesma)
     document
       .querySelectorAll(".paciente-card .action-button")
       .forEach((button) => {
@@ -112,8 +114,7 @@ export function init(db, user, userData) {
             .collection("trilhaPaciente")
             .doc(pacienteId)
             .get();
-
-          if (!docSnap.exists) {
+          if (!docSnap.exists()) {
             alert("Paciente não encontrado!");
             return;
           }
@@ -128,7 +129,6 @@ export function init(db, user, userData) {
       });
   }
 
-  // ===== FUNÇÃO ATUALIZADA =====
   function abrirModalEncerramento(pacienteId, data) {
     const form = document.getElementById("encerramento-form");
     form.reset();
@@ -136,85 +136,36 @@ export function init(db, user, userData) {
     document.getElementById("disponibilidade-atual").textContent =
       data.disponibilidadeGeral?.join(", ") || "Não informada";
 
-    const pagamentoSelect = form.querySelector("#pagamento-contribuicao");
-    pagamentoSelect.onchange = () => {
-      document
-        .getElementById("motivo-nao-pagamento-container")
-        .classList.toggle("hidden", pagamentoSelect.value !== "nao");
-      document.getElementById("motivo-nao-pagamento").required =
-        pagamentoSelect.value === "nao";
-    };
-
-    const dispSelect = form.querySelector("#manter-disponibilidade");
-    dispSelect.onchange = () => {
-      document
-        .getElementById("nova-disponibilidade-container")
-        .classList.toggle("hidden", dispSelect.value !== "nao");
-    };
-
-    // --- INÍCIO DA LÓGICA CORRIGIDA ---
-    const encaminhamentoCheckboxes = form.querySelectorAll(
-      'input[name="encaminhamento"]'
+    const pagRadio = form.querySelectorAll(
+      'input[name="pagamento-contribuicao"]'
     );
-    const altaCheckbox = form.querySelector('input[value="Alta"]');
-    const desistenciaCheckbox = form.querySelector(
-      'input[value="Desistência"]'
+    pagRadio.forEach(
+      (radio) =>
+        (radio.onchange = () => {
+          document
+            .getElementById("motivo-nao-pagamento-container")
+            .classList.toggle("hidden", radio.value !== "nao");
+          document.getElementById("motivo-nao-pagamento").required =
+            radio.value === "nao";
+        })
     );
 
-    const reabilitarTodos = () => {
-      encaminhamentoCheckboxes.forEach((cb) => {
-        // Não mexe nos que são inativos por padrão
-        if (!cb.closest("label").classList.contains("disabled")) {
-          cb.disabled = false;
-          cb.parentElement.classList.remove("disabled");
-        }
-      });
-    };
-
-    // Garante que todos comecem habilitados ao abrir o modal
-    reabilitarTodos();
-
-    encaminhamentoCheckboxes.forEach((checkbox) => {
-      checkbox.addEventListener("change", () => {
-        const altaChecked = altaCheckbox.checked;
-        const desistenciaChecked = desistenciaCheckbox.checked;
-
-        // Reabilita todos antes de aplicar a nova regra
-        reabilitarTodos();
-
-        if (altaChecked) {
-          // Desabilita todos, exceto 'Alta'
-          encaminhamentoCheckboxes.forEach((cb) => {
-            if (cb.value !== "Alta") {
-              cb.checked = false;
-              cb.disabled = true;
-              if (!cb.closest("label").classList.contains("disabled")) {
-                cb.parentElement.classList.add("disabled");
-              }
-            }
-          });
-        } else if (desistenciaChecked) {
-          // Desabilita todos, exceto 'Desistência'
-          encaminhamentoCheckboxes.forEach((cb) => {
-            if (cb.value !== "Desistência") {
-              cb.checked = false;
-              cb.disabled = true;
-              if (!cb.closest("label").classList.contains("disabled")) {
-                cb.parentElement.classList.add("disabled");
-              }
-            }
-          });
-        }
-        // Se nenhum dos dois estiver marcado, a função reabilitarTodos() no início já fez o trabalho.
-      });
-    });
-    // --- FIM DA LÓGICA CORRIGIDA ---
+    const dispRadio = form.querySelectorAll(
+      'input[name="manter-disponibilidade"]'
+    );
+    dispRadio.forEach(
+      (radio) =>
+        (radio.onchange = () => {
+          document
+            .getElementById("nova-disponibilidade-container")
+            .classList.toggle("hidden", radio.value !== "nao");
+        })
+    );
 
     encerramentoModal.style.display = "block";
   }
 
   function abrirModalHorariosPb(pacienteId, data) {
-    // ... (esta função continua a mesma)
     const form = document.getElementById("horarios-pb-form");
     form.reset();
     document.getElementById("paciente-id-horarios-modal").value = pacienteId;
@@ -245,34 +196,24 @@ export function init(db, user, userData) {
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (e) => {
-      // ... (esta função continua a mesma)
       e.preventDefault();
       const form = e.target;
       const saveButton = form.querySelector(".save-btn");
       saveButton.disabled = true;
 
       const pacienteId = document.getElementById("paciente-id-modal").value;
-
-      const encaminhamentosSelecionados = Array.from(
-        form.querySelectorAll('input[name="encaminhamento"]:checked')
-      ).map((cb) => cb.value);
-
-      if (encaminhamentosSelecionados.length === 0) {
-        alert("Por favor, selecione ao menos uma opção de encaminhamento.");
-        saveButton.disabled = false;
-        return;
-      }
-
       const updateData = {
         status: "encaminhar_para_pb",
         "plantaoInfo.encerramento": {
           responsavelId: user.uid,
           responsavelNome: userData.nome,
-          encaminhamento: encaminhamentosSelecionados,
+          encaminhamento: form.querySelector("#encerramento-encaminhamento")
+            .value,
           dataEncerramento: form.querySelector("#data-encerramento").value,
           sessoesRealizadas: form.querySelector("#quantidade-sessoes").value,
-          pagamentoEfetuado: form.querySelector("#pagamento-contribuicao")
-            .value,
+          pagamentoEfetuado: form.querySelector(
+            'input[name="pagamento-contribuicao"]:checked'
+          ).value,
           motivoNaoPagamento: form.querySelector("#motivo-nao-pagamento").value,
           relato: form.querySelector("#relato-encerramento").value,
         },
@@ -299,7 +240,6 @@ export function init(db, user, userData) {
   document
     .getElementById("horarios-pb-form")
     .addEventListener("submit", async (e) => {
-      // ... (esta função continua a mesma)
       e.preventDefault();
       const form = e.target;
       const saveButton = form.querySelector(".save-btn");
