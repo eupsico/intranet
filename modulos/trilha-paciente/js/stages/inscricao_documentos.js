@@ -251,8 +251,8 @@ function setupEventListeners(element) {
     });
     if (isDesistente) {
       chkIsento.checked = false;
-      chkIsento.disabled = false; // Garante que não fique travado
-      chkPagamento.disabled = false; // Garante que não fique travado
+      chkIsento.disabled = true; // Garante que não fique travado
+      chkPagamento.disabled = true; // Garante que não fique travado
       isentoSection.style.display = "none";
     }
   });
