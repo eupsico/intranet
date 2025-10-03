@@ -1,4 +1,9 @@
 import { db } from "./firebase-init.js";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+// Inicializa a função
+const functions = getFunctions();
+const assinarContrato = httpsCallable(functions, "assinarContrato");
 
 document.addEventListener("DOMContentLoaded", () => {
   // Pega o ID do paciente da URL (ex: ...html?id=DOCUMENTO_ID)
@@ -7,8 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadingDiv = document.getElementById("contract-loading");
   const contentDiv = document.getElementById("contract-content");
-  const formSection = document.getElementById("acceptance-form-section");
-  const thankYouSection = document.getElementById("thank-you-section");
 
   if (!pacienteId) {
     loadingDiv.style.display = "none";
@@ -60,13 +63,11 @@ function populateContractFields(data) {
   const pbInfo = data.pbInfo || {};
   const horarioInfo = pbInfo.horarioSessao || {};
 
-  // Função para formatar data
   const formatDate = (dateString) => {
     if (!dateString) return "Não informado";
     return new Date(dateString + "T03:00:00").toLocaleDateString("pt-BR");
   };
 
-  // Função para calcular a idade
   const calculateAge = (birthDate) => {
     if (!birthDate) return null;
     const today = new Date();
@@ -82,7 +83,6 @@ function populateContractFields(data) {
   const idade = calculateAge(data.dataNascimento);
   const isMenor = idade !== null && idade < 18;
 
-  // Preenche os dados
   document.getElementById("data-terapeuta").textContent =
     pbInfo.profissionalNome || "A definir";
   document.getElementById("data-paciente-nome").textContent =
@@ -93,10 +93,10 @@ function populateContractFields(data) {
 
   const valor = data.valorContribuicao
     ? data.valorContribuicao
-        .replace("R$", "") // remove símbolo
-        .replace(/\s/g, "") // remove espaços
-        .replace(/\./g, "") // remove pontos de milhar
-        .replace(",", ".") // troca vírgula por ponto
+        .replace("R$", "")
+        .replace(/\s/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".")
     : null;
 
   const exibicao = valor
@@ -111,7 +111,6 @@ function populateContractFields(data) {
   document.getElementById("data-tipo-atendimento").textContent =
     horarioInfo.tipoAtendimento || "A definir";
 
-  // Lógica para responsável
   const responsavelSection = document.getElementById("responsavel-section");
   const signerNameLabel = document.getElementById("signer-name-label");
   const signerCpfLabel = document.getElementById("signer-cpf-label");
@@ -163,23 +162,14 @@ function setupSignatureForm(pacienteId, pacienteData) {
     }
 
     try {
-      const signatureData = {
-        contratoAssinado: {
-          assinadoEm: new Date(),
-          nomeSignatario: signerName,
-          cpfSignatario: signerCpf,
-          versaoContrato: "1.0", // Pode ser útil para futuras versões
-          ip: "salvo_do_cliente", // Idealmente, capturar o IP no backend/functions
-        },
-        // Opcional: Mover o status do paciente
-        // status: 'contrato_assinado',
-        lastUpdate: new Date(),
-      };
+      // 🔄 Chamada da Cloud Function
+      const result = await assinarContrato({
+        pacienteId,
+        nomeSignatario: signerName,
+        cpfSignatario: signerCpf,
+      });
 
-      await db
-        .collection("trilhaPaciente")
-        .doc(pacienteId)
-        .update(signatureData);
+      console.log(result.data.message);
 
       document
         .getElementById("acceptance-form-section")
@@ -201,7 +191,7 @@ function displayAlreadySigned(data) {
   const formSection = document.getElementById("acceptance-form-section");
   const thankYouSection = document.getElementById("thank-you-section");
 
-  populateContractFields(data); // Mostra os dados preenchidos
+  populateContractFields(data);
 
   formSection.innerHTML = `
         <div class="confirmation-box" style="border-color: var(--cor-sucesso); text-align: center;">
