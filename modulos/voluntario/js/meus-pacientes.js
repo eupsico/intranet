@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 3.8.2 (CORREÇÃO FINAL: Alinha o ID do container com o HTML)
+// Versão: 3.9 (Amplia a busca para incluir status intermediários de PB)
 
 export function init(db, user, userData) {
   // --- LOG DE DIAGNÓSTICO [ETAPA 1: INICIALIZAÇÃO] ---
@@ -12,20 +12,15 @@ export function init(db, user, userData) {
     userName: userData.nome,
   });
 
-  // ***** CORREÇÃO APLICADA AQUI *****
-  // O ID foi alterado de 'meus-pacientes-container' para 'pacientes-cards-container'
-  // para corresponder exatamente ao que está no seu arquivo HTML.
   const container = document.getElementById("pacientes-cards-container");
-
   if (!container) {
-    // --- LOG DE ERRO CRÍTICO ---
     console.error(
-      "[ANÁLISE ERRO] Não foi possível encontrar o elemento container '#pacientes-cards-container'. O script não pode continuar. Verifique se o ID está correto no arquivo meus-pacientes.html."
+      "[ANÁLISE ERRO] Não foi possível encontrar o elemento container '#pacientes-cards-container'."
     );
     return;
   }
   console.log(
-    "[ANÁLISE] Elemento container '#pacientes-cards-container' encontrado com sucesso. O script continuará."
+    "[ANÁLISE] Elemento container '#pacientes-cards-container' encontrado com sucesso."
   );
 
   const encerramentoModal = document.getElementById("encerramento-modal");
@@ -58,27 +53,40 @@ export function init(db, user, userData) {
     );
 
     try {
-      // --- LOG DE DIAGNÓSTICO [ETAPA 2.1: CONSTRUÇÃO DAS CONSULTAS] ---
+      // ***** ALTERAÇÃO PRINCIPAL APLICADA AQUI *****
+      // Agora buscamos múltiplos status usando o operador 'in'
+      const statusPlantaoEPosPlantao = [
+        "em_atendimento_plantao",
+        "encaminhar_para_pb", // <-- NOVO STATUS ADICIONADO
+      ];
+
+      const statusPB = [
+        "aguardando_info_horarios",
+        "cadastrar_horario_psicomanager", // <-- NOVO STATUS ADICIONADO
+      ];
+
       console.log(
-        "[ANÁLISE] Construindo consulta para pacientes de PLANTÃO com as seguintes condições:"
+        "[ANÁLISE] Construindo consulta 1 (Plantão e Pós-Plantão) com as condições:"
       );
-      console.log(`  - status DEVE SER IGUAL A: 'em_atendimento_plantao'`);
+      console.log(
+        `  - status DEVE ESTAR EM: [${statusPlantaoEPosPlantao.join(", ")}]`
+      );
       console.log(
         `  - plantaoInfo.profissionalId DEVE SER IGUAL A: '${user.uid}'`
       );
       const queryPlantao = db
         .collection("trilhaPaciente")
-        .where("status", "==", "em_atendimento_plantao")
+        .where("status", "in", statusPlantaoEPosPlantao)
         .where("plantaoInfo.profissionalId", "==", user.uid);
 
       console.log(
-        "[ANÁLISE] Construindo consulta para pacientes de PSICOTERAPIA BREVE (PB) com as seguintes condições:"
+        "[ANÁLISE] Construindo consulta 2 (Psicoterapia Breve) com as condições:"
       );
-      console.log(`  - status DEVE SER IGUAL A: 'aguardando_info_horarios'`);
+      console.log(`  - status DEVE ESTAR EM: [${statusPB.join(", ")}]`);
       console.log(`  - pbInfo.profissionalId DEVE SER IGUAL A: '${user.uid}'`);
       const queryPb = db
         .collection("trilhaPaciente")
-        .where("status", "==", "aguardando_info_horarios")
+        .where("status", "in", statusPB)
         .where("pbInfo.profissionalId", "==", user.uid);
 
       console.log("[ANÁLISE] Enviando as duas consultas para o Firestore...");
@@ -94,17 +102,32 @@ export function init(db, user, userData) {
         "color: blue; font-weight: bold;"
       );
       console.log(
-        `[ANÁLISE] A consulta de PLANTÃO retornou: ${plantaoSnapshot.size} paciente(s).`
+        `[ANÁLISE] A consulta de PLANTÃO E PÓS-PLANTÃO retornou: ${plantaoSnapshot.size} paciente(s).`
       );
       console.log(
         `[ANÁLISE] A consulta de PB retornou: ${pbSnapshot.size} paciente(s).`
       );
 
-      if (plantaoSnapshot.empty && pbSnapshot.empty) {
+      const todosPacientes = [];
+      const pacientesProcessados = new Set(); // Para evitar duplicatas
+
+      plantaoSnapshot.forEach((doc) => {
+        if (!pacientesProcessados.has(doc.id)) {
+          todosPacientes.push({ id: doc.id, ...doc.data() });
+          pacientesProcessados.add(doc.id);
+        }
+      });
+      pbSnapshot.forEach((doc) => {
+        if (!pacientesProcessados.has(doc.id)) {
+          todosPacientes.push({ id: doc.id, ...doc.data() });
+          pacientesProcessados.add(doc.id);
+        }
+      });
+
+      if (todosPacientes.length === 0) {
         console.warn(
-          "[DIAGNÓSTICO] AMBAS as consultas não retornaram resultados. Isso significa que NENHUM paciente associado a você ('" +
-            user.uid +
-            "') possui o status EXATO de 'em_atendimento_plantao' ou 'aguardando_info_horarios'. Verifique no banco de dados se os pacientes não estão em um status ligeiramente diferente."
+          "[DIAGNÓSTICO] Nenhuma das consultas retornou resultados. Verifique se os pacientes associados a você estão em algum dos seguintes status: " +
+            [...statusPlantaoEPosPlantao, ...statusPB].join(", ")
         );
         container.innerHTML =
           "<p>Você não tem pacientes designados nos estágios de atendimento ativo no momento.</p>";
@@ -112,26 +135,19 @@ export function init(db, user, userData) {
       }
 
       console.log(
-        "%c[ANÁLISE] Etapa 4: Renderizando cards dos pacientes encontrados.",
+        `%c[ANÁLISE] Etapa 4: Renderizando ${todosPacientes.length} card(s) de pacientes.`,
         "color: blue; font-weight: bold;"
       );
-      let html = "";
-      plantaoSnapshot.forEach((doc) => {
-        const data = doc.data();
-        console.log(
-          `[ANÁLISE] Renderizando card de PLANTÃO para: ${data.nomeCompleto} (ID: ${doc.id})`
-        );
-        html += criarCardPaciente(doc.id, data, "plantao");
-      });
-      pbSnapshot.forEach((doc) => {
-        const data = doc.data();
-        console.log(
-          `[ANÁLISE] Renderizando card de PB para: ${data.nomeCompleto} (ID: ${doc.id})`
-        );
-        html += criarCardPaciente(doc.id, data, "pb");
-      });
 
-      container.innerHTML = html;
+      // Ordena os pacientes por nome para uma exibição consistente
+      todosPacientes.sort((a, b) =>
+        a.nomeCompleto.localeCompare(b.nomeCompleto)
+      );
+
+      container.innerHTML = todosPacientes
+        .map((paciente) => criarCardPaciente(paciente.id, paciente))
+        .join("");
+
       adicionarEventListeners();
     } catch (error) {
       console.error(
@@ -143,44 +159,77 @@ export function init(db, user, userData) {
     }
   }
 
-  // O restante do código permanece inalterado, pois a lógica interna está correta.
-  // ... (todas as outras funções: criarCardPaciente, adicionarEventListeners, abrirModais, etc.)
+  function criarCardPaciente(id, data) {
+    const statusMap = {
+      em_atendimento_plantao: {
+        label: "Em Atendimento (Plantão)",
+        acao: "Encerrar Plantão",
+        tipo: "plantao",
+        ativo: true,
+      },
+      aguardando_info_horarios: {
+        label: "Aguardando Info Horários (PB)",
+        acao: "Informar Horários (PB)",
+        tipo: "pb",
+        ativo: true,
+      },
+      encaminhar_para_pb: {
+        label: "Encaminhado para PB",
+        acao: "Aguardando Secretaria",
+        tipo: "info",
+        ativo: false,
+      },
+      cadastrar_horario_psicomanager: {
+        label: "Horários em Processamento",
+        acao: "Aguardando Secretaria",
+        tipo: "info",
+        ativo: false,
+      },
+    };
 
-  function criarCardPaciente(id, data, tipo) {
-    const info = tipo === "plantao" ? data.plantaoInfo : data.pbInfo;
-    const acaoLabel =
-      tipo === "plantao" ? "Encerrar Plantão" : "Informar Horários (PB)";
+    const info = statusMap[data.status] || {
+      label: data.status.replace(/_/g, " "),
+      acao: "Ver Prontuário",
+      tipo: "info",
+      ativo: false,
+    };
+    const infoContato =
+      data.status === "em_atendimento_plantao" ? data.plantaoInfo : data.pbInfo;
 
-    const dataEncaminhamento = info?.dataEncaminhamento
-      ? new Date(info.dataEncaminhamento + "T03:00:00").toLocaleDateString(
-          "pt-BR"
-        )
+    const dataEncaminhamento = infoContato?.dataEncaminhamento
+      ? new Date(
+          infoContato.dataEncaminhamento + "T03:00:00"
+        ).toLocaleDateString("pt-BR")
       : "N/A";
 
     return `
-            <div class="paciente-card" data-id="${id}" data-tipo="${tipo}">
-                <h4>${data.nomeCompleto}</h4>
-                <p><strong>Status:</strong> ${
-      tipo === "plantao"
-        ? "Em Atendimento (Plantão)"
-        : "Aguardando Info Horários (PB)"
-    }</p>
-                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
-                <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-                <button class="action-button">${acaoLabel}</button>
-            </div>
-        `;
+            <div class="paciente-card" data-id="${id}" data-tipo="${info.tipo}">
+                <h4>${data.nomeCompleto}</h4>
+                <p><strong>Status:</strong> ${info.label}</p>
+                <p><strong>Telefone:</strong> ${data.telefoneCelular}</p>
+                <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+                <button class="action-button" ${
+                  !info.ativo ? "disabled" : ""
+                }>${info.acao}</button>
+            </div>
+        `;
   }
 
   function adicionarEventListeners() {
-    console.log("[ANÁLISE] Etapa 5: Adicionando interatividade aos botões.");
+    console.log(
+      "%c[ANÁLISE] Etapa 5: Adicionando interatividade aos botões dos cards.",
+      "color: blue; font-weight: bold;"
+    );
     document
-      .querySelectorAll(".paciente-card .action-button")
+      .querySelectorAll(".paciente-card .action-button:not([disabled])") // Apenas botões ativos
       .forEach((button) => {
         button.addEventListener("click", async (e) => {
           const card = e.target.closest(".paciente-card");
           const pacienteId = card.dataset.id;
           const tipo = card.dataset.tipo;
+          console.log(
+            `[ANÁLISE] Botão de ação clicado para o paciente ID: ${pacienteId} (Tipo: ${tipo})`
+          );
 
           const docSnap = await db
             .collection("trilhaPaciente")
@@ -195,12 +244,14 @@ export function init(db, user, userData) {
 
           if (tipo === "plantao") {
             abrirModalEncerramento(pacienteId, pacienteData);
-          } else {
+          } else if (tipo === "pb") {
             abrirModalHorariosPb(pacienteId, pacienteData);
           }
         });
       });
   }
+
+  // (O restante do código, com as funções de modal, permanece exatamente o mesmo)
 
   async function abrirModalEncerramento(pacienteId, data) {
     const form = document.getElementById("encerramento-form");
@@ -651,5 +702,6 @@ export function init(db, user, userData) {
       }
     });
 
+  // Ponto de partida da execução da lógica da página
   carregarMeusPacientes();
 }
