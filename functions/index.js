@@ -177,6 +177,11 @@ exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
         dados: {
           nomeCompleto: paciente.nomeCompleto || "Nome não encontrado",
           telefoneCelular: paciente.telefoneCelular || "",
+          rua: paciente.rua || "",
+          numeroCasa: paciente.numeroCasa || "",
+          bairro: paciente.bairro || "",
+          cidade: paciente.cidade || "",
+          cep: paciente.cep || "",
         },
       };
     }
