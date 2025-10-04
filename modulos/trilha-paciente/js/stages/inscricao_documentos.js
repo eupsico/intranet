@@ -30,14 +30,13 @@ export async function fetchPacienteData(cardId) {
 /**
  * Renderiza o conteúdo do modal para a etapa "Inscrição e Documentos".
  * @param {string} cardId - O ID do documento do paciente.
- * @param {string} patientName - O nome do paciente.
+ 
  * @param {object} cardData - Objeto com todos os dados do paciente.
  * @returns {HTMLElement} - O elemento HTML para ser inserido no corpo do modal.
  */
 export async function render(cardId, cardData, currentUserData) {
   console.log("🔍 [render] Dados recebidos para o card:", {
     cardId,
-    patientName,
     cardData,
     currentUserData,
   });
