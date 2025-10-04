@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(
         "Atenção: O CPF do responsável é o mesmo do paciente. Será gerado um código temporário para o paciente."
       );
-      const tempId = `TEMP-${Date.now()}`;
+      const tempId = `99${Date.now()}`;
       cpfInput.value = tempId;
       cpfInput.readOnly = true;
       alert(
