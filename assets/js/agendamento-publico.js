@@ -18,6 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let horarioSelecionado = null;
   let pacienteExistenteId = null;
+  function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, "");
+    if (cpf.startsWith("99")) return true; // Aceita CPF temporário
+    if (cpf === "" || cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+    let add = 0;
+    for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+    let rev = 11 - (add % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(cpf.charAt(9))) return false;
+    add = 0;
+    for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+    rev = 11 - (add % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(cpf.charAt(10))) return false;
+    return true;
+  }
 
   async function carregarHorarios() {
     try {
@@ -96,82 +112,121 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function buscarPacientePorCPF() {
     const cpf = cpfInput.value.replace(/\D/g, "");
-    cpfFeedback.textContent = "Verificando...";
-    cpfFeedback.style.color = "gray";
-    nomeInput.value = "";
-    nomeInput.readOnly = false;
-    pacienteExistenteId = null;
+    const cpfFeedback = document.getElementById("cpf-feedback");
+    const nomeInput = document.getElementById("nome");
+    const telefoneInput = document.getElementById("telefone");
 
-    if (cpf.length !== 11) {
+    cpfFeedback.textContent = "Verificando...";
+    cpfFeedback.style.color = "grey";
+
+    // **INÍCIO DA ALTERAÇÃO**
+    // Utiliza a nova função que valida CPF comum e temporário
+    if (!validarCPF(cpf)) {
       cpfFeedback.textContent = "CPF inválido.";
       cpfFeedback.style.color = "red";
       return;
     }
+    // **FIM DA ALTERAÇÃO**
 
     try {
-      const verificarCpf = httpsCallable(functions, "verificarCpfExistente");
-      const result = await verificarCpf({ cpf: cpf });
-      const data = result.data;
-
-      if (data.exists) {
-        pacienteExistenteId = data.docId;
-        const paciente = data.dados;
-        nomeInput.value = paciente.nomeCompleto;
-        nomeInput.readOnly = true;
-        telefoneInput.value = paciente.telefoneCelular || "";
-        cpfFeedback.textContent = `Paciente encontrado: ${paciente.nomeCompleto}. Confirme seus dados.`;
+      const querySnapshot = await db
+        .collection("pacientes")
+        .where("cpf", "==", cpf)
+        .get();
+      if (!querySnapshot.empty) {
+        const pacienteData = querySnapshot.docs[0].data();
+        nomeInput.value = pacienteData.nomeCompleto;
+        telefoneInput.value = pacienteData.telefoneCelular;
+        cpfFeedback.textContent = "Paciente encontrado.";
         cpfFeedback.style.color = "green";
+        window.isNovoPaciente = false; // Garante que a variável global seja atualizada
       } else {
         cpfFeedback.textContent =
-          "CPF não encontrado. Preencha seus dados para um novo cadastro.";
+          "CPF não encontrado. Preencha os dados para novo cadastro.";
         cpfFeedback.style.color = "orange";
+        window.isNovoPaciente = true; // Garante que a variável global seja atualizada
       }
     } catch (error) {
-      console.error("Erro ao chamar a função verificarCpfExistente:", error);
-      cpfFeedback.textContent = "Erro ao verificar o CPF. Tente novamente.";
+      console.error("Erro ao buscar paciente:", error);
+      cpfFeedback.textContent = "Erro ao buscar. Tente novamente.";
       cpfFeedback.style.color = "red";
     }
   }
 
   async function handleAgendamento() {
-    if (!horarioSelecionado) return;
-
     const cpf = cpfInput.value.replace(/\D/g, "");
     const nome = nomeInput.value.trim();
     const telefone = telefoneInput.value.trim();
+    const psicologoId = document.getElementById("psicologo").value;
+    const horarioSelecionado = document.querySelector(".horario.selecionado");
 
-    if (cpf.length !== 15 || !nome || !telefone) {
+    // **INÍCIO DA ALTERAÇÃO**
+    // Valida se os campos essenciais estão preenchidos e se o CPF é válido (comum ou temporário)
+    if (!validarCPF(cpf) || !nome || !telefone) {
       alert(
-        "Por favor, preencha todos os campos obrigatórios: CPF, Nome e Telefone."
+        "Por favor, preencha todos os campos obrigatórios com dados válidos: CPF, Nome e Telefone."
       );
       return;
     }
+    // **FIM DA ALTERAÇÃO**
 
-    const btnConfirmar = document.getElementById(
-      "modal-confirm-agendamento-btn"
-    );
-    btnConfirmar.disabled = true;
-    btnConfirmar.textContent = "Salvando...";
+    if (!psicologoId || !horarioSelecionado) {
+      alert("Por favor, selecione um psicólogo e um horário.");
+      return;
+    }
 
-    const dadosParaAgendamento = {
-      cpf: cpf,
-      nome: nome,
-      telefone: telefone,
-      horarioSelecionado: horarioSelecionado,
-      pacienteExistenteId: pacienteExistenteId,
-    };
+    const horarioId = horarioSelecionado.dataset.horarioId;
+    const agendamentoButton = document.getElementById("agendamento-button");
+    agendamentoButton.disabled = true;
+    agendamentoButton.textContent = "Agendando...";
 
     try {
-      const agendarTriagem = httpsCallable(functions, "agendarTriagemPublico");
-      await agendarTriagem(dadosParaAgendamento);
-      exibirConfirmacaoFinal(nome);
+      let pacienteId;
+      const querySnapshot = await db
+        .collection("pacientes")
+        .where("cpf", "==", cpf)
+        .get();
+
+      if (window.isNovoPaciente && querySnapshot.empty) {
+        const novoPacienteRef = await db.collection("pacientes").add({
+          nomeCompleto: nome,
+          telefoneCelular: telefone,
+          cpf: cpf,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        pacienteId = novoPacienteRef.id;
+      } else if (!querySnapshot.empty) {
+        pacienteId = querySnapshot.docs[0].id;
+      } else {
+        // Caso de segurança: se isNovoPaciente for false, mas o CPF não for encontrado
+        throw new Error(
+          "CPF não encontrado para paciente existente. Por favor, verifique os dados."
+        );
+      }
+
+      const agendamentoData = {
+        pacienteId: pacienteId,
+        psicologoId: psicologoId,
+        horarioId: horarioId,
+        status: "agendado", // Status inicial do agendamento
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await db.collection("agendamentosTriagem").add(agendamentoData);
+
+      // Atualiza o status do horário para 'ocupado'
+      await db.collection("disponibilidadeTriagem").doc(horarioId).update({
+        status: "ocupado",
+      });
+
+      alert("Agendamento realizado com sucesso!");
+      // Limpar o formulário ou redirecionar o usuário
+      window.location.reload(); // Recarrega a página para limpar os campos e a seleção
     } catch (error) {
-      console.error("Erro ao salvar agendamento via Cloud Function:", error);
-      alert(`Não foi possível salvar seu agendamento: ${error.message}`);
-    } finally {
-      btnConfirmar.disabled = false;
-      btnConfirmar.textContent = "Confirmar Agendamento";
-      modal.style.display = "none";
+      console.error("Erro ao realizar agendamento:", error);
+      alert("Falha no agendamento. Por favor, tente novamente.");
+      agendamentoButton.disabled = false;
+      agendamentoButton.textContent = "Confirmar Agendamento";
     }
   }
 
