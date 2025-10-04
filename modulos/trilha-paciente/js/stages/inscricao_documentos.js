@@ -11,6 +11,11 @@ import { db } from "../../../../assets/js/firebase-init.js";
  * @returns {HTMLElement} - O elemento HTML para ser inserido no corpo do modal.
  */
 export async function render(cardId, patientName, cardData) {
+  console.log("🔍 [render] Dados recebidos para o card:", {
+    cardId,
+    patientName,
+    cardData,
+  });
   const element = document.createElement("div");
 
   const responsavelInfo =
