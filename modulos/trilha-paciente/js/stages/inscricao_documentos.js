@@ -1,11 +1,12 @@
-// Versão Corrigida: 2.1 (Com fallbacks para evitar 'undefined')
+// Arquivo: /modulos/trilha-paciente/js/stages/inscricao_documentos.js
+// Versão Corrigida: 2.0 (Padronizado com render/save)
 
 import { db } from "../../../../assets/js/firebase-init.js";
 
 /**
  * Renderiza o conteúdo do modal para a etapa "Inscrição e Documentos".
  * @param {string} cardId - O ID do documento do paciente.
- * @param {string} patientName - O nome do paciente.
+ * @param {string} patientName - O nome do paciente (não usado diretamente aqui, mas parte do padrão).
  * @param {object} cardData - Objeto com todos os dados do paciente.
  * @returns {HTMLElement} - O elemento HTML para ser inserido no corpo do modal.
  */
@@ -23,19 +24,14 @@ export async function render(cardId, patientName, cardData) {
       )
     : "Não informada";
 
-  // ----- CORREÇÃO APLICADA COM FALLBACKS -----
   element.innerHTML = `
         <h3 class="form-section-title">Confirmação de Dados</h3>
         <div class="confirmation-box" id="confirmation-text">
-            <strong>Nome:</strong> ${
-              cardData.nomeCompleto || "Não informado"
-            }<br>
+            <strong>Nome:</strong> ${cardData.nomeCompleto}<br>
             <strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}<br>
-            <strong>Telefone:</strong> ${
-              cardData.telefoneCelular || "Não informado"
-            }<br>
-            <strong>CPF:</strong> ${cardData.cpf || "Não informado"}<br>
-            <strong>E-mail:</strong> ${cardData.email || "Não informado"}<br>
+            <strong>Telefone:</strong> ${cardData.telefoneCelular}<br>
+            <strong>CPF:</strong> ${cardData.cpf}<br>
+            <strong>E-mail:</strong> ${cardData.email}<br>
             ${responsavelInfo}
         </div>
         <p>Copie o texto acima e envie para o paciente para confirmação.</p>
@@ -161,6 +157,7 @@ export async function save(cardId, currentUserData) {
     };
   }
 
+  // Adiciona informações de log em qualquer um dos casos
   dataToUpdate.lastUpdate = new Date();
   dataToUpdate.lastUpdatedBy = currentUserData.nome || "N/A";
 
@@ -219,11 +216,12 @@ function setupEventListeners(element) {
     if (this.checked) {
       chkPagamento.checked = false;
       chkPagamento.disabled = true;
-      chkDesistiu.disabled = true;
       chkDesistiu.checked = false;
+      chkDesistiu.disabled = true;
       desistiuSection.style.display = "none";
     } else {
-      chkPagamento.disabled = chkDesistiu.checked;
+      chkPagamento.disabled = false;
+      chkDesistiu.disabled = false;
     }
   });
 
@@ -231,11 +229,13 @@ function setupEventListeners(element) {
     if (this.checked) {
       chkIsento.checked = false;
       chkIsento.disabled = true;
-      chkDesistiu.checked = false; // Desmarcar desistência se pagamento for marcado
+      chkDesistiu.checked = false;
+      chkDesistiu.disabled = true;
       isentoSection.style.display = "none";
       desistiuSection.style.display = "none";
     } else {
-      chkIsento.disabled = chkDesistiu.checked;
+      chkIsento.disabled = false;
+      chkDesistiu.disabled = false;
     }
   });
 
@@ -243,19 +243,16 @@ function setupEventListeners(element) {
     const isDesistente = this.checked;
     desistiuSection.style.display = isDesistente ? "block" : "none";
     agendamentoSection.style.display = isDesistente ? "none" : "block";
-
     allCheckboxes.forEach((chk) => {
       if (chk.id !== "chk-desistiu") {
         chk.disabled = isDesistente;
         if (isDesistente) chk.checked = false;
       }
     });
-
-    // Habilita/desabilita outros checkboxes baseados na desistência
-    chkIsento.disabled = isDesistente;
-    chkPagamento.disabled = isDesistente;
-
     if (isDesistente) {
+      chkIsento.checked = false;
+      chkIsento.disabled = false; // Garante que não fique travado
+      chkPagamento.disabled = false; // Garante que não fique travado
       isentoSection.style.display = "none";
     }
   });
