@@ -34,11 +34,12 @@ export async function fetchPacienteData(cardId) {
  * @param {object} cardData - Objeto com todos os dados do paciente.
  * @returns {HTMLElement} - O elemento HTML para ser inserido no corpo do modal.
  */
-export async function render(cardId, patientName, cardData) {
+export async function render(cardId, cardData, currentUserData) {
   console.log("🔍 [render] Dados recebidos para o card:", {
     cardId,
     patientName,
     cardData,
+    currentUserData,
   });
 
   const element = document.createElement("div");
