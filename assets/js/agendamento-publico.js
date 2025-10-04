@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nome = nomeInput.value.trim();
     const telefone = telefoneInput.value.trim();
 
-    if (cpf.length !== 11 || !nome || !telefone) {
+    if (cpf.length !== 15 || !nome || !telefone) {
       alert(
         "Por favor, preencha todos os campos obrigatórios: CPF, Nome e Telefone."
       );
