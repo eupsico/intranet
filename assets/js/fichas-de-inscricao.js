@@ -82,6 +82,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, "");
+
+    // Se começar com '99', considera válido como CPF temporário
+    if (cpf.startsWith("99")) {
+      return true;
+    }
+
+    // Validação padrão de CPF
     if (cpf === "" || cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
     let add = 0;
     for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
