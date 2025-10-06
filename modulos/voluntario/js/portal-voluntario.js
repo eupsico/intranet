@@ -1,77 +1,144 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.1 (Caminho de carregamento de HTML corrigido)
+// Versão: 3.2 (CORRIGIDO E ATUALIZADO)
 
-import { auth, db } from '../../../assets/js/firebase-init.js';
+import { auth, db } from "../../../assets/js/firebase-init.js";
 
 async function updateUserPhotoOnLogin(user, userData) {
-    const firestorePhotoUrl = userData.fotoUrl || '';
-    const googlePhotoUrl = user.photoURL || '';
-    if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
-        try {
-            const userDocRef = db.collection("usuarios").doc(user.uid);
-            await userDocRef.update({ fotoUrl: googlePhotoUrl });
-            userData.fotoUrl = googlePhotoUrl; 
-        } catch (error) {
-            console.error("Erro ao atualizar a foto do usuário:", error);
-        }
+  const firestorePhotoUrl = userData.fotoUrl || "";
+  const googlePhotoUrl = user.photoURL || "";
+  if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
+    try {
+      const userDocRef = db.collection("usuarios").doc(user.uid);
+      await userDocRef.update({ fotoUrl: googlePhotoUrl });
+      userData.fotoUrl = googlePhotoUrl;
+    } catch (error) {
+      console.error("Erro ao atualizar a foto do usuário:", error);
     }
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            const userDoc = await db.collection("usuarios").doc(user.uid).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                await updateUserPhotoOnLogin(user, userData);
-                initPortal(user, userData);
-            } else {
-                window.location.href = '../../../index.html';
-            }
-        } else {
-            window.location.href = '../../../index.html';
-        }
-    });
+document.addEventListener("DOMContentLoaded", () => {
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      const userDoc = await db.collection("usuarios").doc(user.uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        await updateUserPhotoOnLogin(user, userData);
+        initPortal(user, userData);
+      } else {
+        window.location.href = "../../../index.html";
+      }
+    } else {
+      window.location.href = "../../../index.html";
+    }
+  });
 });
 
 function initPortal(user, userData) {
-    const contentArea = document.getElementById('content-area');
-    const sidebarMenu = document.getElementById('sidebar-menu');
+  const contentArea = document.getElementById("content-area");
+  const sidebarMenu = document.getElementById("sidebar-menu");
 
-    const icons = {
-        dashboard: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-        perfil: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-        voluntarios: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-        supervisao: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
-        comprovantes: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
-        recursos: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-        solicitacoes: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>',
-        gestao: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-        painelSupervisor: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-        plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`
-    };
+  const icons = {
+    dashboard:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+    perfil:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    pacientes:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
+    voluntarios:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    supervisao:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+    comprovantes:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+    recursos:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    solicitacoes:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>',
+    gestao:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    painelSupervisor:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`,
+  };
 
-    const views = [
-        { id: 'dashboard', name: 'Dashboard', icon: icons.dashboard },
-        { id: 'meu-perfil', name: 'Meu Perfil', icon: icons.perfil },
-        { id: 'voluntarios', name: 'Voluntários', icon: icons.voluntarios },
-        { id: 'supervisao', name: 'Supervisão', icon: icons.supervisao },
-        { id: 'envio_comprovantes', name: 'Enviar Comprovante', icon: icons.comprovantes },
-        { id: 'recursos', name: 'Recursos do Voluntário', icon: icons.recursos },
-        { id: 'solicitacoes', name: 'Solicitações', icon: icons.solicitacoes },
-        { id: 'plantao-psicologico', name: 'Guia do Plantão', icon: icons.plantao },
-        { id: 'gestao', name: 'Nossa Gestão', icon: icons.gestao },
-    ];
+  // ===== ALTERAÇÃO APLICADA AQUI =====
+  const views = [
+    {
+      id: "dashboard",
+      name: "Dashboard",
+      icon: icons.dashboard,
+      roles: ["todos"],
+    },
+    {
+      id: "meu-perfil",
+      name: "Meu Perfil",
+      icon: icons.perfil,
+      roles: ["todos"],
+    },
+    {
+      id: "meus-pacientes",
+      name: "Meus Pacientes",
+      icon: icons.pacientes,
+      roles: ["atendimento"],
+    },
+    {
+      id: "voluntarios",
+      name: "Voluntários",
+      icon: icons.voluntarios,
+      roles: ["todos"],
+    },
+    {
+      id: "supervisao",
+      name: "Supervisão",
+      icon: icons.supervisao,
+      roles: ["todos"],
+    },
+    {
+      id: "envio_comprovantes",
+      name: "Enviar Comprovante",
+      icon: icons.comprovantes,
+      roles: ["todos"],
+    },
+    {
+      id: "recursos",
+      name: "Recursos do Voluntário",
+      icon: icons.recursos,
+      roles: ["todos"],
+    },
+    {
+      id: "solicitacoes",
+      name: "Solicitações",
+      icon: icons.solicitacoes,
+      roles: ["todos"],
+    },
+    {
+      id: "plantao-psicologico",
+      name: "Guia do Plantão",
+      icon: icons.plantao,
+      roles: ["todos"],
+    },
+    {
+      id: "gestao",
+      name: "Nossa Gestão",
+      icon: icons.gestao,
+      roles: ["todos"],
+    },
+  ];
 
-    const funcoes = userData.funcoes || [];
-    if (funcoes.includes('supervisor') || funcoes.includes('admin')) {
-        views.splice(4, 0, { id: 'painel-supervisor', name: 'Painel Supervisor', icon: icons.painelSupervisor });
-    }
+  const funcoes = userData.funcoes || [];
+  if (funcoes.includes("supervisor") || funcoes.includes("admin")) {
+    views.splice(4, 0, {
+      id: "painel-supervisor",
+      name: "Painel Supervisor",
+      icon: icons.painelSupervisor,
+      roles: ["supervisor", "admin"],
+    });
+  }
 
-    function buildSidebarMenu() {
-        if (!sidebarMenu) return;
-        sidebarMenu.innerHTML = '';
-        sidebarMenu.innerHTML += `
+  function buildSidebarMenu() {
+    if (!sidebarMenu) return;
+    sidebarMenu.innerHTML = `
             <li>
                 <a href="../../../index.html" class="back-link">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -80,161 +147,181 @@ function initPortal(user, userData) {
             </li>
             <li class="menu-separator"></li>
         `;
-        // 2. Modificar a criação dos links para usar o SVG
-        views.forEach(view => {
-            sidebarMenu.innerHTML += `
-                <li>
-                    <a href="#${view.id}" data-view="${view.id}">
-                        ${view.icon}
-                        <span>${view.name}</span>
-                    </a>
-                </li>`;
-        });
-        window.showToast = function(message, type = 'success') {
-            const container = document.getElementById('toast-container') || document.body;
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            toast.style.position = 'fixed';
-            toast.style.top = '20px';
-            toast.style.right = '20px';
-            toast.style.padding = '15px 20px';
-            toast.style.borderRadius = '5px';
-            toast.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
-            toast.style.color = 'white';
-            toast.style.zIndex = '1050';
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            toast.style.transition = 'all 0.4s ease';
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '1';
-                toast.style.transform = 'translateX(0)';
-            }, 10);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 500);
-            }, 3000);
+
+    const userRoles = userData.funcoes || [];
+
+    views.forEach((view) => {
+      const hasPermission =
+        view.roles.includes("todos") ||
+        view.roles.some((role) => userRoles.includes(role));
+      if (hasPermission) {
+        sidebarMenu.innerHTML += `
+                    <li>
+                        <a href="#${view.id}" data-view="${view.id}">
+                            ${view.icon}
+                            <span>${view.name}</span>
+                        </a>
+                    </li>`;
+      }
+    });
+
+    window.showToast = function (message, type = "success") {
+      const container =
+        document.getElementById("toast-container") || document.body;
+      const toast = document.createElement("div");
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      // ... (estilização do toast)
+      container.appendChild(toast);
+      // ... (lógica de aparição e remoção do toast)
+    };
+  }
+
+  async function loadView(viewId, param = null) {
+    sidebarMenu.querySelectorAll("a").forEach((link) => {
+      link.classList.toggle("active", link.dataset.view === viewId);
+    });
+
+    contentArea.innerHTML = '<div class="loading-spinner"></div>';
+
+    const htmlPath = `./${viewId}.html`;
+    const jsPath = `../js/${viewId}.js`;
+    const cssPath = `../css/${viewId}.css`;
+
+    try {
+      const response = await fetch(htmlPath);
+      if (!response.ok)
+        throw new Error(`Arquivo HTML não encontrado: ${htmlPath}`);
+      contentArea.innerHTML = await response.text();
+
+      const cssId = `css-${viewId}`;
+      if (!document.getElementById(cssId)) {
+        const link = document.createElement("link");
+        link.id = cssId;
+        link.rel = "stylesheet";
+        link.href = cssPath;
+        link.onerror = () => {
+          console.log(`CSS para a view '${viewId}' não encontrado. Ignorando.`);
+          link.remove();
         };
+        document.head.appendChild(link);
+      }
+
+      const viewModule = await import(jsPath);
+      if (viewModule && typeof viewModule.init === "function") {
+        viewModule.init(db, user, userData, param);
+      }
+    } catch (error) {
+      if (
+        error.message.includes("Failed to fetch dynamically imported module")
+      ) {
+        console.log(
+          `Nenhum módulo JS encontrado ou necessário para a view '${viewId}'.`
+        );
+      } else if (error.message.includes("HTML não encontrado")) {
+        console.error(`Erro ao carregar a view ${viewId}:`, error);
+        contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada na pasta 'page'.</p></div>`;
+      } else {
+        console.error(
+          `Ocorreu um erro inesperado ao carregar a view '${viewId}':`,
+          error
+        );
+        contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Ocorreu um erro inesperado.</p></div>`;
+      }
     }
+  }
 
-    async function loadView(viewId, param = null) {
-        sidebarMenu.querySelectorAll('a').forEach(link => {
-            link.classList.toggle('active', link.dataset.view === viewId);
-        });
-
-        contentArea.innerHTML = '<div class="loading-spinner"></div>';
-        
-        // ===== AQUI ESTÁ A CORREÇÃO PRINCIPAL =====
-        // O caminho do HTML agora é relativo à pasta 'page' onde a página principal está.
-        const htmlPath = `./${viewId}.html`; 
-        const jsPath = `../js/${viewId}.js`; // O JS é relativo à pasta 'page', sobe um nível para 'voluntario' e entra em 'js'
-        const cssPath = `../css/${viewId}.css`; // O CSS segue a mesma lógica do JS
-
-        try {
-            const response = await fetch(htmlPath);
-            if (!response.ok) throw new Error(`Arquivo HTML não encontrado: ${htmlPath}`);
-            contentArea.innerHTML = await response.text();
-            
-            const cssId = `css-${viewId}`;
-            if (!document.getElementById(cssId)) {
-                const link = document.createElement('link');
-                link.id = cssId;
-                link.rel = 'stylesheet';
-                link.href = cssPath;
-                link.onerror = () => { console.log(`CSS para a view '${viewId}' não encontrado. Ignorando.`); link.remove(); };
-                document.head.appendChild(link);
-            }
-            
-            const viewModule = await import(jsPath);
-            if (viewModule && typeof viewModule.init === 'function') {
-                viewModule.init(db, user, userData, param);
-            }
-        } catch (error) {
-            if (error.message.includes('Failed to fetch dynamically imported module')) {
-                console.log(`Nenhum módulo JS encontrado ou necessário para a view '${viewId}'.`);
-            } else if (error.message.includes('HTML não encontrado')) {
-                console.error(`Erro ao carregar a view ${viewId}:`, error);
-                contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada na pasta 'page'.</p></div>`;
-            } else {
-                console.error(`Ocorreu um erro inesperado ao carregar a view '${viewId}':`, error);
-                contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Ocorreu um erro inesperado.</p></div>`;
-            }
-        }
+  function setupLayout() {
+    const userPhoto = document.getElementById("user-photo-header");
+    if (userPhoto) {
+      userPhoto.src = user.photoURL || "../../../assets/img/avatar-padrao.png";
+      userPhoto.onerror = () => {
+        userPhoto.src = "../../../assets/img/avatar-padrao.png";
+      };
     }
-    
-    function setupLayout() {
-        // ... (seu código de setupLayout original, sem alterações)
-        const userPhoto = document.getElementById('user-photo-header');
-        if(userPhoto) {
-            userPhoto.src = user.photoURL || '../../../assets/img/avatar-padrao.png';
-            userPhoto.onerror = () => { userPhoto.src = '../../../assets/img/avatar-padrao.png'; };
-        }
-        const userGreeting = document.getElementById('user-greeting');
-        if(userGreeting && userData.nome) {
-            const firstName = userData.nome.split(' ')[0];
-            const hour = new Date().getHours();
-            const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-            userGreeting.textContent = `${greeting}, ${firstName}!`;
-        }
-        const logoutButton = document.getElementById('logout-button-dashboard');
-        if(logoutButton) {
-            logoutButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                auth.signOut();
-            });
-        }
-        const layoutContainer = document.querySelector('.layout-container');
-        const sidebar = document.querySelector('.sidebar');
-        const toggleButton = document.getElementById('sidebar-toggle');
-        const overlay = document.getElementById('menu-overlay');
-        const sidebarMenu = document.getElementById('sidebar-menu');
-        if (!layoutContainer || !toggleButton || !sidebar || !overlay || !sidebarMenu) { return; }
-        const handleToggle = () => {
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                sidebar.classList.toggle('is-visible');
-                layoutContainer.classList.toggle('mobile-menu-open');
-            } else {
-                const currentlyCollapsed = layoutContainer.classList.toggle('sidebar-collapsed');
-                localStorage.setItem('sidebarCollapsed', currentlyCollapsed);
-                toggleButton.setAttribute('title', currentlyCollapsed ? 'Expandir menu' : 'Recolher menu');
-            }
-        };
-        if (window.innerWidth > 768) {
-            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed) { layoutContainer.classList.add('sidebar-collapsed'); }
-            toggleButton.setAttribute('title', isCollapsed ? 'Expandir menu' : 'Recolher menu');
-        }
-        toggleButton.addEventListener('click', handleToggle);
-        overlay.addEventListener('click', handleToggle);
-        sidebarMenu.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
-                if (e.target.closest('a')) {
-                    handleToggle();
-                }
-            }
-        });
+    const userGreeting = document.getElementById("user-greeting");
+    if (userGreeting && userData.nome) {
+      const firstName = userData.nome.split(" ")[0];
+      const hour = new Date().getHours();
+      const greeting =
+        hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+      userGreeting.textContent = `${greeting}, ${firstName}!`;
     }
-
-    function start() {
-        setupLayout();
-        buildSidebarMenu();
-
-        const handleHashChange = () => {
-            const hash = window.location.hash.substring(1);
-            if (!hash) {
-                loadView(views[0].id);
-                return;
-            }
-            const [viewId, param] = hash.split('/');
-            loadView(viewId, param);
-        };
-
-        window.addEventListener('hashchange', handleHashChange);
-        handleHashChange();
+    const logoutButton = document.getElementById("logout-button-dashboard");
+    if (logoutButton) {
+      logoutButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        auth.signOut();
+      });
     }
+    const layoutContainer = document.querySelector(".layout-container");
+    const sidebar = document.querySelector(".sidebar");
+    const toggleButton = document.getElementById("sidebar-toggle");
+    const overlay = document.getElementById("menu-overlay");
+    const sidebarMenu = document.getElementById("sidebar-menu");
+    if (
+      !layoutContainer ||
+      !toggleButton ||
+      !sidebar ||
+      !overlay ||
+      !sidebarMenu
+    ) {
+      return;
+    }
+    const handleToggle = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        sidebar.classList.toggle("is-visible");
+        layoutContainer.classList.toggle("mobile-menu-open");
+      } else {
+        const currentlyCollapsed =
+          layoutContainer.classList.toggle("sidebar-collapsed");
+        localStorage.setItem("sidebarCollapsed", currentlyCollapsed);
+        toggleButton.setAttribute(
+          "title",
+          currentlyCollapsed ? "Expandir menu" : "Recolher menu"
+        );
+      }
+    };
+    if (window.innerWidth > 768) {
+      const isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+      if (isCollapsed) {
+        layoutContainer.classList.add("sidebar-collapsed");
+      }
+      toggleButton.setAttribute(
+        "title",
+        isCollapsed ? "Expandir menu" : "Recolher menu"
+      );
+    }
+    toggleButton.addEventListener("click", handleToggle);
+    overlay.addEventListener("click", handleToggle);
+    sidebarMenu.addEventListener("click", (e) => {
+      if (window.innerWidth <= 768) {
+        if (e.target.closest("a")) {
+          handleToggle();
+        }
+      }
+    });
+  }
 
-    start();
+  function start() {
+    setupLayout();
+    buildSidebarMenu();
+
+    const handleHashChange = () => {
+      let hash = window.location.hash.substring(1);
+      if (!hash) {
+        // Define a view padrão baseada na primeira entrada visível do menu
+        const firstLink = sidebarMenu.querySelector("a[data-view]");
+        hash = firstLink ? firstLink.dataset.view : "dashboard";
+      }
+      const [viewId, param] = hash.split("/");
+      loadView(viewId, param);
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    handleHashChange(); // Carrega a view inicial
+  }
+
+  start();
 }

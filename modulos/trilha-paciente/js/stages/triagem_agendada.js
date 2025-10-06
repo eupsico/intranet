@@ -1,34 +1,56 @@
+// Arquivo: /modulos/trilha-paciente/js/stages/triagem_agendada.js
+// Versão Corrigida: 3.0 (Parâmetros corrigidos e mais detalhes na visualização)
+
 /**
  * Renderiza o conteúdo do modal para a etapa "Triagem Agendada".
- * @param {HTMLElement} modalBody - O corpo do modal onde o conteúdo será inserido.
- * @param {object} cardData - Os dados do card do paciente.
- * @param {object} db - A instância do Firestore.
+ * Esta etapa é apenas para visualização.
+ * @param {string} cardId - O ID do documento do paciente.
+ * @param {object} cardData - Objeto com todos os dados do paciente.
+ * @param {object} currentUserData - Dados do usuário logado (não utilizado aqui, mas mantido por padrão).
+ * @returns {HTMLElement} - O elemento HTML para ser inserido no corpo do modal.
  */
-export function render(modalBody, cardData, db) {
-  // Formata a data para o padrão brasileiro (dd/mm/yyyy)
+export async function render(cardId, cardData, currentUserData) {
+  const element = document.createElement("div");
+
+  // Formata a data para o padrão brasileiro (dd/mm/yyyy), tratando a timezone
   const dataTriagemFormatada = cardData.dataTriagem
-    ? new Date(cardData.dataTriagem + "T00:00:00-03:00").toLocaleDateString(
+    ? new Date(cardData.dataTriagem + "T03:00:00").toLocaleDateString("pt-BR")
+    : "Não informada";
+
+  const dataNascimentoFormatada = cardData.dataNascimento
+    ? new Date(cardData.dataNascimento + "T03:00:00").toLocaleDateString(
         "pt-BR"
       )
-    : "Data não informada";
+    : "Não informada";
 
-  modalBody.innerHTML = `
+  const tipoTriagem = cardData.tipoTriagem || "não definido";
+
+  element.innerHTML = `
         <h3 class="form-section-title">Confirmação do Agendamento</h3>
         <div class="confirmation-box">
-Sua triagem será ${cardData.modalidadeTriagem || "não definido"}.
-
-Paciente: ${cardData.nomeCompleto || "não informado"}
-Data e Horário: ${dataTriagemFormatada} às ${
+            <p style="margin-bottom: 15px;">A triagem será realizada na modalidade <strong>${tipoTriagem}</strong>.</p>
+            
+            <strong>Paciente:</strong> ${
+              cardData.nomeCompleto || "não informado"
+            }
+            <strong>CPF:</strong> ${cardData.cpf || "não informado"}
+            <strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}
+            <strong>Telefone:</strong> ${
+              cardData.telefoneCelular || "não informado"
+            }
+            <strong>E-mail:</strong> ${cardData.email || "não informado"}
+            <strong>Assistente Social:</strong> ${
+              cardData.assistenteSocialNome || "não informado"
+            }
+            <strong>Data e Horário:</strong> ${dataTriagemFormatada} às ${
     cardData.horaTriagem || "não informado"
   }
-Assistente Social: ${cardData.assistenteSocialNome || "não informado"}
-
-Posso ajudar em algo mais?
         </div>
         <p>Este card será atualizado automaticamente pela assistente social após a realização da triagem na tela "Fila de Atendimento".</p>
     `;
 
-  // Como esta etapa é apenas de visualização, o botão de salvar é desnecessário.
-  const saveButton = document.getElementById("modal-save-btn");
-  saveButton.style.display = "none";
+  // Como esta etapa é apenas de visualização, a função save não será exportada,
+  // e o botão Salvar será escondido pelo trilha-paciente.js.
+
+  return element;
 }

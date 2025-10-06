@@ -1,11 +1,9 @@
 // Arquivo: /modulos/voluntario/js/agendamento.js
+import { obterSlotsValidos } from "./utils/slots.js";
 
-// --- FUNÇÕES AUXILIARES ---
+let dbInstance, currentUser, currentUserData;
+const modal = document.getElementById("agendamento-modal");
 
-/**
- * Formata um valor numérico para o padrão de moeda BRL.
- * @param {HTMLInputElement} input O campo de input.
- */
 function formatarMoeda(input) {
   let value = input.value.replace(/\D/g, "");
   if (value === "") {
@@ -19,11 +17,6 @@ function formatarMoeda(input) {
   input.value = value;
 }
 
-/**
- * Converte uma string de moeda BRL para um número.
- * @param {string} currencyString A string no formato "R$ 1.234,56".
- * @returns {number} O valor numérico.
- */
 function parseCurrency(currencyString) {
   if (!currencyString) return 0;
   const numericString = currencyString
@@ -34,12 +27,6 @@ function parseCurrency(currencyString) {
   return parseFloat(numericString) || 0;
 }
 
-/**
- * Calcula a capacidade de agendamentos em slots de 30 minutos.
- * @param {string} inicio Hora de início (HH:mm).
- * @param {string} fim Hora de fim (HH:mm).
- * @returns {number} A quantidade de slots.
- */
 function calculateCapacity(inicio, fim) {
   try {
     const [startH, startM] = inicio.split(":").map(Number);
@@ -50,12 +37,6 @@ function calculateCapacity(inicio, fim) {
   }
 }
 
-let dbInstance, currentUser, currentUserData;
-const modal = document.getElementById("agendamento-modal");
-
-/**
- * Atualiza o cálculo do custo da supervisão na tela.
- */
 function updateSupervisionCost() {
   if (!modal.querySelector("#numero-pacientes")) return;
 
@@ -88,10 +69,6 @@ function updateSupervisionCost() {
     });
 }
 
-/**
- * Renderiza os campos de input para cada paciente.
- * @param {number} count O número de pacientes.
- */
 function renderPatientInputs(count) {
   const container = modal.querySelector("#pacientes-container");
   container.innerHTML = "";
@@ -102,17 +79,17 @@ function renderPatientInputs(count) {
 
   for (let i = 1; i <= count; i++) {
     container.innerHTML += `
-            <div class="form-row" style="gap: 15px; align-items: flex-end; border-left: 3px solid var(--cor-fundo); padding-left: 15px; margin-bottom: 10px;">
-                <div class="form-group" style="flex-grow: 2;">
-                    <label for="paciente-iniciais-${i}">Iniciais do Paciente ${i}</label>
-                    <input type="text" id="paciente-iniciais-${i}" class="form-control" placeholder="Ex: A.B.C.">
-                </div>
-                <div class="form-group" style="flex-grow: 1;">
-                    <label for="paciente-contribuicao-${i}">Valor Contribuição</label>
-                    <input type="text" id="paciente-contribuicao-${i}" class="form-control" placeholder="R$ 0,00">
-                </div>
-            </div>
-        `;
+      <div class="form-row" style="gap: 15px; align-items: flex-end; border-left: 3px solid var(--cor-fundo); padding-left: 15px; margin-bottom: 10px;">
+        <div class="form-group" style="flex-grow: 2;">
+          <label for="paciente-iniciais-${i}">Iniciais do Paciente ${i}</label>
+          <input type="text" id="paciente-iniciais-${i}" class="form-control" placeholder="Ex: A.B.C.">
+        </div>
+        <div class="form-group" style="flex-grow: 1;">
+          <label for="paciente-contribuicao-${i}">Valor Contribuição</label>
+          <input type="text" id="paciente-contribuicao-${i}" class="form-control" placeholder="R$ 0,00">
+        </div>
+      </div>
+    `;
   }
 
   container
@@ -127,10 +104,6 @@ function renderPatientInputs(count) {
   updateSupervisionCost();
 }
 
-/**
- * Renderiza os horários disponíveis.
- * @param {Array} horariosDisponiveis Lista de horários.
- */
 function renderDates(horariosDisponiveis) {
   const datasContainer = modal.querySelector("#datas-disponiveis-container");
   const confirmBtn = modal.querySelector("#agendamento-confirm-btn");
@@ -155,21 +128,16 @@ function renderDates(horariosDisponiveis) {
     const vagasRestantes = slot.capacity - slot.booked;
     const radioId = `date-${index}`;
     datasContainer.innerHTML += `
-            <div class="date-option">
-                <input type="radio" id="${radioId}" name="data_agendamento" value="${slot.date.toISOString()}">
-                <label for="${radioId}">
-                    <strong>${formattedDate}</strong> (${horarioInfo}) <span>Vagas restantes: ${vagasRestantes}</span>
-                </label>
-            </div>`;
+      <div class="date-option">
+        <input type="radio" id="${radioId}" name="data_agendamento" value="${slot.date.toISOString()}">
+        <label for="${radioId}">
+          <strong>${formattedDate}</strong> (${horarioInfo}) <span>Vagas restantes: ${vagasRestantes}</span>
+        </label>
+      </div>`;
   });
   if (confirmBtn) confirmBtn.disabled = false;
 }
 
-/**
- * Lida com a confirmação do agendamento.
- * @param {object} db A instância do Firestore.
- * @param {object} currentSupervisorData Os dados do supervisor.
- */
 async function handleConfirmAgendamento(db, currentSupervisorData) {
   const nome = modal.querySelector("#agendamento-profissional-nome").value;
   const email = modal.querySelector("#agendamento-profissional-email").value;
@@ -197,6 +165,15 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     modal.querySelector("#numero-pacientes").value,
     10
   );
+  if (numeroPacientes > 0) {
+    const iniciaisPaciente1 = modal.querySelector("#paciente-iniciais-1").value;
+    if (!iniciaisPaciente1 || iniciaisPaciente1.trim() === "") {
+      alert(
+        "O preenchimento das informações do Paciente 1 (iniciais) é obrigatório."
+      );
+      return;
+    }
+  }
   const pacientes = [];
   let valorTotalContribuicao = 0;
 
@@ -210,6 +187,7 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
       valorTotalContribuicao += parseCurrency(contribuicaoString);
     }
   }
+
   const valorSupervisao = valorTotalContribuicao * 0.2;
 
   const agendamentoData = {
@@ -222,9 +200,9 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     profissionalNome: nome,
     profissionalEmail: email,
     profissionalTelefone: telefone,
-    pacientes: pacientes,
-    valorTotalContribuicao: valorTotalContribuicao,
-    valorSupervisao: valorSupervisao,
+    pacientes,
+    valorTotalContribuicao,
+    valorSupervisao,
     criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
   };
 
@@ -245,7 +223,6 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     confirmBtn.textContent = "Confirmar Agendamento";
   }
 }
-
 /**
  * Abre e inicializa o modal de agendamento.
  */
@@ -299,40 +276,12 @@ async function open(db, user, userData, supervisorData) {
 
   try {
     let potentialSlots = [];
+
     if (
       supervisorData.diasHorarios &&
       Array.isArray(supervisorData.diasHorarios)
     ) {
-      const diasDaSemana = [
-        "domingo",
-        "segunda-feira",
-        "terça-feira",
-        "quarta-feira",
-        "quinta-feira",
-        "sexta-feira",
-        "sábado",
-      ];
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-
-      for (let i = 0; i < 15; i++) {
-        const diaAtual = new Date(hoje);
-        diaAtual.setDate(hoje.getDate() + i);
-
-        const nomeDiaSemana = diasDaSemana[diaAtual.getDay()];
-
-        supervisorData.diasHorarios.forEach((horario) => {
-          if (horario.dia && horario.dia.toLowerCase() === nomeDiaSemana) {
-            const [h, m] = horario.inicio.split(":");
-            const slotDate = new Date(diaAtual);
-            slotDate.setHours(h, m, 0, 0);
-
-            if (slotDate > new Date()) {
-              potentialSlots.push({ date: slotDate, horario });
-            }
-          }
-        });
-      }
+      potentialSlots = await obterSlotsValidos(db, supervisorData.diasHorarios);
     }
 
     const agendamentosRef = db.collection("agendamentos");
@@ -358,6 +307,7 @@ async function open(db, user, userData, supervisorData) {
     datasContainer.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao buscar os horários.</p>`;
   }
 }
+
 if (modal) {
   modal
     .querySelector(".close-modal-btn")
@@ -369,6 +319,7 @@ if (modal) {
     .querySelector("#agendamento-ok-btn")
     .addEventListener("click", () => (modal.style.display = "none"));
 }
+
 export const agendamentoController = {
   open,
 };

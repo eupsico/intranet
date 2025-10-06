@@ -87,21 +87,25 @@
                 <h2 id="agendamento-modal-title">Confirmar Agendamento</h2>
                 <button class="close-modal-btn">&times;</button>
             </div>
-            <div class="modal-body">
-                <p>Você selecionou o horário das <strong id="modal-horario-selecionado"></strong>. Para continuar, por favor, informe os dados do paciente.</p>
-                <div class="form-group">
-                    <label for="paciente-cpf">CPF do Paciente <span class="required-asterisk">*</span></label>
-                    <input type="text" id="paciente-cpf" class="form-control" placeholder="Digite apenas números e aguarde" required>
-                    <div id="cpf-feedback"></div>
-                </div>
-                <div class="form-group">
-                    <label for="paciente-nome">Nome Completo do Paciente <span class="required-asterisk">*</span></label>
-                    <input type="text" id="paciente-nome" class="form-control" placeholder="Será preenchido ou digite aqui" required>
-                </div>
-                 <div class="form-group">
-                    <label for="paciente-telefone">Telefone de Contato (com DDD) <span class="required-asterisk">*</span></label>
-                    <input type="tel" id="paciente-telefone" class="form-control" placeholder="(xx) xxxxx-xxxx" required>
-                </div>
+        <div class="modal-body">
+            <p>Você selecionou o horário das <strong id="modal-horario-selecionado"></strong>. Para continuar, por favor, informe os dados do paciente.</p>
+            
+            <div class="form-group">
+                <label for="paciente-cpf">CPF do Paciente *</label>
+                <input type="text" id="paciente-cpf" class="form-control" placeholder="Digite o CPF para buscar seus dados" required>
+                <div id="cpf-feedback" style="font-size: 0.9em; margin-top: 5px; min-height: 1.2em;"></div>
+                <small class="form-text text-muted" style="margin-top: 5px; display: block;">
+                    Se o paciente for menor de idade e não possuir CPF, utilize o código fornecido pela EuPsico. Caso não o tenha, entre em contato pelo WhatsApp (11) 99794-9071 para solicitar.
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="paciente-nome">Nome Completo do Paciente *</label>
+                <input type="text" id="paciente-nome" class="form-control" placeholder="Preenchido automaticamente após digitar o CPF" disabled required>
+            </div>
+            <div class="form-group">
+                <label for="paciente-telefone">Telefone de Contato (com DDD) *</label>
+                <input type="tel" id="paciente-telefone" class="form-control" placeholder="Preenchido automaticamente após digitar o CPF" disabled required>
+            </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="action-button secondary-button" id="modal-cancel-btn">Cancelar</button>
@@ -113,8 +117,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script type="module" src="../assets/js/firebase-init.js"></script>
     <script type="module" src="../assets/js/agendamento-publico.js"></script>
 </body>

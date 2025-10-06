@@ -1,9 +1,14 @@
-// Mapeamento dos status para os títulos das colunas
+// Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
+// Versão: 3.4 (Passa dados do usuário para a função render)
+
+import { db } from "../../../assets/js/firebase-init.js";
+
 const COLUMNS_CONFIG = {
   inscricao_documentos: "Inscrição e Documentos",
   triagem_agendada: "Triagem Agendada",
   encaminhar_para_plantao: "Encaminhar para Plantão",
   em_atendimento_plantao: "Em Atendimento (Plantão)",
+  agendamento_confirmado_plantao: "Agendamento Confirmado (Plantão)",
   encaminhar_para_pb: "Encaminhar para PB",
   aguardando_info_horarios: "Aguardando Info Horários",
   cadastrar_horario_psicomanager: "Cadastrar Horário Psicomanager",
@@ -14,27 +19,19 @@ const COLUMNS_CONFIG = {
   alta: "Alta",
 };
 
-let db; // Instância do Firestore
-let allCardsData = {}; // Cache para os dados dos cards
-let currentColumnFilter = []; // Filtro de colunas ativas
+let allCardsData = {};
+let currentColumnFilter = [];
+let currentUserData = {};
 
-/**
- * Função de inicialização do Kanban, chamada pelo painel.
- * @param {object} firestoreDb - Instância do Firestore
- * @param {object} user - Dados do usuário autenticado
- * @param {object} userData - Dados do perfil do usuário
- * @param {HTMLElement} container - O elemento onde o Kanban será renderizado.
- * @param {string[]} columnFilter - Um array com os status das colunas a serem exibidas.
- */
 export async function init(
   firestoreDb,
-  user,
-  userData,
+  authUser,
+  authData,
   container,
   columnFilter
 ) {
-  db = firestoreDb;
   currentColumnFilter = columnFilter;
+  currentUserData = authData;
 
   try {
     const response = await fetch("../page/trilha-paciente.html");
@@ -42,7 +39,8 @@ export async function init(
     container.innerHTML = await response.text();
 
     setupColumns();
-    setupModalControls();
+    setupAllModalControls();
+    setupEventListeners();
     loadAndRenderCards();
   } catch (error) {
     console.error("Erro ao inicializar o Kanban:", error);
@@ -50,151 +48,227 @@ export async function init(
   }
 }
 
-/**
- * Cria as colunas do Kanban no DOM com base no filtro ativo.
- */
 function setupColumns() {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
-
-  // Filtra as colunas a serem exibidas
   kanbanBoard.innerHTML = currentColumnFilter
     .map(
       (statusKey) => `
         <div class="kanban-column" id="column-${statusKey}" data-status="${statusKey}">
             <div class="kanban-column-header">
                 <h3 class="kanban-column-title">
-                    ${COLUMNS_CONFIG[statusKey]}
+                    ${COLUMNS_CONFIG[statusKey] || statusKey}
                     <span class="kanban-column-count" id="count-${statusKey}">0</span>
                 </h3>
             </div>
             <div class="kanban-cards-container" id="cards-${statusKey}"></div>
-        </div>
-    `
+        </div>`
     )
     .join("");
 }
 
-/**
- * Configura os botões e eventos do modal.
- */
-function setupModalControls() {
-  // ... (Esta função permanece exatamente a mesma da versão anterior)
-  const modal = document.getElementById("card-modal");
-  const closeModalBtn = document.getElementById("close-modal-btn");
-  const cancelModalBtn = document.getElementById("modal-cancel-btn");
+function setupAllModalControls() {
+  // Modal Principal
+  const cardModal = document.getElementById("card-modal");
+  document
+    .getElementById("close-modal-btn")
+    .addEventListener("click", () => (cardModal.style.display = "none"));
+  document
+    .getElementById("modal-cancel-btn")
+    .addEventListener("click", () => (cardModal.style.display = "none"));
+  cardModal.addEventListener("click", (e) => {
+    if (e.target === cardModal) cardModal.style.display = "none";
+  });
 
-  const closeModal = () => {
-    modal.style.display = "none";
-    document.getElementById("card-modal-body").innerHTML =
-      '<div class="loading-spinner"></div>';
-  };
+  // Modal de Mover
+  const moveModal = document.getElementById("move-card-modal");
+  document
+    .getElementById("close-move-card-modal-btn")
+    .addEventListener("click", () => (moveModal.style.display = "none"));
+  document
+    .getElementById("cancel-move-btn")
+    .addEventListener("click", () => (moveModal.style.display = "none"));
+  moveModal.addEventListener("click", (e) => {
+    if (e.target === moveModal) moveModal.style.display = "none";
+  });
+  document
+    .getElementById("confirm-move-btn")
+    .addEventListener("click", confirmMove);
+}
 
-  closeModalBtn.addEventListener("click", closeModal);
-  cancelModalBtn.addEventListener("click", closeModal);
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeModal();
+function setupEventListeners() {
+  const kanbanBoard = document.getElementById("kanban-board");
+  if (!kanbanBoard) return;
+
+  kanbanBoard.addEventListener("click", (event) => {
+    const cardElement = event.target.closest(".kanban-card");
+    if (cardElement) {
+      const cardId = cardElement.dataset.id;
+      openCardModal(cardId);
     }
   });
 }
 
-/**
- * Carrega os cards do Firestore e os renderiza nas colunas visíveis.
- */
 function loadAndRenderCards() {
-  const kanbanBoard = document.getElementById("kanban-board");
-  if (!kanbanBoard) return;
-
   db.collection("trilhaPaciente").onSnapshot(
     (snapshot) => {
       document
         .querySelectorAll(".kanban-cards-container")
-        .forEach((container) => (container.innerHTML = ""));
+        .forEach((c) => (c.innerHTML = ""));
       allCardsData = {};
-
       snapshot.forEach((doc) => {
-        const cardData = { id: doc.id, ...doc.data() };
-        allCardsData[cardData.id] = cardData;
-
-        // Só renderiza o card se a sua coluna estiver no filtro atual
-        if (currentColumnFilter.includes(cardData.status)) {
-          const cardElement = createCardElement(cardData);
-          const container = document.getElementById(`cards-${cardData.status}`);
-          if (container) {
-            container.appendChild(cardElement);
-          }
+        const data = { id: doc.id, ...doc.data() };
+        allCardsData[data.id] = data;
+        if (currentColumnFilter.includes(data.status)) {
+          const cardElement = createCardElement(data);
+          const container = document.getElementById(`cards-${data.status}`);
+          if (container) container.appendChild(cardElement);
         }
       });
       updateColumnCounts();
     },
     (error) => {
-      console.error("Erro ao buscar cards do Firestore:", error);
-      kanbanBoard.innerHTML = `<div class="error-message">Não foi possível carregar os dados.</div>`;
+      console.error("Erro ao buscar cards:", error);
     }
   );
 }
 
-/**
- * Cria o elemento HTML para um card individual.
- * @param {object} cardData - Dados do paciente/card.
- * @returns {HTMLElement} O elemento do card.
- */
 function createCardElement(cardData) {
-  // ... (Esta função permanece exatamente a mesma da versão anterior)
   const card = document.createElement("div");
   card.className = "kanban-card";
   card.dataset.id = cardData.id;
   card.innerHTML = `
-        <p class="card-patient-name">${
-          cardData.nomeCompleto || "Nome não informado"
-        }</p>
-        <p class="card-patient-cpf">CPF: ${cardData.cpf || "Não informado"}</p>
-    `;
-  card.addEventListener("click", () => openCardModal(cardData.id));
+      <p class="card-patient-name">${
+        cardData.nomeCompleto || "Nome não informado"
+      }</p>
+      <p class="card-patient-cpf">CPF: ${cardData.cpf || "Não informado"}</p>`;
   return card;
 }
 
-/**
- * Atualiza a contagem de cards em cada coluna visível.
- */
 function updateColumnCounts() {
   currentColumnFilter.forEach((statusKey) => {
+    const countEl = document.getElementById(`count-${statusKey}`);
     const container = document.getElementById(`cards-${statusKey}`);
-    const countElement = document.getElementById(`count-${statusKey}`);
-    if (container && countElement) {
-      countElement.textContent = container.children.length;
+    if (countEl && container) {
+      countEl.textContent = container.children.length;
     }
   });
 }
 
-/**
- * Abre o modal com os detalhes de um card específico.
- * @param {string} cardId - O ID do documento do card no Firestore.
- */
-async function openCardModal(cardId) {
-  // ... (Esta função permanece a mesma, mas adicionei a importação do CSS para o painel)
-  const modal = document.getElementById("card-modal");
-  const modalBody = document.getElementById("card-modal-body");
-  const cardData = allCardsData[cardId];
+// ----- LÓGICA DE MOVIMENTAÇÃO DE CARD -----
+function openMoveModal(cardId, cardData) {
+  const moveModal = document.getElementById("move-card-modal");
+  const select = document.getElementById("move-card-stage-select");
 
-  if (!cardData) {
-    console.error("Dados do card não encontrados:", cardId);
+  document.getElementById("move-card-patient-name").textContent =
+    cardData.nomeCompleto;
+  document.getElementById("move-card-id").value = cardId;
+
+  select.innerHTML = ""; // Limpa opções antigas
+  for (const key in COLUMNS_CONFIG) {
+    // Não adiciona a etapa atual na lista de opções
+    if (key !== cardData.status) {
+      select.innerHTML += `<option value="${key}">${COLUMNS_CONFIG[key]}</option>`;
+    }
+  }
+
+  // Esconde o modal principal e exibe o modal de mover
+  document.getElementById("card-modal").style.display = "none";
+  moveModal.style.display = "flex";
+}
+
+async function confirmMove() {
+  const cardId = document.getElementById("move-card-id").value;
+  const newStatus = document.getElementById("move-card-stage-select").value;
+
+  if (!cardId || !newStatus) {
+    alert("Seleção inválida.");
     return;
   }
 
-  modal.style.display = "flex";
+  const button = document.getElementById("confirm-move-btn");
+  button.disabled = true;
+  button.textContent = "Movendo...";
 
   try {
-    const stageModule = await import(`./stages/${cardData.status}.js`);
-    if (stageModule && typeof stageModule.render === "function") {
-      stageModule.render(modalBody, cardData, db);
+    await db
+      .collection("trilhaPaciente")
+      .doc(cardId)
+      .update({
+        status: newStatus,
+        lastUpdate: new Date(),
+        lastUpdatedBy: currentUserData.nome || "N/A",
+      });
+    document.getElementById("move-card-modal").style.display = "none";
+  } catch (error) {
+    console.error("Erro ao mover o card:", error);
+    alert("Ocorreu um erro ao tentar mover o paciente.");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Confirmar Movimentação";
+  }
+}
+// ----- FIM DA LÓGICA DE MOVIMENTAÇÃO -----
+
+async function openCardModal(cardId) {
+  const modal = document.getElementById("card-modal");
+  const modalTitle = document.getElementById("card-modal-title");
+  const modalBody = document.getElementById("card-modal-body");
+  const saveButton = document.getElementById("modal-save-btn");
+  const moveButton = document.getElementById("modal-move-btn"); // Botão "Mover"
+  const cardData = allCardsData[cardId];
+  if (!cardData) return;
+
+  modalTitle.textContent = `Detalhes: ${cardData.nomeCompleto}`;
+  modal.style.display = "flex";
+  modalBody.innerHTML = '<div class="loading-spinner"></div>';
+  saveButton.style.display = "inline-block";
+  moveButton.style.display = "inline-block"; // Garante que o botão Mover apareça
+
+  // Remove listeners antigos do botão "Mover" e adiciona o novo
+  const newMoveButton = moveButton.cloneNode(true);
+  moveButton.parentNode.replaceChild(newMoveButton, moveButton);
+  newMoveButton.addEventListener("click", () =>
+    openMoveModal(cardId, cardData)
+  );
+
+  try {
+    const stage = cardData.status;
+    const stageModule = await import(
+      `./stages/${stage}.js?v=${new Date().getTime()}`
+    );
+
+    // ***** ALTERAÇÃO APLICADA AQUI *****
+    // Agora passamos os dados do usuário logado (currentUserData) para a função render.
+    const contentElement = await stageModule.render(
+      cardId,
+      cardData,
+      currentUserData
+    );
+    modalBody.innerHTML = "";
+    modalBody.appendChild(contentElement);
+
+    const newSaveButton = saveButton.cloneNode(true);
+    saveButton.parentNode.replaceChild(newSaveButton, saveButton);
+
+    if (typeof stageModule.save === "function") {
+      newSaveButton.style.display = "inline-block";
+      newSaveButton.addEventListener("click", async () => {
+        newSaveButton.disabled = true;
+        newSaveButton.textContent = "Salvando...";
+        try {
+          await stageModule.save(cardId, currentUserData);
+          modal.style.display = "none";
+        } catch (error) {
+          console.error("Erro ao salvar:", error);
+          alert("Erro ao salvar: " + error.message);
+        } finally {
+          newSaveButton.disabled = false;
+          newSaveButton.textContent = "Salvar";
+        }
+      });
     } else {
-      modalBody.innerHTML = `<p><strong>Nome:</strong> ${
-        cardData.nomeCompleto
-      }</p><p><strong>Status:</strong> ${
-        COLUMNS_CONFIG[cardData.status]
-      }</p><p>Nenhuma ação customizada para esta etapa.</p>`;
+      newSaveButton.style.display = "none";
     }
   } catch (error) {
     console.error(
@@ -202,5 +276,6 @@ async function openCardModal(cardId) {
       error
     );
     modalBody.innerHTML = `<div class="error-message">Não foi possível carregar os detalhes desta etapa.</div>`;
+    saveButton.style.display = "none";
   }
 }

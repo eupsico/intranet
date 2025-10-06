@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato Terapêutico - EuPsico</title>
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .contract-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 40px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .contract-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .contract-header img {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: var(--cor-primaria);
+            border-bottom: 2px solid var(--cor-secundaria);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h1 { font-size: 1.8em; }
+        h2 { font-size: 1.4em; }
+        .data-section {
+            background-color: #f9f9f9;
+            border-left: 4px solid var(--cor-primaria);
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .acceptance-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .radio-group label {
+            margin-right: 20px;
+        }
+        #signature-feedback {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="contract-container">
+        <div class="contract-header">
+            <img src="../assets/img/logo-eupsico.png" alt="Logo EuPsico">
+            <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS TERAPÊUTICOS</h1>
+        </div>
+
+        <div id="contract-loading" class="loading-spinner"></div>
+        
+        <div id="contract-content" class="hidden">
+            <h2>1. DOS PAPÉIS DE CADA PARTE</h2>
+            <p>Ao <strong>TERAPEUTA</strong>, cabe a escuta técnica e reflexiva sem julgamentos, as intervenções, as orientações e os encaminhamentos. Sendo vedado pelo código de ética da profissão a indução de convicções políticas, filosóficas, morais, ideológicas, religiosas, orientação sexual, ou a qualquer tipo de preconceito no seu exercício funcional.</p>
+            <p>Ao <strong>PACIENTE</strong>, cabe expressar suas necessidades sem medo de ser julgado, falar como se sente no processo terapêutico, tirar suas dúvidas, e seguir as orientações ligadas ao objetivo de seu tratamento.</p>
+            <p>Ao <strong>RESPONSÁVEL LEGAL</strong>, cabe a autorização para realização do acompanhamento terapêutico e possíveis encaminhamentos do PACIENTE.</p>
+            
+            <h2>2. DO ATENDIMENTO</h2>
+            <p>O atendimento será realizado por profissional inserido na <strong>EUPSICO</strong> de acordo com a disponibilidade de cada profissional, observada as definições contidas na triagem e o encaminhamento efetuado pela equipe de assistência social.</p>
+            <p>As datas e os horários de cada encontro serão definidos entre o TERAPEUTA e o PACIENTE, bem como a duração de cada encontro será de cinquenta (50) minutos, uma (1) vez por semana ou à critério das partes.</p>
+            <p>A TERAPIA tem um prazo máximo de seis (6) meses podendo ser prorrogada de acordo com a avaliação profissional, e/ou a demanda do paciente.</p>
+            <p>A Eupsico realiza férias coletivas, nas últimas semanas de dezembro, sendo assim não haverá atendimento nesse período e o pagamento será feito de maneira integral, independentemente do número de sessões.</p>
+            <p>Não haverá atendimento aos domingos, e feriados.</p>
+            
+            <h2>3. DO PAGAMENTO</h2>
+            <p>O PACIENTE e/ou RESPONSÁVEL LEGAL com o aceite do presente contrato terapêutico e autorização para o atendimento, se compromete, a contribuir mensalmente com a importância definida na triagem, até o dia dez (10) de cada mês, ficando condicionado este valor por um período mínimo de seis (6) meses e/ou a qualquer tempo, quando houver alteração da capacidade econômica do PACIENTE.</p>
+            <p>Caso o PACIENTE e/ou RESPONSÁVEL LEGAL não proceda com o pagamento acordado na sessão de triagem por mais de dois (2) meses o processo terapêutico será interrompido, e caso o paciente deseje continuar a terapia deverá efetuar uma nova solicitação de atendimento, quitar os débitos pendentes e aguardar na fila de espera, para encaminhamento ao profissional disponível para atendimento.</p>
+            
+            <h2>4. DO REAJUSTE</h2>
+            <p>A cada semestre o PACIENTE será submetido a uma nova avaliação com a equipe de serviço social da EuPsico para a fixação dos valores a serem reajustados.</p>
+            
+            <h2>5. DOS DIREITOS DO PACIENTE</h2>
+            <ul>
+                <li>Sigilo de todas as informações tratadas na sessão.</li>
+                <li>A um (1) mês de férias a pedido do PACIENTE, sendo que se deve realizar o pagamento do mês normalmente, para que possa reservar sua vaga na instituição.</li>
+                <li>A troca do TERAPEUTA, desde que todas as suas contribuições estejam PAGAS.</li>
+            </ul>
+            
+            <h2>6. DOS DEVERES DO PACIENTE</h2>
+            <p>O PACIENTE deve comparecer nos dias e horários ajustados com o TERAPEUTA, e em caso de atraso do TERAPEUTA, poderá o PACIENTE exigir a compensação do tempo de atraso, podendo ser na mesma sessão ou em sessão futura a ser ajustada entre as partes.</p>
+            <p>Em caso de atraso do PACIENTE o período do atraso será considerado como perdido.</p>
+            <p>Caso precise faltar o PACIENTE deverá comunicar ao TERAPEUTA com 24 horas de antecedência o motivo da falta.</p>
+            
+            <h2>7. DA RESCISÃO CONTRATUAL</h2>
+            <p>O Presente contrato poderá ser rescindido nas modalidades a seguir:</p>
+            <ol>
+                <li>Pela desistência por parte do PACIENTE;
+                    <ol type="a">
+                        <li>Em caso de desistência o PACIENTE deverá comunicar ao profissional ou a EuPsico até o dia 09 do mês vigente, efetuando o pagamento da contribuição do mês vigente para rescisão do contrato.</li>
+                        <li>Caso o PACIENTE não comunique ao profissional ou a EuPsico, as contribuições mensais continuaram em aberto até que o paciente informe sobre a desistência, sendo necessário o pagamento das contribuições em aberto para rescisão do contrato.</li>
+                    </ol>
+                </li>
+                <li>Falta injustificada em duas sessões terapêuticas, ensejando o desligamento automático do tratamento em curso;</li>
+                <li>Por solicitação de troca do TERAPEUTA a pedido do PACIENTE;</li>
+                <li>Por incompatibilidade de horários entre o PACIENTE e o TERAPEUTA;</li>
+                <li>Pela alta concedida pelo profissional;</li>
+                <li>Não pagamento da contribuição por dois meses.</li>
+            </ol>
+            
+            <div class="data-section">
+                <h3>Dados do Terapeuta e Paciente</h3>
+                <p><strong>Terapeuta:</strong> <span id="data-terapeuta"></span></p>
+                <p><strong>Nome completo do PACIENTE:</strong> <span id="data-paciente-nome"></span></p>
+                <div id="responsavel-section" class="hidden">
+                    <p><strong>Nome do Responsável:</strong> <span id="data-responsavel-nome"></span></p>
+                </div>
+                <p><strong>Data de nascimento do PACIENTE:</strong> <span id="data-paciente-nascimento"></span></p>
+                <p><strong>Valor da contribuição mensal:</strong><span id="data-contribuicao"></span></p>
+            </div>
+            
+            <div class="data-section">
+                <h3>Dados da Sessão</h3>
+                <p><strong>Dia da sessão:</strong> <span id="data-dia-sessao"></span></p>
+                <p><strong>Horário do atendimento:</strong> <span id="data-horario-sessao"></span></p>
+                <p><strong>Tipo de atendimento:</strong> <span id="data-tipo-atendimento"></span></p>
+            </div>
+
+            <div id="acceptance-form-section" class="acceptance-section">
+                <h2>ACEITE DOS TERMOS E CONDIÇÕES</h2>
+                <p>Ao preencher o formulário abaixo com meus dados pessoais e confirmar digitalmente, declaro ter ciência e concordar com os termos propostos.</p>
+                <form id="signature-form">
+                    <div class="form-group">
+                        <label for="signer-name" id="signer-name-label">Nome Completo:</label>
+                        <input type="text" id="signer-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signer-cpf" id="signer-cpf-label">CPF:</label>
+                        <input type="text" id="signer-cpf" class="form-control" required>
+                    </div>
+                    <div class="form-group radio-group">
+                        <p><strong>Declaro ter ciência e concordar com os termos propostos no CONTRATO DE PRESTAÇÃO DE SERVIÇOS TERAPÊUTICOS.</strong></p>
+                        <label><input type="radio" name="agreement" value="concordo" required> Concordo com os termos.</label>
+                        <label><input type="radio" name="agreement" value="nao-concordo"> Não concordo.</label>
+                    </div>
+                    <button type="submit" class="action-button">Assinar Contrato</button>
+                    <div id="signature-feedback"></div>
+                </form>
+            </div>
+            
+            <div id="thank-you-section" class="acceptance-section hidden">
+                <h2>Obrigado!</h2>
+                <p>O contrato foi assinado digitalmente com sucesso. A EuPsico foi notificada.</p>
+            </div>
+
+        </div> </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script type="module" src="../assets/js/firebase-init.js"></script>
+    <script type="module" src="../assets/js/contrato-terapeutico.js"></script>
+
+</body>
+</html>

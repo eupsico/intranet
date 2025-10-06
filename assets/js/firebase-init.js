@@ -1,5 +1,8 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 1.4 (Final para compatibilidade)
+// Versão: 1.7 (Correção Crítica de Sintaxe)
+
+// A variável global 'firebase' é carregada pelos scripts <script> no HTML.
+// Este arquivo a utiliza para inicializar os serviços e exportá-los para os outros módulos.
 
 // --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
 const firebaseConfig = {
@@ -14,14 +17,18 @@ const firebaseConfig = {
 
 // --- INICIALIZAÇÃO E EXPORTAÇÃO ---
 // Garante que o Firebase seja inicializado apenas uma vez
-// A variável 'firebase' agora existe globalmente, carregada pelo script no HTML.
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// Exporta as instâncias dos serviços usando a sintaxe de compatibilidade
+// Exporta as instâncias dos serviços que serão usadas nos outros módulos
 const auth = firebase.auth();
 const db = firebase.firestore();
 const functions = firebase.functions();
+const storage = firebase.storage();
+const rtdb = firebase.database();
 
-export { auth, db, functions };
+// A variável 'firebase' já é global, então não a exportamos. Apenas os serviços.
+export { auth, db, functions, storage, rtdb };
+// Fim do arquivo firebase-init.js
+// Versão: 1.7 (Correção Crítica de Sintaxe)
