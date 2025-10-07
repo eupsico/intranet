@@ -1,11 +1,8 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente-painel.js
-// Versão: 9.0 (Migração para a sintaxe modular do Firebase v9)
+// Versão: 9.1 (Adiciona Logs de Depuração)
 
-// 1. Importa o 'initKanban' do arquivo vizinho e o 'db' do nosso config central
 import { init as initKanban } from "./trilha-paciente.js";
-import { db } from "../../../assets/js/firebase-init.js";
 
-// Mapeia os itens do submenu para os status do Firestore
 const menuFilters = {
   entrada: ["inscricao_documentos", "triagem_agendada"],
   plantao: ["encaminhar_para_plantao", "em_atendimento_plantao"],
@@ -19,15 +16,12 @@ const menuFilters = {
   encerramento: ["desistencia", "alta"],
 };
 
-// Variáveis para armazenar os dados do usuário logado
-let authUser, authUserData;
+// Variáveis que serão inicializadas
+let firestoreDb, authUser, authUserData;
 
-/**
- * Inicializa o painel da Trilha do Paciente.
- * @param {object} user - O objeto do usuário autenticado do Firebase Auth.
- * @param {object} userData - Os dados do usuário do Firestore.
- */
-export function init(user, userData) {
+export function init(db, user, userData) {
+  console.log("--- [LOG] Iniciando 'trilha-paciente-painel.js' ---");
+  firestoreDb = db;
   authUser = user;
   authUserData = userData;
 
@@ -35,34 +29,30 @@ export function init(user, userData) {
   const contentArea = document.getElementById("content-area");
 
   if (!sidebarMenu || !contentArea) {
-    console.error("Elementos essenciais do layout não foram encontrados.");
+    console.error(
+      "[LOG] Erro Crítico: Elementos 'sidebar-menu' ou 'content-area' não encontrados no DOM."
+    );
     return;
   }
 
+  console.log("[LOG] Passo 1: Construindo o submenu da Trilha.");
   buildSubmenu(sidebarMenu);
 
+  console.log("[LOG] Passo 2: Inserindo área de conteúdo do módulo.");
   contentArea.innerHTML = `
     <div id="module-content-area" class="module-content" style="height: 100%;">
         <div class="loading-spinner"></div>
     </div>
   `;
 
+  console.log("[LOG] Passo 3: Configurando os listeners do submenu.");
   setupSubmenuListeners(sidebarMenu);
 
-  // Carrega a visão inicial baseada na URL ou o padrão 'entrada'
   const initialView = window.location.hash.replace("#", "") || "entrada";
+  console.log(`[LOG] Passo 4: Carregando a visão inicial: '${initialView}'`);
   loadView(initialView);
-
-  // Marca o item de menu correto na carga inicial
-  sidebarMenu.querySelectorAll("a[data-view]").forEach((link) => {
-    link.classList.toggle("active", link.dataset.view === initialView);
-  });
 }
 
-/**
- * Constrói o submenu específico da Trilha do Paciente na barra lateral.
- * @param {HTMLElement} sidebarMenu - O elemento <ul> do menu.
- */
 function buildSubmenu(sidebarMenu) {
   sidebarMenu.innerHTML = `
     <li>
@@ -72,7 +62,7 @@ function buildSubmenu(sidebarMenu) {
         </a>
     </li>
     <li class="menu-separator"></li>
-    <li><a href="#entrada" data-view="entrada">Entrada</a></li>
+    <li><a href="#entrada" data-view="entrada" class="active">Entrada</a></li>
     <li><a href="#plantao" data-view="plantao">Plantão</a></li>
     <li><a href="#pb" data-view="pb">PB</a></li>
     <li><a href="#outros" data-view="outros">Outros</a></li>
@@ -80,15 +70,14 @@ function buildSubmenu(sidebarMenu) {
   `;
 }
 
-/**
- * Configura os eventos de clique para o submenu.
- * @param {HTMLElement} sidebarMenu - O elemento <ul> do menu.
- */
 function setupSubmenuListeners(sidebarMenu) {
   sidebarMenu.addEventListener("click", (e) => {
     const link = e.target.closest("a[data-view]");
     if (link && !link.classList.contains("back-link")) {
       e.preventDefault();
+      console.log(
+        `[LOG] Clique no submenu detectado. Visão selecionada: '${link.dataset.view}'`
+      );
 
       sidebarMenu
         .querySelectorAll("a[data-view]")
@@ -96,20 +85,22 @@ function setupSubmenuListeners(sidebarMenu) {
       link.classList.add("active");
 
       const view = link.getAttribute("data-view");
-      window.location.hash = view; // Atualiza a URL para manter o estado
+      window.location.hash = view;
       loadView(view);
     }
   });
 }
 
-/**
- * Carrega a visão do Kanban com base no filtro selecionado.
- * @param {string} view - O nome da visão a ser carregada (ex: 'entrada').
- */
 async function loadView(view) {
   const moduleContentArea = document.getElementById("module-content-area");
-  if (!moduleContentArea) return;
+  if (!moduleContentArea) {
+    console.error(
+      "[LOG] Erro Crítico: 'module-content-area' não encontrado para carregar a visão."
+    );
+    return;
+  }
 
+  console.log(`[LOG] Carregando a visão '${view}'...`);
   moduleContentArea.innerHTML = `<div class="loading-spinner"></div>`;
 
   try {
@@ -117,11 +108,24 @@ async function loadView(view) {
     if (!filter) {
       throw new Error(`Filtro de visão não encontrado para: ${view}`);
     }
+    console.log(`[LOG] Filtro para a visão '${view}':`, filter);
+    console.log(
+      "[LOG] Chamando 'initKanban' do arquivo 'trilha-paciente.js'..."
+    );
 
-    // A instância 'db' agora é importada diretamente do firebase-init.js
-    await initKanban(db, authUser, authUserData, moduleContentArea, filter);
+    await initKanban(
+      firestoreDb,
+      authUser,
+      authUserData,
+      moduleContentArea,
+      filter
+    );
+
+    console.log(
+      `[LOG] 'initKanban' para a visão '${view}' foi concluído com sucesso.`
+    );
   } catch (error) {
-    console.error(`Erro ao carregar a visão ${view}:`, error);
-    moduleContentArea.innerHTML = `<div class="error-message">Ocorreu um erro ao carregar esta visualização.</div>`;
+    console.error(`[LOG] ERRO ao carregar a visão ${view}:`, error);
+    moduleContentArea.innerHTML = `<div class="error-message">Ocorreu um erro ao carregar esta visualização. Verifique o console.</div>`;
   }
 }
