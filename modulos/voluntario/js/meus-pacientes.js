@@ -1,7 +1,6 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
 // Versão: 5.0 (Implementa Múltiplos Atendimentos em PB)
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
-import { firebase } from "../../../assets/js/firebase-config.js";
 
 export function init(db, user, userData) {
   const container = document.getElementById("pacientes-cards-container");
