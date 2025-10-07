@@ -453,9 +453,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     hoje.setHours(0, 0, 0, 0);
     const dataInicio = hoje.toISOString().split("T")[0];
 
-    const configuracoesSnapshot = await db
-      .collection("configuracoesSistema")
-      .get();
+    // CORREÇÃO: Usando a nova sintaxe modular
+    const configuracoesRef = collection(db, "configuracoesSistema");
+    const configuracoesSnapshot = await getDocs(configuracoesRef);
     const configuracoes = {};
     configuracoesSnapshot.forEach((doc) => {
       configuracoes[doc.id] = doc.data().valor;
@@ -469,11 +469,13 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     dataFim.setDate(hoje.getDate() + quantidadeDiasBusca);
     const dataFimISO = dataFim.toISOString().split("T")[0];
 
-    const agendamentosSnapshot = await db
-      .collection("trilhaPaciente")
-      .where("status", "==", "triagem_agendada")
-      .where("dataTriagem", ">=", dataInicio)
-      .get();
+    // CORREÇÃO: Usando a nova sintaxe modular com 'query' e 'where'
+    const agendamentosQuery = query(
+      collection(db, "trilhaPaciente"),
+      where("status", "==", "triagem_agendada"),
+      where("dataTriagem", ">=", dataInicio)
+    );
+    const agendamentosSnapshot = await getDocs(agendamentosQuery);
 
     const horariosOcupados = new Set();
     agendamentosSnapshot.forEach((doc) => {
@@ -488,12 +490,14 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       }
     });
 
-    const configSnapshot = await db
-      .collection("agendaConfigurada")
-      .where("tipo", "==", "triagem")
-      .where("data", ">=", dataInicio)
-      .where("data", "<=", dataFimISO)
-      .get();
+    // CORREÇÃO: Usando a nova sintaxe modular com 'query' e 'where'
+    const configQuery = query(
+      collection(db, "agendaConfigurada"),
+      where("tipo", "==", "triagem"),
+      where("data", ">=", dataInicio),
+      where("data", "<=", dataFimISO)
+    );
+    const configSnapshot = await getDocs(configQuery);
 
     if (configSnapshot.empty) {
       return { horarios: [] };
@@ -511,15 +515,11 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         return;
       }
 
-      // --- INÍCIO DA CORREÇÃO ---
-      // Converte as horas de início e fim para minutos totais para facilitar o cálculo
       const [hInicio, mInicio] = diaConfig.inicio.split(":").map(Number);
       const [hFim, mFim] = diaConfig.fim.split(":").map(Number);
-
       const inicioEmMinutos = hInicio * 60 + mInicio;
       const fimEmMinutos = hFim * 60 + mFim;
 
-      // Itera de 30 em 30 minutos
       for (
         let minutos = inicioEmMinutos;
         minutos < fimEmMinutos;
@@ -527,7 +527,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       ) {
         const hAtual = Math.floor(minutos / 60);
         const mAtual = minutos % 60;
-
         const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
           mAtual
         ).padStart(2, "0")}`;
@@ -549,13 +548,11 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
           }
         }
       }
-      // --- FIM DA CORREÇÃO ---
     });
 
     return { horarios: slotsPotenciais };
   } catch (error) {
     console.error("❌ Erro ao buscar horários públicos:", error);
-    // Garante que, mesmo em caso de erro, a função retorne um objeto no formato esperado
     throw new HttpsError("internal", "Erro ao buscar horários públicos.", {
       originalError: error.message,
     });
