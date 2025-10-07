@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/envio_comprovantes.js
-// Versão: 3.0 (Atualizado para a sintaxe modular do Firebase v9)
+// Versão: 3.1 (Com máscara de moeda no campo de valor)
 
 import {
   db,
@@ -13,13 +13,10 @@ import {
 } from "../../../assets/js/firebase-init.js";
 
 export function init(user, userData) {
-  // URL do seu App Script para upload no Google Drive
   const WEB_APP_URL =
     "https://script.google.com/macros/s/AKfycbzOGyDANVS--DeH6T-ZaqFiEmhpBYUJu4P8VT0uevQPwC3tLL5EgappHPI2mhKwPtf1fg/exec";
-
   let formData = {};
 
-  // Mapeamento dos elementos do DOM para evitar repetição
   const elements = {
     formContainer: document.getElementById("form-container"),
     confirmationSection: document.getElementById("confirmation-section"),
@@ -38,12 +35,44 @@ export function init(user, userData) {
     btnNewForm: document.getElementById("btn-new-form"),
   };
 
+  // --- INÍCIO DAS NOVAS FUNÇÕES DE MOEDA ---
+
   /**
-   * Inicializa a view, populando os selects e definindo valores padrão.
+   * Formata o valor de um campo de input como moeda BRL (R$) enquanto o usuário digita.
+   * @param {HTMLInputElement} input - O elemento de input a ser formatado.
    */
+  function formatCurrency(input) {
+    let value = input.value.replace(/\D/g, "");
+    if (value === "") {
+      input.value = "";
+      return;
+    }
+    value = (parseInt(value, 10) / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    input.value = value;
+  }
+
+  /**
+   * Converte uma string de moeda formatada (ex: "R$ 123,45") para um número (ex: 123.45).
+   * @param {string} currencyString - A string de moeda a ser convertida.
+   * @returns {number} - O valor numérico.
+   */
+  function parseCurrency(currencyString) {
+    if (!currencyString) return 0;
+    const numericString = currencyString
+      .replace("R$", "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .trim();
+    return parseFloat(numericString) || 0;
+  }
+
+  // --- FIM DAS NOVAS FUNÇÕES DE MOEDA ---
+
   async function initializeView() {
     try {
-      // SINTAXE V9: Cria a consulta para buscar os profissionais
       const q = query(
         collection(db, "usuarios"),
         where("inativo", "==", false),
@@ -51,8 +80,7 @@ export function init(user, userData) {
         where("fazAtendimento", "==", true),
         orderBy("nome")
       );
-
-      const snapshot = await getDocs(q); // SINTAXE V9
+      const snapshot = await getDocs(q);
       const profissionais = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -109,10 +137,6 @@ export function init(user, userData) {
     elements.messageContainer.style.display = "none";
   }
 
-  /**
-   * Valida os campos do formulário antes de prosseguir.
-   * @returns {boolean} - True se o formulário for válido.
-   */
   function validateForm() {
     const fields = {
       profissional: {
@@ -143,7 +167,8 @@ export function init(user, userData) {
         return false;
       }
     }
-    const valorNumerico = parseFloat(fields.valor.value);
+    // ATUALIZAÇÃO: Usa a função parseCurrency para validar
+    const valorNumerico = parseCurrency(fields.valor.value);
     if (isNaN(valorNumerico) || valorNumerico <= 0) {
       showMessage(
         `O valor informado no campo '${fields.valor.name}' não é válido.`,
@@ -155,9 +180,6 @@ export function init(user, userData) {
     return true;
   }
 
-  /**
-   * Envia os dados para o Google Apps Script e, em caso de sucesso, para o Firestore.
-   */
   function confirmAndSend() {
     elements.btnConfirmSend.disabled = true;
     elements.btnConfirmSend.textContent = "Enviando...";
@@ -172,16 +194,13 @@ export function init(user, userData) {
         paciente: formData.paciente,
         dataPagamento: formData.dataPagamentoOriginal,
         mesReferencia: formData.mesReferencia,
-        valor: formData.valor,
+        valor: formData.valor, // O valor já é um número aqui
         fileName: formData.file.name,
         mimeType: formData.file.type,
         fileData: fileData,
       };
 
-      fetch(WEB_APP_URL, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      })
+      fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify(payload) })
         .then((res) => res.json())
         .then((response) => {
           if (response.status === "success") {
@@ -196,9 +215,8 @@ export function init(user, userData) {
               ).getFullYear(),
               comprovanteUrl: response.fileUrl,
               status: "Pendente",
-              timestamp: serverTimestamp(), // SINTAXE V9
+              timestamp: serverTimestamp(),
             };
-            // SINTAXE V9: Adiciona o documento na coleção 'comprovantes'
             return addDoc(collection(db, "comprovantes"), comprovanteData).then(
               () => payload
             );
@@ -253,13 +271,19 @@ export function init(user, userData) {
 
   // --- Adição dos Event Listeners ---
 
+  // ATUALIZAÇÃO: Adiciona o listener para formatar o campo de valor
+  elements.inputValor.addEventListener("input", () => {
+    formatCurrency(elements.inputValor);
+  });
+
   elements.btnReview.addEventListener("click", () => {
     if (!validateForm()) return;
 
     const dataPagamento = new Date(
       elements.inputDataPagamento.value + "T03:00:00"
     ).toLocaleDateString("pt-BR");
-    const valor = parseFloat(elements.inputValor.value);
+    // ATUALIZAÇÃO: Usa a função parseCurrency para obter o número
+    const valor = parseCurrency(elements.inputValor.value);
     const file = elements.inputFile.files[0];
 
     formData = {
@@ -300,6 +324,5 @@ export function init(user, userData) {
     initializeView();
   });
 
-  // Inicia a view pela primeira vez
   initializeView();
 }
