@@ -463,6 +463,54 @@ export function init(db, user, userData) {
 
     encerramentoModal.style.display = "block";
   }
+  function addDisponibilidadeListeners(container) {
+    const horariosCheckboxes = container.querySelectorAll(
+      'input[name="horario"]'
+    );
+    horariosCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", (e) => {
+        const periodo = e.target.value;
+        const detalheContainer = container.querySelector(
+          `#container-${periodo}`
+        );
+        if (e.target.checked) {
+          gerarHorarios(periodo, detalheContainer);
+          detalheContainer.classList.remove("hidden-section");
+        } else {
+          detalheContainer.innerHTML = "";
+          detalheContainer.classList.add("hidden-section");
+        }
+      });
+    });
+  }
+
+  function gerarHorarios(periodo, container) {
+    let horarios = [],
+      label = "";
+    switch (periodo) {
+      case "manha-semana":
+        label = "Manhã (Seg-Sex):";
+        for (let i = 8; i < 12; i++) horarios.push(`${i}:00`);
+        break;
+      case "tarde-semana":
+        label = "Tarde (Seg-Sex):";
+        for (let i = 12; i < 18; i++) horarios.push(`${i}:00`);
+        break;
+      case "noite-semana":
+        label = "Noite (Seg-Sex):";
+        for (let i = 18; i < 21; i++) horarios.push(`${i}:00`);
+        break;
+      case "manha-sabado":
+        label = "Manhã (Sábado):";
+        for (let i = 8; i < 13; i++) horarios.push(`${i}:00`);
+        break;
+    }
+    let html = `<label class="horario-detalhe-label">${label}</label><div class="horario-detalhe-grid">`;
+    horarios.forEach((hora) => {
+      html += `<div><label><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</label></div>`;
+    });
+    container.innerHTML = html + `</div>`;
+  }
 
   document
     .getElementById("encerramento-form")
