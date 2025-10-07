@@ -985,25 +985,30 @@ exports.getSupervisorSlots = functions.https.onCall(async (data, context) => {
 // -------------------------------------------------------------------
 // NOVA FUNÇÃO: GERENCIA O STATUS GERAL DO PACIENTE AUTOMATICamente
 // -------------------------------------------------------------------
-exports.gerenciarStatusGeralDoPaciente = functions.firestore
-  .document("trilhaPaciente/{pacienteId}")
-  .onUpdate(async (change, context) => {
-    const dadosAntes = change.before.data();
-    const dadosDepois = change.after.data();
+exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
+  "trilhaPaciente/{pacienteId}",
+  async (event) => {
+    const dadosAntes = event.data.before.data();
+    const dadosDepois = event.data.after.data();
+    const pacienteId = event.params.pacienteId;
 
+    // Verifica se houve alteração nos atendimentosPB
     if (
       JSON.stringify(dadosDepois.atendimentosPB) ===
       JSON.stringify(dadosAntes.atendimentosPB)
     ) {
-      console.log(
-        `(ID: ${context.params.pacienteId}) Nenhuma mudança nos atendimentos, a função será encerrada.`
+      logger.info(
+        `(ID: ${pacienteId}) Nenhuma mudança nos atendimentos, a função será encerrada.`
       );
-      return null;
+      return;
     }
 
     const atendimentos = dadosDepois.atendimentosPB;
     if (!atendimentos || atendimentos.length === 0) {
-      return null;
+      logger.info(
+        `(ID: ${pacienteId}) Lista de atendimentos vazia ou inexistente.`
+      );
+      return;
     }
 
     const todosEncerrados = atendimentos.every(
@@ -1016,11 +1021,11 @@ exports.gerenciarStatusGeralDoPaciente = functions.firestore
     ];
 
     if (todosEncerrados && statusAtuaisDePB.includes(dadosDepois.status)) {
-      console.log(
-        `(ID: ${context.params.pacienteId}) Todos os atendimentos de PB foram encerrados. Atualizando status geral para 'alta'.`
+      logger.info(
+        `(ID: ${pacienteId}) Todos os atendimentos de PB foram encerrados. Atualizando status para 'alta'.`
       );
       try {
-        await change.after.ref.update({
+        await event.data.after.ref.update({
           status: "alta",
           lastUpdate: new Date(),
           lastUpdatedBy: "Sistema (Gerenciador de Status)",
@@ -1030,13 +1035,17 @@ exports.gerenciarStatusGeralDoPaciente = functions.firestore
           message: "Status geral atualizado para alta.",
         };
       } catch (error) {
-        console.error(
-          `Erro ao atualizar o status geral do paciente ${context.params.pacienteId}:`,
+        logger.error(
+          `Erro ao atualizar status do paciente ${pacienteId}:`,
           error
         );
         return { status: "erro", message: "Falha ao atualizar status." };
       }
     }
 
-    return null;
-  });
+    logger.info(
+      `(ID: ${pacienteId}) Nem todos os atendimentos estão encerrados ou status atual não é de PB.`
+    );
+    return;
+  }
+);
