@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/stages/inscricao_documentos.js
-// Versão: 9.1 (Ajusta a lógica do formulário e desabilita o agendamento manual)
+// Versão: 9.2 (Corrige a lógica de salvamento e a interface do formulário)
 
 import {
   db,
@@ -12,10 +12,11 @@ import {
 } from "../../../../assets/js/firebase-init.js";
 
 /**
- * Renderiza o conteúdo do modal para a etapa "Inscrição e Documentos".
+ * Renderiza o conteúdo do modal.
  */
 export async function render(cardId, cardData, currentUserData) {
   const element = document.createElement("div");
+  const checklistData = cardData.checklistDocumentos || {}; // Pega os dados do checklist salvos
 
   const responsavelInfo = cardData.responsavel?.nome
     ? `<strong>Responsável:</strong> ${cardData.responsavel.nome}`
@@ -42,17 +43,29 @@ export async function render(cardId, cardData, currentUserData) {
         <h3 class="form-section-title">Checklist de Documentos</h3>
         <div class="checklist-group">
             <div class="form-grid-2-col">
-                <div class="form-group"><label><input type="checkbox" id="chk-docs" name="checklist"> Enviou os documentos</label></div>
-                <div class="form-group"><label><input type="checkbox" id="chk-confirmou" name="checklist"> Confirmou os dados</label></div>
-                <div class="form-group"><label><input type="checkbox" id="chk-pasta" name="checklist"> Criou Pasta no Drive</label></div>
-                <div class="form-group"><label><input type="checkbox" id="chk-pagamento" name="checklist"> Efetuou o pagamento</label></div>
-                <div class="form-group"><label><input type="checkbox" id="chk-isento" name="checklist"> Isento da triagem</label></div>
+                <div class="form-group"><label><input type="checkbox" id="chk-docs" name="checklist" ${
+                  checklistData.docsEnviados ? "checked" : ""
+                }> Enviou os documentos</label></div>
+                <div class="form-group"><label><input type="checkbox" id="chk-confirmou" name="checklist" ${
+                  checklistData.dadosConfirmados ? "checked" : ""
+                }> Confirmou os dados</label></div>
+                <div class="form-group"><label><input type="checkbox" id="chk-pasta" name="checklist" ${
+                  checklistData.pastaCriada ? "checked" : ""
+                }> Criou Pasta no Drive</label></div>
+                <div class="form-group"><label><input type="checkbox" id="chk-pagamento" name="checklist" ${
+                  checklistData.pagamentoEfetuado ? "checked" : ""
+                }> Efetuou o pagamento</label></div>
+                <div class="form-group"><label><input type="checkbox" id="chk-isento" name="checklist" ${
+                  cardData.isentoTriagem ? "checked" : ""
+                }> Isento da triagem</label></div>
                 <div class="form-group"><label><input type="checkbox" id="chk-desistiu" name="checklist"> Desistiu do processo</label></div>
             </div>
             
             <div id="isento-motivo-section" class="form-group" style="display: none;">
                 <label for="isento-motivo">Informe o motivo da isenção:</label>
-                <textarea id="isento-motivo" class="form-control"></textarea>
+                <textarea id="isento-motivo" class="form-control">${
+                  cardData.motivoIsencao || ""
+                }</textarea>
             </div>
             
             <div id="desistencia-motivo-section" class="form-group" style="display: none;">
@@ -89,12 +102,11 @@ export async function render(cardId, cardData, currentUserData) {
   `;
 
   setupEventListeners(element);
-
   return element;
 }
 
 /**
- * Salva os dados do formulário da etapa "Inscrição e Documentos".
+ * Salva o progresso do checklist ou a desistência.
  */
 export async function save(cardId, cardData, modalBody) {
   const chkDesistiu = modalBody.querySelector("#chk-desistiu").checked;
@@ -109,39 +121,33 @@ export async function save(cardId, cardData, modalBody) {
       throw new Error("Por favor, informe o motivo da desistência.");
     }
     dataToUpdate = {
-      status: "desistencia",
+      status: "desistencia", // Apenas em caso de desistência o status muda
       desistenciaMotivo: desistiuMotivo,
+      lastUpdate: new Date(),
+      lastUpdatedBy: cardData.nome || "Sistema",
     };
   } else {
+    // Se não for desistência, apenas salva o estado atual do checklist
     const isento = modalBody.querySelector("#chk-isento").checked;
-    const camposObrigatorios = {
-      "chk-docs": "Enviar os documentos",
-      "chk-confirmou": "Confirmar os dados",
-      "chk-pasta": "Criar a pasta no Drive",
-    };
-    if (!isento) {
-      camposObrigatorios["chk-pagamento"] = "Confirmar o pagamento";
-    }
-
-    for (const [id, nome] of Object.entries(camposObrigatorios)) {
-      const element = modalBody.querySelector(`#${id}`);
-      if (!element.checked) {
-        throw new Error(`Checklist incompleto: ${nome}`);
-      }
-    }
 
     dataToUpdate = {
-      // NOVO STATUS: Move o paciente para a fila de espera do agendamento público
-      status: "aguardando_agendamento_triagem",
+      // O status NÃO é alterado
+      checklistDocumentos: {
+        docsEnviados: modalBody.querySelector("#chk-docs").checked,
+        dadosConfirmados: modalBody.querySelector("#chk-confirmou").checked,
+        pastaCriada: modalBody.querySelector("#chk-pasta").checked,
+        pagamentoEfetuado: isento
+          ? false
+          : modalBody.querySelector("#chk-pagamento").checked,
+      },
       isentoTriagem: isento,
       motivoIsencao: isento
         ? modalBody.querySelector("#isento-motivo").value.trim()
         : "",
+      lastUpdate: new Date(),
+      lastUpdatedBy: cardData.nome || "Sistema",
     };
   }
-
-  dataToUpdate.lastUpdate = new Date();
-  dataToUpdate.lastUpdatedBy = cardData.nome || "N/A";
 
   const docRef = doc(db, "trilhaPaciente", cardId);
   await updateDoc(docRef, dataToUpdate);
@@ -157,6 +163,12 @@ function setupEventListeners(element) {
   const desistiuSection = element.querySelector("#desistencia-motivo-section");
   const agendamentoSection = element.querySelector("#agendamento-section");
   const allCheckboxes = element.querySelectorAll('input[name="checklist"]');
+
+  // Função para forçar a reavaliação da UI no início
+  function triggerInitialState() {
+    chkIsento.dispatchEvent(new Event("change"));
+    chkDesistiu.dispatchEvent(new Event("change"));
+  }
 
   chkIsento.addEventListener("change", function () {
     isentoSection.style.display = this.checked ? "block" : "none";
@@ -176,14 +188,16 @@ function setupEventListeners(element) {
     allCheckboxes.forEach((chk) => {
       if (chk.id !== "chk-desistiu") {
         chk.disabled = isDesistente;
-        if (isDesistente) {
-          chk.checked = false;
-        }
       }
     });
-    // Garante que as seções de motivo sejam escondidas se a desistência for desmarcada
-    if (!isDesistente) {
-      isentoSection.style.display = chkIsento.checked ? "block" : "none";
+
+    // Se o usuário desiste, reabilita a opção de pagamento/isenção
+    if (isDesistente) {
+      chkIsento.disabled = false;
+      chkPagamento.disabled = false;
     }
   });
+
+  // Chama a função para garantir que o estado inicial do formulário esteja correto
+  triggerInitialState();
 }
