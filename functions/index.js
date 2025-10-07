@@ -470,7 +470,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 
     // 1. Busca as configurações do sistema
     const configuracoesRef = db.collection("configuracoesSistema");
-    const configuracoesSnapshot = await getDocs(configuracoesRef);
+    const configuracoesSnapshot = await query.get();
     const configuracoes = {};
     configuracoesSnapshot.forEach((doc) => {
       configuracoes[doc.id] = doc.data().valor;
@@ -514,7 +514,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       where("data", ">=", dataInicio),
       where("data", "<=", dataFimISO)
     );
-    const configSnapshot = await getDocs(configQuery);
+    const configSnapshot = await query.get();
 
     if (configSnapshot.empty) {
       logger.warn("Nenhuma configuração de agenda encontrada para o período.");
