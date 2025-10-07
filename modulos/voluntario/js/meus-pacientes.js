@@ -39,11 +39,12 @@ export function init(db, user, userData) {
     container.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-      // 1. Consultas para Plantão e para PB (usando a nova estrutura)
+      // --- INÍCIO DA CORREÇÃO ---
+
+      // 1. Consultas mais abertas para Plantão e para PB
       const queryPlantao = db
         .collection("trilhaPaciente")
-        .where("plantaoInfo.profissionalId", "==", user.uid)
-        .where("status", "==", "em_atendimento_plantao");
+        .where("plantaoInfo.profissionalId", "==", user.uid);
 
       const queryPb = db
         .collection("trilhaPaciente")
@@ -55,31 +56,33 @@ export function init(db, user, userData) {
       ]);
 
       let cardsHtml = "";
-      const pacientesProcessados = new Set(); // Para evitar duplicatas visuais
+      const pacientesProcessados = new Set();
 
-      // Processa pacientes de plantão
-      plantaoSnapshot.forEach((documento) => {
-        const paciente = { id: documento.id, ...documento.data() };
-        if (!pacientesProcessados.has(paciente.id)) {
+      // 2. Filtra os pacientes de plantão pelo status ATIVO aqui no código
+      plantaoSnapshot.forEach((doc) => {
+        const paciente = { id: doc.id, ...doc.data() };
+        if (
+          paciente.status === "em_atendimento_plantao" &&
+          !pacientesProcessados.has(paciente.id)
+        ) {
           cardsHtml += criarCardPaciente(paciente);
           pacientesProcessados.add(paciente.id);
         }
       });
 
-      // Processa pacientes de PB
-      pbSnapshot.forEach((documento) => {
-        const paciente = { id: documento.id, ...documento.data() };
-        // Encontra o atendimento específico deste profissional
+      // 3. Filtra os atendimentos de PB pelo status ATIVO aqui no código
+      pbSnapshot.forEach((doc) => {
+        const paciente = { id: doc.id, ...doc.data() };
         const meuAtendimento = paciente.atendimentosPB?.find(
-          (atendimento) => atendimento.profissionalId === user.uid
+          (at) => at.profissionalId === user.uid
         );
 
-        // Exibe o card apenas se o atendimento específico deste profissional estiver ativo
         if (meuAtendimento && meuAtendimento.statusAtendimento === "ativo") {
-          // Passa o paciente e o atendimento específico para a criação do card
           cardsHtml += criarCardPaciente(paciente, meuAtendimento);
         }
       });
+
+      // --- FIM DA CORREÇÃO ---
 
       if (cardsHtml === "") {
         container.innerHTML =
@@ -88,7 +91,6 @@ export function init(db, user, userData) {
       }
 
       container.innerHTML = cardsHtml;
-      // Reordena os cards em ordem alfabética no navegador
       const cards = Array.from(container.querySelectorAll(".paciente-card"));
       cards.sort((a, b) =>
         a
