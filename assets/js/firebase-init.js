@@ -1,25 +1,35 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 1.8 (Correção Crítica de Sintaxe)
+// Versão: 9.0 (Migração completa para a sintaxe modular do Firebase v9)
 
+// 1. Importa as funções de inicialização e os serviços que serão usados no projeto
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
   getAuth,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-// Adiciona as importações necessárias aqui
 import {
   getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  limit,
   arrayUnion,
   deleteField,
-  doc,
-  updateDoc,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import {
   getFunctions,
   httpsCallable,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-// --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
+// 2. Sua configuração do Firebase (sem alterações)
 const firebaseConfig = {
   apiKey: "AIzaSyDJqPJjDDIGo7uRewh3pw1SQZOpMgQJs5M",
   authDomain: "eupsico-agendamentos-d2048.firebaseapp.com",
@@ -30,31 +40,36 @@ const firebaseConfig = {
   appId: "1:1041518416343:web:087006662ffcfa12d7bb92",
 };
 
-// --- INICIALIZAÇÃO E EXPORTAÇÃO ---
-// Garante que o Firebase seja inicializado apenas uma vez
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// 3. Inicializa os serviços do Firebase e os exporta
+const app = initializeApp(firebaseConfig);
 
-// Exporta as instâncias dos serviços que serão usadas nos outros módulos
-//const auth = firebase.auth();
 const auth = getAuth(app);
-//const db = firebase.firestore();
 const db = getFirestore(app);
-//const functions = firebase.functions();
 const functions = getFunctions(app, "southamerica-east1");
-const storage = firebase.storage();
-const rtdb = firebase.database();
+const storage = getStorage(app);
+const rtdb = getDatabase(app);
 
-// A variável 'firebase' já é global, então não a exportamos. Apenas os serviços.
+// 4. Exporta todos os serviços e funções necessárias para os outros módulos
+//    Agora, qualquer arquivo pode importar o que precisa diretamente deste arquivo.
 export {
+  app,
+  auth,
   db,
   functions,
-  auth,
+  storage,
+  rtdb,
   onAuthStateChanged,
   httpsCallable,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  limit,
   arrayUnion,
   deleteField,
-  doc,
-  updateDoc,
 };
