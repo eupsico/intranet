@@ -19,6 +19,7 @@ import {
   query,
   where,
   limit,
+  orderBy,
   arrayUnion,
   deleteField,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
@@ -35,7 +36,7 @@ const firebaseConfig = {
   authDomain: "eupsico-agendamentos-d2048.firebaseapp.com",
   databaseURL: "https://eupsico-agendamentos-d2048-default-rtdb.firebaseio.com",
   projectId: "eupsico-agendamentos-d2048",
-  storageBucket: "eupsico-agendamentos-d2048.firebasestorage.app",
+  storageBucket: "eupsico-agendamentos-d2048.appspot.com", // Domínio corrigido para storage
   messagingSenderId: "1041518416343",
   appId: "1:1041518416343:web:087006662ffcfa12d7bb92",
 };
@@ -50,7 +51,6 @@ const storage = getStorage(app);
 const rtdb = getDatabase(app);
 
 // 4. Exporta todos os serviços e funções necessárias para os outros módulos
-//    Agora, qualquer arquivo pode importar o que precisa diretamente deste arquivo.
 export {
   app,
   auth,
@@ -70,6 +70,7 @@ export {
   query,
   where,
   limit,
+  orderBy,
   arrayUnion,
   deleteField,
 };
