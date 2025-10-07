@@ -1,8 +1,23 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 1.7 (Correção Crítica de Sintaxe)
+// Versão: 1.8 (Correção Crítica de Sintaxe)
 
-// A variável global 'firebase' é carregada pelos scripts <script> no HTML.
-// Este arquivo a utiliza para inicializar os serviços e exportá-los para os outros módulos.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+// Adiciona as importações necessárias aqui
+import {
+  getFirestore,
+  arrayUnion,
+  deleteField,
+  doc,
+  updateDoc,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import {
+  getFunctions,
+  httpsCallable,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
 
 // --- CONFIGURAÇÃO ÚNICA DO FIREBASE ---
 const firebaseConfig = {
@@ -22,13 +37,24 @@ if (!firebase.apps.length) {
 }
 
 // Exporta as instâncias dos serviços que serão usadas nos outros módulos
-const auth = firebase.auth();
-const db = firebase.firestore();
-const functions = firebase.functions();
+//const auth = firebase.auth();
+const auth = getAuth(app);
+//const db = firebase.firestore();
+const db = getFirestore(app);
+//const functions = firebase.functions();
+const functions = getFunctions(app, "southamerica-east1");
 const storage = firebase.storage();
 const rtdb = firebase.database();
 
 // A variável 'firebase' já é global, então não a exportamos. Apenas os serviços.
-export { auth, db, functions, storage, rtdb };
-// Fim do arquivo firebase-init.js
-// Versão: 1.7 (Correção Crítica de Sintaxe)
+export {
+  db,
+  functions,
+  auth,
+  onAuthStateChanged,
+  httpsCallable,
+  arrayUnion,
+  deleteField,
+  doc,
+  updateDoc,
+};
