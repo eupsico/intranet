@@ -1,8 +1,7 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
 const admin = require("firebase-admin");
-// A inicialização do admin só precisa acontecer uma vez.
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -11,12 +10,6 @@ const db = admin.firestore();
 // -----------------------------
 // Função auxiliar para username
 // -----------------------------
-/**
- * Gera um username único baseado no nome completo informado.
- * @param {string} nomeCompleto - O nome completo do usuário.
- * @return {Promise<string>} - Um username único.
- * @throws {HttpsError} - Se não for possível gerar um username único.
- */
 async function gerarUsernameUnico(nomeCompleto) {
   const partesNome = nomeCompleto
     .trim()
@@ -44,7 +37,6 @@ async function gerarUsernameUnico(nomeCompleto) {
   };
 
   const usernameBase = `${primeiroNome} ${ultimoNome}`.trim();
-
   if (!(await checkUsernameExists(usernameBase))) return usernameBase;
 
   if (nomesMeio.length > 0) {
@@ -66,12 +58,9 @@ async function gerarUsernameUnico(nomeCompleto) {
   }
 
   let contador = 2;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const usernameNumerado = `${usernameBase} ${contador}`;
-    if (!(await checkUsernameExists(usernameNumerado))) {
-      return usernameNumerado;
-    }
+    if (!(await checkUsernameExists(usernameNumerado))) return usernameNumerado;
     contador++;
     if (contador > 100) {
       throw new HttpsError(
@@ -149,21 +138,18 @@ exports.criarNovoProfissional = onCall(async (request) => {
     throw new HttpsError("internal", "Ocorreu um erro inesperado.");
   }
 });
-
 // -----------------------------
 // Função verificarCpfExistente
 // -----------------------------
 exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
   const cpf = request.data.cpf;
-  // Apenas verifica se o campo não está vazio. A lógica de validação mais complexa
-  // foi movida para o frontend. O backend confia que recebeu um CPF válido ou um ID TEMP.
+
   if (!cpf) {
     throw new HttpsError("invalid-argument", "CPF/ID não fornecido.");
   }
 
   try {
     const trilhaRef = db.collection("trilhaPaciente");
-    // Esta consulta agora funcionará para ambos os casos
     const snapshot = await trilhaRef.where("cpf", "==", cpf).limit(1).get();
 
     if (snapshot.empty) {
@@ -193,10 +179,6 @@ exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
     );
   }
 });
-
-// -------------------------------------------------------------------
-// Função para criar um card na Trilha do Paciente
-// -------------------------------------------------------------------
 exports.criarCardTrilhaPaciente = onDocumentCreated(
   "inscricoes/{inscricaoId}",
   async (event) => {
@@ -205,21 +187,16 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
       console.log("Nenhum dado associado ao evento.");
       return;
     }
+
     const inscricaoData = snap.data();
 
-    // Objeto de dados completo para o novo card na trilha do paciente
     const cardData = {
-      // IDs e Timestamps
       inscricaoId: event.params.inscricaoId,
       timestamp: new Date(),
       status: "inscricao_documentos",
-
-      // Dados Pessoais
       nomeCompleto: inscricaoData.nomeCompleto || "Não informado",
       cpf: inscricaoData.cpf || "Não informado",
       dataNascimento: inscricaoData.dataNascimento || "Não informado",
-
-      // Contato e Endereço
       telefoneCelular: inscricaoData.telefoneCelular || "Não informado",
       email: inscricaoData.email || "Não informado",
       rua: inscricaoData.rua || "Não informado",
@@ -228,22 +205,14 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
       cidade: inscricaoData.cidade || "Não informado",
       cep: inscricaoData.cep || "Não informado",
       complemento: inscricaoData.complemento || "",
-
-      // Dados do Responsável (se houver)
       responsavel: inscricaoData.responsavel || {},
-
-      // Dados Socioeconômicos
       rendaMensal: inscricaoData.rendaMensal || "Não informado",
       rendaFamiliar: inscricaoData.rendaFamiliar || "Não informado",
       casaPropria: inscricaoData.casaPropria || "Não informado",
       pessoasMoradia: inscricaoData.pessoasMoradia || "Não informado",
-
-      // Motivo e Disponibilidade
       motivoBusca: inscricaoData.motivoBusca || "Não informado",
       disponibilidadeGeral: inscricaoData.disponibilidadeGeral || [],
       disponibilidadeEspecifica: inscricaoData.disponibilidadeEspecifica || [],
-
-      // Outros
       comoSoube: inscricaoData.comoSoube || "Não informado",
     };
 
@@ -257,20 +226,17 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
   }
 );
-
-// -------------------------------------------------------------------
-// (ADMIN) Busca todas as disponibilidades para o painel de gestão.
-// -------------------------------------------------------------------
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
-    if (!request.auth) {
+    const adminUid = request.auth?.uid;
+    if (!adminUid) {
       throw new HttpsError(
         "unauthenticated",
         "Você precisa estar autenticado."
       );
     }
-    const adminUid = request.auth.uid;
+
     try {
       const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
       if (
@@ -304,10 +270,10 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
           assistentesComDispoIds
         )
         .get();
+
       const assistentesMap = new Map();
       usuariosSnapshot.forEach((doc) => {
         const userData = doc.data();
-        // Lógica original de filtragem que você confirmou estar correta.
         if (
           userData.funcoes?.includes("servico_social") &&
           userData.inativo === false
@@ -318,10 +284,8 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
 
       const todasDisponibilidades = [];
       dispoSnapshot.forEach((doc) => {
-        // Apenas inclui na resposta se a assistente passou no filtro acima
         if (assistentesMap.has(doc.id)) {
           const assistenteInfo = assistentesMap.get(doc.id);
-          // ** LÓGICA RESTAURADA PARA RETORNAR DADOS ANINHADOS **
           todasDisponibilidades.push({
             id: doc.id,
             nome: assistenteInfo.nome,
@@ -344,16 +308,13 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
     }
   }
 );
-
-// -------------------------------------------------------------------
-// (ADMIN) Salva a configuração de tipo de atendimento (Triagem/Reavaliação).
-// -------------------------------------------------------------------
 exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
   console.log("🔧 Iniciando definirTipoAgenda...");
 
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
+
   const adminUid = request.auth.uid;
 
   try {
@@ -371,7 +332,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       );
     }
 
-    // Verifica se é admin
     const adminDoc = await db.collection("usuarios").doc(adminUid).get();
     if (!adminDoc.exists || !adminDoc.data()?.funcoes?.includes("admin")) {
       throw new HttpsError(
@@ -380,7 +340,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       );
     }
 
-    // Busca disponibilidade e dados do assistente
     const dispoSnap = await db
       .collection("disponibilidadeAssistentes")
       .doc(assistenteId)
@@ -400,7 +359,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     const assistenteData = assistenteSnap.data();
     const assistenteNome = assistenteData?.nome || "Assistente";
 
-    // 🔑 Aqui está o formato certo
     const bloco = dispoData.disponibilidade?.[mes]?.[modalidade];
     if (!bloco || !Array.isArray(bloco.dias) || !bloco.inicio || !bloco.fim) {
       throw new HttpsError(
@@ -411,7 +369,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
 
     const { dias: diasDisponiveis, inicio, fim } = bloco;
 
-    // Monta batch
     const batch = db.batch();
     dias.forEach(({ dia, tipo }, index) => {
       if (!dia || !tipo) {
@@ -450,7 +407,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     await batch.commit();
     console.log("✅ Batch commitado com sucesso.");
 
-    // Log no servidor
     await db.collection("logsSistema").add({
       timestamp: new Date(),
       usuario: adminUid,
@@ -487,18 +443,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     );
   }
 });
-
-// -------------------------------------------------------------------
-// (PÚBLICO) Busca horários de TRIAGEM disponíveis na agenda aberta pelo admin.
-// -------------------------------------------------------------------
-/**
- * @summary Busca horários de triagem disponíveis para o público.
- * @description Retorna uma lista de horários de assistentes sociais,
- * excluindo aqueles que já foram agendados na coleção 'agendamentosTriagem'.
- * @returns {Promise<{horarios: Array<object>}>}
- * Uma lista de objetos, cada um representando um horário disponível.
- * @throws {functions.https.HttpsError} Se ocorrer um erro na consulta.
- */
 exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
   try {
     const agora = new Date();
@@ -523,16 +467,12 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     dataFim.setDate(hoje.getDate() + quantidadeDiasBusca);
     const dataFimISO = dataFim.toISOString().split("T")[0];
 
-    // --- INÍCIO DA CORREÇÃO ---
-
-    // 1. Buscar todos os agendamentos de triagem JÁ REALIZADOS que ainda vão acontecer.
     const agendamentosSnapshot = await db
       .collection("trilhaPaciente")
       .where("status", "==", "triagem_agendada")
       .where("dataTriagem", ">=", dataInicio)
       .get();
 
-    // 2. Criar um conjunto (Set) de chaves únicas para os horários ocupados para verificação rápida.
     const horariosOcupados = new Set();
     agendamentosSnapshot.forEach((doc) => {
       const agendamento = doc.data();
@@ -541,13 +481,10 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         agendamento.dataTriagem &&
         agendamento.horaTriagem
       ) {
-        // A chave única combina ID do assistente, data e hora.
         const chave = `${agendamento.assistenteSocialId}-${agendamento.dataTriagem}-${agendamento.horaTriagem}`;
         horariosOcupados.add(chave);
       }
     });
-
-    // --- FIM DA CORREÇÃO ---
 
     console.log(
       `📅 Buscando horários de triagem entre ${dataInicio} e ${dataFimISO}`
@@ -592,9 +529,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         const diffHoras = diffMs / (1000 * 60 * 60);
 
         if (diffHoras >= minimoHorasAntecedencia) {
-          // --- INÍCIO DA CORREÇÃO ---
-
-          // 3. VERIFICAR se o slot NÃO está no conjunto de horários ocupados.
           const chaveSlot = `${diaConfig.assistenteId}-${diaConfig.data}-${horaSlot}`;
           if (!horariosOcupados.has(chaveSlot)) {
             slotsPotenciais.push({
@@ -606,7 +540,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
               assistenteId: diaConfig.assistenteId,
             });
           }
-          // --- FIM DA CORREÇÃO ---
         }
 
         mAtual += 30;
@@ -623,25 +556,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     return { error: "Erro ao buscar horários públicos." };
   }
 });
-
-/**
- * Agenda a triagem para um paciente já inscrito, atualizando seu card na Trilha do Paciente.
- * A função busca por um paciente com o CPF fornecido que esteja na etapa 'inscricao_documentos'.
- * Se encontrado, atualiza o card com os dados do agendamento e o move para 'triagem_agendada'.
- * Se não for encontrado, retorna um erro instruindo o usuário a contatar a EuPsico.
- *
- * @param {object} request - O objeto da requisição da Cloud Function.
- * @param {object} request.data - Os dados do agendamento enviados pelo cliente.
- * @param {string} request.data.cpf - O CPF do paciente.
- * @param {string} request.data.assistenteSocialId - O ID do assistente social.
- * @param {string} request.data.assistenteSocialNome - O nome do assistente social.
- * @param {string} request.data.data - A data do agendamento (YYYY-MM-DD).
- * @param {string} request.data.hora - A hora do agendamento (HH:mm).
- * @returns {Promise<object>} - Uma promessa que resolve com uma mensagem de sucesso.
- * @throws {functions.https.HttpsError} - Lança um erro se o paciente não for encontrado ou se os dados forem inválidos.
- */
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
-  // Extrai o CPF e os dados do agendamento do corpo da requisição
   const {
     cpf,
     assistenteSocialId,
@@ -649,12 +564,9 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     data: dataAgendamento,
     hora,
     nomeCompleto,
-    email,
     telefone,
-    comoConheceu,
   } = request.data;
 
-  // Validação para garantir que todos os dados essenciais foram enviados
   if (
     !cpf ||
     !assistenteSocialId ||
@@ -662,7 +574,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     !dataAgendamento ||
     !hora ||
     !nomeCompleto ||
-    !email ||
     !telefone
   ) {
     throw new HttpsError(
@@ -673,7 +584,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
 
   try {
     const trilhaRef = db.collection("trilhaPaciente");
-    // Cria uma consulta para encontrar o paciente pelo CPF na etapa correta
     const q = trilhaRef
       .where("cpf", "==", cpf)
       .where("status", "==", "inscricao_documentos")
@@ -681,7 +591,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
 
     const snapshot = await q.get();
 
-    // REGRA DE NEGÓCIO: Se não encontrar o paciente, retorna um erro claro
     if (snapshot.empty) {
       throw new HttpsError(
         "not-found",
@@ -689,22 +598,19 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
       );
     }
 
-    // Se encontrou, pega a referência do documento
     const pacienteDoc = snapshot.docs[0];
 
-    // Prepara os dados que serão ATUALIZADOS no card do paciente
     const dadosDaTriagem = {
-      status: "triagem_agendada", // Move o card para a nova coluna
-      assistenteSocialNome: assistenteSocialNome,
-      assistenteSocialId: assistenteSocialId,
+      status: "triagem_agendada",
+      assistenteSocialNome,
+      assistenteSocialId,
       dataTriagem: dataAgendamento,
       horaTriagem: hora,
-      tipoTriagem: "Online", // Valor padrão para agendamento público
+      tipoTriagem: "Online",
       lastUpdate: admin.firestore.FieldValue.serverTimestamp(),
       lastUpdatedBy: "Agendamento Público",
     };
 
-    // Atualiza o documento existente na coleção 'trilhaPaciente'
     await pacienteDoc.ref.update(dadosDaTriagem);
 
     return {
@@ -714,11 +620,7 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
       pacienteId: pacienteDoc.id,
     };
   } catch (error) {
-    // Se o erro for o que criamos (not-found), apenas o repassa para o cliente
-    if (error instanceof HttpsError) {
-      throw error;
-    }
-    // Para qualquer outro erro inesperado, loga e retorna uma mensagem genérica
+    if (error instanceof HttpsError) throw error;
     console.error("Erro interno ao tentar agendar triagem:", error);
     throw new HttpsError(
       "internal",
@@ -726,10 +628,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     );
   }
 });
-
-// -------------------------------------------------------------------
-// (PÚBLICO) Assinatura do contrato terapêutico.
-// -------------------------------------------------------------------
 exports.assinarContrato = onCall({ cors: true }, async (request) => {
   const { pacienteId, nomeSignatario, cpfSignatario, versaoContrato, ip } =
     request.data;
@@ -764,11 +662,7 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
     );
   }
 });
-// -------------------------------------------------------------------
-// REGISTRA O DESFECHO DE UM ATENDIMENTO DE PB (LÓGICA ATUALIZADA)
-// -------------------------------------------------------------------
 exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
-  // Verifica se o usuário que está chamando a função está autenticado
   if (!request.auth) {
     throw new HttpsError(
       "unauthenticated",
@@ -776,12 +670,10 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
     );
   }
 
-  // Coleta os dados enviados pelo frontend
   const { pacienteId, atendimentoId, desfecho, motivo, encaminhamento } =
     request.data;
-  const profissionalId = request.auth.uid; // Pega o ID do profissional que está logado
+  const profissionalId = request.auth.uid;
 
-  // Valida se os dados essenciais foram recebidos
   if (!pacienteId || !atendimentoId || !desfecho) {
     throw new HttpsError(
       "invalid-argument",
@@ -792,7 +684,6 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
   const pacienteRef = db.collection("trilhaPaciente").doc(pacienteId);
 
   try {
-    // Busca os dados atuais do paciente no banco de dados
     const docSnap = await pacienteRef.get();
     if (!docSnap.exists) {
       throw new HttpsError("not-found", "Paciente não encontrado.");
@@ -801,14 +692,12 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
     const dadosDoPaciente = docSnap.data();
     const atendimentos = dadosDoPaciente.atendimentosPB || [];
 
-    // Encontra o índice (a posição) do atendimento específico que precisa ser modificado
     const indiceDoAtendimento = atendimentos.findIndex(
       (atendimento) =>
         atendimento.atendimentoId === atendimentoId &&
         atendimento.profissionalId === profissionalId
     );
 
-    // Se não encontrar o atendimento, significa que algo está errado ou o profissional não tem permissão
     if (indiceDoAtendimento === -1) {
       throw new HttpsError(
         "permission-denied",
@@ -816,7 +705,6 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
       );
     }
 
-    // Atualiza apenas o atendimento correto na lista
     atendimentos[indiceDoAtendimento].statusAtendimento = "encerrado";
     atendimentos[indiceDoAtendimento].desfecho = {
       tipo: desfecho,
@@ -827,7 +715,6 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
       data: new Date(),
     };
 
-    // Salva a lista de atendimentos modificada de volta no documento do paciente
     await pacienteRef.update({
       atendimentosPB: atendimentos,
       lastUpdate: new Date(),
@@ -843,52 +730,29 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
     );
   }
 });
-/**
- * Calcula a capacidade de agendamentos em slots de 30 minutos.
- * @param {string} inicio - Hora de início (HH:mm).
- * @param {string} fim - Hora de fim (HH:mm).
- * @return {number} A quantidade de slots.
- */
-function calculateCapacity(inicio, fim) {
-  try {
-    const [startH, startM] = inicio.split(":").map(Number);
-    const [endH, endM] = fim.split(":").map(Number);
-    return Math.floor((endH * 60 + endM - (startH * 60 + startM)) / 30);
-  } catch (e) {
-    return 0;
-  }
-}
-
-/**
- * Cloud Function para buscar horários de supervisão disponíveis.
- * É chamada pelo cliente e executa com permissões de administrador.
- */
-exports.getSupervisorSlots = functions.https.onCall(async (data, context) => {
-  // Verifica se o usuário está autenticado
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
+exports.getSupervisorSlots = onCall(async (request) => {
+  const supervisorUid = request.data.supervisorUid;
+  if (!request.auth) {
+    throw new HttpsError(
       "unauthenticated",
       "Você precisa estar autenticado para ver os horários."
     );
   }
-
-  const supervisorUid = data.supervisorUid;
   if (!supervisorUid) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "invalid-argument",
       "O UID do supervisor é obrigatório."
     );
   }
 
   try {
-    // 1. Busca as configurações do sistema
     const configDoc = await db
       .collection("configuracoesSistema")
       .doc("minimoAgendaSupervisao")
       .get();
 
-    let minimoHoras = 24; // Valor padrão
-    let quantidadeDiasSupervisao = 15; // Valor padrão
+    let minimoHoras = 24;
+    let quantidadeDiasSupervisao = 15;
 
     if (configDoc.exists) {
       const configData = configDoc.data();
@@ -897,21 +761,17 @@ exports.getSupervisorSlots = functions.https.onCall(async (data, context) => {
         parseInt(configData.quantidadeDiasSupervisao, 10) || 15;
     }
 
-    // 2. Busca os dados do supervisor (horários de trabalho)
     const supervisorDoc = await db
       .collection("usuarios")
       .doc(supervisorUid)
       .get();
     if (!supervisorDoc.exists) {
-      throw new functions.https.HttpsError(
-        "not-found",
-        "Supervisor não encontrado."
-      );
+      throw new HttpsError("not-found", "Supervisor não encontrado.");
     }
+
     const supervisorData = supervisorDoc.data();
     const diasHorarios = supervisorData.diasHorarios || [];
 
-    // 3. Calcula os slots potenciais
     const potentialSlots = [];
     const diasDaSemana = [
       "domingo",
@@ -943,7 +803,7 @@ exports.getSupervisorSlots = functions.https.onCall(async (data, context) => {
 
           if (diffHoras >= minimoHoras) {
             potentialSlots.push({
-              date: slotDate.toISOString(), // Envia como string ISO para o cliente
+              date: slotDate.toISOString(),
               horario: horario,
             });
           }
@@ -951,7 +811,6 @@ exports.getSupervisorSlots = functions.https.onCall(async (data, context) => {
       });
     }
 
-    // 4. Verifica a ocupação de cada slot
     const agendamentosRef = db.collection("agendamentos");
     const slotChecks = potentialSlots.map(async (slot) => {
       const q = agendamentosRef
@@ -972,19 +831,38 @@ exports.getSupervisorSlots = functions.https.onCall(async (data, context) => {
 
     const finalSlots = await Promise.all(slotChecks);
 
-    // 5. Retorna os slots calculados
     return { slots: finalSlots };
   } catch (error) {
     console.error("Erro em getSupervisorSlots:", error);
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "internal",
       "Ocorreu um erro ao buscar os horários de supervisão."
     );
   }
 });
-// -------------------------------------------------------------------
-// NOVA FUNÇÃO: GERENCIA O STATUS GERAL DO PACIENTE AUTOMATICamente
-// -------------------------------------------------------------------
+
+/**
+ * Calcula a capacidade de agendamentos em slots de 30 minutos.
+ * @param {string} inicio - Hora de início (HH:mm).
+ * @param {string} fim - Hora de fim (HH:mm).
+ * @return {number} Quantidade de slots de 30 minutos entre inicio e fim.
+ */
+function calculateCapacity(inicio, fim) {
+  try {
+    const [startH, startM] = inicio.split(":").map(Number);
+    const [endH, endM] = fim.split(":").map(Number);
+
+    const startTotal = startH * 60 + startM;
+    const endTotal = endH * 60 + endM;
+
+    const diffMin = endTotal - startTotal;
+    if (diffMin <= 0 || !Number.isFinite(diffMin)) return 0;
+
+    return Math.floor(diffMin / 30);
+  } catch {
+    return 0;
+  }
+}
 exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
   "trilhaPaciente/{pacienteId}",
   async (event) => {
@@ -992,7 +870,7 @@ exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
     const dadosDepois = event.data.after.data();
     const pacienteId = event.params.pacienteId;
 
-    // Verifica se houve alteração nos atendimentosPB
+    // Só continua se houve alteração nos atendimentosPB
     if (
       JSON.stringify(dadosDepois.atendimentosPB) ===
       JSON.stringify(dadosAntes.atendimentosPB)
@@ -1014,6 +892,7 @@ exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
     const todosEncerrados = atendimentos.every(
       (at) => at.statusAtendimento === "encerrado"
     );
+
     const statusAtuaisDePB = [
       "em_atendimento_pb",
       "aguardando_info_horarios",
