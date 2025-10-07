@@ -588,13 +588,12 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         logger.warn(
           `Documento ${diaConfig.id} ignorado por ter dados de início/fim inválidos ou ausentes.`
         );
-        return; // Pula para o próximo item
+        return; // Pula para o próximo item do loop
       }
 
       const [hInicio, mInicio] = diaConfig.inicio.split(":").map(Number);
       const [hFim, mFim] = diaConfig.fim.split(":").map(Number);
 
-      // VERIFICAÇÃO DE SEGURANÇA: Garante que as horas/minutos são números válidos
       if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim) || isNaN(mFim)) {
         logger.warn(
           `Documento ${diaConfig.id} ignorado por ter formato de hora inválido.`
