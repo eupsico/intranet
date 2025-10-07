@@ -1,5 +1,11 @@
 import { db } from "../../../../assets/js/firebase-config.js"; // Importa 'firebase' para usar FieldValue
 import { carregarProfissionais } from "../../../../assets/js/app.js";
+import {
+  arrayUnion,
+  deleteField,
+  updateDoc,
+  doc,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 /**
  * Renderiza o conteúdo do modal para a etapa 'Encaminhar para PB'.
