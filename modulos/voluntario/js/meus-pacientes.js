@@ -646,12 +646,78 @@ export function init(db, user, userData) {
 
   async function handleDesfechoPbSubmit(evento) {
     evento.preventDefault();
-    // A lógica de submit do desfecho precisa ser refatorada para atualizar
-    // o atendimento específico dentro do array `atendimentosPB`, similar ao que foi feito
-    // no formulário de horários.
-    alert(
-      "A lógica de salvar o desfecho precisa ser adaptada para a nova estrutura."
-    );
+    const form = evento.target;
+    const pacienteId = form.dataset.pacienteId;
+    const atendimentoId = form.dataset.atendimentoId; // Pega o ID do atendimento
+    const botaoSalvar = form.querySelector('button[type="submit"]');
+
+    botaoSalvar.disabled = true;
+    botaoSalvar.textContent = "Salvando...";
+
+    try {
+      const desfecho = form.querySelector("#desfecho-pb-select").value;
+      if (!desfecho) {
+        throw new Error("Selecione um desfecho.");
+      }
+
+      // --- INÍCIO DA CORREÇÃO ---
+      // Monta o payload para enviar para a Cloud Function 'registrarDesfechoPb'
+      const payload = {
+        pacienteId,
+        atendimentoId, // Envia o ID do atendimento específico
+        desfecho,
+      };
+
+      if (desfecho === "Encaminhamento") {
+        const continuaAtendimento = form.querySelector(
+          'input[name="continua-atendimento"]:checked'
+        );
+        payload.encaminhamento = {
+          servico: form.querySelector("#encaminhamento-servico-select").value,
+          motivo: form.querySelector("#encaminhamento-motivo-textarea").value,
+          demanda: form.querySelector("#encaminhamento-demanda-textarea").value,
+          continuaAtendimento: continuaAtendimento
+            ? continuaAtendimento.value
+            : null,
+          relatoCaso: form.querySelector("#relato-caso-textarea").value,
+        };
+        // Validação simples
+        if (!payload.encaminhamento.servico || !payload.encaminhamento.motivo) {
+          throw new Error(
+            "Para encaminhamento, preencha o serviço e o motivo."
+          );
+        }
+      } else {
+        payload.motivo = form.querySelector(
+          "#motivo-alta-desistencia-textarea"
+        ).value;
+        if (!payload.motivo) {
+          throw new Error("O motivo é obrigatório para Alta ou Desistência.");
+        }
+      }
+
+      // Usa a função 'httpsCallable' importada no topo do arquivo
+      const registrarDesfechoPb = httpsCallable(
+        functions,
+        "registrarDesfechoPb"
+      );
+      const result = await registrarDesfechoPb(payload);
+
+      if (!result.data.success) {
+        throw new Error(result.data.message || "Ocorreu um erro no servidor.");
+      }
+      // --- FIM DA CORREÇÃO ---
+
+      alert("Desfecho registrado com sucesso!");
+      document.getElementById("desfecho-pb-modal").style.display = "none";
+      carregarMeusPacientes(); // Recarrega a lista de pacientes
+    } catch (error) {
+      console.error("Erro ao salvar desfecho:", error);
+      alert(`Falha ao salvar: ${error.message}`);
+    } finally {
+      botaoSalvar.disabled = false;
+      botaoSalvar.textContent = "Salvar Desfecho";
+    }
   }
 
   async function gerarPdfContrato(pacienteData, meuAtendimento) {
