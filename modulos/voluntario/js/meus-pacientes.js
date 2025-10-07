@@ -179,25 +179,24 @@ export function init(db, user, userData) {
       : "";
 
     return `
-          <div class="paciente-card" data-id="${
-      dadosDoPaciente.id
-    }" data-telefone="${dadosDoPaciente.telefoneCelular || ""}">
-              <h4>${dadosDoPaciente.nomeCompleto}</h4>
-              <p><strong>Status:</strong> ${infoStatus.label}</p>
-              <p><strong>Telefone:</strong> ${
-      dadosDoPaciente.telefoneCelular || "Não informado"
-    }</p>
-              <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-              ${htmlStatusContrato}
+   <div class="paciente-card" data-id="${dadosDoPaciente.id}" data-telefone="${
+      dadosDoPaciente.telefoneCelular || ""
+    }">
+   <h4>${dadosDoPaciente.nomeCompleto}</h4>
+   <p><strong>Status:</strong> ${infoStatus.label}</p>
+   <p><strong>Telefone:</strong> ${
+     dadosDoPaciente.telefoneCelular || "Não informado"
+   }</p>    <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+   ${htmlStatusContrato}
               <div class="card-actions">
-                  <button class="action-button" data-id="${
-      dadosDoPaciente.id
-    }" data-tipo="${infoStatus.tipo}" ${atributoIdAtendimento} ${
-      !infoStatus.ativo ? "disabled" : ""
-    }>${infoStatus.acao}</button>
+     <button class="action-button" data-id="${dadosDoPaciente.id}" data-tipo="${
+      infoStatus.tipo
+    }" ${atributoIdAtendimento} ${!infoStatus.ativo ? "disabled" : ""}>${
+      infoStatus.acao
+    }</button>
                 ${htmlBotaoPdf}
               </div>
-          </div>`;
+  </div>`;
   }
 
   function adicionarEventListeners() {
@@ -252,8 +251,6 @@ export function init(db, user, userData) {
       }
     });
   }
-
-  // ...continuação da função init
 
   function handleEnviarContrato(pacienteId, telefone, nomePaciente) {
     const numeroLimpo = telefone ? telefone.replace(/\D/g, "") : "";
@@ -363,8 +360,6 @@ export function init(db, user, userData) {
       }
     });
 
-  // ...continuação da função init
-
   async function abrirModalEncerramento(pacienteId, dadosDoPaciente) {
     const form = document.getElementById("encerramento-form");
     form.reset();
@@ -397,8 +392,6 @@ export function init(db, user, userData) {
       document.getElementById("motivo-nao-pagamento").required =
         pagamentoSelect.value === "nao";
     };
-
-    // ... (resto da lógica original do modal de encerramento)
     encerramentoModal.style.display = "block";
   }
 
