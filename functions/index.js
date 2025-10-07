@@ -985,76 +985,58 @@ exports.getSupervisorSlots = functions.https.onCall(async (data, context) => {
 // -------------------------------------------------------------------
 // NOVA FUNÇÃO: GERENCIA O STATUS GERAL DO PACIENTE AUTOMATICamente
 // -------------------------------------------------------------------
-exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
-  "trilhaPaciente/{pacienteId}",
-  async (event) => {
-    // Pega os dados do documento ANTES e DEPOIS da atualização
-    const dadosDepois = event.data.after.data();
-    const dadosAntes = event.data.before.data();
+exports.gerenciarStatusGeralDoPaciente = functions.firestore
+  .document("trilhaPaciente/{pacienteId}")
+  .onUpdate(async (change, context) => {
+    const dadosAntes = change.before.data();
+    const dadosDepois = change.after.data();
 
-    // Para evitar execuções desnecessárias, a função só continua se a lista de atendimentos foi realmente modificada.
     if (
       JSON.stringify(dadosDepois.atendimentosPB) ===
       JSON.stringify(dadosAntes.atendimentosPB)
     ) {
       console.log(
-        `(ID do Paciente: ${event.params.pacienteId}) Nenhuma mudança nos atendimentos, a função será encerrada.`
+        `(ID: ${context.params.pacienteId}) Nenhuma mudança nos atendimentos, a função será encerrada.`
       );
-      return null; // Encerra a execução
+      return null;
     }
 
     const atendimentos = dadosDepois.atendimentosPB;
-    // Se não houver uma lista de atendimentos, não há o que fazer.
     if (!atendimentos || atendimentos.length === 0) {
       return null;
     }
 
-    // A função verifica se TODOS os atendimentos na lista têm o status 'encerrado'
-    const todosOsAtendimentosForamEncerrados = atendimentos.every(
-      (atendimento) => atendimento.statusAtendimento === "encerrado"
+    const todosEncerrados = atendimentos.every(
+      (at) => at.statusAtendimento === "encerrado"
     );
-
-    // Lista de status que indicam que o paciente está em alguma fase ativa de PB
     const statusAtuaisDePB = [
       "em_atendimento_pb",
       "aguardando_info_horarios",
       "cadastrar_horario_psicomanager",
     ];
 
-    // CONDIÇÃO PRINCIPAL:
-    // Se todos os atendimentos foram encerrados E o status atual do paciente ainda é um dos status de PB,
-    // então o status geral do paciente será atualizado para 'alta'.
-    if (
-      todosOsAtendimentosForamEncerrados &&
-      statusAtuaisDePB.includes(dadosDepois.status)
-    ) {
+    if (todosEncerrados && statusAtuaisDePB.includes(dadosDepois.status)) {
       console.log(
-        `(ID do Paciente: ${event.params.pacienteId}) Todos os atendimentos de PB foram encerrados. Atualizando status geral para 'alta'.`
+        `(ID: ${context.params.pacienteId}) Todos os atendimentos de PB foram encerrados. Atualizando status geral para 'alta'.`
       );
       try {
-        // Atualiza o documento do paciente
-        await event.data.after.ref.update({
+        await change.after.ref.update({
           status: "alta",
           lastUpdate: new Date(),
-          lastUpdatedBy: "Sistema (Gerenciador de Status Automático)",
+          lastUpdatedBy: "Sistema (Gerenciador de Status)",
         });
         return {
           status: "sucesso",
-          message: "Status geral do paciente foi atualizado para alta.",
+          message: "Status geral atualizado para alta.",
         };
       } catch (error) {
         console.error(
-          `Erro ao tentar atualizar o status geral do paciente ${event.params.pacienteId}:`,
+          `Erro ao atualizar o status geral do paciente ${context.params.pacienteId}:`,
           error
         );
-        return {
-          status: "erro",
-          message: "Falha ao atualizar o status do paciente.",
-        };
+        return { status: "erro", message: "Falha ao atualizar status." };
       }
     }
 
-    // Se as condições não forem atendidas, a função não faz nada.
     return null;
-  }
-);
+  });
