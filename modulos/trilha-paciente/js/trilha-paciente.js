@@ -237,13 +237,20 @@ async function confirmMove() {
   button.textContent = "Movendo...";
 
   try {
-    // Sintaxe v9 para atualizar o documento
+    // --- INÍCIO DA CORREÇÃO ---
+    // Acessa a variável 'currentUserData' que é definida na função 'init'
+    const lastUpdatedBy = currentUserData
+      ? currentUserData.nome
+      : "Usuário Desconhecido";
+
     const cardRef = doc(db, "trilhaPaciente", cardId);
     await updateDoc(cardRef, {
       status: newStatus,
       lastUpdate: new Date(),
-      lastUpdatedBy: currentUserData.nome || "N/A",
+      lastUpdatedBy: lastUpdatedBy, // Usa a variável corrigida
     });
+    // --- FIM DA CORREÇÃO ---
+
     document.getElementById("move-card-modal").style.display = "none";
   } catch (error) {
     console.error("Erro ao mover o card:", error);
