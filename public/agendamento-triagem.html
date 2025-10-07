@@ -6,62 +6,179 @@
     <title>Agendamento de Triagem - EuPsico</title>
     <link rel="stylesheet" href="../assets/css/design-system.css">
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* Estilos Gerais */
-        body { font-family: 'Comfortaa', sans-serif; background-color: #003366; color: #FFFFFF; text-align: center; margin: 0; padding: 0 10px; }
-        .container { max-width: 800px; margin: 20px auto; padding: 20px; text-align: left; }
-        h1, .subtitle { text-align: center; }
-        .image-container { width: 100%; display: flex; justify-content: center; margin: 20px 0; }
-        .image-container img { max-width: 100%; height: auto; border-radius: 8px; }
-        .text-content p { margin-bottom: 10px; }
-
-        /* Estilos da Seção de Agendamento */
-        #agendamento-section h2 { text-align: center; }
-        .horarios-container { text-align: left; margin-top: 20px; }
-        .modalidade-titulo {
-            font-size: 1.5em;
-            color: #FFFFFF;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        /* Estilos Gerais Melhorados */
+        :root {
+            --cor-primaria: #003366;
+            --cor-texto: #FFFFFF;
+            --cor-destaque: #f0f8ff; /* Um azul bem claro, quase branco */
+            --cor-fundo-botao: #FFFFFF;
+            --cor-texto-botao: #003366;
+            --cor-sucesso: #4CAF50;
         }
-        .data-grupo { margin-top: 15px; }
-        .data-grupo h4 { font-size: 1.1em; margin-bottom: 10px; }
-        .horarios-botoes { display: flex; flex-wrap: wrap; gap: 10px; }
-        .horario-btn { background-color: #FFFFFF; color: #003366; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
-        .horario-btn:hover { background-color: #e0e0e0; }
 
-        /* Estilos do Modal (já existentes no design-system.css, mas com ajustes) */
-        #agendamento-modal .modal-content { max-width: 500px; }
-        #cpf-feedback { font-size: 0.9em; margin-top: 5px; min-height: 1.2em; }
+        body {
+            font-family: 'Comfortaa', sans-serif;
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
 
-        /* Seção de Confirmação */
-        #confirmacao-section { text-align: center; padding: 20px; background-color: #e8f5e9; color: #2e7d32; border-radius: 8px; margin-top: 20px; }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        h1, .subtitle {
+            text-align: center;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: var(--cor-destaque);
+        }
+
+        .image-container {
+            width: 100%;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .text-content p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        hr {
+            margin: 40px 0;
+            border: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Seção de Agendamento Melhorada */
+        #agendamento-section h2 {
+            text-align: center;
+            font-size: 1.8em;
+            margin-bottom: 30px;
+        }
+
+        .horarios-container {
+            text-align: left;
+        }
+
+        .modalidade-titulo {
+            font-size: 1.6em;
+            margin-top: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--cor-destaque);
+        }
+
+        .data-grupo {
+            margin-top: 20px;
+        }
+
+        .data-grupo h4 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .horarios-botoes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .horario-btn {
+            background-color: var(--cor-fundo-botao);
+            color: var(--cor-texto-botao);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-family: 'Comfortaa', sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .horario-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Ajustes no Modal */
+        #agendamento-modal .modal-content {
+            max-width: 500px;
+            background-color: #f9f9f9; /* Fundo mais claro para o modal */
+            color: #333; /* Texto escuro dentro do modal */
+        }
+        #agendamento-modal .modal-header h2 {
+             color: var(--cor-primaria);
+        }
+        #cpf-feedback {
+            font-size: 0.9em;
+            margin-top: 5px;
+            min-height: 1.2em;
+        }
+        #cpf-feedback.success { color: var(--cor-sucesso); }
+        #cpf-feedback.error { color: #D32F2F; }
+
+        /* Seção de Confirmação Melhorada */
+        #confirmacao-section {
+            text-align: center;
+            padding: 30px;
+            background-color: #004a99; /* Um azul um pouco mais claro */
+            border: 1px solid var(--cor-sucesso);
+            border-radius: 12px;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        #confirmacao-section h2 {
+            color: var(--cor-sucesso);
+            font-size: 1.8em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>💡 Agendamento Online - EuPsico</h1>
         <div class="image-container">
-            <img src="https://live.staticflickr.com/65535/54562908390_26bf27dd46_b.jpg" alt="Mulher de 50 anos sentada em frente a um notebook">
+            <img src="https://live.staticflickr.com/65535/54562908390_26bf27dd46_b.jpg" alt="Mulher sorrindo em frente a um notebook">
         </div>
+        
         <div class="text-content">
             <p class="subtitle">Informações Importantes sobre a Triagem:</p>
             <p>🔸 A contribuição de <strong>R$ 30,00</strong> refere-se exclusivamente à triagem inicial.</p>
             <p>🔸 Como Funciona: Nossa equipe de assistentes sociais realizará uma avaliação socioeconômica para definir o valor da sua mensalidade para o acompanhamento terapêutico.</p>
+            
             <p class="subtitle">📅 Regras para Reagendamento:</p>
-            <p>🔸 Caso não possa comparecer na data e horário agendados, você poderá solicitar o reagendamento apenas uma vez.</p>
-            <p>🔸 Para isso, pedimos que nos avise com antecedência mínima de 24 horas.</p>
-            <p>🔸 Importante: Caso falte ao reagendamento, será necessário iniciar o processo de triagem novamente.</p>
+            <p>🔸 Caso não possa comparecer, você poderá solicitar o reagendamento <strong>apenas uma vez</strong>, com antecedência mínima de <strong>24 horas</strong>.</p>
+            <p>🔸 Importante: A falta ao reagendamento implicará na necessidade de iniciar um novo processo de triagem.</p>
+
             <p class="subtitle">💻 Triagem Online:</p>
-            <p>🔸 A triagem será realizada somente online.</p>
-            <p>Após a triagem, a EuPsico terá um prazo de até 30 dias úteis para dar seguimento ao seu atendimento. ⏳</p>
-            <p>O primeiro contato será o plantão psicológico, um momento para entendermos suas necessidades e realizarmos o encaminhamento adequado. Este plantão poderá ter até 4 sessões, e o pagamento da contribuição definida na triagem terá início. 🤝</p>
-            <p>Após o plantão, você será encaminhado para a terapia mais adequada, de acordo com o que identificamos juntos. ➡️</p>
+            <p>🔸 A triagem será realizada <strong>exclusivamente online</strong>.</p>
+            <p>Após a triagem, a EuPsico terá um prazo de até 30 dias úteis para dar seguimento ao seu atendimento. ⏳ O primeiro contato será o plantão psicológico, um momento para entendermos suas necessidades e realizarmos o encaminhamento adequado.</p>
         </div>
 
-        <hr style="margin: 30px 0; border-color: rgba(255,255,255,0.2);">
+        <hr>
 
         <div id="agendamento-section">
             <h2>Escolha um Horário para sua Triagem</h2>
@@ -87,25 +204,25 @@
                 <h2 id="agendamento-modal-title">Confirmar Agendamento</h2>
                 <button class="close-modal-btn">&times;</button>
             </div>
-        <div class="modal-body">
-            <p>Você selecionou o horário das <strong id="modal-horario-selecionado"></strong>. Para continuar, por favor, informe os dados do paciente.</p>
-            
-            <div class="form-group">
-                <label for="paciente-cpf">CPF do Paciente *</label>
-                <input type="text" id="paciente-cpf" class="form-control" placeholder="Digite o CPF para buscar seus dados" required>
-                <div id="cpf-feedback" style="font-size: 0.9em; margin-top: 5px; min-height: 1.2em;"></div>
-                <small class="form-text text-muted" style="margin-top: 5px; display: block;">
-                    Se o paciente for menor de idade e não possuir CPF, utilize o código fornecido pela EuPsico. Caso não o tenha, entre em contato pelo WhatsApp (11) 99794-9071 para solicitar.
-                </small>
-            </div>
-            <div class="form-group">
-                <label for="paciente-nome">Nome Completo do Paciente *</label>
-                <input type="text" id="paciente-nome" class="form-control" placeholder="Preenchido automaticamente após digitar o CPF" disabled required>
-            </div>
-            <div class="form-group">
-                <label for="paciente-telefone">Telefone de Contato (com DDD) *</label>
-                <input type="tel" id="paciente-telefone" class="form-control" placeholder="Preenchido automaticamente após digitar o CPF" disabled required>
-            </div>
+            <div class="modal-body">
+                <p>Você selecionou o horário das <strong id="modal-horario-selecionado"></strong>. Para continuar, por favor, informe os dados do paciente.</p>
+                
+                <div class="form-group">
+                    <label for="paciente-cpf">CPF do Paciente *</label>
+                    <input type="text" id="paciente-cpf" class="form-control" placeholder="Digite o CPF para buscar seus dados" required>
+                    <div id="cpf-feedback"></div>
+                    <small class="form-text text-muted" style="margin-top: 5px; display: block;">
+                        Se o paciente for menor de idade e não possuir CPF, utilize o código fornecido pela EuPsico.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-nome">Nome Completo do Paciente *</label>
+                    <input type="text" id="paciente-nome" class="form-control" placeholder="Preenchido automaticamente" disabled required>
+                </div>
+                <div class="form-group">
+                    <label for="paciente-telefone">Telefone de Contato (com DDD) *</label>
+                    <input type="tel" id="paciente-telefone" class="form-control" placeholder="Preenchido automaticamente" disabled required>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="action-button secondary-button" id="modal-cancel-btn">Cancelar</button>
@@ -114,12 +231,6 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script type="module" src="../assets/js/firebase-init.js"></script>
     <script type="module" src="../assets/js/agendamento-publico.js"></script>
 </body>
