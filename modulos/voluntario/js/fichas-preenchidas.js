@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/fichas-preenchidas.js
-// Versão 2.0 (Atualizado para a sintaxe modular do Firebase v9)
+// Versão 2.1 (Com controle de permissão para campos de supervisor)
 
 import {
   db,
@@ -15,13 +15,12 @@ import {
 
 let currentUser;
 let currentUserData;
-let todasAsFichas = []; // Cache local das fichas para filtragem
+let todasAsFichas = [];
 
 /**
  * Função Principal (INIT): Ponto de entrada do módulo.
  */
 export function init(user, userData) {
-  // Usar setTimeout para garantir que o DOM da view foi carregado
   setTimeout(() => {
     currentUser = user;
     currentUserData = userData;
@@ -30,8 +29,7 @@ export function init(user, userData) {
 }
 
 /**
- * Controla qual tela é exibida: a lista de fichas ou o formulário de edição.
- * @param {'lista' | 'form'} mostrar - A visão a ser exibida.
+ * Controla a visibilidade entre a lista e o formulário.
  */
 function alternarVisao(mostrar) {
   const listaView = document.getElementById("lista-view-container");
@@ -41,7 +39,7 @@ function alternarVisao(mostrar) {
   if (mostrar === "lista") {
     listaView.style.display = "block";
     formView.style.display = "none";
-    formView.innerHTML = ""; // Limpa o formulário ao voltar para a lista
+    formView.innerHTML = "";
   } else {
     listaView.style.display = "none";
     formView.style.display = "block";
@@ -49,28 +47,25 @@ function alternarVisao(mostrar) {
 }
 
 /**
- * Busca as fichas de supervisão do usuário logado no Firestore.
+ * Busca as fichas do usuário no Firestore.
  */
 async function carregarFichas() {
   alternarVisao("lista");
   const container = document.getElementById("lista-fichas-container");
   container.innerHTML = '<div class="loading-spinner"></div>';
   try {
-    // SINTAXE V9: Criação da consulta
     const q = query(
       collection(db, "fichas-supervisao-casos"),
       where("psicologoUid", "==", currentUser.uid)
     );
 
-    const querySnapshot = await getDocs(q); // SINTAXE V9
-
+    const querySnapshot = await getDocs(q);
     todasAsFichas = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
     if (todasAsFichas.length > 0) {
-      // Ordena as fichas pela data de criação, da mais recente para a mais antiga
       todasAsFichas.sort(
         (a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0)
       );
@@ -79,7 +74,6 @@ async function carregarFichas() {
     renderizarLista(todasAsFichas);
     popularFiltroPacientes(todasAsFichas);
 
-    // Recria o event listener para evitar duplicação
     const filtroPaciente = document.getElementById("filtro-paciente");
     const newFiltro = filtroPaciente.cloneNode(true);
     filtroPaciente.parentNode.replaceChild(newFiltro, filtroPaciente);
@@ -93,7 +87,6 @@ async function carregarFichas() {
 
 /**
  * Renderiza a lista de fichas na tela.
- * @param {Array} fichas - A lista de fichas a serem exibidas.
  */
 function renderizarLista(fichas) {
   const container = document.getElementById("lista-fichas-container");
@@ -126,8 +119,7 @@ function renderizarLista(fichas) {
 }
 
 /**
- * Carrega o HTML do formulário de edição e inicia o preenchimento.
- * @param {string} docId - O ID da ficha a ser editada.
+ * Carrega o HTML do formulário de edição e inicia o seu preenchimento.
  */
 async function abrirFormularioParaEdicao(docId) {
   alternarVisao("form");
@@ -146,7 +138,7 @@ async function abrirFormularioParaEdicao(docId) {
     if (backButton) {
       backButton.addEventListener("click", (e) => {
         e.preventDefault();
-        carregarFichas(); // Recarrega a lista para garantir que os dados estejam atualizados
+        carregarFichas();
       });
     }
   } catch (error) {
@@ -157,18 +149,18 @@ async function abrirFormularioParaEdicao(docId) {
 }
 
 /**
- * Busca os dados da ficha no Firestore e preenche o formulário de edição.
- * @param {string} docId - O ID da ficha a ser preenchida.
+ * Preenche o formulário com os dados da ficha e aplica as regras de permissão.
  */
 async function preencherEConfigurarFormularioDeEdicao(docId) {
-  const docRef = doc(db, "fichas-supervisao-casos", docId); // SINTAXE V9
-  const docSnap = await getDoc(docRef); // SINTAXE V9
+  const docRef = doc(db, "fichas-supervisao-casos", docId);
+  const docSnap = await getDoc(docRef);
 
   if (!docSnap.exists()) {
     throw new Error("Documento da ficha não encontrado no Firestore.");
   }
   const data = docSnap.data();
 
+  // Função interna para carregar supervisores
   const loadSupervisores = async () => {
     const select = document.getElementById("supervisor-nome");
     if (!select) return;
@@ -197,14 +189,15 @@ async function preencherEConfigurarFormularioDeEdicao(docId) {
     }
   };
 
+  // Função interna para setar valor dos campos
   const setFieldValue = (id, value) => {
     const el = document.getElementById(id);
     if (el) el.value = value || "";
   };
 
+  // Preenchimento dos campos
   await loadSupervisores();
-
-  // Preenchimento dos campos com base na estrutura de dados
+  // (O restante do preenchimento de campos continua aqui)
   setFieldValue("supervisor-nome", data.identificacaoGeral?.supervisorUid);
   setFieldValue("data-supervisao", data.identificacaoGeral?.dataSupervisao);
   setFieldValue(
@@ -219,20 +212,19 @@ async function preencherEConfigurarFormularioDeEdicao(docId) {
   setFieldValue("paciente-genero", data.identificacaoCaso?.genero);
   setFieldValue("paciente-sessoes", data.identificacaoCaso?.numSessoes);
   setFieldValue("queixa-demanda", data.identificacaoCaso?.queixa);
-
-  // Preenchimento das Fases
-  for (let i = 1; i <= 3; i++) {
-    setFieldValue(`fase${i}-data`, data[`fase${i}`]?.data);
-    setFieldValue(`fase${i}-foco`, data[`fase${i}`]?.foco);
-    setFieldValue(`fase${i}-objetivos`, data[`fase${i}`]?.objetivos);
-    setFieldValue(`fase${i}-hipoteses`, data[`fase${i}`]?.hipoteses);
-    setFieldValue(`fase${i}-reavaliacao`, data[`fase${i}`]?.reavaliacao);
-    setFieldValue(`fase${i}-progresso`, data[`fase${i}`]?.progresso);
-    setFieldValue(`fase${i}-avaliacao`, data[`fase${i}`]?.avaliacao);
-    setFieldValue(`fase${i}-mudancas`, data[`fase${i}`]?.mudancas);
-    setFieldValue(`fase${i}-obs-supervisor`, data[`fase${i}`]?.obsSupervisor);
-  }
-
+  setFieldValue("fase1-data", data.fase1?.data);
+  setFieldValue("fase1-foco", data.fase1?.foco);
+  setFieldValue("fase1-objetivos", data.fase1?.objetivos);
+  setFieldValue("fase1-hipoteses", data.fase1?.hipoteses);
+  setFieldValue("fase1-obs-supervisor", data.fase1?.obsSupervisor);
+  setFieldValue("fase2-data", data.fase2?.data);
+  setFieldValue("fase2-reavaliacao", data.fase2?.reavaliacao);
+  setFieldValue("fase2-progresso", data.fase2?.progresso);
+  setFieldValue("fase2-obs-supervisor", data.fase2?.obsSupervisor);
+  setFieldValue("fase3-data", data.fase3?.data);
+  setFieldValue("fase3-avaliacao", data.fase3?.avaliacao);
+  setFieldValue("fase3-mudancas", data.fase3?.mudancas);
+  setFieldValue("fase3-obs-supervisor", data.fase3?.obsSupervisor);
   setFieldValue("desfecho", data.observacoesFinais?.desfecho);
   setFieldValue("data-desfecho", data.observacoesFinais?.dataDesfecho);
   setFieldValue("obs-finais", data.observacoesFinais?.obsFinais);
@@ -242,14 +234,31 @@ async function preencherEConfigurarFormularioDeEdicao(docId) {
     data.observacoesFinais?.assinaturaSupervisor
   );
 
-  setupAutoSave(docRef);
+  // --- INÍCIO DA CORREÇÃO DE PERMISSÃO ---
+  const funcoesUsuario = currentUserData.funcoes || [];
+  const isSupervisor =
+    funcoesUsuario.includes("supervisor") || funcoesUsuario.includes("admin");
+
+  const form = document.getElementById("form-supervisao");
+  if (form) {
+    const supervisorFields = form.querySelectorAll(".supervisor-field");
+    supervisorFields.forEach((fieldContainer) => {
+      const inputElement = fieldContainer.querySelector("input, textarea");
+      if (inputElement) {
+        // Desabilita o campo se o usuário NÃO for supervisor
+        inputElement.disabled = !isSupervisor;
+      }
+    });
+  }
+  // --- FIM DA CORREÇÃO DE PERMISSÃO ---
+
+  setupAutoSave(docRef, isSupervisor); // Passa a permissão para a função de salvar
 }
 
 /**
  * Configura o salvamento automático para o formulário de edição.
- * @param {DocumentReference} docRef - A referência do documento no Firestore.
  */
-function setupAutoSave(docRef) {
+function setupAutoSave(docRef, isSupervisor) {
   const form = document.getElementById("form-supervisao");
   const statusEl = document.getElementById("autosave-status");
   let saveTimeout;
@@ -259,8 +268,9 @@ function setupAutoSave(docRef) {
     const selectedOption =
       supervisorSelect.options[supervisorSelect.selectedIndex];
 
-    return {
-      lastUpdated: serverTimestamp(), // SINTAXE V9
+    // Coleta todos os dados que um usuário comum pode editar
+    const dataToSave = {
+      lastUpdated: serverTimestamp(),
       identificacaoGeral: {
         supervisorUid: document.getElementById("supervisor-nome").value,
         supervisorNome: selectedOption.dataset.nome || "",
@@ -302,6 +312,28 @@ function setupAutoSave(docRef) {
         obsFinais: document.getElementById("obs-finais").value,
       },
     };
+
+    // --- INÍCIO DA CORREÇÃO DE PERMISSÃO NO SALVAMENTO ---
+    // Adiciona os campos de supervisor ao objeto de salvamento APENAS se o usuário for um supervisor
+    if (isSupervisor) {
+      dataToSave.fase1.obsSupervisor = document.getElementById(
+        "fase1-obs-supervisor"
+      ).value;
+      dataToSave.fase2.obsSupervisor = document.getElementById(
+        "fase2-obs-supervisor"
+      ).value;
+      dataToSave.fase3.obsSupervisor = document.getElementById(
+        "fase3-obs-supervisor"
+      ).value;
+      dataToSave.observacoesFinais.obsSupervisor = document.getElementById(
+        "obs-finais-supervisor"
+      ).value;
+      dataToSave.observacoesFinais.assinaturaSupervisor =
+        document.getElementById("assinatura-supervisor").value;
+    }
+    // --- FIM DA CORREÇÃO DE PERMISSÃO NO SALVAMENTO ---
+
+    return dataToSave;
   };
 
   const handleFormChange = () => {
@@ -312,7 +344,7 @@ function setupAutoSave(docRef) {
     saveTimeout = setTimeout(async () => {
       const dataToSave = getFormData();
       try {
-        await updateDoc(docRef, dataToSave); // SINTAXE V9
+        await updateDoc(docRef, dataToSave);
         statusEl.textContent = "Salvo!";
         statusEl.className = "status-success";
       } catch (error) {
@@ -327,11 +359,10 @@ function setupAutoSave(docRef) {
 }
 
 /**
- * Popula o filtro de pacientes com base nas fichas carregadas.
+ * Popula e aplica os filtros da lista.
  */
 function popularFiltroPacientes(fichas) {
   const filtroSelect = document.getElementById("filtro-paciente");
-  // Cria um conjunto de iniciais únicas, filtra valores vazios e ordena
   const iniciais = [
     ...new Set(fichas.map((f) => f.identificacaoCaso?.iniciais)),
   ]
@@ -344,9 +375,6 @@ function popularFiltroPacientes(fichas) {
   });
 }
 
-/**
- * Filtra a lista de fichas com base no paciente selecionado.
- */
 function aplicarFiltro() {
   const valor = document.getElementById("filtro-paciente").value;
   const fichasFiltradas =
