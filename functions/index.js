@@ -770,71 +770,80 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
 
 // Adicione esta nova função ao final do arquivo functions/index.js
 
-exports.registrarDesfechoPb = functions.https.onCall(async (data, context) => {
-  //
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
+// -------------------------------------------------------------------
+// REGISTRA O DESFECHO DE UM ATENDIMENTO DE PB (LÓGICA ATUALIZADA)
+// -------------------------------------------------------------------
+exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
+  // Verifica se o usuário que está chamando a função está autenticado
+  if (!request.auth) {
+    throw new HttpsError(
       "unauthenticated",
       "A função só pode ser chamada por um usuário autenticado."
     );
   }
 
-  const { pacienteId, desfecho, motivo, profissionalNome, encaminhamento } =
-    data;
+  // Coleta os dados enviados pelo frontend
+  const { pacienteId, atendimentoId, desfecho, motivo, encaminhamento } =
+    request.data;
+  const profissionalId = request.auth.uid; // Pega o ID do profissional que está logado
 
-  if (!pacienteId || !desfecho || !motivo) {
-    throw new functions.https.HttpsError(
+  // Valida se os dados essenciais foram recebidos
+  if (!pacienteId || !atendimentoId || !desfecho) {
+    throw new HttpsError(
       "invalid-argument",
-      "Faltam dados essenciais (pacienteId, desfecho, motivo)."
+      "Faltam dados essenciais (pacienteId, atendimentoId, desfecho)."
     );
   }
 
   const pacienteRef = db.collection("trilhaPaciente").doc(pacienteId);
-  let novoStatus = "";
-
-  switch (desfecho) {
-    case "Alta":
-      novoStatus = "alta";
-      break;
-    case "Desistência":
-      novoStatus = "desistencia";
-      break;
-    case "Encaminhamento":
-      novoStatus = "encaminhamento_realizado"; // Um novo status para indicar que o encaminhamento foi processado
-      break;
-    default:
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Desfecho inválido."
-      );
-  }
-
-  const desfechoData = {
-    tipo: desfecho,
-    motivo: motivo,
-    responsavelNome: profissionalNome,
-    data: new Date(),
-  };
-
-  // Adiciona dados de encaminhamento se existirem
-  if (encaminhamento) {
-    desfechoData.encaminhamento = encaminhamento;
-  }
 
   try {
+    // Busca os dados atuais do paciente no banco de dados
+    const docSnap = await pacienteRef.get();
+    if (!docSnap.exists) {
+      throw new HttpsError("not-found", "Paciente não encontrado.");
+    }
+
+    const dadosDoPaciente = docSnap.data();
+    const atendimentos = dadosDoPaciente.atendimentosPB || [];
+
+    // Encontra o índice (a posição) do atendimento específico que precisa ser modificado
+    const indiceDoAtendimento = atendimentos.findIndex(
+      (atendimento) =>
+        atendimento.atendimentoId === atendimentoId &&
+        atendimento.profissionalId === profissionalId
+    );
+
+    // Se não encontrar o atendimento, significa que algo está errado ou o profissional não tem permissão
+    if (indiceDoAtendimento === -1) {
+      throw new HttpsError(
+        "permission-denied",
+        "Atendimento não encontrado ou você não tem permissão para modificá-lo."
+      );
+    }
+
+    // Atualiza apenas o atendimento correto na lista
+    atendimentos[indiceDoAtendimento].statusAtendimento = "encerrado";
+    atendimentos[indiceDoAtendimento].desfecho = {
+      tipo: desfecho,
+      motivo: motivo || "",
+      encaminhamento: encaminhamento || null,
+      responsavelId: profissionalId,
+      responsavelNome: atendimentos[indiceDoAtendimento].profissionalNome,
+      data: new Date(),
+    };
+
+    // Salva a lista de atendimentos modificada de volta no documento do paciente
     await pacienteRef.update({
-      status: novoStatus,
-      "pbInfo.desfecho": desfechoData, // Salva os detalhes do desfecho dentro de pbInfo
+      atendimentosPB: atendimentos,
       lastUpdate: new Date(),
     });
-
-    // Opcional: Se for um encaminhamento, você pode adicionar lógicas futuras aqui,
-    // como criar uma notificação para o Serviço Social.
 
     return { success: true, message: "Desfecho registrado com sucesso." };
   } catch (error) {
     console.error("Erro ao registrar desfecho no Firestore:", error);
-    throw new functions.https.HttpsError(
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(
       "internal",
       "Não foi possível salvar o desfecho do paciente."
     );
