@@ -1,17 +1,47 @@
 // Arquivo: assets/js/app.js
-// Versão: 2.1 (CORRIGIDO E ATUALIZADO)
+// Versão: 9.0 (Migração completa para a sintaxe modular do Firebase v9)
 
-import { auth, db, functions } from "./firebase-init.js";
+// 1. Importa os serviços e funções necessários do nosso arquivo de configuração central
+import {
+  auth,
+  db,
+  onAuthStateChanged,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+} from "./firebase-init.js";
 
-// Função exportada para uso em outros módulos
-export async function carregarProfissionais(db, funcao, selectElement) {
+// Importa funções específicas de autenticação que usaremos
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+// --- Função Exportada ---
+
+/**
+ * Carrega uma lista de profissionais no elemento <select> fornecido.
+ * @param {Firestore} dbInstance - A instância do Firestore (não é mais necessária, pois `db` é importado diretamente).
+ * @param {string} funcao - A função/role a ser buscada (ex: 'atendimento').
+ * @param {HTMLSelectElement} selectElement - O elemento <select> a ser preenchido.
+ */
+export async function carregarProfissionais(dbInstance, funcao, selectElement) {
   if (!selectElement) return;
   try {
-    const snapshot = await db
-      .collection("usuarios")
-      .where("funcoes", "array-contains", funcao)
-      .orderBy("nome")
-      .get();
+    // Sintaxe v9 para criar e executar a consulta
+    const usuariosRef = collection(db, "usuarios"); // Usa o 'db' importado
+    const q = query(
+      usuariosRef,
+      where("funcoes", "array-contains", funcao),
+      orderBy("nome")
+    );
+    const snapshot = await getDocs(q);
+
     if (snapshot.empty) {
       selectElement.innerHTML =
         '<option value="">Nenhum profissional encontrado</option>';
@@ -30,36 +60,49 @@ export async function carregarProfissionais(db, funcao, selectElement) {
     selectElement.innerHTML = '<option value="">Erro ao carregar</option>';
   }
 }
+// --- Lógica Principal da Aplicação ---
 
 document.addEventListener("DOMContentLoaded", function () {
   const loginView = document.getElementById("login-view");
   const dashboardView = document.getElementById("dashboard-view");
   let inactivityTimer;
 
+  // Gerencia o timer de inatividade
   function resetInactivityTimer() {
     clearTimeout(inactivityTimer);
     inactivityTimer = setTimeout(() => {
       alert("Você foi desconectado por inatividade.");
-      auth.signOut();
-    }, 20 * 60 * 1000);
+      signOut(auth); // Usa a função signOut da v9
+    }, 20 * 60 * 1000); // 20 minutos
   }
 
   function setupInactivityListeners() {
-    window.addEventListener("mousemove", resetInactivityTimer);
-    window.addEventListener("mousedown", resetInactivityTimer);
-    window.addEventListener("keypress", resetInactivityTimer);
-    window.addEventListener("scroll", resetInactivityTimer);
-    window.addEventListener("touchstart", resetInactivityTimer);
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keypress",
+      "scroll",
+      "touchstart",
+    ];
+    events.forEach((event) =>
+      window.addEventListener(event, resetInactivityTimer)
+    );
     resetInactivityTimer();
   }
 
+  // Função principal de autenticação
   function handleAuth() {
-    auth.onAuthStateChanged(async (user) => {
+    // onAuthStateChanged já foi importado do firebase-init.js
+    onAuthStateChanged(auth, async (user) => {
       try {
         if (user) {
-          const userDoc = await db.collection("usuarios").doc(user.uid).get();
-          if (userDoc.exists && userDoc.data().funcoes?.length > 0) {
+          // Se o usuário está logado, busca seus dados
+          const userDocRef = doc(db, "usuarios", user.uid); // Sintaxe v9
+          const userDoc = await getDoc(userDocRef); // Sintaxe v9
+
+          if (userDoc.exists() && userDoc.data().funcoes?.length > 0) {
             const userData = userDoc.data();
+            // Esta função será definida na Parte 3
             await renderLayoutAndContent(user, userData);
             setupInactivityListeners();
           } else {
@@ -71,11 +114,12 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch (error) {
         console.error("Erro de autenticação:", error);
         renderLogin(`Ocorreu um erro: ${error.message}`);
-        auth.signOut();
+        signOut(auth); // Usa a função signOut da v9
       }
     });
   }
 
+  // Renderiza a tela de login
   function renderLogin(message = "Por favor, faça login para continuar.") {
     if (!loginView || !dashboardView) return;
     dashboardView.style.display = "none";
@@ -85,22 +129,24 @@ document.addEventListener("DOMContentLoaded", function () {
     const pathPrefix = isSubPage ? "../../../" : "./";
 
     loginView.innerHTML = `
-                    <div class="login-container">
-                        <div class="login-card">
-                            <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
-                            <h2>Intranet EuPsico</h2>
-                            <p>${message}</p>
-                          <p class="login-email-info" style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
-                          <button id="login-button" class="action-button login-button">Login EuPsico</button>
-                        </div>
-                    </div>`;
+        <div class="login-container">
+            <div class="login-card">
+                <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                <h2>Intranet EuPsico</h2>
+                <p>${message}</p>
+                <p class="login-email-info" style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
+                <button id="login-button" class="action-button login-button">Login com Google</button>
+            </div>
+        </div>`;
+
     document.getElementById("login-button").addEventListener("click", () => {
       loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch((error) => console.error(error));
+      const provider = new GoogleAuthProvider(); // Sintaxe v9
+      signInWithPopup(auth, provider).catch((error) => console.error(error)); // Sintaxe v9
     });
   }
 
+  // Renderiza a tela de acesso negado
   function renderAccessDenied() {
     if (!loginView || !dashboardView) return;
     dashboardView.style.display = "none";
@@ -108,9 +154,11 @@ document.addEventListener("DOMContentLoaded", function () {
     loginView.innerHTML = `<div class="content-box" style="max-width: 800px; margin: 50px auto; text-align: center;"><h2>Acesso Negado</h2><p>Você está autenticado, mas seu usuário não tem permissões definidas. Contate o administrador.</p><button id="denied-logout">Sair</button></div>`;
     document
       .getElementById("denied-logout")
-      .addEventListener("click", () => auth.signOut());
+      .addEventListener("click", () => signOut(auth));
   }
+  // ...continuação do código da Parte 2
 
+  // Retorna a saudação apropriada com base na hora
   function getGreeting() {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return "Bom dia";
@@ -118,6 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return "Boa noite";
   }
 
+  // Renderiza o layout principal e carrega o módulo da página atual
   async function renderLayoutAndContent(user, userData) {
     if (!loginView || !dashboardView) return;
     loginView.style.display = "none";
@@ -127,18 +176,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const userGreeting = document.getElementById("user-greeting");
     const logoutButton = document.getElementById("logout-button-dashboard");
 
-    if (userGreeting) {
-      try {
-        if (userData && userData.nome) {
-          const firstName = userData.nome.split(" ")[0];
-          userGreeting.textContent = `${getGreeting()}, ${firstName}!`;
-        } else {
-          userGreeting.textContent = getGreeting();
-        }
-      } catch (e) {
-        console.warn("Não foi possível montar a saudação completa:", e);
-        userGreeting.textContent = "Olá!";
-      }
+    if (userGreeting && userData.nome) {
+      const firstName = userData.nome.split(" ")[0];
+      userGreeting.textContent = `${getGreeting()}, ${firstName}!`;
     }
     if (userPhoto) {
       userPhoto.src =
@@ -148,125 +188,114 @@ document.addEventListener("DOMContentLoaded", function () {
     if (logoutButton) {
       logoutButton.addEventListener("click", (e) => {
         e.preventDefault();
-        auth.signOut();
+        signOut(auth);
       });
     }
 
     const modules = getVisibleModules(userData);
     setupSidebarToggle();
     renderSidebarMenu(modules);
-    if (window.location.pathname.includes("painel-financeiro.html")) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                            <h1>Painel Financeiro</h1>
-                            <p>Gestão de pagamentos, cobranças e relatórios.</p>
-                        `;
-      }
-      try {
-        const financeModule = await import(
+
+    // Lógica para carregar o módulo JS da página correta
+    const path = window.location.pathname;
+
+    // Mapeia o caminho do arquivo para a função de inicialização do módulo
+    const moduleMap = {
+      "painel-financeiro.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = `<h1>Painel Financeiro</h1><p>Gestão de pagamentos, cobranças e relatórios.</p>`;
+        }
+        const module = await import(
           "../../modulos/financeiro/js/painel-financeiro.js"
         );
-        financeModule.initFinancePanel(user, db, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo financeiro:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel financeiro.</h2>";
-      }
-    } else if (
-      window.location.pathname.includes("administrativo-painel.html")
-    ) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                            <h2>Painel Administrativo</h2>
-                            <p>Gestão de configurações e dados dos usuários.</p>
-                        `;
-      }
-      try {
-        const administrativoModule = await import(
+        module.initFinancePanel(user, userData);
+      },
+      "administrativo-painel.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = `<h2>Painel Administrativo</h2><p>Gestão de configurações e dados dos usuários.</p>`;
+        }
+        const module = await import(
           "../../modulos/administrativo/js/administrativo-painel.js"
         );
-        administrativoModule.initadministrativoPanel(user, db, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo administrativo:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel administrativo.</h2>";
-      }
-    } else if (
-      window.location.pathname.includes("trilha-paciente-painel.html")
-    ) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                            <h2>Trilha do Paciente</h2>
-                            <p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>
-                        `;
-      }
-      try {
-        const trilhaModule = await import(
+        module.initadministrativoPanel(user, userData);
+      },
+      "trilha-paciente-painel.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = `<h2>Trilha do Paciente</h2><p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>`;
+        }
+        const module = await import(
           "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
         );
-        trilhaModule.init(db, user, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo Trilha do Paciente:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar a Trilha do Paciente.</h2>";
-      }
-    } else if (
-      window.location.pathname.includes("servico-social-painel.html")
-    ) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                            <h2>Serviço Social</h2>
-                            <p>Gestão de triagens, reavaliações.</p>
-                        `;
-      }
-      try {
-        const socialModule = await import(
+        module.init(user, userData);
+      },
+      "servico-social-painel.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = `<h2>Serviço Social</h2><p>Gestão de triagens, reavaliações.</p>`;
+        }
+        const module = await import(
           "../../modulos/servico-social/js/servico-social-painel.js"
         );
-        socialModule.initsocialPanel(user, db, userData, functions);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo Serviço Social:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel serviço social.</h2>";
+        module.initsocialPanel(user, userData);
+      },
+      "rh-painel.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = `<h2>Recursos Humanos</h2><p>Gestão de profissionais, vagas e comunicados.</p>`;
+        }
+        const module = await import("../../modulos/rh/js/rh-painel.js");
+        module.initrhPanel(user, userData);
+      },
+      "portal-voluntario.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = "<h1>Intranet EuPsico</h1>";
+        }
+        const module = await import(
+          "../../modulos/voluntario/js/portal-voluntario.js"
+        );
+        module.init(user, userData);
+      },
+    };
+
+    let moduleLoaded = false;
+    for (const page in moduleMap) {
+      if (path.includes(page)) {
+        try {
+          await moduleMap[page]();
+          moduleLoaded = true;
+        } catch (error) {
+          console.error(`Erro ao carregar o módulo para ${page}:`, error);
+          const contentArea = document.getElementById("content-area");
+          if (contentArea)
+            contentArea.innerHTML = `<h2>Falha ao carregar o módulo da página.</h2>`;
+        }
+        break;
       }
-    } else if (window.location.pathname.includes("rh-painel.html")) {
-      const pageTitleContainer = document.getElementById(
-        "page-title-container"
-      );
-      if (pageTitleContainer) {
-        pageTitleContainer.innerHTML = `
-                            <h2>Recursos Humanos</h2>
-                            <p>Gestão de profissionais, vagas e comunicados.</p>
-                        `;
-      }
-      try {
-        const rhModule = await import("../../modulos/rh/js/rh-painel.js");
-        rhModule.initrhPanel(user, db, userData);
-      } catch (error) {
-        console.error("Erro ao carregar o módulo de Recursos Humanos:", error);
-        document.getElementById("content-area").innerHTML =
-          "<h2>Falha ao carregar o painel R.H.</h2>";
-      }
-    } else {
+    }
+    // Se nenhum módulo foi carregado, define um título padrão
+    if (!moduleLoaded) {
       const pageTitleContainer = document.getElementById(
         "page-title-container"
       );
       if (pageTitleContainer) {
         pageTitleContainer.innerHTML = "<h1>Intranet EuPsico</h1>";
       }
-      renderSidebarMenu(modules);
     }
   }
 
@@ -335,6 +364,12 @@ document.addEventListener("DOMContentLoaded", function () {
       const link = document.createElement("a");
       link.href = config.url;
       link.innerHTML = `${config.icon || ""}<span>${config.titulo}</span>`;
+
+      // Adiciona a classe 'active' se o link corresponder à página atual
+      if (window.location.pathname.includes(config.url.replace("./", "/"))) {
+        menuItem.classList.add("active");
+      }
+
       menuItem.appendChild(link);
       menu.appendChild(menuItem);
     });
@@ -374,7 +409,7 @@ document.addEventListener("DOMContentLoaded", function () {
         descricao:
           "Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.",
         url: "./modulos/trilha-paciente/page/trilha-paciente-painel.html",
-        roles: ["admin", "assistente"],
+        roles: ["admin", "assistente", "servico_social"],
         icon: icons.trilha_paciente,
       },
       captacao: {
@@ -447,5 +482,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return modulesToShow;
   }
 
+  // Inicia o processo de autenticação
   handleAuth();
 });
