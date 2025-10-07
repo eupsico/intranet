@@ -1,12 +1,9 @@
 // Arquivo: assets/js/firebase-init.js
-// Versão: 9.0 (Migração completa para a sintaxe modular do Firebase v9)
+// Versão: 9.1 (Usa importações de módulo padrão do Firebase)
 
-// 1. Importa as funções de inicialização e os serviços que serão usados no projeto
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+// 1. Importa as funções usando os caminhos de módulo padrão
+import { initializeApp } from "firebase/app";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -22,13 +19,10 @@ import {
   orderBy,
   arrayUnion,
   deleteField,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import {
-  getFunctions,
-  httpsCallable,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+} from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { getStorage } from "firebase/storage";
+import { getDatabase } from "firebase/database";
 
 // 2. Sua configuração do Firebase (sem alterações)
 const firebaseConfig = {
@@ -36,7 +30,7 @@ const firebaseConfig = {
   authDomain: "eupsico-agendamentos-d2048.firebaseapp.com",
   databaseURL: "https://eupsico-agendamentos-d2048-default-rtdb.firebaseio.com",
   projectId: "eupsico-agendamentos-d2048",
-  storageBucket: "eupsico-agendamentos-d2048.appspot.com", // Domínio corrigido para storage
+  storageBucket: "eupsico-agendamentos-d2048.appspot.com",
   messagingSenderId: "1041518416343",
   appId: "1:1041518416343:web:087006662ffcfa12d7bb92",
 };
