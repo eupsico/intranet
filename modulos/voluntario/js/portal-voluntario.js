@@ -1,15 +1,32 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 3.2 (CORRIGIDO E ATUALIZADO)
+// Versão: 4.0 (Atualizado para a sintaxe modular do Firebase v9)
 
-import { auth, db } from "../../../assets/js/firebase-init.js";
+// 1. Importa as funções necessárias do nosso arquivo central de inicialização
+import {
+  auth,
+  db,
+  onAuthStateChanged,
+  doc,
+  getDoc,
+  updateDoc,
+} from "../../../assets/js/firebase-init.js";
 
+/**
+ * Verifica se a foto do usuário no Google é diferente da salva no banco de dados
+ * e atualiza se necessário.
+ * @param {object} user - O objeto de usuário do Firebase Auth.
+ * @param {object} userData - Os dados do usuário vindos do Firestore.
+ */
 async function updateUserPhotoOnLogin(user, userData) {
   const firestorePhotoUrl = userData.fotoUrl || "";
   const googlePhotoUrl = user.photoURL || "";
+
+  // Atualiza a foto apenas se a URL do Google existir e for diferente da que está no banco
   if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
     try {
-      const userDocRef = db.collection("usuarios").doc(user.uid);
-      await userDocRef.update({ fotoUrl: googlePhotoUrl });
+      const userDocRef = doc(db, "usuarios", user.uid);
+      await updateDoc(userDocRef, { fotoUrl: googlePhotoUrl });
+      // Atualiza o objeto local para refletir a mudança imediatamente
       userData.fotoUrl = googlePhotoUrl;
     } catch (error) {
       console.error("Erro ao atualizar a foto do usuário:", error);
@@ -17,23 +34,32 @@ async function updateUserPhotoOnLogin(user, userData) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      const userDoc = await db.collection("usuarios").doc(user.uid).get();
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-        await updateUserPhotoOnLogin(user, userData);
-        initPortal(user, userData);
-      } else {
-        window.location.href = "../../../index.html";
-      }
+// 2. Ouve as mudanças no estado de autenticação usando a nova sintaxe
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // Cria a referência ao documento do usuário com a nova sintaxe
+    const userDocRef = doc(db, "usuarios", user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      await updateUserPhotoOnLogin(user, userData);
+      initPortal(user, userData); // Inicia o portal com os dados do usuário
     } else {
+      console.error("Documento do usuário não encontrado no Firestore.");
       window.location.href = "../../../index.html";
     }
-  });
+  } else {
+    // Se não houver usuário, redireciona para a página de login
+    window.location.href = "../../../index.html";
+  }
 });
 
+/**
+ * Inicializa todo o portal do voluntário, construindo o menu e carregando a view inicial.
+ * @param {object} user - O objeto de usuário autenticado do Firebase.
+ * @param {object} userData - Os dados do usuário do Firestore.
+ */
 function initPortal(user, userData) {
   const contentArea = document.getElementById("content-area");
   const sidebarMenu = document.getElementById("sidebar-menu");
@@ -62,7 +88,6 @@ function initPortal(user, userData) {
     plantao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81 .7A2 2 0 0 1 22 16.92z"/></svg>`,
   };
 
-  // ===== ALTERAÇÃO APLICADA AQUI =====
   const views = [
     {
       id: "dashboard",
@@ -164,20 +189,11 @@ function initPortal(user, userData) {
                     </li>`;
       }
     });
-
-    window.showToast = function (message, type = "success") {
-      const container =
-        document.getElementById("toast-container") || document.body;
-      const toast = document.createElement("div");
-      toast.className = `toast toast-${type}`;
-      toast.textContent = message;
-      // ... (estilização do toast)
-      container.appendChild(toast);
-      // ... (lógica de aparição e remoção do toast)
-    };
   }
 
   async function loadView(viewId, param = null) {
+    if (!sidebarMenu || !contentArea) return;
+
     sidebarMenu.querySelectorAll("a").forEach((link) => {
       link.classList.toggle("active", link.dataset.view === viewId);
     });
@@ -186,30 +202,17 @@ function initPortal(user, userData) {
 
     const htmlPath = `./${viewId}.html`;
     const jsPath = `../js/${viewId}.js`;
-    const cssPath = `../css/${viewId}.css`;
 
     try {
       const response = await fetch(htmlPath);
       if (!response.ok)
         throw new Error(`Arquivo HTML não encontrado: ${htmlPath}`);
-      contentArea.innerHTML = await response.text();
 
-      const cssId = `css-${viewId}`;
-      if (!document.getElementById(cssId)) {
-        const link = document.createElement("link");
-        link.id = cssId;
-        link.rel = "stylesheet";
-        link.href = cssPath;
-        link.onerror = () => {
-          console.log(`CSS para a view '${viewId}' não encontrado. Ignorando.`);
-          link.remove();
-        };
-        document.head.appendChild(link);
-      }
+      contentArea.innerHTML = await response.text();
 
       const viewModule = await import(jsPath);
       if (viewModule && typeof viewModule.init === "function") {
-        viewModule.init(db, user, userData, param);
+        viewModule.init(user, userData, param); // Passa os dados do usuário para a view
       }
     } catch (error) {
       if (
@@ -220,13 +223,13 @@ function initPortal(user, userData) {
         );
       } else if (error.message.includes("HTML não encontrado")) {
         console.error(`Erro ao carregar a view ${viewId}:`, error);
-        contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada na pasta 'page'.</p></div>`;
+        contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada.</p></div>`;
       } else {
         console.error(
           `Ocorreu um erro inesperado ao carregar a view '${viewId}':`,
           error
         );
-        contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Ocorreu um erro inesperado.</p></div>`;
+        contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Ocorreu um erro inesperado ao carregar esta página.</p></div>`;
       }
     }
   }
@@ -234,11 +237,13 @@ function initPortal(user, userData) {
   function setupLayout() {
     const userPhoto = document.getElementById("user-photo-header");
     if (userPhoto) {
-      userPhoto.src = user.photoURL || "../../../assets/img/avatar-padrao.png";
+      userPhoto.src =
+        userData.fotoUrl || "../../../assets/img/avatar-padrao.png";
       userPhoto.onerror = () => {
         userPhoto.src = "../../../assets/img/avatar-padrao.png";
       };
     }
+
     const userGreeting = document.getElementById("user-greeting");
     if (userGreeting && userData.nome) {
       const firstName = userData.nome.split(" ")[0];
@@ -247,6 +252,7 @@ function initPortal(user, userData) {
         hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
       userGreeting.textContent = `${greeting}, ${firstName}!`;
     }
+
     const logoutButton = document.getElementById("logout-button-dashboard");
     if (logoutButton) {
       logoutButton.addEventListener("click", (e) => {
@@ -254,24 +260,16 @@ function initPortal(user, userData) {
         auth.signOut();
       });
     }
+
     const layoutContainer = document.querySelector(".layout-container");
-    const sidebar = document.querySelector(".sidebar");
     const toggleButton = document.getElementById("sidebar-toggle");
     const overlay = document.getElementById("menu-overlay");
-    const sidebarMenu = document.getElementById("sidebar-menu");
-    if (
-      !layoutContainer ||
-      !toggleButton ||
-      !sidebar ||
-      !overlay ||
-      !sidebarMenu
-    ) {
-      return;
-    }
+
+    if (!layoutContainer || !toggleButton || !overlay) return;
+
     const handleToggle = () => {
       const isMobile = window.innerWidth <= 768;
       if (isMobile) {
-        sidebar.classList.toggle("is-visible");
         layoutContainer.classList.toggle("mobile-menu-open");
       } else {
         const currentlyCollapsed =
@@ -283,37 +281,37 @@ function initPortal(user, userData) {
         );
       }
     };
+
     if (window.innerWidth > 768) {
       const isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
       if (isCollapsed) {
         layoutContainer.classList.add("sidebar-collapsed");
+        toggleButton.setAttribute("title", "Expandir menu");
+      } else {
+        toggleButton.setAttribute("title", "Recolher menu");
       }
-      toggleButton.setAttribute(
-        "title",
-        isCollapsed ? "Expandir menu" : "Recolher menu"
-      );
     }
+
     toggleButton.addEventListener("click", handleToggle);
     overlay.addEventListener("click", handleToggle);
     sidebarMenu.addEventListener("click", (e) => {
-      if (window.innerWidth <= 768) {
-        if (e.target.closest("a")) {
-          handleToggle();
-        }
+      if (window.innerWidth <= 768 && e.target.closest("a")) {
+        handleToggle();
       }
     });
   }
 
   function start() {
-    setupLayout();
     buildSidebarMenu();
+    setupLayout();
 
     const handleHashChange = () => {
       let hash = window.location.hash.substring(1);
       if (!hash) {
-        // Define a view padrão baseada na primeira entrada visível do menu
         const firstLink = sidebarMenu.querySelector("a[data-view]");
         hash = firstLink ? firstLink.dataset.view : "dashboard";
+        window.location.hash = hash; // Adiciona o hash padrão à URL
+        return; // O evento hashchange será disparado novamente
       }
       const [viewId, param] = hash.split("/");
       loadView(viewId, param);
