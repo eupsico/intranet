@@ -226,26 +226,38 @@ document.addEventListener("DOMContentLoaded", function () {
         module.initadministrativoPanel(user, userData);
       },
       "trilha-paciente-painel.html": async () => {
+        console.log(
+          "[LOG] Iniciando carregamento da trilha-paciente-painel.html"
+        );
         const pageTitleContainer = document.getElementById(
           "page-title-container"
         );
         if (pageTitleContainer) {
+          console.log("[LOG] Atualizando título da página");
           pageTitleContainer.innerHTML = `<h2>Trilha do Paciente</h2><p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>`;
+        } else {
+          console.warn("[LOG] Elemento 'page-title-container' não encontrado");
         }
-
-        console.log("[LOG] Tentando importar trilha-paciente-painel.js...");
+        console.log(
+          "[LOG] Tentando importar módulo trilha-paciente-painel.js..."
+        );
 
         try {
-          const module = await import(
-            "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
-          );
-          console.log("[LOG] Módulo importado com sucesso:", module);
-          module.init(user, userData);
+          const module = await import(modulePath);
+          console.log("[LOG] Módulo importado com sucesso");
+
+          if (typeof module.init === "function") {
+            console.log("[LOG] Chamando função init do módulo");
+            module.init(user, userData);
+          } else {
+            console.error("[LOG] Função 'init' não encontrada no módulo");
+          }
         } catch (error) {
-          console.error(
-            "[LOG] ERRO ao importar trilha-paciente-painel.js:",
-            error
-          );
+          console.error("[LOG] ERRO ao importar módulo:", error);
+          const contentArea = document.getElementById("content-area");
+          if (contentArea) {
+            contentArea.innerHTML = `<div class="error-message">Erro ao carregar o módulo. Verifique o console.</div>`;
+          }
         }
 
         const module = await import(
