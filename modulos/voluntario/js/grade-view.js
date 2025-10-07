@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/grade-view.js
-// Versão: 3.0 (Atualizado para a sintaxe modular do Firebase v9)
+// Versão: 3.1 (Corrigido o loop de renderização)
 
 import {
   db,
@@ -33,11 +33,11 @@ function isColorDark(hexColor) {
   const g = parseInt(hexColor.slice(3, 5), 16);
   const b = parseInt(hexColor.slice(5, 7), 16);
   const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return brightness < 0.6; // Ajustado para melhor contraste com cores vibrantes
+  return brightness < 0.6;
 }
 
 // --- FUNÇÃO DE INICIALIZAÇÃO DO MÓDULO ---
-export async function init(user, userData, tipoGrade) {
+export function init(user, userData, tipoGrade) {
   const containerId = `grade-${tipoGrade}`;
   const gradeContent = document.getElementById(containerId);
   if (!gradeContent) return;
@@ -80,6 +80,9 @@ export async function init(user, userData, tipoGrade) {
     "Maria Célia Malaquias (Grupo)",
   ];
 
+  /**
+   * Apenas renderiza a grade na tela com base nos dados atuais.
+   */
   function renderGrade(dia) {
     let headers = ["Período", "HORAS"];
     headers = headers.concat(
@@ -156,28 +159,26 @@ export async function init(user, userData, tipoGrade) {
             </div>`;
   }
 
+  /**
+   * Anexa os event listeners ao container uma única vez.
+   */
   function attachEventListeners() {
-    // Remove listener antigo para evitar duplicação, caso a função seja chamada novamente
-    const newWrapper = gradeContent.cloneNode(true);
-    gradeContent.parentNode.replaceChild(newWrapper, gradeContent);
-
-    newWrapper.addEventListener("click", (e) => {
-      if (
-        e.target.tagName === "BUTTON" &&
-        e.target.closest(".grade-day-tabs-wrapper")
-      ) {
-        const diaSelecionado = e.target.dataset.day;
-        // Atualiza a URL com o hash para manter o estado
-        window.location.hash = `voluntarios/${tipoGrade}/${diaSelecionado}`;
+    gradeContent.addEventListener("click", (e) => {
+      if (e.target.tagName === "BUTTON" && e.target.dataset.day) {
+        // Ao clicar em um dia, apenas renderiza a grade para aquele dia com os dados já carregados
+        renderGrade(e.target.dataset.day);
       }
     });
   }
 
+  /**
+   * Inicia o carregamento dos dados e o listener em tempo real.
+   */
   async function start() {
     try {
       gradeContent.innerHTML = '<div class="loading-spinner"></div>';
 
-      // SINTAXE V9: Busca os usuários que fazem atendimento
+      // Busca as cores dos profissionais
       const usuariosQuery = query(
         collection(db, "usuarios"),
         where("fazAtendimento", "==", true)
@@ -187,27 +188,28 @@ export async function init(user, userData, tipoGrade) {
       usuariosSnapshot.forEach((doc) => {
         const prof = doc.data();
         const cor = prof.cor || generateColorFromString(prof.username);
-        // Mapeia tanto o username quanto o nome completo para a mesma cor
         if (prof.username) coresProfissionais.set(prof.username, cor);
         if (prof.nome) coresProfissionais.set(prof.nome, cor);
       });
 
-      // SINTAXE V9: Referência ao documento das grades
+      // Inicia o listener em tempo real para a grade
       const gradesDocRef = doc(db, "administrativo", "grades");
 
-      // SINTAXE V9: onSnapshot para ouvir atualizações em tempo real
       onSnapshot(
         gradesDocRef,
         (doc) => {
           dadosDasGrades = doc.exists() ? doc.data() : {};
 
-          // Pega o dia ativo da URL (hash) ou usa 'segunda' como padrão
-          const hashParts = window.location.hash.split("/");
-          const currentDia = hashParts[2] || "segunda";
+          // Verifica qual dia está ativo ou usa 'segunda' como padrão
+          const activeDayTabEl = gradeContent.querySelector(
+            ".grade-day-tabs-wrapper button.active"
+          );
+          const currentDia = activeDayTabEl
+            ? activeDayTabEl.dataset.day
+            : "segunda";
 
+          // Re-renderiza a grade com os dados atualizados
           renderGrade(currentDia);
-          // Anexa os listeners depois que a grade é renderizada pela primeira vez
-          attachEventListeners();
         },
         (error) => {
           console.error("Erro ao escutar atualizações da grade:", error);
@@ -220,14 +222,7 @@ export async function init(user, userData, tipoGrade) {
     }
   }
 
-  // Adiciona um listener para o hashchange para atualizar a grade quando a aba de dia for clicada
-  window.addEventListener("hashchange", () => {
-    const hashParts = window.location.hash.split("/");
-    if (hashParts[0] === "#voluntarios" && hashParts[1] === tipoGrade) {
-      const dia = hashParts[2] || "segunda";
-      renderGrade(dia);
-    }
-  });
-
-  await start();
+  // Ponto de entrada da lógica
+  attachEventListeners(); // Configura os cliques primeiro
+  start(); // Inicia o carregamento dos dados
 }
