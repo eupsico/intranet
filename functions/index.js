@@ -468,9 +468,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     hoje.setHours(0, 0, 0, 0);
     const dataInicio = hoje.toISOString().split("T")[0];
 
-    // 1. Busca as configurações do sistema
+    // 1. Busca as configurações do sistema (SINTAXE CORRIGIDA)
     const configuracoesRef = db.collection("configuracoesSistema");
-    const configuracoesSnapshot = await query.get();
+    const configuracoesSnapshot = await configuracoesRef.get(); // CORRIGIDO
     const configuracoes = {};
     configuracoesSnapshot.forEach((doc) => {
       configuracoes[doc.id] = doc.data().valor;
@@ -485,13 +485,12 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     const dataFimISO = dataFim.toISOString().split("T")[0];
     logger.info(`Buscando agendas de ${dataInicio} a ${dataFimISO}.`);
 
-    // 2. Busca os agendamentos já existentes para saber os horários ocupados
-    const agendamentosQuery = query(
-      collection(db, "trilhaPaciente"),
-      where("status", "==", "triagem_agendada"),
-      where("dataTriagem", ">=", dataInicio)
-    );
-    const agendamentosSnapshot = await query.get();
+    // 2. Busca os agendamentos já existentes (SINTAXE CORRIGIDA)
+    const agendamentosQuery = db
+      .collection("trilhaPaciente")
+      .where("status", "==", "triagem_agendada")
+      .where("dataTriagem", ">=", dataInicio);
+    const agendamentosSnapshot = await agendamentosQuery.get(); // CORRIGIDO
 
     const horariosOcupados = new Set();
     agendamentosSnapshot.forEach((doc) => {
@@ -507,14 +506,13 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     });
     logger.info(`Encontrados ${horariosOcupados.size} horários já ocupados.`);
 
-    // 3. Busca a configuração de agenda (horários de trabalho)
-    const configQuery = query(
-      collection(db, "agendaConfigurada"),
-      where("tipo", "==", "triagem"),
-      where("data", ">=", dataInicio),
-      where("data", "<=", dataFimISO)
-    );
-    const configSnapshot = await query.get();
+    // 3. Busca a configuração de agenda (SINTAXE CORRIGIDA)
+    const configQuery = db
+      .collection("agendaConfigurada")
+      .where("tipo", "==", "triagem")
+      .where("data", ">=", dataInicio)
+      .where("data", "<=", dataFimISO);
+    const configSnapshot = await configQuery.get(); // CORRIGIDO
 
     if (configSnapshot.empty) {
       logger.warn("Nenhuma configuração de agenda encontrada para o período.");
@@ -526,10 +524,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       ...doc.data(),
     }));
 
-    // 4. Gera os slots de horário disponíveis
+    // 4. Gera os slots de horário disponíveis (código de lógica mantido)
     const slotsPotenciais = [];
     diasConfigurados.forEach((diaConfig) => {
-      // VERIFICAÇÃO DE SEGURANÇA: Garante que os dados necessários existem e são do tipo string
       if (
         !diaConfig.inicio ||
         !diaConfig.fim ||
@@ -539,7 +536,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         logger.warn(
           `Documento ${diaConfig.id} ignorado por ter dados de início/fim inválidos ou ausentes.`
         );
-        return; // Pula para o próximo item do loop
+        return;
       }
 
       const [hInicio, mInicio] = diaConfig.inicio.split(":").map(Number);
@@ -549,7 +546,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         logger.warn(
           `Documento ${diaConfig.id} ignorado por ter formato de hora inválido.`
         );
-        return; // Pula para o próximo item
+        return;
       }
 
       const inicioEmMinutos = hInicio * 60 + mInicio;
@@ -649,7 +646,8 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
       dataTriagem: dataAgendamento,
       horaTriagem: hora,
       tipoTriagem: "Online",
-      lastUpdate: admin.firestore.FieldValue.serverTimestamp(),
+      // LINHA CORRIGIDA ABAIXO
+      lastUpdate: FieldValue.serverTimestamp(),
       lastUpdatedBy: "Agendamento Público",
     };
 
