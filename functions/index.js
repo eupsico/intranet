@@ -765,12 +765,6 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
   }
 });
 // -------------------------------------------------------------------
-// DESFECHO DO ATENDIMENTO - PB
-// -------------------------------------------------------------------
-
-// Adicione esta nova função ao final do arquivo functions/index.js
-
-// -------------------------------------------------------------------
 // REGISTRA O DESFECHO DE UM ATENDIMENTO DE PB (LÓGICA ATUALIZADA)
 // -------------------------------------------------------------------
 exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
