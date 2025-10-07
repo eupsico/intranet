@@ -1,10 +1,8 @@
 // Arquivo: /assets/js/agendamento-publico.js
-// Versão: 1.4 (Segurança e Lógica Corrigidas)
-// Descrição: Chama a Cloud Function 'verificarCpfExistente' para buscar pacientes
-// e 'getHorariosPublicos' para carregar os horários.
+// Versão: 9.0 (Migração completa para a sintaxe modular do Firebase v9)
 
-import { db, functions } from "../../../assets/js/firebase-init.js";
-import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
+// 1. Importa as funções necessárias do nosso arquivo de configuração central
+import { functions, httpsCallable } from "./firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const horariosContainer = document.getElementById("horarios-container");
@@ -19,8 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let horarioSelecionado = null;
   let pacienteExistenteId = null;
-  // A variável isNovoPaciente agora é controlada no escopo do módulo
-  let isNovoPaciente = true;
 
   function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, "");
@@ -41,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function carregarHorarios() {
     try {
+      // Usa a sintaxe v9 para chamar a Cloud Function
       const getHorarios = httpsCallable(functions, "getHorariosPublicos");
       const result = await getHorarios();
       const horarios = result.data.horarios;
@@ -82,19 +79,15 @@ document.addEventListener("DOMContentLoaded", () => {
       for (const data in horariosAgrupados[modalidade]) {
         html += `<div class="data-grupo"><h4>${data}</h4><div class="horarios-botoes">`;
         horariosAgrupados[modalidade][data].forEach((horario) => {
-          // ✅ Garantir que os campos essenciais estão presentes
           const horarioCompleto = {
             id: horario.id,
             data: horario.data,
             hora: horario.hora,
             modalidade: horario.modalidade,
             unidade: horario.unidade,
-            assistenteId:
-              horario.assistenteId || horario.assistenteSocialId || null,
-            assistenteNome:
-              horario.assistenteNome || horario.assistenteSocialNome || null,
+            assistenteId: horario.assistenteId,
+            assistenteNome: horario.assistenteNome,
           };
-
           const horarioDataString = JSON.stringify(horarioCompleto);
           html += `<button type="button" class="horario-btn" data-horario='${horarioDataString}'>${horario.hora}</button>`;
         });
@@ -111,37 +104,36 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function abrirModalConfirmacao(horario) {
-    console.log("Modal aberto");
     horarioSelecionado = horario;
     pacienteExistenteId = null;
-    isNovoPaciente = true; // Reseta o estado ao abrir o modal
 
     cpfInput.value = "";
     nomeInput.value = "";
     telefoneInput.value = "";
     cpfFeedback.textContent = "";
-    nomeInput.readOnly = false;
+    cpfFeedback.className = "";
+    nomeInput.disabled = true; // Mantém desabilitado até o CPF ser validado
+    telefoneInput.disabled = true;
 
     document.getElementById("modal-horario-selecionado").textContent =
       horario.hora;
     modal.style.display = "flex";
   }
 
-  // ### FUNÇÃO CORRIGIDA ###
   async function buscarPacientePorCPF() {
     const cpf = cpfInput.value.replace(/\D/g, "");
 
     cpfFeedback.textContent = "Verificando...";
-    cpfFeedback.style.color = "grey";
+    cpfFeedback.className = "";
 
     if (!validarCPF(cpf)) {
       cpfFeedback.textContent = "CPF inválido.";
-      cpfFeedback.style.color = "red";
+      cpfFeedback.className = "error";
       return;
     }
 
     try {
-      // Chama a Cloud Function em vez de acessar o DB diretamente
+      // Usa a sintaxe v9 para chamar a Cloud Function
       const verificarCpfExistente = httpsCallable(
         functions,
         "verificarCpfExistente"
@@ -150,31 +142,27 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = result.data;
 
       if (data.exists) {
-        const pacienteData = data.dados;
-        nomeInput.value = pacienteData.nomeCompleto;
-        telefoneInput.value = pacienteData.telefoneCelular;
+        nomeInput.value = data.dados.nomeCompleto;
+        telefoneInput.value = data.dados.telefoneCelular;
         cpfFeedback.textContent = "Paciente encontrado.";
-        cpfFeedback.style.color = "green";
-        pacienteExistenteId = data.docId; // Armazena o ID do paciente existente
-        isNovoPaciente = false; // Define que o paciente não é novo
+        cpfFeedback.className = "success";
+        pacienteExistenteId = data.docId;
       } else {
         cpfFeedback.textContent =
           "CPF não encontrado. Preencha os dados para novo cadastro.";
-        cpfFeedback.style.color = "orange";
-        pacienteExistenteId = null; // Garante que não há ID
-        isNovoPaciente = true; // Define que o paciente é novo
+        cpfFeedback.className = "warning"; // Um aviso em vez de erro
+        nomeInput.disabled = false; // Habilita para novo cadastro
+        telefoneInput.disabled = false; // Habilita para novo cadastro
+        pacienteExistenteId = null;
       }
     } catch (error) {
       console.error("Erro ao buscar paciente:", error);
       cpfFeedback.textContent = "Erro ao buscar. Tente novamente.";
-      cpfFeedback.style.color = "red";
+      cpfFeedback.className = "error";
     }
   }
 
-  // ### FUNÇÃO AGENDAMENTO ###
   async function handleAgendamento() {
-    console.log("---------- INÍCIO DO PROCESSO DE AGENDAMENTO ----------");
-
     const agendamentoButton = document.getElementById(
       "modal-confirm-agendamento-btn"
     );
@@ -183,37 +171,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const cpf = cpfInput.value.replace(/\D/g, "");
-      const nomeCapturado = nomeInput.value.trim();
-      const telefoneCapturado = telefoneInput.value.replace(/\D/g, "");
+      const nome = nomeInput.value.trim();
+      const telefone = telefoneInput.value.trim();
 
-      console.log("PASSO 1: Dados capturados:", {
-        cpf,
-        nome: nomeCapturado,
-        telefone: telefoneCapturado,
-      });
-
-      if (!validarCPF(cpf) || !nomeCapturado || !telefoneCapturado) {
+      if (!validarCPF(cpf) || !nome || !telefone) {
         throw new Error(
           "Por favor, preencha todos os campos obrigatórios com dados válidos."
         );
       }
-      console.log("PASSO 2: Validação de dados do paciente OK.");
-
-      if (
-        !horarioSelecionado ||
-        !horarioSelecionado.assistenteId ||
-        !horarioSelecionado.assistenteNome ||
-        !horarioSelecionado.data ||
-        !horarioSelecionado.hora
-      ) {
+      if (!horarioSelecionado?.assistenteId) {
         throw new Error(
           "Erro: dados do horário incompletos. Selecione novamente."
         );
       }
-      console.log(
-        "PASSO 3: Verificação do horário selecionado OK.",
-        horarioSelecionado
-      );
 
       const payload = {
         cpf: cpf,
@@ -221,48 +191,32 @@ document.addEventListener("DOMContentLoaded", () => {
         assistenteSocialNome: horarioSelecionado.assistenteNome,
         data: horarioSelecionado.data,
         hora: horarioSelecionado.hora,
-        nomeCompleto: nomeCapturado,
-        telefone: telefoneCapturado,
-        email: "paciente.sem.email@eupsico.com.br",
-        comoConheceu: "Formulário Público de Agendamento",
+        nomeCompleto: nome,
+        telefone: telefone,
       };
 
-      console.log("PASSO 4: Payload final montado:");
-      Object.entries(payload).forEach(([key, value]) => {
-        console.log(`→ ${key}:`, value);
-      });
-
+      // Usa a sintaxe v9 para chamar a Cloud Function
       const agendarTriagem = httpsCallable(functions, "agendarTriagemPublico");
-      console.log(
-        "🚀 PASSO 5: Chamando a Cloud Function 'agendarTriagemPublico'..."
-      );
-
       const result = await agendarTriagem(payload);
 
-      console.log("📨 PASSO 6: Resposta recebida da função:", result);
-
       if (result.data.success) {
-        console.log("✅ SUCESSO: Agendamento realizado com sucesso!");
-        exibirConfirmacaoFinal(nomeCapturado);
+        exibirConfirmacaoFinal(nome);
       } else {
         throw new Error(
           result.data.message || "Erro desconhecido retornado pela função."
         );
       }
     } catch (error) {
-      console.error("🔥 ERRO FATAL no processo de agendamento:", error);
+      console.error("Erro no processo de agendamento:", error);
       alert(`Falha no agendamento: ${error.message}`);
     } finally {
       agendamentoButton.disabled = false;
       agendamentoButton.textContent = "Confirmar Agendamento";
-      console.log("---------- FIM DO PROCESSO DE AGENDAMENTO ----------");
     }
   }
 
   function exibirConfirmacaoFinal(nomePaciente) {
-    // Esconde o modal antes de mostrar a confirmação
     modal.style.display = "none";
-
     document.getElementById("confirm-paciente-nome").textContent = nomePaciente;
     document.getElementById("confirm-assistente").textContent =
       horarioSelecionado.assistenteNome;
@@ -280,6 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmacaoSection.style.display = "block";
   }
 
+  // Configuração dos Event Listeners
   cpfInput.addEventListener("blur", buscarPacientePorCPF);
   modal
     .querySelector(".close-modal-btn")
@@ -291,6 +246,5 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("modal-confirm-agendamento-btn")
     .addEventListener("click", handleAgendamento);
 
-  // Inicia o carregamento dos horários assim que a página é carregada
   carregarHorarios();
 });
