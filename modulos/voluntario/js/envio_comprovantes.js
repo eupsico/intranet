@@ -1,211 +1,305 @@
 // Arquivo: /modulos/voluntario/js/envio_comprovantes.js
-// Versão: 2.1
-// Descrição: Retorna a lógica para usar o Google Apps Script para upload de arquivos no Drive.
+// Versão: 3.0 (Atualizado para a sintaxe modular do Firebase v9)
 
-export function init(db, user, userData) { // O parâmetro 'storage' foi removido
-    if (!db) {
-        console.error("Instância do Firestore (db) não encontrada.");
-        return;
-    }
-    
-    // ALTERAÇÃO: URL do seu App Script inserida aqui
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOGyDANVS--DeH6T-ZaqFiEmhpBYUJu4P8VT0uevQPwC3tLL5EgappHPI2mhKwPtf1fg/exec";
-    
-    let formData = {};
+import {
+  db,
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from "../../../assets/js/firebase-init.js";
 
-    const formContainer = document.getElementById('form-container');
-    const confirmationSection = document.getElementById('confirmation-section');
-    const finalMessageSection = document.getElementById('final-message-section');
-    const messageContainer = document.getElementById('message-container');
-    const form = document.getElementById('comprovante-form');
-    const selectProfissional = document.getElementById('form-profissional');
-    const selectMes = document.getElementById('form-mes-ref');
+export function init(user, userData) {
+  // URL do seu App Script para upload no Google Drive
+  const WEB_APP_URL =
+    "https://script.google.com/macros/s/AKfycbzOGyDANVS--DeH6T-ZaqFiEmhpBYUJu4P8VT0uevQPwC3tLL5EgappHPI2mhKwPtf1fg/exec";
 
-    async function initializeView() {
-        try {
-            const snapshot = await db.collection('usuarios')
-                .where('inativo', '==', false)
-                .where('recebeDireto', '==', true)
-                .where('fazAtendimento', '==', true)
-                .orderBy('nome')
-                .get();
-            
-            const profissionais = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-            
-            // ALTERAÇÃO: Populando o select com o nome do profissional no value, como no seu código original
-            const optionsHtml = ['<option value="">Selecione seu nome...</option>', ...profissionais.map(p => `<option value="${p.nome}">${p.nome}</option>`)].join('');
-            selectProfissional.innerHTML = optionsHtml;
+  let formData = {};
 
-            // Pré-seleciona o usuário logado pelo nome
-            if (userData && userData.nome) {
-                selectProfissional.value = userData.nome;
-            }
+  // Mapeamento dos elementos do DOM para evitar repetição
+  const elements = {
+    formContainer: document.getElementById("form-container"),
+    confirmationSection: document.getElementById("confirmation-section"),
+    finalMessageSection: document.getElementById("final-message-section"),
+    messageContainer: document.getElementById("message-container"),
+    form: document.getElementById("comprovante-form"),
+    selectProfissional: document.getElementById("form-profissional"),
+    selectMes: document.getElementById("form-mes-ref"),
+    inputPaciente: document.getElementById("form-paciente"),
+    inputDataPagamento: document.getElementById("form-data-pagamento"),
+    inputValor: document.getElementById("form-valor"),
+    inputFile: document.getElementById("form-arquivo"),
+    btnReview: document.getElementById("btn-review"),
+    btnEdit: document.getElementById("btn-edit"),
+    btnConfirmSend: document.getElementById("btn-confirm-send"),
+    btnNewForm: document.getElementById("btn-new-form"),
+  };
 
-        } catch (error) {
-            console.error("Erro ao buscar profissionais:", error);
-            selectProfissional.innerHTML = '<option value="">Erro ao carregar</option>';
-        }
-        
-        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-        const mesOptions = meses.map(m => `<option value="${m}">${m}</option>`).join(''); // Usa o nome completo do mês
-        selectMes.innerHTML = mesOptions;
-        
-        const today = new Date();
-        selectMes.value = meses[today.getMonth()];
-        document.getElementById('form-data-pagamento').value = today.toISOString().split('T')[0];
-    }
-    
-    function showMessage(message, type = 'error') {
-        messageContainer.textContent = message;
-        messageContainer.className = `alert alert-${type === 'error' ? 'error' : 'info'}`;
-        messageContainer.style.display = 'block';
-    }
+  /**
+   * Inicializa a view, populando os selects e definindo valores padrão.
+   */
+  async function initializeView() {
+    try {
+      // SINTAXE V9: Cria a consulta para buscar os profissionais
+      const q = query(
+        collection(db, "usuarios"),
+        where("inativo", "==", false),
+        where("recebeDireto", "==", true),
+        where("fazAtendimento", "==", true),
+        orderBy("nome")
+      );
 
-    function hideMessage() {
-        messageContainer.style.display = 'none';
-    }
-    
-    function validateForm() {
-        const fields = {
-            profissional: { value: selectProfissional.value, name: 'Seu Nome' },
-            paciente: { value: document.getElementById('form-paciente').value.trim(), name: 'Nome do Paciente' },
-            dataPagamento: { value: document.getElementById('form-data-pagamento').value, name: 'Data do Pagamento' },
-            valor: { value: document.getElementById('form-valor').value, name: 'Valor da Contribuição' },
-            file: { value: document.getElementById('form-arquivo').files.length, name: 'Anexo do Comprovante' }
-        };
+      const snapshot = await getDocs(q); // SINTAXE V9
+      const profissionais = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        for (const key in fields) {
-            if (!fields[key].value) {
-                showMessage(`O campo '${fields[key].name}' é obrigatório.`, 'error');
-                return false;
-            }
-        }
-        if (isNaN(parseFloat(fields.valor.value)) || parseFloat(fields.valor.value) <= 0) {
-            showMessage(`O valor informado no campo '${fields.valor.name}' não é válido.`, 'error');
-            return false;
-        }
-        hideMessage();
-        return true;
+      const optionsHtml = [
+        '<option value="">Selecione seu nome...</option>',
+        ...profissionais.map(
+          (p) => `<option value="${p.nome}">${p.nome}</option>`
+        ),
+      ].join("");
+      elements.selectProfissional.innerHTML = optionsHtml;
+
+      if (userData && userData.nome) {
+        elements.selectProfissional.value = userData.nome;
+      }
+    } catch (error) {
+      console.error("Erro ao buscar profissionais:", error);
+      elements.selectProfissional.innerHTML =
+        '<option value="">Erro ao carregar</option>';
     }
 
-    document.getElementById('btn-review').addEventListener('click', () => {
-        if (!validateForm()) return;
+    const meses = [
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+    ];
+    const mesOptions = meses
+      .map((m) => `<option value="${m}">${m}</option>`)
+      .join("");
+    elements.selectMes.innerHTML = mesOptions;
 
-        const profissionalNome = selectProfissional.value;
-        const paciente = document.getElementById('form-paciente').value;
-        const dataPagamento = new Date(document.getElementById('form-data-pagamento').value + 'T00:00:00').toLocaleDateString('pt-BR');
-        const mesReferencia = selectMes.value;
-        const valor = parseFloat(document.getElementById('form-valor').value);
-        const file = document.getElementById('form-arquivo').files[0];
-        
-        formData = { 
-            profissional: profissionalNome, 
-            paciente, 
-            dataPagamentoOriginal: document.getElementById('form-data-pagamento').value, 
-            mesReferencia, valor, file 
-        };
-        
-        document.getElementById('confirm-profissional').textContent = profissionalNome;
-        document.getElementById('confirm-paciente').textContent = paciente;
-        document.getElementById('confirm-data').textContent = dataPagamento;
-        document.getElementById('confirm-mes').textContent = mesReferencia;
-        document.getElementById('confirm-valor').textContent = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        document.getElementById('confirm-arquivo').textContent = file.name;
-        
-        formContainer.style.display = 'none';
-        confirmationSection.style.display = 'block';
-    });
+    const today = new Date();
+    elements.selectMes.value = meses[today.getMonth()];
+    elements.inputDataPagamento.value = today.toISOString().split("T")[0];
+  }
 
-    document.getElementById('btn-edit').addEventListener('click', () => {
-        formContainer.style.display = 'block';
-        confirmationSection.style.display = 'none';
-    });
-    
-    // ALTERAÇÃO: Lógica de envio reescrita para usar o Google Apps Script
-    document.getElementById('btn-confirm-send').addEventListener('click', () => {
-        const saveBtn = document.getElementById('btn-confirm-send');
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Enviando...';
-        
-        const reader = new FileReader();
-        reader.readAsDataURL(formData.file); // Converte o arquivo para Base64
+  function showMessage(message, type = "error") {
+    elements.messageContainer.textContent = message;
+    elements.messageContainer.className = `alert alert-${type}`;
+    elements.messageContainer.style.display = "block";
+  }
 
-        reader.onload = function() {
-            const fileData = reader.result.split(',')[1]; // Pega apenas a parte do dado em Base64
-            const payload = {
-                profissional: formData.profissional,
-                paciente: formData.paciente,
-                dataPagamento: formData.dataPagamentoOriginal,
-                mesReferencia: formData.mesReferencia,
-                valor: formData.valor,
-                fileName: formData.file.name,
-                mimeType: formData.file.type,
-                fileData: fileData
+  function hideMessage() {
+    elements.messageContainer.style.display = "none";
+  }
+
+  /**
+   * Valida os campos do formulário antes de prosseguir.
+   * @returns {boolean} - True se o formulário for válido.
+   */
+  function validateForm() {
+    const fields = {
+      profissional: {
+        value: elements.selectProfissional.value,
+        name: "Seu Nome",
+      },
+      paciente: {
+        value: elements.inputPaciente.value.trim(),
+        name: "Nome do Paciente",
+      },
+      dataPagamento: {
+        value: elements.inputDataPagamento.value,
+        name: "Data do Pagamento",
+      },
+      valor: {
+        value: elements.inputValor.value,
+        name: "Valor da Contribuição",
+      },
+      file: {
+        value: elements.inputFile.files.length,
+        name: "Anexo do Comprovante",
+      },
+    };
+
+    for (const key in fields) {
+      if (!fields[key].value) {
+        showMessage(`O campo '${fields[key].name}' é obrigatório.`, "error");
+        return false;
+      }
+    }
+    const valorNumerico = parseFloat(fields.valor.value);
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      showMessage(
+        `O valor informado no campo '${fields.valor.name}' não é válido.`,
+        "error"
+      );
+      return false;
+    }
+    hideMessage();
+    return true;
+  }
+
+  /**
+   * Envia os dados para o Google Apps Script e, em caso de sucesso, para o Firestore.
+   */
+  function confirmAndSend() {
+    elements.btnConfirmSend.disabled = true;
+    elements.btnConfirmSend.textContent = "Enviando...";
+
+    const reader = new FileReader();
+    reader.readAsDataURL(formData.file);
+
+    reader.onload = function () {
+      const fileData = reader.result.split(",")[1];
+      const payload = {
+        profissional: formData.profissional,
+        paciente: formData.paciente,
+        dataPagamento: formData.dataPagamentoOriginal,
+        mesReferencia: formData.mesReferencia,
+        valor: formData.valor,
+        fileName: formData.file.name,
+        mimeType: formData.file.type,
+        fileData: fileData,
+      };
+
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((response) => {
+          if (response.status === "success") {
+            const comprovanteData = {
+              profissional: payload.profissional,
+              paciente: payload.paciente,
+              valor: payload.valor,
+              dataPagamento: payload.dataPagamento,
+              mesReferencia: payload.mesReferencia.toLowerCase(),
+              anoReferencia: new Date(
+                payload.dataPagamento + "T03:00:00"
+              ).getFullYear(),
+              comprovanteUrl: response.fileUrl,
+              status: "Pendente",
+              timestamp: serverTimestamp(), // SINTAXE V9
             };
-            
-            // Envia os dados para o seu App Script
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(response => {
-                if (response.status === 'success') {
-                    // Se o App Script salvou no Drive, agora salvamos no Firestore
-                    const comprovanteData = {
-                        profissional: payload.profissional,
-                        paciente: payload.paciente,
-                        valor: payload.valor,
-                        dataPagamento: payload.dataPagamento,
-                        mesReferencia: payload.mesReferencia.toLowerCase(), // salva em minúsculo para consistência
-                        anoReferencia: new Date(payload.dataPagamento + 'T00:00:00').getFullYear(),
-                        comprovanteUrl: response.fileUrl, // URL retornada pelo App Script
-                        status: 'Pendente',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    return db.collection('comprovantes').add(comprovanteData).then(() => payload);
-                } else {
-                    throw new Error(response.message);
-                }
-            })
-            .then(payload => {
-                // Mostra a tela de sucesso
-                confirmationSection.style.display = 'none';
-                const summaryHtml = `
-                    <p><strong>Profissional:</strong> <span>${payload.profissional}</span></p>
-                    <p><strong>Paciente:</strong> <span>${payload.paciente}</span></p>
-                    <p><strong>Data:</strong> <span>${new Date(payload.dataPagamento + 'T00:00:00').toLocaleDateString('pt-BR')}</span></p>
-                    <p><strong>Valor:</strong> <span>${payload.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>`;
-                document.getElementById('sent-data-summary').innerHTML = summaryHtml;
-                finalMessageSection.style.display = 'block';
-                form.reset();
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                showMessage('Ocorreu um erro grave no envio: ' + error.message, 'error');
-                formContainer.style.display = 'block';
-                confirmationSection.style.display = 'none';
-            })
-            .finally(() => {
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Confirmar e Enviar';
-            });
-        };
-        
-        reader.onerror = function(error) {
-            console.error('Erro ao ler o arquivo:', error);
-            showMessage('Não foi possível ler o arquivo anexado.', 'error');
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Confirmar e Enviar';
-        };
-    });
+            // SINTAXE V9: Adiciona o documento na coleção 'comprovantes'
+            return addDoc(collection(db, "comprovantes"), comprovanteData).then(
+              () => payload
+            );
+          } else {
+            throw new Error(
+              response.message || "Erro desconhecido no servidor de upload."
+            );
+          }
+        })
+        .then((payload) => {
+          elements.confirmationSection.style.display = "none";
+          const summaryHtml = `
+                    <p><strong>Profissional:</strong> <span>${
+                      payload.profissional
+                    }</span></p>
+                    <p><strong>Paciente:</strong> <span>${
+                      payload.paciente
+                    }</span></p>
+                    <p><strong>Data:</strong> <span>${new Date(
+                      payload.dataPagamento + "T03:00:00"
+                    ).toLocaleDateString("pt-BR")}</span></p>
+                    <p><strong>Valor:</strong> <span>${payload.valor.toLocaleString(
+                      "pt-BR",
+                      { style: "currency", currency: "BRL" }
+                    )}</span></p>`;
+          document.getElementById("sent-data-summary").innerHTML = summaryHtml;
+          elements.finalMessageSection.style.display = "block";
+          elements.form.reset();
+        })
+        .catch((error) => {
+          console.error("Erro no processo de envio:", error);
+          showMessage(
+            "Ocorreu um erro grave no envio: " + error.message,
+            "error"
+          );
+          elements.formContainer.style.display = "block";
+          elements.confirmationSection.style.display = "none";
+        })
+        .finally(() => {
+          elements.btnConfirmSend.disabled = false;
+          elements.btnConfirmSend.textContent = "Confirmar e Enviar";
+        });
+    };
 
-    document.getElementById('btn-new-form').addEventListener('click', () => {
-        finalMessageSection.style.display = 'none';
-        formContainer.style.display = 'block';
-        hideMessage();
-        initializeView(); // Re-inicializa os valores padrão do formulário
-    });
+    reader.onerror = function (error) {
+      console.error("Erro ao ler o arquivo:", error);
+      showMessage("Não foi possível ler o arquivo anexado.", "error");
+      elements.btnConfirmSend.disabled = false;
+      elements.btnConfirmSend.textContent = "Confirmar e Enviar";
+    };
+  }
 
+  // --- Adição dos Event Listeners ---
+
+  elements.btnReview.addEventListener("click", () => {
+    if (!validateForm()) return;
+
+    const dataPagamento = new Date(
+      elements.inputDataPagamento.value + "T03:00:00"
+    ).toLocaleDateString("pt-BR");
+    const valor = parseFloat(elements.inputValor.value);
+    const file = elements.inputFile.files[0];
+
+    formData = {
+      profissional: elements.selectProfissional.value,
+      paciente: elements.inputPaciente.value,
+      dataPagamentoOriginal: elements.inputDataPagamento.value,
+      mesReferencia: elements.selectMes.value,
+      valor,
+      file,
+    };
+
+    document.getElementById("confirm-profissional").textContent =
+      formData.profissional;
+    document.getElementById("confirm-paciente").textContent = formData.paciente;
+    document.getElementById("confirm-data").textContent = dataPagamento;
+    document.getElementById("confirm-mes").textContent = formData.mesReferencia;
+    document.getElementById("confirm-valor").textContent = valor.toLocaleString(
+      "pt-BR",
+      { style: "currency", currency: "BRL" }
+    );
+    document.getElementById("confirm-arquivo").textContent = file.name;
+
+    elements.formContainer.style.display = "none";
+    elements.confirmationSection.style.display = "block";
+  });
+
+  elements.btnEdit.addEventListener("click", () => {
+    elements.formContainer.style.display = "block";
+    elements.confirmationSection.style.display = "none";
+  });
+
+  elements.btnConfirmSend.addEventListener("click", confirmAndSend);
+
+  elements.btnNewForm.addEventListener("click", () => {
+    elements.finalMessageSection.style.display = "none";
+    elements.formContainer.style.display = "block";
+    hideMessage();
     initializeView();
+  });
+
+  // Inicia a view pela primeira vez
+  initializeView();
 }
