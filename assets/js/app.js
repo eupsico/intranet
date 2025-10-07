@@ -241,7 +241,8 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log(
           "[LOG] Tentando importar módulo trilha-paciente-painel.js..."
         );
-
+        const modulePath =
+          "../../modulos/trilha-paciente/js/trilha-paciente-painel.js";
         try {
           const module = await import(modulePath);
           console.log("[LOG] Módulo importado com sucesso");
