@@ -9,6 +9,7 @@ const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
 const {
   getFirestore,
+  FieldValue,
   collection,
   query,
   where,
