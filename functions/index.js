@@ -455,14 +455,69 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     );
   }
 });
+// Arquivo: functions/index.js
+
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const {
+  onDocumentCreated,
+  onDocumentUpdated,
+} = require("firebase-functions/v2/firestore");
+const { logger } = require("firebase-functions");
+
+// Importa as funções modulares do Admin SDK
+const { initializeApp } = require("firebase-admin/app");
+const {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+} = require("firebase-admin/firestore");
+
+// Inicializa o app e o Firestore da maneira correta
+initializeApp();
+const db = getFirestore();
+
+/**
+ * Busca os horários de triagem disponíveis, combinando a agenda configurada
+ * com os agendamentos já existentes.
+ */
+// Arquivo: functions/index.js
+
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const {
+  onDocumentCreated,
+  onDocumentUpdated,
+} = require("firebase-functions/v2/firestore");
+const { logger } = require("firebase-functions");
+
+// Importa as funções modulares do Admin SDK
+const { initializeApp } = require("firebase-admin/app");
+const {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+} = require("firebase-admin/firestore");
+
+// Inicializa o app e o Firestore da maneira correta
+initializeApp();
+const db = getFirestore();
+
+/**
+ * Busca os horários de triagem disponíveis, combinando a agenda configurada
+ * com os agendamentos já existentes.
+ */
 exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
   try {
+    logger.info("Iniciando getHorariosPublicos...");
     const agora = new Date();
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     const dataInicio = hoje.toISOString().split("T")[0];
 
-    // CORREÇÃO: Usando a nova sintaxe modular
+    // 1. Busca as configurações do sistema
     const configuracoesRef = collection(db, "configuracoesSistema");
     const configuracoesSnapshot = await getDocs(configuracoesRef);
     const configuracoes = {};
@@ -477,8 +532,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     const dataFim = new Date(hoje);
     dataFim.setDate(hoje.getDate() + quantidadeDiasBusca);
     const dataFimISO = dataFim.toISOString().split("T")[0];
+    logger.info(`Buscando agendas de ${dataInicio} a ${dataFimISO}.`);
 
-    // CORREÇÃO: Usando a nova sintaxe modular com 'query' e 'where'
+    // 2. Busca os agendamentos já existentes para saber os horários ocupados
     const agendamentosQuery = query(
       collection(db, "trilhaPaciente"),
       where("status", "==", "triagem_agendada"),
@@ -498,8 +554,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         horariosOcupados.add(chave);
       }
     });
+    logger.info(`Encontrados ${horariosOcupados.size} horários já ocupados.`);
 
-    // CORREÇÃO: Usando a nova sintaxe modular com 'query' e 'where'
+    // 3. Busca a configuração de agenda (horários de trabalho)
     const configQuery = query(
       collection(db, "agendaConfigurada"),
       where("tipo", "==", "triagem"),
@@ -509,6 +566,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     const configSnapshot = await getDocs(configQuery);
 
     if (configSnapshot.empty) {
+      logger.warn("Nenhuma configuração de agenda encontrada para o período.");
       return { horarios: [] };
     }
 
@@ -516,16 +574,34 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       id: doc.id,
       ...doc.data(),
     }));
-    const slotsPotenciais = [];
 
+    // 4. Gera os slots de horário disponíveis
+    const slotsPotenciais = [];
     diasConfigurados.forEach((diaConfig) => {
-      if (!diaConfig.inicio || !diaConfig.fim) {
-        console.warn(`Documento ${diaConfig.id} sem horários definidos`);
-        return;
+      // VERIFICAÇÃO DE SEGURANÇA: Garante que os dados necessários existem e são do tipo string
+      if (
+        !diaConfig.inicio ||
+        !diaConfig.fim ||
+        typeof diaConfig.inicio !== "string" ||
+        typeof diaConfig.fim !== "string"
+      ) {
+        logger.warn(
+          `Documento ${diaConfig.id} ignorado por ter dados de início/fim inválidos ou ausentes.`
+        );
+        return; // Pula para o próximo item
       }
 
       const [hInicio, mInicio] = diaConfig.inicio.split(":").map(Number);
       const [hFim, mFim] = diaConfig.fim.split(":").map(Number);
+
+      // VERIFICAÇÃO DE SEGURANÇA: Garante que as horas/minutos são números válidos
+      if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim) || isNaN(mFim)) {
+        logger.warn(
+          `Documento ${diaConfig.id} ignorado por ter formato de hora inválido.`
+        );
+        return; // Pula para o próximo item
+      }
+
       const inicioEmMinutos = hInicio * 60 + mInicio;
       const fimEmMinutos = hFim * 60 + mFim;
 
@@ -540,6 +616,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
           mAtual
         ).padStart(2, "0")}`;
         const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00`);
+
         const diffMs = dataHoraSlot - agora;
         const diffHoras = diffMs / (1000 * 60 * 60);
 
@@ -559,14 +636,18 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       }
     });
 
+    logger.info(
+      `Função concluída. ${slotsPotenciais.length} horários disponíveis encontrados.`
+    );
     return { horarios: slotsPotenciais };
   } catch (error) {
-    console.error("❌ Erro ao buscar horários públicos:", error);
+    logger.error("❌ Erro crítico ao buscar horários públicos:", error);
     throw new HttpsError("internal", "Erro ao buscar horários públicos.", {
       originalError: error.message,
     });
   }
 });
+
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const {
     cpf,
