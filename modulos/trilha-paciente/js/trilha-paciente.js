@@ -40,7 +40,7 @@ let unsubscribe; // Variável para guardar a função de 'unsubscribe' do listen
  * @param {HTMLElement} container - O elemento container onde o painel será renderizado.
  * @param {string[]} columnFilter - A lista de status a serem exibidos como colunas.
  */
-export async function init(authUser, authData, container, columnFilter) {
+export async function init(db, authUser, authData, container, columnFilter) {
   currentColumnFilter = columnFilter;
   currentUserData = authData;
 
