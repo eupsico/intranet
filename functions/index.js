@@ -491,7 +491,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       where("status", "==", "triagem_agendada"),
       where("dataTriagem", ">=", dataInicio)
     );
-    const agendamentosSnapshot = await getDocs(agendamentosQuery);
+    const agendamentosSnapshot = await query.get();
 
     const horariosOcupados = new Set();
     agendamentosSnapshot.forEach((doc) => {
