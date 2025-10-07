@@ -37,9 +37,10 @@ export function init(db, user, userData) {
 
   async function carregarMeusPacientes() {
     container.innerHTML = '<div class="loading-spinner"></div>';
+    console.log("--- Iniciando carregarMeusPacientes (Versão com Logs) ---");
 
     try {
-      // 1. As consultas agora são mais simples, sem o filtro de status
+      console.log("Passo 1: Definindo as consultas para Plantão e PB."); // Consultas simplificadas para evitar o erro de query inválida
       const queryPlantao = db
         .collection("trilhaPaciente")
         .where("plantaoInfo.profissionalId", "==", user.uid);
@@ -48,48 +49,65 @@ export function init(db, user, userData) {
         .collection("trilhaPaciente")
         .where("profissionaisPB_ids", "array-contains", user.uid);
 
+      console.log("Passo 2: Executando as consultas ao Firestore...");
       const [plantaoSnapshot, pbSnapshot] = await Promise.all([
         queryPlantao.get(),
         queryPb.get(),
       ]);
+      console.log("Passo 3: Consultas concluídas com sucesso.");
+      console.log(
+        ` -> Encontrados ${plantaoSnapshot.size} pacientes potenciais de Plantão.`
+      );
+      console.log(
+        ` -> Encontrados ${pbSnapshot.size} pacientes potenciais de PB.`
+      );
 
       let cardsHtml = "";
       const pacientesProcessados = new Set();
 
-      // 2. O filtro de status é aplicado AQUI, depois que os dados são buscados
+      console.log("Passo 4: Filtrando resultados de Plantão...");
       plantaoSnapshot.forEach((doc) => {
         const paciente = { id: doc.id, ...doc.data() };
-        // Apenas cria o card se o status for o correto
+        // O filtro de status é aplicado aqui
         if (
           paciente.status === "em_atendimento_plantao" &&
           !pacientesProcessados.has(paciente.id)
         ) {
+          console.log(
+            `  - [PLANTÃO] Adicionando card para o paciente: ${paciente.nomeCompleto}`
+          );
           cardsHtml += criarCardPaciente(paciente);
           pacientesProcessados.add(paciente.id);
         }
       });
 
-      // 3. O filtro de status do atendimento de PB também é aplicado AQUI
+      console.log("Passo 5: Filtrando resultados de PB...");
       pbSnapshot.forEach((doc) => {
         const paciente = { id: doc.id, ...doc.data() };
         const meuAtendimento = paciente.atendimentosPB?.find(
           (at) => at.profissionalId === user.uid
         );
 
-        // Apenas cria o card se o atendimento específico do profissional estiver ativo
+        // O filtro de status do atendimento é aplicado aqui
         if (meuAtendimento && meuAtendimento.statusAtendimento === "ativo") {
+          console.log(
+            `  - [PB] Adicionando card para o paciente: ${paciente.nomeCompleto} (Atendimento ID: ${meuAtendimento.atendimentoId})`
+          );
           cardsHtml += criarCardPaciente(paciente, meuAtendimento);
         }
       });
 
       if (cardsHtml === "") {
+        console.log(
+          "Passo 6: Nenhum paciente ativo encontrado para este profissional."
+        );
         container.innerHTML =
           "<p>Você não tem pacientes designados nos estágios de atendimento ativo no momento.</p>";
         return;
       }
 
+      console.log("Passo 7: Renderizando os cards na tela.");
       container.innerHTML = cardsHtml;
-      // Reordena os cards em ordem alfabética no navegador
       const cards = Array.from(container.querySelectorAll(".paciente-card"));
       cards.sort((a, b) =>
         a
@@ -99,10 +117,16 @@ export function init(db, user, userData) {
       cards.forEach((card) => container.appendChild(card));
 
       adicionarEventListeners();
+      console.log("--- Finalizado carregarMeusPacientes com sucesso. ---");
     } catch (error) {
-      console.error("Falha crítica ao buscar pacientes.", error);
-      container.innerHTML =
-        '<p class="error-message">Ocorreu um erro ao carregar seus pacientes.</p>';
+      // Log de erro detalhado
+      console.error("--- ERRO CRÍTICO em carregarMeusPacientes ---");
+      console.error(
+        "Ocorreu um erro durante a busca ou processamento dos pacientes."
+      );
+      console.error("Mensagem de erro:", error.message);
+      console.error("Detalhes do erro:", error);
+      container.innerHTML = `<p class="error-message">Ocorreu um erro ao carregar seus pacientes. Verifique o console (F12) para detalhes técnicos.</p>`;
     }
   }
 
