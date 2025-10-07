@@ -457,7 +457,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
 });
 // Arquivo: functions/index.js
 
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const {
   onDocumentCreated,
   onDocumentUpdated,
@@ -482,9 +481,7 @@ const db = getFirestore();
  * Busca os horários de triagem disponíveis, combinando a agenda configurada
  * com os agendamentos já existentes.
  */
-// Arquivo: functions/index.js
 
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const {
   onDocumentCreated,
   onDocumentUpdated,
