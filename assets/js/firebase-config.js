@@ -15,8 +15,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 // Exporta as instâncias que serão usadas em outros lugares do app
-const auth = firebase.auth();
-const db = firebase.firestore();
-const functions = firebase.functions();
-const storage = firebase.storage();
-const rtdb = firebase.database();
+export const auth = firebase.auth();
+export const db = firebase.firestore();
+export const rtdb = firebase.database();
