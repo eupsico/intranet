@@ -1,7 +1,12 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
 // Versão: 5.0 (Implementa Múltiplos Atendimentos em PB)
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
-
+import {
+  doc,
+  updateDoc,
+  arrayUnion,
+  deleteField,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 export function init(db, user, userData) {
   const container = document.getElementById("pacientes-cards-container");
   if (!container) {
@@ -414,6 +419,48 @@ export function init(db, user, userData) {
       document.getElementById("motivo-nao-pagamento").required =
         pagamentoSelect.value === "nao";
     };
+
+    // --- INÍCIO DA CORREÇÃO ---
+    // A lógica abaixo estava faltando
+
+    const dispSelect = form.querySelector("#manter-disponibilidade");
+    const novaDisponibilidadeContainer = document.getElementById(
+      "nova-disponibilidade-container"
+    );
+
+    dispSelect.onchange = async () => {
+      const mostrar = dispSelect.value === "nao";
+      novaDisponibilidadeContainer.classList.toggle("hidden", !mostrar);
+
+      if (mostrar && novaDisponibilidadeContainer.innerHTML.trim() === "") {
+        novaDisponibilidadeContainer.innerHTML =
+          '<div class="loading-spinner"></div>';
+        try {
+          const response = await fetch(
+            "../../../public/fichas-de-inscricao.html"
+          );
+          const text = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, "text/html");
+          const disponibilidadeHtml = doc.getElementById(
+            "disponibilidade-section"
+          ).innerHTML;
+          novaDisponibilidadeContainer.innerHTML = disponibilidadeHtml;
+          addDisponibilidadeListeners(novaDisponibilidadeContainer); // Chama a função de suporte
+        } catch (error) {
+          console.error("Erro ao carregar HTML da disponibilidade:", error);
+          novaDisponibilidadeContainer.innerHTML =
+            '<p class="error-message">Erro ao carregar opções.</p>';
+        }
+      }
+    };
+    // Reseta o campo ao abrir o modal
+    dispSelect.value = "";
+    novaDisponibilidadeContainer.classList.add("hidden");
+    novaDisponibilidadeContainer.innerHTML = "";
+
+    // --- FIM DA CORREÇÃO ---
+
     encerramentoModal.style.display = "block";
   }
 
