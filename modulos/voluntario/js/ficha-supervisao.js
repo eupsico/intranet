@@ -71,10 +71,23 @@ function setupNovaFicha() {
 function setupEventListeners() {
   const saveButton = document.getElementById("btn-salvar-inicial");
   if (saveButton) {
-    // Recria o botão para evitar múltiplos listeners em caso de reinicialização
     const newSaveButton = saveButton.cloneNode(true);
     saveButton.parentNode.replaceChild(newSaveButton, saveButton);
     newSaveButton.addEventListener("click", handleFinalSave);
+  }
+  const abordagemSelect = document.getElementById("abordagem-teorica");
+  const outraAbordagemContainer = document.getElementById(
+    "outra-abordagem-container"
+  );
+
+  if (abordagemSelect && outraAbordagemContainer) {
+    abordagemSelect.addEventListener("change", () => {
+      if (abordagemSelect.value === "Outra") {
+        outraAbordagemContainer.style.display = "block";
+      } else {
+        outraAbordagemContainer.style.display = "none";
+      }
+    });
   }
 }
 
