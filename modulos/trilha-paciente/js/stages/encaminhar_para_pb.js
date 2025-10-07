@@ -1,4 +1,4 @@
-import { db, firebase } from "../../../../assets/js/firebase-config.js"; // Importa 'firebase' para usar FieldValue
+import { db } from "../../../../assets/js/firebase-config.js"; // Importa 'firebase' para usar FieldValue
 import { carregarProfissionais } from "../../../../assets/js/app.js";
 
 /**
