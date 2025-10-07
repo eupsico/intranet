@@ -1,8 +1,24 @@
 // Arquivo: /modulos/voluntario/js/agendamento.js
-import { obterSlotsValidos } from "./utils/slots.js";
+// Versão 2.0 (Atualizado para a sintaxe modular do Firebase v9)
 
-let dbInstance, currentUser, currentUserData;
+import { obterSlotsValidos } from "./utils/slots.js";
+import {
+  db,
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  Timestamp,
+  serverTimestamp,
+} from "../../../assets/js/firebase-init.js";
+
+// Variáveis de escopo do módulo para manter o estado
+let currentUser;
+let currentUserData;
 const modal = document.getElementById("agendamento-modal");
+
+// --- Funções Utilitárias (sem alteração de lógica) ---
 
 function formatarMoeda(input) {
   let value = input.value.replace(/\D/g, "");
@@ -33,15 +49,19 @@ function calculateCapacity(inicio, fim) {
     const [endH, endM] = fim.split(":").map(Number);
     return Math.floor((endH * 60 + endM - (startH * 60 + startM)) / 30);
   } catch (e) {
+    console.error("Erro ao calcular capacidade do horário:", e);
     return 0;
   }
 }
 
-function updateSupervisionCost() {
-  if (!modal.querySelector("#numero-pacientes")) return;
+// --- Funções de Renderização e Lógica do Modal (com pequenas melhorias) ---
 
-  const numeroPacientes =
-    parseInt(modal.querySelector("#numero-pacientes").value, 10) || 0;
+function updateSupervisionCost() {
+  if (!modal) return;
+  const numeroPacientesInput = modal.querySelector("#numero-pacientes");
+  if (!numeroPacientesInput) return;
+
+  const numeroPacientes = parseInt(numeroPacientesInput.value, 10) || 0;
   let valorTotalContribuicao = 0;
 
   for (let i = 1; i <= numeroPacientes; i++) {
@@ -57,20 +77,26 @@ function updateSupervisionCost() {
 
   const totalEl = modal.querySelector("#total-contribuicoes-valor");
   const supervisaoEl = modal.querySelector("#valor-supervisao-calculado");
-  if (totalEl)
+
+  if (totalEl) {
     totalEl.textContent = valorTotalContribuicao.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
-  if (supervisaoEl)
+  }
+  if (supervisaoEl) {
     supervisaoEl.textContent = valorSupervisao.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
+  }
 }
 
 function renderPatientInputs(count) {
+  if (!modal) return;
   const container = modal.querySelector("#pacientes-container");
+  if (!container) return;
+
   container.innerHTML = "";
   if (isNaN(count) || count < 1) {
     updateSupervisionCost();
@@ -79,17 +105,16 @@ function renderPatientInputs(count) {
 
   for (let i = 1; i <= count; i++) {
     container.innerHTML += `
-      <div class="form-row" style="gap: 15px; align-items: flex-end; border-left: 3px solid var(--cor-fundo); padding-left: 15px; margin-bottom: 10px;">
-        <div class="form-group" style="flex-grow: 2;">
-          <label for="paciente-iniciais-${i}">Iniciais do Paciente ${i}</label>
-          <input type="text" id="paciente-iniciais-${i}" class="form-control" placeholder="Ex: A.B.C.">
-        </div>
-        <div class="form-group" style="flex-grow: 1;">
-          <label for="paciente-contribuicao-${i}">Valor Contribuição</label>
-          <input type="text" id="paciente-contribuicao-${i}" class="form-control" placeholder="R$ 0,00">
-        </div>
-      </div>
-    `;
+            <div class="form-row" style="gap: 15px; align-items: flex-end; border-left: 3px solid #f0f0f0; padding-left: 15px; margin-bottom: 10px;">
+                <div class="form-group" style="flex-grow: 2;">
+                    <label for="paciente-iniciais-${i}">Iniciais do Paciente ${i}</label>
+                    <input type="text" id="paciente-iniciais-${i}" class="form-control" placeholder="Ex: A.B.C.">
+                </div>
+                <div class="form-group" style="flex-grow: 1;">
+                    <label for="paciente-contribuicao-${i}">Valor Contribuição</label>
+                    <input type="text" id="paciente-contribuicao-${i}" class="form-control" placeholder="R$ 0,00">
+                </div>
+            </div>`;
   }
 
   container
@@ -105,16 +130,20 @@ function renderPatientInputs(count) {
 }
 
 function renderDates(horariosDisponiveis) {
+  if (!modal) return;
   const datasContainer = modal.querySelector("#datas-disponiveis-container");
   const confirmBtn = modal.querySelector("#agendamento-confirm-btn");
+  if (!datasContainer || !confirmBtn) return;
+
   datasContainer.innerHTML = "";
 
   const availableSlots = horariosDisponiveis.filter(
     (slot) => slot.capacity - slot.booked > 0
   );
+
   if (availableSlots.length === 0) {
-    datasContainer.innerHTML = `<p>Não há vagas disponíveis no momento.</p>`;
-    if (confirmBtn) confirmBtn.disabled = true;
+    datasContainer.innerHTML = `<p class="alert alert-info">Não há vagas disponíveis para agendamento no momento.</p>`;
+    confirmBtn.disabled = true;
     return;
   }
 
@@ -124,21 +153,31 @@ function renderDates(horariosDisponiveis) {
       month: "2-digit",
       year: "numeric",
     });
-    const horarioInfo = `${slot.horario.dia} - ${slot.horario.inicio}`;
+    const diaSemana = slot.date.toLocaleDateString("pt-BR", {
+      weekday: "long",
+    });
+    const horarioInfo = `${
+      diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1)
+    } - ${slot.horario.inicio}`;
     const vagasRestantes = slot.capacity - slot.booked;
     const radioId = `date-${index}`;
+
     datasContainer.innerHTML += `
-      <div class="date-option">
-        <input type="radio" id="${radioId}" name="data_agendamento" value="${slot.date.toISOString()}">
-        <label for="${radioId}">
-          <strong>${formattedDate}</strong> (${horarioInfo}) <span>Vagas restantes: ${vagasRestantes}</span>
-        </label>
-      </div>`;
+            <div class="date-option">
+                <input type="radio" id="${radioId}" name="data_agendamento" value="${slot.date.toISOString()}">
+                <label for="${radioId}">
+                    <strong>${formattedDate}</strong> (${horarioInfo}) <span>Vagas restantes: ${vagasRestantes}</span>
+                </label>
+            </div>`;
   });
-  if (confirmBtn) confirmBtn.disabled = false;
+
+  confirmBtn.disabled = false;
 }
 
-async function handleConfirmAgendamento(db, currentSupervisorData) {
+// --- Funções de Interação com o Firebase (ATUALIZADAS) ---
+
+async function handleConfirmAgendamento(currentSupervisorData) {
+  if (!modal) return;
   const nome = modal.querySelector("#agendamento-profissional-nome").value;
   const email = modal.querySelector("#agendamento-profissional-email").value;
   const telefone = modal.querySelector(
@@ -149,11 +188,11 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
   );
 
   if (!selectedRadio) {
-    alert("Por favor, selecione uma data.");
+    alert("Por favor, selecione uma data para o agendamento.");
     return;
   }
   if (!nome) {
-    alert("Seus dados não foram encontrados.");
+    alert("Seus dados não foram encontrados. Por favor, recarregue a página.");
     return;
   }
 
@@ -161,22 +200,25 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
   confirmBtn.disabled = true;
   confirmBtn.textContent = "Aguarde...";
 
-  const numeroPacientes = parseInt(
-    modal.querySelector("#numero-pacientes").value,
-    10
-  );
+  const numeroPacientes =
+    parseInt(modal.querySelector("#numero-pacientes").value, 10) || 0;
+
   if (numeroPacientes > 0) {
-    const iniciaisPaciente1 = modal.querySelector("#paciente-iniciais-1").value;
+    const iniciaisPaciente1 = modal.querySelector(
+      "#paciente-iniciais-1"
+    )?.value;
     if (!iniciaisPaciente1 || iniciaisPaciente1.trim() === "") {
       alert(
         "O preenchimento das informações do Paciente 1 (iniciais) é obrigatório."
       );
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Confirmar Agendamento";
       return;
     }
   }
+
   const pacientes = [];
   let valorTotalContribuicao = 0;
-
   for (let i = 1; i <= numeroPacientes; i++) {
     const iniciais = modal.querySelector(`#paciente-iniciais-${i}`).value;
     const contribuicaoString = modal.querySelector(
@@ -193,9 +235,7 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
   const agendamentoData = {
     supervisorUid: currentSupervisorData.uid,
     supervisorNome: currentSupervisorData.nome,
-    dataAgendamento: firebase.firestore.Timestamp.fromDate(
-      new Date(selectedRadio.value)
-    ),
+    dataAgendamento: Timestamp.fromDate(new Date(selectedRadio.value)), // SINTAXE V9
     profissionalUid: currentUser.uid,
     profissionalNome: nome,
     profissionalEmail: email,
@@ -203,18 +243,19 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     pacientes,
     valorTotalContribuicao,
     valorSupervisao,
-    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    criadoEm: serverTimestamp(), // SINTAXE V9
   };
 
   try {
-    await db.collection("agendamentos").add(agendamentoData);
+    const agendamentosRef = collection(db, "agendamentos"); // SINTAXE V9
+    await addDoc(agendamentosRef, agendamentoData); // SINTAXE V9
 
     modal.querySelector("#agendamento-step-1").style.display = "none";
     modal.querySelector("#agendamento-step-2").style.display = "block";
     modal.querySelector("#footer-step-1").style.display = "none";
     modal.querySelector("#footer-step-2").style.display = "block";
   } catch (error) {
-    console.error("Erro ao agendar:", error);
+    console.error("Erro ao salvar agendamento:", error);
     alert(
       "Não foi possível realizar o agendamento. Verifique o console para mais detalhes."
     );
@@ -223,21 +264,20 @@ async function handleConfirmAgendamento(db, currentSupervisorData) {
     confirmBtn.textContent = "Confirmar Agendamento";
   }
 }
-/**
- * Abre e inicializa o modal de agendamento.
- */
-async function open(db, user, userData, supervisorData) {
+
+async function open(user, userData, supervisorData) {
   if (!modal) return;
 
-  dbInstance = db;
   currentUser = user;
   currentUserData = userData;
 
+  // Resetar o estado do modal
   modal.querySelector("#agendamento-step-1").style.display = "block";
   modal.querySelector("#agendamento-step-2").style.display = "none";
   modal.querySelector("#footer-step-1").style.display = "flex";
   modal.querySelector("#footer-step-2").style.display = "none";
 
+  // Preencher dados do supervisor e do profissional
   modal.querySelector("#agendamento-supervisor-nome").textContent =
     supervisorData.nome;
   modal.querySelector("#agendamento-profissional-nome").value =
@@ -249,6 +289,7 @@ async function open(db, user, userData, supervisorData) {
 
   const numeroPacientesInput = modal.querySelector("#numero-pacientes");
   if (numeroPacientesInput) {
+    // Recria o event listener para evitar duplicação
     const newNumeroPacientesInput = numeroPacientesInput.cloneNode(true);
     numeroPacientesInput.parentNode.replaceChild(
       newNumeroPacientesInput,
@@ -259,16 +300,17 @@ async function open(db, user, userData, supervisorData) {
       const count = parseInt(e.target.value, 10);
       renderPatientInputs(count);
     });
-    renderPatientInputs(parseInt(newNumeroPacientesInput.value, 10));
+    renderPatientInputs(parseInt(newNumeroPacientesInput.value, 10)); // Renderiza o estado inicial
   }
 
   modal.style.display = "flex";
 
+  // Recria o event listener do botão de confirmação para evitar chamadas múltiplas
   const confirmBtn = modal.querySelector("#agendamento-confirm-btn");
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
   newConfirmBtn.addEventListener("click", () =>
-    handleConfirmAgendamento(db, supervisorData)
+    handleConfirmAgendamento(supervisorData)
   );
 
   const datasContainer = modal.querySelector("#datas-disponiveis-container");
@@ -276,25 +318,24 @@ async function open(db, user, userData, supervisorData) {
 
   try {
     let potentialSlots = [];
-
     if (
       supervisorData.diasHorarios &&
       Array.isArray(supervisorData.diasHorarios)
     ) {
-      potentialSlots = await obterSlotsValidos(db, supervisorData.diasHorarios);
+      // A função obterSlotsValidos agora importa o 'db' diretamente
+      potentialSlots = await obterSlotsValidos(supervisorData.diasHorarios);
     }
 
-    const agendamentosRef = db.collection("agendamentos");
+    const agendamentosRef = collection(db, "agendamentos"); // SINTAXE V9
     const slotChecks = potentialSlots.map(async (slot) => {
-      const q = agendamentosRef
-        .where("supervisorUid", "==", supervisorData.uid)
-        .where(
-          "dataAgendamento",
-          "==",
-          firebase.firestore.Timestamp.fromDate(slot.date)
-        );
+      // SINTAXE V9 para criar a consulta
+      const q = query(
+        agendamentosRef,
+        where("supervisorUid", "==", supervisorData.uid),
+        where("dataAgendamento", "==", Timestamp.fromDate(slot.date))
+      );
 
-      const querySnapshot = await q.get();
+      const querySnapshot = await getDocs(q); // SINTAXE V9
       slot.booked = querySnapshot.size;
       slot.capacity = calculateCapacity(slot.horario.inicio, slot.horario.fim);
       return slot;
@@ -303,23 +344,27 @@ async function open(db, user, userData, supervisorData) {
     const finalSlots = await Promise.all(slotChecks);
     renderDates(finalSlots);
   } catch (error) {
-    console.error("Erro ao calcular datas:", error);
+    console.error("Erro ao buscar e calcular datas disponíveis:", error);
     datasContainer.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao buscar os horários.</p>`;
   }
 }
 
+// --- Inicialização dos Event Listeners do Modal ---
+
 if (modal) {
-  modal
-    .querySelector(".close-modal-btn")
-    .addEventListener("click", () => (modal.style.display = "none"));
+  const closeModal = () => {
+    modal.style.display = "none";
+  };
+  modal.querySelector(".close-modal-btn").addEventListener("click", closeModal);
   modal
     .querySelector("#agendamento-cancel-btn")
-    .addEventListener("click", () => (modal.style.display = "none"));
+    .addEventListener("click", closeModal);
   modal
     .querySelector("#agendamento-ok-btn")
-    .addEventListener("click", () => (modal.style.display = "none"));
+    .addEventListener("click", closeModal);
 }
 
+// Exporta o controller para ser usado por outras partes do sistema
 export const agendamentoController = {
   open,
 };
