@@ -232,6 +232,22 @@ document.addEventListener("DOMContentLoaded", function () {
         if (pageTitleContainer) {
           pageTitleContainer.innerHTML = `<h2>Trilha do Paciente</h2><p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>`;
         }
+
+        console.log("[LOG] Tentando importar trilha-paciente-painel.js...");
+
+        try {
+          const module = await import(
+            "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
+          );
+          console.log("[LOG] Módulo importado com sucesso:", module);
+          module.init(user, userData);
+        } catch (error) {
+          console.error(
+            "[LOG] ERRO ao importar trilha-paciente-painel.js:",
+            error
+          );
+        }
+
         const module = await import(
           "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
         );
