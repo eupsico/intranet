@@ -455,52 +455,6 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     );
   }
 });
-// Arquivo: functions/index.js
-
-const {
-  onDocumentCreated,
-  onDocumentUpdated,
-} = require("firebase-functions/v2/firestore");
-const { logger } = require("firebase-functions");
-
-// Importa as funções modulares do Admin SDK
-const { initializeApp } = require("firebase-admin/app");
-const {
-  getFirestore,
-  collection,
-  query,
-  where,
-  getDocs,
-} = require("firebase-admin/firestore");
-
-// Inicializa o app e o Firestore da maneira correta
-initializeApp();
-const db = getFirestore();
-
-/**
- * Busca os horários de triagem disponíveis, combinando a agenda configurada
- * com os agendamentos já existentes.
- */
-
-const {
-  onDocumentCreated,
-  onDocumentUpdated,
-} = require("firebase-functions/v2/firestore");
-const { logger } = require("firebase-functions");
-
-// Importa as funções modulares do Admin SDK
-const { initializeApp } = require("firebase-admin/app");
-const {
-  getFirestore,
-  collection,
-  query,
-  where,
-  getDocs,
-} = require("firebase-admin/firestore");
-
-// Inicializa o app e o Firestore da maneira correta
-initializeApp();
-const db = getFirestore();
 
 /**
  * Busca os horários de triagem disponíveis, combinando a agenda configurada
