@@ -10,7 +10,7 @@ import {
   where,
   doc,
   updateDoc,
-} from "../../../assets/js/firebase-init.js";
+} from "../../assets/js/firebase-init.js";
 
 const COLUMNS_CONFIG = {
   inscricao_documentos: "Inscrição e Documentos",
