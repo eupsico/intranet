@@ -39,9 +39,7 @@ export function init(db, user, userData) {
     container.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-      // --- INÍCIO DA CORREÇÃO ---
-
-      // 1. Consultas mais abertas para Plantão e para PB
+      // 1. As consultas agora são mais simples, sem o filtro de status
       const queryPlantao = db
         .collection("trilhaPaciente")
         .where("plantaoInfo.profissionalId", "==", user.uid);
@@ -58,9 +56,10 @@ export function init(db, user, userData) {
       let cardsHtml = "";
       const pacientesProcessados = new Set();
 
-      // 2. Filtra os pacientes de plantão pelo status ATIVO aqui no código
+      // 2. O filtro de status é aplicado AQUI, depois que os dados são buscados
       plantaoSnapshot.forEach((doc) => {
         const paciente = { id: doc.id, ...doc.data() };
+        // Apenas cria o card se o status for o correto
         if (
           paciente.status === "em_atendimento_plantao" &&
           !pacientesProcessados.has(paciente.id)
@@ -70,19 +69,18 @@ export function init(db, user, userData) {
         }
       });
 
-      // 3. Filtra os atendimentos de PB pelo status ATIVO aqui no código
+      // 3. O filtro de status do atendimento de PB também é aplicado AQUI
       pbSnapshot.forEach((doc) => {
         const paciente = { id: doc.id, ...doc.data() };
         const meuAtendimento = paciente.atendimentosPB?.find(
           (at) => at.profissionalId === user.uid
         );
 
+        // Apenas cria o card se o atendimento específico do profissional estiver ativo
         if (meuAtendimento && meuAtendimento.statusAtendimento === "ativo") {
           cardsHtml += criarCardPaciente(paciente, meuAtendimento);
         }
       });
-
-      // --- FIM DA CORREÇÃO ---
 
       if (cardsHtml === "") {
         container.innerHTML =
@@ -91,6 +89,7 @@ export function init(db, user, userData) {
       }
 
       container.innerHTML = cardsHtml;
+      // Reordena os cards em ordem alfabética no navegador
       const cards = Array.from(container.querySelectorAll(".paciente-card"));
       cards.sort((a, b) =>
         a
