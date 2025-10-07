@@ -47,7 +47,7 @@ const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
-const functions = getFunctions(app);
+const functions = getFunctions(app, "southamerica-east1");
 const storage = getStorage(app);
 const rtdb = getDatabase(app);
 
