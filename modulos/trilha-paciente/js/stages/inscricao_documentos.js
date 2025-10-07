@@ -1,46 +1,25 @@
 // Arquivo: /modulos/trilha-paciente/js/stages/inscricao_documentos.js
-import { db } from "../../../../assets/js/firebase-init.js";
+// Versão: 9.0 (Migração para a sintaxe modular do Firebase v9)
 
-/**
- * Busca os dados do paciente na coleção correta.
- * @param {string} cardId - O ID do documento do paciente.
- * @returns {object} - Dados do paciente.
- */
-export async function fetchPacienteData(cardId) {
-  try {
-    const docRef = await db.collection("trilhaPaciente").doc(cardId).get();
-    if (!docRef.exists) {
-      throw new Error("Documento do paciente não encontrado.");
-    }
-    const data = docRef.data();
-
-    // Validação básica para garantir que é paciente
-    if (!data.nomeCompleto || !data.cpf || !data.telefoneCelular) {
-      console.warn("⚠️ Dados incompletos ou inválidos para paciente:", data);
-    }
-
-    console.log("📦 [fetchPacienteData] Dados carregados do Firestore:", data);
-    return data;
-  } catch (error) {
-    console.error("❌ Erro ao buscar dados do paciente:", error);
-    throw error;
-  }
-}
+// 1. Importa todas as funções necessárias do nosso arquivo de configuração central
+import {
+  db,
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "../../../../assets/js/firebase-init.js";
 
 /**
  * Renderiza o conteúdo do modal para a etapa "Inscrição e Documentos".
  * @param {string} cardId - O ID do documento do paciente.
- 
  * @param {object} cardData - Objeto com todos os dados do paciente.
  * @returns {HTMLElement} - O elemento HTML para ser inserido no corpo do modal.
  */
 export async function render(cardId, cardData, currentUserData) {
-  console.log("🔍 [render] Dados recebidos para o card:", {
-    cardId,
-    cardData,
-    currentUserData,
-  });
-
   const element = document.createElement("div");
 
   const responsavelInfo =
@@ -128,17 +107,17 @@ export async function render(cardId, cardData, currentUserData) {
 
   return element;
 }
+
 /**
  * Salva os dados do formulário da etapa "Inscrição e Documentos".
  * @param {string} cardId - O ID do documento do paciente.
- * @param {object} currentUserData - Dados do usuário logado.
+ * @param {object} cardData - Os dados atuais do paciente.
+ * @param {HTMLElement} modalBody - O corpo do modal, contendo o formulário.
  */
-export async function save(cardId, currentUserData) {
-  console.log("💾 [save] Salvando dados para cardId:", cardId);
-
-  const chkDesistiu = document.getElementById("chk-desistiu").checked;
-  const desistiuMotivo = document
-    .getElementById("desistencia-motivo")
+export async function save(cardId, cardData, modalBody) {
+  const chkDesistiu = modalBody.querySelector("#chk-desistiu").checked;
+  const desistiuMotivo = modalBody
+    .querySelector("#desistencia-motivo")
     .value.trim();
 
   let dataToUpdate = {};
@@ -152,7 +131,7 @@ export async function save(cardId, currentUserData) {
       desistenciaMotivo: desistiuMotivo,
     };
   } else {
-    const isento = document.getElementById("chk-isento").checked;
+    const isento = modalBody.querySelector("#chk-isento").checked;
     const camposObrigatorios = {
       "chk-docs": "Enviar os documentos",
       "chk-confirmou": "Confirmar os dados",
@@ -167,7 +146,7 @@ export async function save(cardId, currentUserData) {
     }
 
     for (const [id, nome] of Object.entries(camposObrigatorios)) {
-      const element = document.getElementById(id);
+      const element = modalBody.querySelector(`#${id}`);
       if (
         (element.type === "checkbox" && !element.checked) ||
         (element.type !== "checkbox" && !element.value)
@@ -176,25 +155,29 @@ export async function save(cardId, currentUserData) {
       }
     }
 
+    const assistenteSelect = modalBody.querySelector("#assistente-social");
+    const assistenteNome =
+      assistenteSelect.options[assistenteSelect.selectedIndex].text;
+    const assistenteEmail =
+      assistenteSelect.options[assistenteSelect.selectedIndex].dataset.email;
+
     dataToUpdate = {
       status: "triagem_agendada",
       isentoTriagem: isento,
-      motivoIsencao: document.getElementById("isento-motivo").value.trim(),
-      assistenteSocialNome: document.getElementById("assistente-social").value,
-      assistenteSocialEmail: document.getElementById("assistente-email").value,
-      tipoTriagem: document.getElementById("tipo-triagem").value,
-      dataTriagem: document.getElementById("data-triagem").value,
-      horaTriagem: document.getElementById("hora-triagem").value,
+      motivoIsencao: modalBody.querySelector("#isento-motivo").value.trim(),
+      assistenteSocialNome: assistenteNome,
+      assistenteSocialEmail: assistenteEmail,
+      tipoTriagem: modalBody.querySelector("#tipo-triagem").value,
+      dataTriagem: modalBody.querySelector("#data-triagem").value,
+      horaTriagem: modalBody.querySelector("#hora-triagem").value,
     };
   }
 
   dataToUpdate.lastUpdate = new Date();
-  dataToUpdate.lastUpdatedBy = currentUserData.nome || "N/A";
+  dataToUpdate.lastUpdatedBy = cardData.nome || "N/A";
 
-  console.log("📤 [save] Dados preparados para atualização:", dataToUpdate);
-
-  await db.collection("trilhaPaciente").doc(cardId).update(dataToUpdate);
-  console.log("✅ [save] Dados atualizados com sucesso.");
+  const docRef = doc(db, "trilhaPaciente", cardId);
+  await updateDoc(docRef, dataToUpdate);
 }
 
 // --- Funções Auxiliares ---
@@ -204,11 +187,13 @@ async function loadAssistentesSociais(element) {
   const emailInput = element.querySelector("#assistente-email");
 
   try {
-    const snapshot = await db
-      .collection("usuarios")
-      .where("funcoes", "array-contains", "servico_social")
-      .where("inativo", "==", false)
-      .get();
+    const usuariosRef = collection(db, "usuarios");
+    const q = query(
+      usuariosRef,
+      where("funcoes", "array-contains", "servico_social"),
+      where("inativo", "==", false)
+    );
+    const snapshot = await getDocs(q);
 
     select.innerHTML = '<option value="">Selecione...</option>';
     const assistentes = [];
@@ -221,7 +206,7 @@ async function loadAssistentesSociais(element) {
     assistentes.sort((a, b) => a.nome.localeCompare(b.nome));
     assistentes.forEach((assistente) => {
       const option = document.createElement("option");
-      option.value = assistente.nome;
+      option.value = assistente.id; // Salva o ID no valor
       option.textContent = assistente.nome;
       option.dataset.email = assistente.email;
       select.appendChild(option);
@@ -232,7 +217,7 @@ async function loadAssistentesSociais(element) {
       emailInput.value = selectedOption.dataset.email || "";
     });
   } catch (error) {
-    console.error("❌ Erro ao carregar assistentes sociais:", error);
+    console.error("Erro ao carregar assistentes sociais:", error);
     select.innerHTML = '<option value="">Erro ao carregar</option>';
   }
 }
@@ -246,9 +231,6 @@ function setupEventListeners(element) {
   const agendamentoSection = element.querySelector("#agendamento-section");
   const allCheckboxes = element.querySelectorAll('input[name="checklist"]');
 
-  isentoSection.style.display = "none";
-  desistiuSection.style.display = "none";
-
   chkIsento.addEventListener("change", function () {
     isentoSection.style.display = this.checked ? "block" : "none";
     if (this.checked) {
@@ -256,7 +238,6 @@ function setupEventListeners(element) {
       chkPagamento.disabled = true;
       chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
-      desistiuSection.style.display = "none";
     } else {
       chkPagamento.disabled = false;
       chkDesistiu.disabled = false;
@@ -269,8 +250,6 @@ function setupEventListeners(element) {
       chkIsento.disabled = true;
       chkDesistiu.checked = false;
       chkDesistiu.disabled = true;
-      isentoSection.style.display = "none";
-      desistiuSection.style.display = "none";
     } else {
       chkIsento.disabled = false;
       chkDesistiu.disabled = false;
@@ -289,11 +268,10 @@ function setupEventListeners(element) {
       }
     });
 
-    if (isDesistente) {
-      chkIsento.checked = false;
+    if (!isDesistente) {
+      // Reabilita os outros checkboxes se desistência for desmarcada
       chkIsento.disabled = false;
       chkPagamento.disabled = false;
-      isentoSection.style.display = "none";
     }
   });
 }
