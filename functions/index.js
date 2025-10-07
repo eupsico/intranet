@@ -469,7 +469,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     const dataInicio = hoje.toISOString().split("T")[0];
 
     // 1. Busca as configurações do sistema
-    const configuracoesRef = collection(db, "configuracoesSistema");
+    const configuracoesRef = db.collection("configuracoesSistema");
     const configuracoesSnapshot = await getDocs(configuracoesRef);
     const configuracoes = {};
     configuracoesSnapshot.forEach((doc) => {
