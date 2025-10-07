@@ -4,11 +4,20 @@ const {
   onDocumentUpdated,
 } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
-const admin = require("firebase-admin");
-if (admin.apps.length === 0) {
-  admin.initializeApp();
-}
-const db = admin.firestore();
+
+// Importe as funções modulares do Admin SDK
+const { initializeApp } = require("firebase-admin/app");
+const {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+} = require("firebase-admin/firestore");
+
+// Inicialize o app e o Firestore da maneira correta
+initializeApp();
+const db = getFirestore();
 
 // -----------------------------
 // Função auxiliar para username
