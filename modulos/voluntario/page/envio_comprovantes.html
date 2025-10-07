@@ -14,7 +14,7 @@
         <p>Agradecemos a sua colaboração!</p>
     </div>
 
-    <div id="message-container"></div>
+    <div id="message-container" style="display: none;"></div>
 
     <div id="form-container">
         <div class="form-section">
@@ -23,27 +23,27 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="form-profissional">Selecione seu nome abaixo:</label>
-                        <select id="form-profissional" required></select>
+                        <select id="form-profissional" class="form-control" required></select>
                     </div>
                     <div class="form-group">
                         <label for="form-paciente">Informe o nome do paciente:</label>
-                        <input type="text" id="form-paciente" required>
+                        <input type="text" id="form-paciente" class="form-control" required>
                     </div>
                     <div class="form-group">
                         <label for="form-data-pagamento">Informe a data do pagamento:</label>
-                        <input type="date" id="form-data-pagamento" required>
+                        <input type="date" id="form-data-pagamento" class="form-control" required>
                     </div>
                     <div class="form-group">
                         <label for="form-mes-ref">Selecione o mês do pagamento:</label>
-                        <select id="form-mes-ref" required></select>
+                        <select id="form-mes-ref" class="form-control" required></select>
                     </div>
                     <div class="form-group">
                         <label for="form-valor">Informe o valor da contribuição:</label>
-                        <input type="number" id="form-valor" step="0.01" required>
+                        <input type="number" id="form-valor" class="form-control" step="0.01" required>
                     </div>
                     <div class="form-group">
                         <label for="form-arquivo">Anexe o comprovante de pagamento:</label>
-                        <input type="file" id="form-arquivo" accept="image/*,application/pdf" required>
+                        <input type="file" id="form-arquivo" class="form-control" accept="image/*,application/pdf" required>
                     </div>
                 </div>
                 <div class="button-container">
