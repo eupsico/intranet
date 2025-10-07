@@ -465,7 +465,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       Number(configuracoes["minimoHorasAntecedencia"]) || 6;
     const quantidadeDiasBusca =
       Number(configuracoes["quantidadeDiasBusca"]) || 7;
-
     const dataFim = new Date(hoje);
     dataFim.setDate(hoje.getDate() + quantidadeDiasBusca);
     const dataFimISO = dataFim.toISOString().split("T")[0];
@@ -489,10 +488,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       }
     });
 
-    console.log(
-      `📅 Buscando horários de triagem entre ${dataInicio} e ${dataFimISO}`
-    );
-
     const configSnapshot = await db
       .collection("agendaConfigurada")
       .where("tipo", "==", "triagem")
@@ -508,7 +503,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       id: doc.id,
       ...doc.data(),
     }));
-
     const slotsPotenciais = [];
 
     diasConfigurados.forEach((diaConfig) => {
@@ -517,13 +511,23 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         return;
       }
 
-      const [hInicio, mInicio = 0] = diaConfig.inicio.split(":").map(Number);
-      const [hFim, mFim = 0] = diaConfig.fim.split(":").map(Number);
+      // --- INÍCIO DA CORREÇÃO ---
+      // Converte as horas de início e fim para minutos totais para facilitar o cálculo
+      const [hInicio, mInicio] = diaConfig.inicio.split(":").map(Number);
+      const [hFim, mFim] = diaConfig.fim.split(":").map(Number);
 
-      let hAtual = hInicio;
-      let mAtual = mInicio;
+      const inicioEmMinutos = hInicio * 60 + mInicio;
+      const fimEmMinutos = hFim * 60 + mFim;
 
-      while (hAtual < hFim || (hAtual === hFim && mAtual <= mFim)) {
+      // Itera de 30 em 30 minutos
+      for (
+        let minutos = inicioEmMinutos;
+        minutos < fimEmMinutos;
+        minutos += 30
+      ) {
+        const hAtual = Math.floor(minutos / 60);
+        const mAtual = minutos % 60;
+
         const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
           mAtual
         ).padStart(2, "0")}`;
@@ -544,19 +548,17 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
             });
           }
         }
-
-        mAtual += 30;
-        if (mAtual >= 60) {
-          hAtual++;
-          mAtual = 0;
-        }
       }
+      // --- FIM DA CORREÇÃO ---
     });
 
     return { horarios: slotsPotenciais };
   } catch (error) {
     console.error("❌ Erro ao buscar horários públicos:", error);
-    return { error: "Erro ao buscar horários públicos." };
+    // Garante que, mesmo em caso de erro, a função retorne um objeto no formato esperado
+    throw new HttpsError("internal", "Erro ao buscar horários públicos.", {
+      originalError: error.message,
+    });
   }
 });
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
