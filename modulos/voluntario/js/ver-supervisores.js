@@ -11,8 +11,6 @@ import {
 } from "../../../assets/js/firebase-init.js";
 import { agendamentoController } from "./agendamento.js";
 
-// ... (o restante do arquivo continua exatamente como estava)
-
 let user, userData;
 
 export function init(dbRef, userRef, userDataRef) {
