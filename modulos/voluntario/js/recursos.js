@@ -49,20 +49,15 @@ export function init(user, userData) {
   const switchTab = (tabId) => {
     if (!tabContainer || !contentSections) return;
 
-    // *** INÍCIO DA CORREÇÃO ***
-    // Remove 'active' de TODOS os botões primeiro
     tabContainer.querySelectorAll(".tab-link").forEach((btn) => {
       btn.classList.remove("active");
     });
-
-    // Adiciona 'active' apenas ao botão que corresponde ao tabId
     const targetButton = tabContainer.querySelector(
       `.tab-link[data-tab="${tabId}"]`
     );
     if (targetButton) {
       targetButton.classList.add("active");
     }
-    // *** FIM DA CORREÇÃO ***
 
     contentSections.forEach((section) => {
       section.style.display = section.id === tabId ? "block" : "none";
