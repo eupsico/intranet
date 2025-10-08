@@ -1,7 +1,7 @@
 import { displaySupervisorProfile } from "./perfil-supervisor-view.js";
 import { displaySupervised } from "./meus-supervisionados-view.js";
 import { displayAppointments } from "./meus-agendamentos-view.js";
-import { auth } from "../../../assets/js/firebase.js";
+import { auth } from "../../../assets/js/firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const tabsContainer = document.getElementById("tabs-supervisor");
