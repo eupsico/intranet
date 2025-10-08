@@ -68,14 +68,14 @@ async function loadSupervisores() {
       card.className = "supervisor-card";
       card.dataset.id = supervisor.id;
 
-      let fotoSupervisor = "../../../assets/img/avatar-padrao.png";
-      if (supervisor.fotoSupervisor) {
-        const cleanPath = supervisor.fotoSupervisor.replace(
-          "assets/img/supervisores/",
-          ""
-        );
-        fotoSupervisor = `../../../assets/img/supervisores/${cleanPath}`;
+      // --- INÍCIO DA CORREÇÃO DA FOTO ---
+      let fotoSupervisor =
+        supervisor.fotoSupervisor || "../../../assets/img/avatar-padrao.png";
+      // Se o caminho salvo NÃO começar com http, nós adicionamos o prefixo relativo.
+      if (fotoSupervisor && !fotoSupervisor.startsWith("http")) {
+        fotoSupervisor = `../../../${fotoSupervisor.replace(/^\/*/, "")}`;
       }
+      // --- FIM DA CORREÇÃO DA FOTO ---
 
       card.innerHTML = `
                 <div class="supervisor-card-header">
