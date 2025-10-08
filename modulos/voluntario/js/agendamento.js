@@ -267,7 +267,28 @@ async function handleConfirmAgendamento(currentSupervisorData) {
 
 async function open(user, userData, supervisorData) {
   if (!modal) return;
-
+  if (!userData || !supervisorData) {
+    console.error(
+      "[Agendamento] Tentativa de abrir o modal com dados incompletos."
+    );
+    if (!userData) {
+      console.error(
+        `[Agendamento] Erro Crítico: Não foi possível carregar os dados do usuário logado (ID: ${user?.uid}). Verifique se um documento para este usuário existe na coleção 'users'.`
+      );
+      alert(
+        "Erro grave: Seus dados de perfil não foram encontrados no banco de dados. Não é possível continuar. Por favor, contate o suporte técnico."
+      );
+    }
+    if (!supervisorData) {
+      console.error(
+        "[Agendamento] Erro Crítico: Os dados do supervisor selecionado não foram fornecidos."
+      );
+      alert(
+        "Erro grave: Os dados do supervisor não foram carregados. Por favor, contate o suporte técnico."
+      );
+    }
+    return; // Interrompe a execução da função para evitar o erro
+  }
   currentUser = user;
   currentUserData = userData;
 
