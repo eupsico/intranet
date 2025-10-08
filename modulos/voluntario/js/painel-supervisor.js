@@ -1,123 +1,131 @@
 // Arquivo: /modulos/voluntario/js/painel-supervisor.js
-// Versão Corrigida
+// Versão: 3.0 (Corrigida e Refatorada)
+// Descrição: Controla as abas do Painel do Supervisor, carregando dados e módulos dinamicamente.
 
-// Importa a função 'init' de cada módulo de visualização, usando um apelido (alias) para evitar conflitos.
-// Ex: A função 'init' de 'perfil-supervisor-view.js' será chamada como 'initPerfil'.
+import { auth, db, doc, getDoc } from "../../../assets/js/firebase-init.js";
 import { init as initPerfil } from "./perfil-supervisor-view.js";
 import { init as initSupervisionados } from "./meus-supervisionados-view.js";
 import { init as initAgendamentos } from "./meus-agendamentos-view.js";
 
-// Importa o serviço de autenticação do Firebase.
-import { auth } from "../../../assets/js/firebase-init.js";
-
 document.addEventListener("DOMContentLoaded", () => {
-  const tabsContainer = document.getElementById("tabs-supervisor");
-  const contentContainer = document.getElementById(
-    "content-container-supervisor"
-  );
+  const tabsContainer = document.getElementById("painel-supervisor-tabs");
+  const contentContainer = document.getElementById("painel-supervisor-content");
   let initialTabLoaded = false;
-  let currentUserData = null; // Armazena os dados do usuário para não recarregar a cada clique
 
   /**
-   * Carrega o conteúdo da aba dinamicamente, chamando a função 'init' do módulo correspondente.
-   * @param {string} tabId - O ID da aba a ser carregada.
-   * @param {object} user - O objeto do usuário autenticado pelo Firebase.
+   * Busca os dados do usuário logado a partir do Firestore.
+   * @param {string} uid - O ID do usuário autenticado.
+   * @returns {object|null} - Os dados do usuário ou null se não encontrado.
    */
-  async function loadTabContent(tabId, user) {
-    const contentDiv = document.getElementById(tabId);
-    if (!contentDiv) {
-      console.error(
-        `Elemento de conteúdo para a aba #${tabId} não encontrado.`
-      );
-      return;
+  async function getUserData(uid) {
+    if (!uid) return null;
+    try {
+      const userRef = doc(db, "usuarios", uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        return userSnap.data();
+      } else {
+        console.error(
+          "Documento do supervisor não encontrado na coleção 'usuarios'."
+        );
+        return null;
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dados do supervisor:", error);
+      return null;
     }
+  }
 
-    // Mostra um spinner de carregamento enquanto o conteúdo é buscado.
-    contentDiv.innerHTML = '<div class="loading-spinner"></div>';
+  /**
+   * Carrega o HTML e executa o script de uma aba específica.
+   * @param {string} tabId - O ID da aba (ex: "perfil-supervisor-view").
+   * @param {object} user - O objeto de usuário do Firebase Auth.
+   * @param {object} userData - Os dados do Firestore do usuário.
+   */
+  async function loadTabContent(tabId, user, userData) {
+    if (!contentContainer) return;
+    contentContainer.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-      // O 'switch' direciona para a função de inicialização correta com base na aba clicada.
-      // Todos os módulos agora são chamados da mesma forma, passando o objeto 'user'.
+      // Carrega o arquivo HTML correspondente à aba
+      const htmlResponse = await fetch(`../page/${tabId}.html`);
+      if (!htmlResponse.ok) {
+        throw new Error(
+          `Arquivo HTML para a aba '${tabId}' não foi encontrado.`
+        );
+      }
+      contentContainer.innerHTML = await htmlResponse.text();
+
+      // Com base no ID da aba, chama a função 'init' do módulo correto
       switch (tabId) {
-        case "meu-perfil-supervisor":
-          // O módulo 'perfil-supervisor-view.js' é responsável por buscar seus próprios dados.
-          await initPerfil(user);
+        case "perfil-supervisor-view":
+          await initPerfil(user, userData);
           break;
-        case "meus-supervisionados":
-          await initSupervisionados(user);
+        case "meus-supervisionados-view":
+          await initSupervisionados(user, userData);
           break;
-        case "meus-agendamentos-supervisor":
-          // A função init de 'meus-agendamentos-view.js' é chamada aqui.
-          await initAgendamentos(user);
+        case "meus-agendamentos-view":
+          await initAgendamentos(user, userData);
           break;
         default:
-          console.warn(`Nenhuma ação definida para a aba: ${tabId}`);
-          contentDiv.innerHTML = ""; // Limpa o spinner se a aba não for reconhecida
+          throw new Error(`Ação para a aba '${tabId}' não definida.`);
       }
     } catch (error) {
       console.error(`Erro ao carregar o conteúdo da aba ${tabId}:`, error);
-      contentDiv.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao carregar o conteúdo. Tente novamente.</p>`;
+      contentContainer.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao carregar o conteúdo desta aba.</p>`;
     }
   }
 
   /**
-   * Gerencia a troca de abas, atualizando a interface e chamando o carregamento de conteúdo.
+   * Gerencia a troca de abas, atualizando a interface e iniciando o carregamento.
    * @param {string} tabId - O ID da aba de destino.
    * @param {object} user - O objeto do usuário autenticado.
+   * @param {object} userData - Os dados do Firestore do usuário.
    */
-  function switchTab(tabId, user) {
-    // Esconde todos os painéis de conteúdo.
-    contentContainer
-      .querySelectorAll(".content-supervisor")
-      .forEach((content) => {
-        content.style.display = "none";
-      });
+  function switchTab(tabId, user, userData) {
+    if (!tabsContainer) return;
 
-    // Remove a classe 'active' de todos os botões de aba.
-    tabsContainer
-      .querySelectorAll(".tab-link")
-      .forEach((btn) => btn.classList.remove("active"));
+    // Atualiza o estado 'active' dos botões
+    tabsContainer.querySelectorAll(".tab-link").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.tab === tabId);
+    });
 
-    // Mostra o painel de conteúdo da aba selecionada.
-    const targetContent = document.getElementById(tabId);
-    if (targetContent) {
-      targetContent.style.display = "block";
-      // Carrega ou recarrega o conteúdo da aba.
-      loadTabContent(tabId, user);
-    }
-
-    // Adiciona a classe 'active' ao botão da aba clicada.
-    const targetButton = tabsContainer.querySelector(
-      `.tab-link[data-tab="${tabId}"]`
-    );
-    if (targetButton) {
-      targetButton.classList.add("active");
-    }
+    // Carrega o conteúdo da aba selecionada
+    loadTabContent(tabId, user, userData);
   }
 
-  // Monitora o estado de autenticação para configurar o painel assim que o usuário logar.
-  auth.onAuthStateChanged((user) => {
+  // Monitora o estado de autenticação para iniciar o painel
+  auth.onAuthStateChanged(async (user) => {
     if (user) {
-      // Garante que a aba inicial seja carregada apenas uma vez.
+      const userData = await getUserData(user.uid);
+
+      if (!userData) {
+        contentContainer.innerHTML = `<p class="alert alert-error">Não foi possível carregar seus dados de perfil. Por favor, contate o suporte.</p>`;
+        return;
+      }
+
+      // Garante que a aba inicial seja carregada apenas uma vez
       if (!initialTabLoaded) {
-        const initialTab = "meu-perfil-supervisor";
-        switchTab(initialTab, user); // Carrega a aba inicial.
+        const initialTab = "perfil-supervisor-view";
+        switchTab(initialTab, user, userData);
         initialTabLoaded = true;
       }
 
-      // Adiciona o listener de clique ao contêiner das abas.
-      tabsContainer.addEventListener("click", (event) => {
-        if (event.target.matches(".tab-link")) {
-          const tabId = event.target.getAttribute("data-tab");
-          if (tabId) {
-            switchTab(tabId, user);
+      // Adiciona o listener de clique ao contêiner das abas (uma única vez)
+      if (!tabsContainer.dataset.listenerAttached) {
+        tabsContainer.addEventListener("click", (event) => {
+          if (event.target.matches(".tab-link")) {
+            const tabId = event.target.getAttribute("data-tab");
+            if (tabId) {
+              switchTab(tabId, user, userData);
+            }
           }
-        }
-      });
+        });
+        tabsContainer.dataset.listenerAttached = "true";
+      }
     } else {
-      console.log("Usuário não está logado. Redirecionando...");
-      // Idealmente, redirecionar para a página de login.
-      contentContainer.innerHTML = `<p>Você precisa estar logado para ver este conteúdo.</p>`;
+      console.log("Usuário não está logado.");
+      contentContainer.innerHTML = `<p>Você precisa estar logado para acessar este painel.</p>`;
     }
   });
 });
