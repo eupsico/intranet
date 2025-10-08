@@ -1,163 +1,91 @@
-// Arquivo: /modulos/voluntario/js/painel-supervisor.js
-// Versão: 3.2 (FINAL, com logs e correção de parâmetros)
-
-import { auth, db, doc, getDoc } from "../../../assets/js/firebase-init.js";
-import { init as initPerfil } from "./perfil-supervisor-view.js";
-import { init as initSupervisionados } from "./meus-supervisionados-view.js";
-import { init as initAgendamentos } from "./meus-agendamentos-view.js";
+import { displaySupervisorProfile } from "./perfil-supervisor-view.js";
+import { displaySupervised } from "./meus-supervisionados-view.js";
+import { displayAppointments } from "./meus-agendamentos-view.js";
+import { auth } from "../../../assets/js/firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log(
-    "[PAINEL SUPERVISOR] Passo 1: O DOM foi completamente carregado."
+  const tabsContainer = document.getElementById("tabs-supervisor");
+  const contentContainer = document.getElementById(
+    "content-container-supervisor"
   );
-
-  const tabsContainer = document.getElementById("painel-supervisor-tabs");
-  const contentContainer = document.getElementById("painel-supervisor-content");
   let initialTabLoaded = false;
-  let eventListenerAttached = false;
 
-  async function getUserData(uid) {
-    console.log(
-      `[PAINEL SUPERVISOR] Passo 3.1: Buscando dados do usuário (userData) para o UID: ${uid}`
-    );
-    if (!uid) {
-      console.error(
-        "[PAINEL SUPERVISOR] ERRO: UID não fornecido para getUserData."
-      );
-      return null;
-    }
-    try {
-      const userRef = doc(db, "usuarios", uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        console.log(
-          "[PAINEL SUPERVISOR] Passo 3.2: Documento do usuário encontrado.",
-          userSnap.data()
-        );
-        return userSnap.data();
-      } else {
-        console.error(
-          "[PAINEL SUPERVISOR] ERRO: Documento do supervisor não encontrado na coleção 'usuarios'."
-        );
-        return null;
-      }
-    } catch (error) {
-      console.error(
-        "[PAINEL SUPERVISOR] ERRO ao buscar dados do supervisor:",
-        error
-      );
-      return null;
-    }
-  }
+  // Função para carregar o conteúdo da aba dinamicamente
+  async function loadTabContent(tabId, user) {
+    const contentDiv = document.getElementById(tabId);
+    if (!contentDiv) return;
 
-  async function loadTabContent(tabId, user, userData) {
-    console.group(`[PAINEL SUPERVISOR] Carregando Aba: ${tabId}`);
-    if (!contentContainer) {
-      console.error(
-        "[PAINEL SUPERVISOR] Container de conteúdo não encontrado. Abortando."
-      );
-      console.groupEnd();
-      return;
-    }
-    contentContainer.innerHTML = '<div class="loading-spinner"></div>';
-    console.log("[PAINEL SUPERVISOR] Spinner de carregamento exibido.");
+    // Remove o conteúdo existente para recarregar
+    contentDiv.innerHTML = "";
 
     try {
-      const htmlPath = `../page/${tabId}.html`;
-      console.log(`[PAINEL SUPERVISOR] Buscando HTML em: ${htmlPath}`);
-      const htmlResponse = await fetch(htmlPath);
-      if (!htmlResponse.ok)
-        throw new Error(`Arquivo HTML '${htmlPath}' não foi encontrado.`);
-
-      contentContainer.innerHTML = await htmlResponse.text();
-      console.log("[PAINEL SUPERVISOR] HTML carregado e inserido na página.");
-
-      console.log(
-        `[PAINEL SUPERVISOR] Chamando a função 'init' do módulo para '${tabId}' com user e userData...`
-      );
+      let module;
       switch (tabId) {
-        case "perfil-supervisor-view":
-          await initPerfil(user, userData);
+        case "meu-perfil-supervisor":
+          await displaySupervisorProfile(user.uid);
           break;
-        case "meus-supervisionados-view":
-          await initSupervisionados(user, userData);
+        case "meus-supervisionados":
+          await displaySupervised(user.uid);
           break;
-        case "meus-agendamentos-view":
-          await initAgendamentos(user, userData);
+        case "meus-agendamentos-supervisor":
+          await displayAppointments(user.uid);
           break;
-        default:
-          throw new Error(`Ação para a aba '${tabId}' não definida.`);
       }
-      console.log(
-        `[PAINEL SUPERVISOR] Função 'init' para '${tabId}' finalizada com sucesso.`
-      );
     } catch (error) {
-      console.error(
-        `[PAINEL SUPERVISOR] ERRO CRÍTICO ao carregar a aba ${tabId}:`,
-        error
-      );
-      contentContainer.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao carregar o conteúdo desta aba.</p>`;
-    } finally {
-      console.groupEnd();
+      console.error(`Erro ao carregar o conteúdo da aba ${tabId}:`, error);
+      contentDiv.innerHTML = `<p>Ocorreu um erro ao carregar o conteúdo. Tente novamente.</p>`;
     }
   }
 
-  function switchTab(tabId, user, userData) {
-    console.log(`[PAINEL SUPERVISOR] Trocando para a aba: ${tabId}`);
-    if (!tabsContainer) return;
-
-    tabsContainer.querySelectorAll(".tab-link").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.tab === tabId);
-    });
-
-    loadTabContent(tabId, user, userData);
-  }
-
-  auth.onAuthStateChanged(async (user) => {
-    console.log(
-      "[PAINEL SUPERVISOR] Passo 2: Verificando estado de autenticação..."
-    );
-    if (user) {
-      console.log("[PAINEL SUPERVISOR] Passo 3: Usuário autenticado.", {
-        uid: user.uid,
-        email: user.email,
+  // Função para trocar de abas
+  function switchTab(tabId, user) {
+    // Esconde todos os conteúdos
+    contentContainer
+      .querySelectorAll(".content-supervisor")
+      .forEach((content) => {
+        content.style.display = "none";
       });
 
-      const userData = await getUserData(user.uid);
-      if (!userData) {
-        contentContainer.innerHTML = `<p class="alert alert-error">Falha crítica: Não foi possível carregar os dados do seu perfil do banco de dados.</p>`;
-        return;
-      }
-      console.log(
-        "[PAINEL SUPERVISOR] Passo 4: Dados do usuário (userData) carregados com sucesso."
-      );
+    // Mostra o conteúdo da aba alvo
+    const targetContent = document.getElementById(tabId);
+    if (targetContent) {
+      targetContent.style.display = "block";
+      loadTabContent(tabId, user);
+    }
 
+    // --- INÍCIO DA CORREÇÃO ---
+    // Atualiza o estado 'active' dos botões da aba.
+    const targetButton = tabsContainer.querySelector(
+      `.tab-link[data-tab="${tabId}"]`
+    );
+    if (targetButton) {
+      // Garante que a busca por 'querySelectorAll' seja feita no container correto.
+      tabsContainer
+        .querySelectorAll(".tab-link")
+        .forEach((btn) => btn.classList.remove("active"));
+      targetButton.classList.add("active");
+    }
+    // --- FIM DA CORREÇÃO ---
+  }
+
+  // Monitora o estado de autenticação
+  auth.onAuthStateChanged((user) => {
+    if (user) {
       if (!initialTabLoaded) {
-        const initialTab = "perfil-supervisor-view";
-        console.log(
-          `[PAINEL SUPERVISOR] Passo 5: Carregando aba inicial: ${initialTab}`
-        );
-        switchTab(initialTab, user, userData);
+        const initialTab = "meu-perfil-supervisor";
+        switchTab(initialTab, user); // Carrega a aba inicial
         initialTabLoaded = true;
       }
 
-      if (!eventListenerAttached) {
-        tabsContainer.addEventListener("click", (event) => {
-          if (event.target.matches(".tab-link")) {
-            const tabId = event.target.getAttribute("data-tab");
-            if (tabId) {
-              switchTab(tabId, user, userData);
-            }
-          }
-        });
-        eventListenerAttached = true;
-        console.log(
-          "[PAINEL SUPERVISOR] Passo 6: Listener de clique nas abas foi configurado."
-        );
-      }
+      tabsContainer.addEventListener("click", (event) => {
+        if (event.target.matches(".tab-link")) {
+          const tabId = event.target.getAttribute("data-tab");
+          switchTab(tabId, user);
+        }
+      });
     } else {
-      console.warn("[PAINEL SUPERVISOR] Usuário não está logado.");
-      contentContainer.innerHTML = `<p>Você precisa estar logado para acessar este painel.</p>`;
+      console.log("Usuário não está logado.");
+      // Redirecionar para a página de login ou mostrar uma mensagem.
     }
   });
 });
