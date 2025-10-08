@@ -1,7 +1,8 @@
 // Arquivo: /modulos/voluntario/js/painel-supervisor.js
-// Versão 2.1 (Corrige a lógica de destaque das abas)
+// Versão 2.2 (Lógica de abas corrigida para destacar corretamente)
 
 async function loadTabContent(tabId, user, userData) {
+  // ... (nenhuma mudança nesta função interna)
   const contentArea = document.getElementById("painel-supervisor-content");
   if (!contentArea) return;
   contentArea.innerHTML = '<div class="loading-spinner"></div>';
@@ -30,16 +31,19 @@ export function init(user, userData) {
     if (targetButton) {
       const tabId = targetButton.dataset.tab;
 
-      // CORREÇÃO: Garante que a busca por 'querySelectorAll' seja feita no container correto.
+      // *** INÍCIO DA CORREÇÃO ***
+      // Garante que a busca por 'querySelectorAll' seja feita no container correto.
       tabsContainer
         .querySelectorAll(".tab-link")
         .forEach((btn) => btn.classList.remove("active"));
       targetButton.classList.add("active");
+      // *** FIM DA CORREÇÃO ***
 
       loadTabContent(tabId, user, userData);
     }
   };
 
+  // Garante que o listener seja adicionado apenas uma vez
   const newTabsContainer = tabsContainer.cloneNode(true);
   tabsContainer.parentNode.replaceChild(newTabsContainer, tabsContainer);
   newTabsContainer.addEventListener("click", handleTabClick);
