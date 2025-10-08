@@ -1,7 +1,6 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
-// Versão: 9.0 (Migração para a sintaxe modular do Firebase v9)
+// Versão: 10.1 (CORRIGIDO: Restaura a aparência dos cards e o comportamento do modal flutuante)
 
-// 1. Importa todas as funções necessárias do nosso arquivo de configuração central
 import {
   db,
   collection,
@@ -31,25 +30,18 @@ const COLUMNS_CONFIG = {
 let allCardsData = {};
 let currentColumnFilter = [];
 let currentUserData = {};
-let unsubscribe; // Variável para guardar a função de 'unsubscribe' do listener do Firestore
+let unsubscribe;
 
-/**
- * Inicializa o painel Kanban.
- * @param {object} authUser - O objeto do usuário autenticado.
- * @param {object} authData - Os dados do usuário do Firestore.
- * @param {HTMLElement} container - O elemento container onde o painel será renderizado.
- * @param {string[]} columnFilter - A lista de status a serem exibidos como colunas.
- */
 export async function init(db, authUser, authData, container, columnFilter) {
   currentColumnFilter = columnFilter;
   currentUserData = authData;
 
-  // Cancela qualquer listener anterior para evitar múltiplas execuções
   if (unsubscribe) {
     unsubscribe();
   }
 
   try {
+    // O HTML carregado aqui (trilha-paciente.html) DEVE conter a estrutura dos modais.
     const response = await fetch("../page/trilha-paciente.html");
     if (!response.ok) throw new Error("Falha ao carregar o HTML da trilha.");
     container.innerHTML = await response.text();
@@ -64,9 +56,6 @@ export async function init(db, authUser, authData, container, columnFilter) {
   }
 }
 
-/**
- * Constrói as colunas do Kanban no DOM.
- */
 function setupColumns() {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
@@ -86,21 +75,13 @@ function setupColumns() {
     .join("");
 }
 
-/**
- * Configura o listener em tempo real (onSnapshot) para carregar e atualizar os cards.
- */
 function loadAndRenderCards() {
-  // Cria a referência para a coleção
   const trilhaRef = collection(db, "trilhaPaciente");
-
-  // Cria a consulta (query) para buscar apenas os documentos com os status visíveis
   const q = query(trilhaRef, where("status", "in", currentColumnFilter));
 
-  // Inicia o listener em tempo real e guarda a função de 'unsubscribe'
   unsubscribe = onSnapshot(
     q,
     (snapshot) => {
-      // Limpa os cards de todas as colunas
       document
         .querySelectorAll(".kanban-cards-container")
         .forEach((c) => (c.innerHTML = ""));
@@ -125,26 +106,39 @@ function loadAndRenderCards() {
   );
 }
 
-/**
- * Cria o elemento HTML para um card do Kanban.
- * @param {object} cardData - Os dados do paciente para o card.
- * @returns {HTMLElement} O elemento <div> do card.
- */
+// =========================================================================
+// MUDANÇA 1: Aparência dos Cards
+// =========================================================================
 function createCardElement(cardData) {
   const card = document.createElement("div");
   card.className = "kanban-card";
   card.dataset.id = cardData.id;
+
+  // Formata a data para exibição
+  const lastUpdateDate = cardData.lastUpdate?.toDate();
+  const formattedDate = lastUpdateDate
+    ? lastUpdateDate.toLocaleDateString("pt-BR")
+    : "Não disponível";
+
+  // Define o HTML do card com as informações adicionais
   card.innerHTML = `
-  <p class="card-patient-name">${
-    cardData.nomeCompleto || "Nome não informado"
-  }</p>
-  <p class="card-patient-cpf">CPF: ${cardData.cpf || "Não informado"}</p>`;
+    <p class="card-patient-name">${
+      cardData.nomeCompleto || "Nome não informado"
+    }</p>
+    <div class="card-details">
+        <p><strong>Status:</strong> ${
+          COLUMNS_CONFIG[cardData.status] || cardData.status
+        }</p>
+        <p><strong>Assistente:</strong> ${
+          cardData.assistenteSocialNome || "Não atribuído"
+        }</p>
+        <p><strong>Última Atualização:</strong> ${formattedDate}</p>
+    </div>
+    `;
   return card;
 }
+// =========================================================================
 
-/**
- * Atualiza a contagem de cards em cada cabeçalho de coluna.
- */
 function updateColumnCounts() {
   currentColumnFilter.forEach((statusKey) => {
     const countEl = document.getElementById(`count-${statusKey}`);
@@ -155,11 +149,7 @@ function updateColumnCounts() {
   });
 }
 
-/**
- * Configura os controles de todos os modais da página (fechar, cancelar, etc.).
- */
 function setupAllModalControls() {
-  // Modal Principal de Detalhes
   const cardModal = document.getElementById("card-modal");
   document
     .getElementById("close-modal-btn")
@@ -169,7 +159,7 @@ function setupAllModalControls() {
     .addEventListener("click", () => (cardModal.style.display = "none"));
   cardModal.addEventListener("click", (e) => {
     if (e.target === cardModal) cardModal.style.display = "none";
-  }); // Modal de Mover Card
+  });
 
   const moveModal = document.getElementById("move-card-modal");
   document
@@ -186,9 +176,6 @@ function setupAllModalControls() {
     .addEventListener("click", confirmMove);
 }
 
-/**
- * Configura o evento de clique para abrir os detalhes de um card.
- */
 function setupEventListeners() {
   const kanbanBoard = document.getElementById("kanban-board");
   if (!kanbanBoard) return;
@@ -202,8 +189,6 @@ function setupEventListeners() {
   });
 }
 
-// ----- LÓGICA DE MOVIMENTAÇÃO DE CARD -----
-
 function openMoveModal(cardId, cardData) {
   const moveModal = document.getElementById("move-card-modal");
   const select = document.getElementById("move-card-stage-select");
@@ -212,7 +197,7 @@ function openMoveModal(cardId, cardData) {
     cardData.nomeCompleto;
   document.getElementById("move-card-id").value = cardId;
 
-  select.innerHTML = ""; // Limpa opções antigas
+  select.innerHTML = "";
   for (const key in COLUMNS_CONFIG) {
     if (key !== cardData.status) {
       select.innerHTML += `<option value="${key}">${COLUMNS_CONFIG[key]}</option>`;
@@ -237,8 +222,6 @@ async function confirmMove() {
   button.textContent = "Movendo...";
 
   try {
-    // --- INÍCIO DA CORREÇÃO ---
-    // Acessa a variável 'currentUserData' que é definida na função 'init'
     const lastUpdatedBy = currentUserData
       ? currentUserData.nome
       : "Usuário Desconhecido";
@@ -247,9 +230,8 @@ async function confirmMove() {
     await updateDoc(cardRef, {
       status: newStatus,
       lastUpdate: new Date(),
-      lastUpdatedBy: lastUpdatedBy, // Usa a variável corrigida
+      lastUpdatedBy: lastUpdatedBy,
     });
-    // --- FIM DA CORREÇÃO ---
 
     document.getElementById("move-card-modal").style.display = "none";
   } catch (error) {
@@ -261,8 +243,9 @@ async function confirmMove() {
   }
 }
 
-// ----- LÓGICA DO MODAL DE DETALHES DO CARD -----
-
+// =========================================================================
+// MUDANÇA 2: Comportamento do Modal
+// =========================================================================
 async function openCardModal(cardId) {
   const modal = document.getElementById("card-modal");
   const modalTitle = document.getElementById("card-modal-title");
@@ -274,10 +257,12 @@ async function openCardModal(cardId) {
   if (!cardData) return;
 
   modalTitle.textContent = `Detalhes: ${cardData.nomeCompleto}`;
+  // A linha abaixo é a chave para o comportamento de overlay.
+  // Ela ativa a div com 'position: fixed' que cobre a tela inteira.
   modal.style.display = "flex";
   modalBody.innerHTML = '<div class="loading-spinner"></div>';
   saveButton.style.display = "inline-block";
-  moveButton.style.display = "inline-block"; // Clona e substitui o botão para remover listeners antigos
+  moveButton.style.display = "inline-block";
 
   const newMoveButton = moveButton.cloneNode(true);
   moveButton.parentNode.replaceChild(newMoveButton, moveButton);
@@ -286,11 +271,12 @@ async function openCardModal(cardId) {
   );
 
   try {
-    const stage = cardData.status; // Carrega o módulo JS da etapa específica
+    const stage = cardData.status;
     const stageModule = await import(
       `./stages/${stage}.js?v=${new Date().getTime()}`
     );
 
+    // O conteúdo é carregado dentro do corpo do modal, e não na página principal.
     const contentElement = await stageModule.render(
       cardId,
       cardData,
@@ -299,7 +285,6 @@ async function openCardModal(cardId) {
     modalBody.innerHTML = "";
     modalBody.appendChild(contentElement);
 
-    // Clona e substitui o botão de salvar para remover listeners antigos
     const newSaveButton = saveButton.cloneNode(true);
     saveButton.parentNode.replaceChild(newSaveButton, saveButton);
 
@@ -309,9 +294,8 @@ async function openCardModal(cardId) {
         newSaveButton.disabled = true;
         newSaveButton.textContent = "Salvando...";
         try {
-          // Passa o corpo do modal para a função save, se ela precisar acessar os inputs
           await stageModule.save(cardId, cardData, modalBody);
-          modal.style.display = "none";
+          modal.style.display = "none"; // Esconde o modal ao salvar.
         } catch (error) {
           console.error("Erro ao salvar:", error);
           alert("Erro ao salvar: " + error.message);
@@ -332,3 +316,4 @@ async function openCardModal(cardId) {
     saveButton.style.display = "none";
   }
 }
+// =========================================================================
