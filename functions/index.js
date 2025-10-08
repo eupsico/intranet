@@ -4,9 +4,8 @@ const {
   onDocumentUpdated,
 } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
-
-// Importe as funções modulares do Admin SDK
 const { initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
 const {
   getFirestore,
   FieldValue,
@@ -19,7 +18,7 @@ const {
 // Inicialize o app e o Firestore da maneira correta
 initializeApp();
 const db = getFirestore();
-
+const adminAuth = getAuth();
 // -----------------------------
 // Função auxiliar para username
 // -----------------------------
@@ -239,6 +238,7 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
   }
 );
+
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
@@ -266,32 +266,31 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
         .collection("disponibilidadeAssistentes")
         .get();
       if (dispoSnapshot.empty) {
-        console.log(
-          "Nenhum documento encontrado em 'disponibilidadeAssistentes'."
-        );
         return [];
       }
 
       const assistentesComDispoIds = dispoSnapshot.docs.map((doc) => doc.id);
       if (assistentesComDispoIds.length === 0) return [];
 
-      const usuariosSnapshot = await db
-        .collection("usuarios")
-        .where(
-          admin.firestore.FieldPath.documentId(),
-          "in",
-          assistentesComDispoIds
-        )
-        .get();
+      // --- INÍCIO DA CORREÇÃO ---
+      // A sintaxe "FieldPath.documentId()" é do cliente. No Admin SDK,
+      // a forma correta e mais simples é buscar os documentos diretamente.
+      const userPromises = assistentesComDispoIds.map((id) =>
+        db.collection("usuarios").doc(id).get()
+      );
+      const userDocs = await Promise.all(userPromises);
+      // --- FIM DA CORREÇÃO ---
 
       const assistentesMap = new Map();
-      usuariosSnapshot.forEach((doc) => {
-        const userData = doc.data();
-        if (
-          userData.funcoes?.includes("servico_social") &&
-          userData.inativo === false
-        ) {
-          assistentesMap.set(doc.id, userData);
+      userDocs.forEach((doc) => {
+        if (doc.exists) {
+          const userData = doc.data();
+          if (
+            userData.funcoes?.includes("servico_social") &&
+            userData.inativo === false
+          ) {
+            assistentesMap.set(doc.id, userData);
+          }
         }
       });
 
@@ -307,9 +306,6 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
         }
       });
 
-      console.log(
-        `Retornando ${todasDisponibilidades.length} registros de disponibilidade.`
-      );
       return todasDisponibilidades;
     } catch (error) {
       console.error("Erro em getTodasDisponibilidadesAssistentes:", error);
@@ -321,6 +317,7 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
     }
   }
 );
+
 exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
   console.log("🔧 Iniciando definirTipoAgenda...");
 
