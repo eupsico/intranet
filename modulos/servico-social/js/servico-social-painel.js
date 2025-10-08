@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
-// Versão: 3.0 (Migrado para importações modulares do Firebase v9)
+// Versão: 3.1 (CORRIGIDO - Passagem de parâmetro para a view)
 
 import { db, functions } from "../../../assets/js/firebase-init.js";
 
@@ -102,6 +102,7 @@ export function initsocialPanel(user, userData) {
     });
   }
 
+  // *** INÍCIO DA CORREÇÃO ***
   async function loadView(viewName, param) {
     const viewData = views.find((v) => v.id === viewName);
     if (viewData && viewData.isExternal) return;
@@ -123,8 +124,8 @@ export function initsocialPanel(user, userData) {
       try {
         const viewModule = await import(scriptPath);
         if (viewModule && typeof viewModule.init === "function") {
-          // Passa o parâmetro para a função de inicialização do módulo
-          viewModule.init(user, userData, param); // db e functions já estão disponíveis no escopo do módulo importado
+          // A correção está aqui: agora passamos o 'param' (ID do paciente) para a função init do módulo.
+          viewModule.init(user, userData, param);
         }
       } catch (e) {
         console.log(
@@ -137,6 +138,7 @@ export function initsocialPanel(user, userData) {
       contentArea.innerHTML = `<h2>Erro ao carregar o módulo '${viewName}'.</h2><p>${error.message}.</p>`;
     }
   }
+  // *** FIM DA CORREÇÃO ***
 
   function start() {
     const userRoles = userData.funcoes || [];
@@ -171,6 +173,7 @@ export function initsocialPanel(user, userData) {
       }
     }
 
+    // Adiciona o listener de hashchange uma única vez, após a carga inicial.
     window.addEventListener("hashchange", handleHashChange);
   }
 
