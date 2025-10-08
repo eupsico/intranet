@@ -32,8 +32,16 @@ export async function init(user, userData) {
   const createSupervisorCard = (supervisor) => {
     const card = document.createElement("div");
     card.className = "supervisor-card";
-    const fotoSupervisor =
+
+    // --- INÍCIO DA CORREÇÃO ---
+    // Adiciona a lógica para montar o caminho relativo da imagem corretamente.
+    let fotoSupervisor =
       supervisor.fotoSupervisor || "../../../assets/img/avatar-padrao.png";
+    if (fotoSupervisor && !fotoSupervisor.startsWith("http")) {
+      fotoSupervisor = `../../../${fotoSupervisor.replace(/^\/*/, "")}`;
+    }
+    // --- FIM DA CORREÇÃO ---
+
     const registroCompleto =
       supervisor.conselhoProfissional &&
       supervisor.conselhoProfissional !== "Nenhum" &&
