@@ -1,8 +1,14 @@
 // Arquivo: /modulos/servico-social/js/fila-atendimento.js
-// Versão: 2.3 (CORRIGIDO)
+// Versão: 3.0 (Migrado para a sintaxe modular do Firebase v9)
 
-// ALTERAÇÃO: Adicionado o parâmetro 'functions' na assinatura da função.
-export function init(db, user, userData, functions, trilhaId) {
+import {
+  db,
+  doc,
+  getDoc,
+  updateDoc,
+} from "../../../assets/js/firebase-init.js";
+
+export function init(user, userData, trilhaId) {
   const patientDetailsContainer = document.getElementById(
     "patient-details-container"
   );
@@ -19,6 +25,7 @@ export function init(db, user, userData, functions, trilhaId) {
     return;
   }
 
+  // A referência será definida na função carregarDadosPaciente
   let trilhaDocRef = null;
 
   function formatarMoeda(input) {
@@ -67,19 +74,17 @@ export function init(db, user, userData, functions, trilhaId) {
   async function carregarDadosPaciente() {
     patientDetailsContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
-      // Esta linha agora funcionará, pois 'trilhaId' será a string correta.
-      const trilhaDoc = await db
-        .collection("trilhaPaciente")
-        .doc(trilhaId)
-        .get();
+      // Define a referência do documento com a sintaxe v9
+      trilhaDocRef = doc(db, "trilhaPaciente", trilhaId);
+      // Busca o documento com a sintaxe v9
+      const trilhaDoc = await getDoc(trilhaDocRef);
 
-      if (!trilhaDoc.exists) {
+      if (!trilhaDoc.exists()) {
         throw new Error(
           "Paciente não encontrado na trilha com o ID fornecido."
         );
       }
 
-      trilhaDocRef = trilhaDoc.ref;
       const data = trilhaDoc.data();
 
       const formatDate = (dateStr) =>
@@ -90,65 +95,65 @@ export function init(db, user, userData, functions, trilhaId) {
         arr && arr.length > 0 ? arr.join(", ") : "N/A";
 
       patientDetailsContainer.innerHTML = `
-          <div class="patient-info-group"><strong>Nome:</strong><p>${
-            data.nomeCompleto || "N/A"
-          }</p></div>
-          <div class="patient-info-group"><strong>CPF:</strong><p>${
-            data.cpf || "N/A"
-          }</p></div>
-          <div class="patient-info-group"><strong>Data de Nasc.:</strong><p>${formatDate(
-            data.dataNascimento
-          )}</p></div>
-          <div class="patient-info-group"><strong>Telefone:</strong><p>${
-            data.telefoneCelular || "N/A"
-          }</p></div>
-          <div class="patient-info-group"><strong>Email:</strong><p>${
-            data.email || "N/A"
-          }</p></div>
-          ${
-            data.responsavel?.nome
-              ? `
-          <div class="patient-info-group"><strong>Responsável:</strong><p>${
-            data.responsavel.nome
-          }</p></div>
-          <div class="patient-info-group"><strong>Contato Responsável:</strong><p>${
-            data.responsavel.contato || "N/A"
-          }</p></div>`
-              : ""
-          }
-          <hr>
-          <div class="patient-info-group"><strong>Endereço:</strong><p>${
-            data.rua || "N/A"
-          }, ${data.numeroCasa || "S/N"} - ${data.bairro || "N/A"}, ${
+        <div class="patient-info-group"><strong>Nome:</strong><p>${
+          data.nomeCompleto || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>CPF:</strong><p>${
+          data.cpf || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Data de Nasc.:</strong><p>${formatDate(
+          data.dataNascimento
+        )}</p></div>
+        <div class="patient-info-group"><strong>Telefone:</strong><p>${
+          data.telefoneCelular || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Email:</strong><p>${
+          data.email || "N/A"
+        }</p></div>
+        ${
+          data.responsavel?.nome
+            ? `
+        <div class="patient-info-group"><strong>Responsável:</strong><p>${
+          data.responsavel.nome
+        }</p></div>
+        <div class="patient-info-group"><strong>Contato Responsável:</strong><p>${
+          data.responsavel.contato || "N/A"
+        }</p></div>`
+            : ""
+        }
+        <hr>
+        <div class="patient-info-group"><strong>Endereço:</strong><p>${
+          data.rua || "N/A"
+        }, ${data.numeroCasa || "S/N"} - ${data.bairro || "N/A"}, ${
         data.cidade || "N/A"
       }</p></div>
-          <div class="patient-info-group"><strong>CEP:</strong><p>${
-            data.cep || "N/A"
-          }</p></div>
-          <hr>
-          <div class="patient-info-group"><strong>Renda Individual:</strong><p>${
-            data.rendaMensal || "N/A"
-          }</p></div>
-          <div class="patient-info-group"><strong>Renda Familiar:</strong><p>${
-            data.rendaFamiliar || "N/A"
-          }</p></div>
-          <div class="patient-info-group"><strong>Moradia:</strong><p>${
-            data.casaPropria || "N/A"
-          }</p></div>
-          <div class="patient-info-group"><strong>Pessoas na Moradia:</strong><p>${
-            data.pessoasMoradia || "N/A"
-          }</p></div>
-          <hr>
-          <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${formatArray(
-            data.disponibilidadeGeral
-          )}</p></div>
-          <div class="patient-info-group"><strong>Disponibilidade (Específica):</strong><p>${formatarDisponibilidadeEspecifica(
-            data.disponibilidadeEspecifica
-          )}</p></div>
-          <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
-            data.motivoBusca || "N/A"
-          }</p></div>
-      `;
+        <div class="patient-info-group"><strong>CEP:</strong><p>${
+          data.cep || "N/A"
+        }</p></div>
+        <hr>
+        <div class="patient-info-group"><strong>Renda Individual:</strong><p>${
+          data.rendaMensal || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Renda Familiar:</strong><p>${
+          data.rendaFamiliar || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Moradia:</strong><p>${
+          data.casaPropria || "N/A"
+        }</p></div>
+        <div class="patient-info-group"><strong>Pessoas na Moradia:</strong><p>${
+          data.pessoasMoradia || "N/A"
+        }</p></div>
+        <hr>
+        <div class="patient-info-group"><strong>Disponibilidade (Geral):</strong><p>${formatArray(
+          data.disponibilidadeGeral
+        )}</p></div>
+        <div class="patient-info-group"><strong>Disponibilidade (Específica):</strong><p>${formatarDisponibilidadeEspecifica(
+          data.disponibilidadeEspecifica
+        )}</p></div>
+        <div class="patient-info-group"><strong>Motivo da Busca:</strong><p>${
+          data.motivoBusca || "N/A"
+        }</p></div>
+    `;
       document.getElementById("queixa-paciente").value = data.motivoBusca || "";
     } catch (error) {
       console.error("Erro ao carregar dados do paciente:", error);
@@ -234,7 +239,8 @@ export function init(db, user, userData, functions, trilhaId) {
         dadosParaSalvar.observacoesTriagem =
           document.getElementById("observacao-geral").value;
       }
-      await trilhaDocRef.update(dadosParaSalvar);
+      // Atualiza o documento com a sintaxe v9
+      await updateDoc(trilhaDocRef, dadosParaSalvar);
       alert(
         "Ficha de triagem salva com sucesso! O paciente foi atualizado na Trilha do Paciente."
       );
