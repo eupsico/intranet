@@ -1,9 +1,9 @@
 // Arquivo: /modulos/voluntario/js/ver-supervisores.js
-// Versão: 4.0 (Migrado para a sintaxe modular do Firebase v9)
+// Versão: 4.1 (Caminho de importação corrigido)
 
-// 1. Importa as funções necessárias do Firestore v9
+// O caminho foi ajustado para ser relativo à página HTML principal
 import {
-  db, // A instância do DB já vem do firebase-init
+  db,
   collection,
   query,
   where,
@@ -11,12 +11,11 @@ import {
 } from "../../../assets/js/firebase-init.js";
 import { agendamentoController } from "./agendamento.js";
 
-// Variáveis de escopo do módulo
+// ... (o restante do arquivo continua exatamente como estava)
+
 let user, userData;
 
 export function init(dbRef, userRef, userDataRef) {
-  // As referências dbRef não são mais necessárias com a importação modular,
-  // mas mantemos a assinatura da função para compatibilidade com o chamador (supervisao.js)
   user = userRef;
   userData = userDataRef;
 
@@ -45,17 +44,13 @@ async function loadSupervisores() {
   grid.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    // 2. Cria a referência da coleção
     const supervisoresRef = collection(db, "usuarios");
-
-    // 3. Constrói a query com a sintaxe v9
     const q = query(
       supervisoresRef,
       where("funcoes", "array-contains", "supervisor"),
       where("inativo", "==", false)
     );
 
-    // 4. Executa a query com getDocs
     const querySnapshot = await getDocs(q);
     const supervisores = [];
     querySnapshot.forEach((doc) =>
@@ -121,7 +116,7 @@ async function loadSupervisores() {
   } catch (error) {
     console.error("Erro ao carregar supervisores:", error);
     grid.innerHTML =
-      '<p class="alert alert-error">Não foi possível carregar la lista de supervisores.</p>';
+      '<p class="alert alert-error">Não foi possível carregar a lista de supervisores.</p>';
   }
 }
 
