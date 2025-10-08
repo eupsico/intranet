@@ -24,6 +24,7 @@ import {
   onSnapshot,
   serverTimestamp,
   documentId,
+  Timestamp,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import {
   getFunctions,
@@ -78,4 +79,5 @@ export {
   onSnapshot,
   serverTimestamp,
   documentId,
+  Timestamp,
 };
