@@ -1,9 +1,16 @@
-// Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js (VERSÃO CORRIGIDA)
+// Arquivo: /modulos/voluntario/js/meus-agendamentos-view.js
+// Versão 2.0 (Atualizado para a sintaxe modular do Firebase v9)
 
-// REMOVIDO: A importação dos métodos da versão nova do Firebase foi removida.
-// import { collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import {
+  db,
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+} from "../../../assets/js/firebase-init.js";
 
-export async function init(db, user, userData) {
+export async function init(user, userData) {
   const container = document.getElementById("painel-supervisor-content");
   if (!container) {
     console.error(
@@ -12,7 +19,7 @@ export async function init(db, user, userData) {
     return;
   }
 
-  // Carrega o HTML da aba.
+  // Carrega o HTML da aba
   container.innerHTML = `
         <div id="meus-agendamentos-view">
             <div class="list-header">
@@ -32,13 +39,14 @@ export async function init(db, user, userData) {
   }
 
   try {
-    // ALTERADO: A consulta ao Firestore agora usa o formato antigo (compatível com o seu projeto).
-    const q = db
-      .collection("agendamentos")
-      .where("supervisorUid", "==", user.uid)
-      .orderBy("dataAgendamento", "desc");
+    // SINTAXE V9: Criação da consulta
+    const q = query(
+      collection(db, "agendamentos"),
+      where("supervisorUid", "==", user.uid),
+      orderBy("dataAgendamento", "desc")
+    );
 
-    const querySnapshot = await q.get();
+    const querySnapshot = await getDocs(q); // SINTAXE V9
 
     const agendamentos = [];
     querySnapshot.forEach((doc) => {
@@ -68,7 +76,6 @@ function displayAgendamentos(agendamentos, listaContainer) {
 
   let html = "";
   agendamentos.forEach((agendamento) => {
-    // O restante do código de exibição permanece o mesmo.
     const data = agendamento.dataAgendamento.toDate();
     const dataFormatada = data.toLocaleDateString("pt-BR");
     const horaFormatada = data.toLocaleTimeString("pt-BR", {
