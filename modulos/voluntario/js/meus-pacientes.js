@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 6.0 (Atualizado para a sintaxe modular do Firebase v9)
+// Versão: 6.1 (Corrigida a visibilidade inicial dos campos nos modais)
 
 import {
   db,
@@ -26,7 +26,6 @@ export function init(user, userData) {
   const horariosPbModal = document.getElementById("horarios-pb-modal");
   const desfechoPbModal = document.getElementById("desfecho-pb-modal");
 
-  // --- Funções de controle dos modais ---
   const todosOsModais = [encerramentoModal, horariosPbModal, desfechoPbModal];
   document
     .querySelectorAll(
@@ -51,7 +50,6 @@ export function init(user, userData) {
   async function carregarMeusPacientes() {
     container.innerHTML = '<div class="loading-spinner"></div>';
     try {
-      // SINTAXE V9: Consultas para Plantão e PB
       const queryPlantao = query(
         collection(db, "trilhaPaciente"),
         where("plantaoInfo.profissionalId", "==", user.uid),
@@ -201,7 +199,6 @@ export function init(user, userData) {
   }
 
   function adicionarEventListeners() {
-    // Recria o container para evitar múltiplos listeners
     const newContainer = container.cloneNode(true);
     container.parentNode.replaceChild(newContainer, container);
 
@@ -269,6 +266,7 @@ export function init(user, userData) {
     )}`;
     window.open(whatsappUrl, "_blank");
   }
+
   document
     .getElementById("encerramento-form")
     .addEventListener("submit", async (evento) => {
@@ -423,6 +421,19 @@ export function init(user, userData) {
     const form = document.getElementById("encerramento-form");
     form.reset();
     document.getElementById("paciente-id-modal").value = pacienteId;
+
+    // --- INÍCIO DA CORREÇÃO ---
+    // Garante que os containers condicionais comecem ocultos
+    document
+      .getElementById("motivo-nao-pagamento-container")
+      .classList.add("hidden");
+    const novaDisponibilidadeContainer = document.getElementById(
+      "nova-disponibilidade-container"
+    );
+    novaDisponibilidadeContainer.classList.add("hidden");
+    novaDisponibilidadeContainer.innerHTML = "";
+    // --- FIM DA CORREÇÃO ---
+
     const disponibilidadeEspecifica =
       dadosDoPaciente.disponibilidadeEspecifica || [];
     const textoDisponibilidade =
@@ -453,10 +464,6 @@ export function init(user, userData) {
     };
 
     const dispSelect = form.querySelector("#manter-disponibilidade");
-    const novaDisponibilidadeContainer = document.getElementById(
-      "nova-disponibilidade-container"
-    );
-
     dispSelect.onchange = async () => {
       const mostrar = dispSelect.value === "nao";
       novaDisponibilidadeContainer.classList.toggle("hidden", !mostrar);
@@ -482,12 +489,10 @@ export function init(user, userData) {
         }
       }
     };
-    dispSelect.value = "";
-    novaDisponibilidadeContainer.classList.add("hidden");
-    novaDisponibilidadeContainer.innerHTML = "";
 
     encerramentoModal.style.display = "block";
   }
+
   function addDisponibilidadeListeners(container) {
     const horariosCheckboxes = container.querySelectorAll(
       'input[name="horario"]'
@@ -543,13 +548,17 @@ export function init(user, userData) {
     form.querySelector("#paciente-id-horarios-modal").value = pacienteId;
     form.querySelector("#atendimento-id-horarios-modal").value = atendimentoId;
 
-    const iniciouRadio = form.querySelectorAll('input[name="iniciou-pb"]');
+    // --- INÍCIO DA CORREÇÃO ---
     const motivoContainer = document.getElementById(
       "motivo-nao-inicio-pb-container"
     );
     const continuacaoContainer = document.getElementById("form-continuacao-pb");
+    motivoContainer.classList.add("hidden");
+    continuacaoContainer.classList.add("hidden");
     continuacaoContainer.innerHTML = "";
+    // --- FIM DA CORREÇÃO ---
 
+    const iniciouRadio = form.querySelectorAll('input[name="iniciou-pb"]');
     iniciouRadio.forEach((radio) => {
       radio.onchange = () => {
         const mostrarFormulario = radio.value === "sim" && radio.checked;
