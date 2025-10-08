@@ -1,4 +1,13 @@
-import { db } from "../../../../assets/js/firebase-init.js";
+// Arquivo: /modulos/trilha-paciente/js/stages/encaminhar_para_plantao.js
+// Versão: 2.0 (Migrado para a sintaxe modular do Firebase v9)
+
+import {
+  db,
+  doc,
+  getDoc,
+  updateDoc,
+  deleteField,
+} from "../../../../assets/js/firebase-init.js";
 import { carregarProfissionais } from "../../../../assets/js/app.js";
 
 /**
@@ -8,10 +17,10 @@ import { carregarProfissionais } from "../../../../assets/js/app.js";
  * @returns {HTMLElement} O elemento HTML com o formulário completo.
  */
 export async function render(cardId, cardTitle) {
-  // Busca os dados mais recentes do paciente
-  const docRef = db.collection("trilhaPaciente").doc(cardId);
-  const doc = await docRef.get();
-  const cardData = doc.exists ? doc.data() : {};
+  // Busca os dados mais recentes do paciente com a sintaxe v9
+  const docRef = doc(db, "trilhaPaciente", cardId);
+  const docSnap = await getDoc(docRef);
+  const cardData = docSnap.exists() ? docSnap.data() : {};
 
   // Monta o HTML do formulário com todos os campos restaurados
   const content = `
@@ -102,11 +111,9 @@ export async function render(cardId, cardTitle) {
     </div>
   `;
 
-  // CORREÇÃO: Cria um elemento e insere o HTML, em vez de retornar a string diretamente.
   const element = document.createElement("div");
   element.innerHTML = content;
 
-  // Adiciona os listeners para a lógica de mostrar/esconder campos.
   const continuaSelect = element.querySelector("#continua-terapia");
   const motivoSection = element.querySelector("#motivo-nao-prosseguir-section");
   const encaminhamentoSection = element.querySelector(
@@ -119,7 +126,6 @@ export async function render(cardId, cardTitle) {
     encaminhamentoSection.classList.toggle("hidden-section", value !== "sim");
   });
 
-  // Carrega a lista de profissionais no dropdown.
   await carregarProfissionais(
     db,
     "atendimento",
@@ -135,6 +141,7 @@ export async function render(cardId, cardTitle) {
  */
 export async function save(cardId) {
   const continua = document.getElementById("continua-terapia").value;
+  const docRef = doc(db, "trilhaPaciente", cardId);
 
   if (continua === "sim") {
     const profissionalSelect = document.getElementById("profissional-plantao");
@@ -142,7 +149,6 @@ export async function save(cardId) {
     const profissionalNome =
       profissionalSelect.options[profissionalSelect.selectedIndex].text;
 
-    // Validação dos campos obrigatórios
     if (!profissionalId) {
       throw new Error("Por favor, selecione um profissional.");
     }
@@ -168,7 +174,7 @@ export async function save(cardId) {
       "plantaoInfo.observacoes": document.getElementById("observacoes").value,
       lastUpdate: new Date(),
     };
-    await db.collection("trilhaPaciente").doc(cardId).update(updateData);
+    await updateDoc(docRef, updateData);
   } else if (continua === "nao") {
     const motivo = document.getElementById("motivo-nao-prosseguir").value;
     if (!motivo) {
@@ -177,10 +183,10 @@ export async function save(cardId) {
     const updateData = {
       status: "desistencia",
       desistenciaMotivo: `Desistiu na etapa de encaminhamento para plantão. Motivo: ${motivo}`,
-      profissionalAtualId: firebase.firestore.FieldValue.delete(), // Remove o profissional
+      profissionalAtualId: deleteField(), // Sintaxe v9 para remover o campo
       lastUpdate: new Date(),
     };
-    await db.collection("trilhaPaciente").doc(cardId).update(updateData);
+    await updateDoc(docRef, updateData);
   } else {
     throw new Error(
       "Por favor, selecione se o paciente deseja continuar com a terapia."
