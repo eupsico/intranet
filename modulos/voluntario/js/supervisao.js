@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/supervisao.js
-// Versão 3.0 (Corrigido o caminho de importação dinâmica dos módulos)
+// Versão 3.1 (COM LOGS PARA DEPURAÇÃO AVANÇADA)
 
 const tabContent = {
   "ficha-supervisao": "ficha-supervisao.html",
@@ -21,7 +21,6 @@ export function init(dbRef, userRef, userDataRef) {
 
   const tabsContainer = document.getElementById("supervisao-tabs");
   if (tabsContainer) {
-    // Remove listeners antigos para evitar duplicação
     const newTabsContainer = tabsContainer.cloneNode(true);
     tabsContainer.parentNode.replaceChild(newTabsContainer, tabsContainer);
 
@@ -40,8 +39,14 @@ export function init(dbRef, userRef, userDataRef) {
 }
 
 async function loadTabContent(tabName) {
+  // --- LOG DE INÍCIO ---
+  console.log(`[DEBUG] Iniciando loadTabContent para a aba: ${tabName}`);
+
   const contentArea = document.getElementById("supervisao-content");
-  if (!contentArea) return;
+  if (!contentArea) {
+    console.error("[DEBUG] Erro: #supervisao-content não encontrado.");
+    return;
+  }
 
   document
     .querySelectorAll("#supervisao-tabs .tab-link")
@@ -52,29 +57,47 @@ async function loadTabContent(tabName) {
 
   contentArea.innerHTML = '<div class="loading-spinner"></div>';
 
-  // O HTML já tem um caminho relativo correto (../page/), não precisa mudar
   const htmlFile = `../page/${tabContent[tabName]}`;
+  const scriptFile = tabScripts[tabName];
 
-  // *** AQUI ESTÁ A CORREÇÃO ***
-  // O caminho para o script precisa ser relativo ao arquivo JS atual.
-  const scriptFile = tabScripts[tabName]; // Ex: './ver-supervisores.js'
+  // --- LOG DOS CAMINHOS ---
+  console.log(`[DEBUG] Caminho relativo do HTML definido: ${htmlFile}`);
+  console.log(`[DEBUG] Caminho relativo do Script definido: ${scriptFile}`);
 
   try {
-    const response = await fetch(htmlFile);
-    if (!response.ok) throw new Error(`HTML não encontrado: ${htmlFile}`);
-    contentArea.innerHTML = await response.text();
-
     if (scriptFile) {
-      // O import() resolve o caminho relativo ao arquivo atual (supervisao.js),
-      // então './ver-supervisores.js' funcionará corretamente.
+      // --- LOG DA URL RESOLVIDA (O MAIS IMPORTANTE) ---
+      // 'import.meta.url' nos dá a URL completa do script atual (supervisao.js)
+      // A classe URL resolve o caminho relativo do 'scriptFile' a partir da URL do script atual.
+      const resolvedUrl = new URL(scriptFile, import.meta.url);
+      console.log(
+        `[DEBUG] URL absoluta que o navegador VAI TENTAR buscar para o import: ${resolvedUrl.href}`
+      );
+
       const module = await import(scriptFile);
+      console.log(`[DEBUG] Módulo ${scriptFile} importado com SUCESSO.`);
+
+      const response = await fetch(htmlFile);
+      if (!response.ok) throw new Error(`HTML não encontrado: ${htmlFile}`);
+      contentArea.innerHTML = await response.text();
+      console.log(`[DEBUG] HTML ${htmlFile} carregado com SUCESSO.`);
+
       if (module.init) {
+        console.log(`[DEBUG] Executando init() de ${scriptFile}...`);
         module.init(db, user, userData);
+        console.log(`[DEBUG] init() de ${scriptFile} finalizado.`);
       }
+    } else {
+      // Carrega apenas o HTML se não houver script
+      const response = await fetch(htmlFile);
+      if (!response.ok) throw new Error(`HTML não encontrado: ${htmlFile}`);
+      contentArea.innerHTML = await response.text();
+      console.log(`[DEBUG] Apenas HTML ${htmlFile} carregado com SUCESSO.`);
     }
   } catch (error) {
-    console.error(`Erro ao carregar aba ${tabName}:`, error);
+    // --- LOG DE ERRO DETALHADO ---
+    console.error(`[DEBUG] ERRO DETALHADO ao carregar aba ${tabName}:`, error);
     contentArea.innerHTML =
-      '<p class="alert alert-error">Ocorreu um erro ao carregar o conteúdo.</p>';
+      '<p class="alert alert-error">Ocorreu um erro ao carregar o conteúdo. Verifique o console para detalhes (Ctrl+Shift+I).</p>';
   }
 }
