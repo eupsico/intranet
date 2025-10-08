@@ -21,7 +21,6 @@ export function init(userRef, userDataRef) {
   userData = userDataRef;
 
   console.debug("[VerSupervisores] Referências recebidas:", {
-    dbRef,
     userRef,
     userDataRef,
   });
