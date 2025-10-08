@@ -1,10 +1,20 @@
 // Arquivo: /modulos/servico-social/js/dashboard-servico-social.js
-// Versão 3.0: Adiciona visualização de admin para todas as disponibilidades.
+// Versão 4.0: Migrado para a sintaxe modular do Firebase v9
 
-import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
+import {
+  db,
+  functions,
+  httpsCallable,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  limit,
+  getDocs,
+} from "../../../assets/js/firebase-init.js";
 
-export function init(db, user, userData, functions) {
-  // Adicionado 'functions'
+export function init(user, userData) {
   const summaryContainer = document.getElementById("summary-panel-container");
   const agendamentosContainer = document.getElementById(
     "agendamentos-card-container"
@@ -12,11 +22,6 @@ export function init(db, user, userData, functions) {
 
   if (!summaryContainer || !agendamentosContainer) return;
 
-  // =========================================================================
-  // LÓGICA DE RENDERIZAÇÃO (ADMIN VS. ASSISTENTE)
-  // =========================================================================
-
-  // Verifica se o usuário logado é um admin
   const isAdmin = userData.funcoes && userData.funcoes.includes("admin");
 
   if (isAdmin) {
@@ -25,11 +30,8 @@ export function init(db, user, userData, functions) {
     renderDisponibilidadeAssistente();
   }
 
-  renderAgendamentos(); // A lógica de agendamentos é a mesma para ambos
+  renderAgendamentos();
 
-  // =========================================================================
-  // FUNÇÃO PARA A VIEW DO ADMINISTRADOR
-  // =========================================================================
   async function renderDisponibilidadeAdmin() {
     try {
       const getTodasDisponibilidades = httpsCallable(
@@ -43,8 +45,7 @@ export function init(db, user, userData, functions) {
         '<p style="padding: 0 15px;">Nenhuma disponibilidade informada pelas assistentes.</p>';
 
       if (todasDisponibilidades && todasDisponibilidades.length > 0) {
-        disponibilidadeHtml = ""; // Limpa a mensagem padrão
-
+        disponibilidadeHtml = "";
         todasDisponibilidades.forEach((assistente) => {
           disponibilidadeHtml += `<h4 class="assistente-nome-titulo">${assistente.nome}</h4>`;
 
@@ -55,7 +56,7 @@ export function init(db, user, userData, functions) {
           ) {
             disponibilidadeHtml +=
               '<p class="sem-dispo-assistente">Nenhuma disponibilidade futura informada.</p>';
-            return; // Pula para a próxima assistente
+            return;
           }
 
           const hoje = new Date();
@@ -112,18 +113,15 @@ export function init(db, user, userData, functions) {
     }
   }
 
-  // =========================================================================
-  // FUNÇÃO PARA A VIEW DA ASSISTENTE (CÓDIGO ORIGINAL)
-  // =========================================================================
   async function renderDisponibilidadeAssistente() {
     try {
-      const docRef = db.collection("disponibilidadeAssistentes").doc(user.uid);
-      const docSnap = await docRef.get();
+      const docRef = doc(db, "disponibilidadeAssistentes", user.uid);
+      const docSnap = await getDoc(docRef);
 
       let disponibilidadeHtml =
         '<p style="padding: 0 15px;">Nenhuma disponibilidade futura informada.</p>';
 
-      if (docSnap.exists) {
+      if (docSnap.exists()) {
         const data = docSnap.data();
         const disponibilidadeMap = data.disponibilidade;
 
@@ -142,7 +140,6 @@ export function init(db, user, userData, functions) {
 
           if (mesesOrdenados.length > 0) {
             disponibilidadeHtml = "";
-
             mesesOrdenados.forEach((mesKey) => {
               const [ano, mes] = mesKey.split("-");
               const dataReferencia = new Date(ano, parseInt(mes) - 1, 1);
@@ -180,7 +177,6 @@ export function init(db, user, userData, functions) {
     }
   }
 
-  // --- Funções Auxiliares (usadas por ambas as views) ---
   function formatarModalidade(dados) {
     if (!dados?.dias || dados.dias.length === 0) {
       return "<li>Nenhum horário informado.</li>";
@@ -190,13 +186,14 @@ export function init(db, user, userData, functions) {
   }
 
   async function renderAgendamentos() {
-    // (Esta função permanece sem alterações)
     try {
-      const inscricoesRef = db
-        .collection("inscricoes")
-        .where("status", "==", "aguardando_triagem")
-        .limit(5);
-      const snapshot = await inscricoesRef.get();
+      const inscricoesRef = collection(db, "inscricoes");
+      const q = query(
+        inscricoesRef,
+        where("status", "==", "aguardando_triagem"),
+        limit(5)
+      );
+      const snapshot = await getDocs(q);
       let agendamentosHtml = "";
 
       if (snapshot.empty) {
@@ -224,7 +221,6 @@ export function init(db, user, userData, functions) {
     }
   }
 
-  // --- CSS Adicional ---
   const style = document.createElement("style");
   style.textContent = `
         .disponibilidade-mes {
