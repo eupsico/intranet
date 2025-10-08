@@ -14,7 +14,7 @@ import { agendamentoController } from "./agendamento.js";
 
 let user, userData;
 
-export function init(dbRef, userRef, userDataRef) {
+export function init(userRef, userDataRef) {
   console.group("[VerSupervisores] Inicialização do módulo");
 
   user = userRef;
@@ -229,7 +229,7 @@ function openSupervisorModal(supervisor) {
     agendarBtn.onclick = () => {
       modal.style.display = "none";
       console.info("[VerSupervisores] Iniciando agendamento...");
-      agendamentoController.open(db, user, userData, supervisor);
+      agendamentoController.open(user, userData, supervisor);
     };
   }
 
