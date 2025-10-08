@@ -1,6 +1,9 @@
 // Arquivo: /modulos/servico-social/js/disponibilidade-agendamentos.js
+// Versão: 2.0 (Migrado para a sintaxe modular do Firebase v9)
 
-export function init(db, user, userData) {
+import { db, collection, getDocs } from "../../../assets/js/firebase-init.js";
+
+export function init(user, userData) {
   const tableBody = document.getElementById("disponibilidade-table-body");
   if (!tableBody) return;
 
@@ -9,7 +12,10 @@ export function init(db, user, userData) {
       '<tr><td colspan="5"><div class="loading-spinner"></div></td></tr>';
 
     try {
-      const snapshot = await db.collection("disponibilidadeAssistentes").get();
+      // Sintaxe v9 para buscar todos os documentos da coleção
+      const snapshot = await getDocs(
+        collection(db, "disponibilidadeAssistentes")
+      );
 
       if (snapshot.empty) {
         tableBody.innerHTML =
