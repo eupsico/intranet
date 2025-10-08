@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/recursos.js
-// Versão 2.2 (Lógica de abas corrigida)
+// Versão 2.3 (Lógica de abas corrigida para destacar corretamente)
 
 export function init(user, userData) {
   const view = document.querySelector(".view-container");
@@ -10,6 +10,7 @@ export function init(user, userData) {
   const loadedTabs = new Set();
 
   const loadTabModule = async (tabId) => {
+    // ... (nenhuma mudança nesta função interna)
     if (loadedTabs.has(tabId)) return;
     try {
       let module;
@@ -46,23 +47,23 @@ export function init(user, userData) {
   };
 
   const switchTab = (tabId) => {
-    // Garante que ambos os containers existem
     if (!tabContainer || !contentSections) return;
 
-    // Remove 'active' de todos os botões
+    // *** INÍCIO DA CORREÇÃO ***
+    // Remove 'active' de TODOS os botões primeiro
     tabContainer.querySelectorAll(".tab-link").forEach((btn) => {
       btn.classList.remove("active");
     });
 
-    // Adiciona 'active' apenas ao botão correto
+    // Adiciona 'active' apenas ao botão que corresponde ao tabId
     const targetButton = tabContainer.querySelector(
       `.tab-link[data-tab="${tabId}"]`
     );
     if (targetButton) {
       targetButton.classList.add("active");
     }
+    // *** FIM DA CORREÇÃO ***
 
-    // Alterna a visibilidade do conteúdo
     contentSections.forEach((section) => {
       section.style.display = section.id === tabId ? "block" : "none";
     });
@@ -74,7 +75,12 @@ export function init(user, userData) {
     const hashParts = window.location.hash.substring(1).split("/");
     let activeTabId = "mensagens";
     if (hashParts[0] === "recursos" && hashParts[1]) {
-      activeTabId = hashParts[1];
+      const foundTab = view.querySelector(
+        `.tab-link[data-tab="${hashParts[1]}"]`
+      );
+      if (foundTab) {
+        activeTabId = hashParts[1];
+      }
     }
     switchTab(activeTabId);
   };
