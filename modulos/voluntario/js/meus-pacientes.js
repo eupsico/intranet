@@ -1,16 +1,32 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 5.0 (Implementa Múltiplos Atendimentos em PB)
-import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
-import { db, doc, updateDoc } from "../../../assets/js/firebase-init.js";
-export function init(db, user, userData) {
+// Versão: 6.0 (Atualizado para a sintaxe modular do Firebase v9)
+
+import {
+  db,
+  functions,
+  doc,
+  updateDoc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  httpsCallable,
+  serverTimestamp,
+} from "../../../assets/js/firebase-init.js";
+
+export function init(user, userData) {
   const container = document.getElementById("pacientes-cards-container");
   if (!container) {
+    console.error("Container de pacientes não encontrado.");
     return;
   }
+
   const encerramentoModal = document.getElementById("encerramento-modal");
   const horariosPbModal = document.getElementById("horarios-pb-modal");
-  const desfechoPbModal = document.getElementById("desfecho-pb-modal"); // --- Funções de controle dos modais ---
+  const desfechoPbModal = document.getElementById("desfecho-pb-modal");
 
+  // --- Funções de controle dos modais ---
   const todosOsModais = [encerramentoModal, horariosPbModal, desfechoPbModal];
   document
     .querySelectorAll(
@@ -19,9 +35,7 @@ export function init(db, user, userData) {
     .forEach((botao) => {
       botao.addEventListener("click", () => {
         todosOsModais.forEach((modal) => {
-          if (modal) {
-            modal.style.display = "none";
-          }
+          if (modal) modal.style.display = "none";
         });
       });
     });
@@ -36,76 +50,51 @@ export function init(db, user, userData) {
 
   async function carregarMeusPacientes() {
     container.innerHTML = '<div class="loading-spinner"></div>';
-    console.log("--- Iniciando carregarMeusPacientes (Versão com Logs) ---");
-
     try {
-      console.log("Passo 1: Definindo as consultas para Plantão e PB."); // Consultas simplificadas para evitar o erro de query inválida
-      const queryPlantao = db
-        .collection("trilhaPaciente")
-        .where("plantaoInfo.profissionalId", "==", user.uid);
+      // SINTAXE V9: Consultas para Plantão e PB
+      const queryPlantao = query(
+        collection(db, "trilhaPaciente"),
+        where("plantaoInfo.profissionalId", "==", user.uid),
+        where("status", "==", "em_atendimento_plantao")
+      );
+      const queryPb = query(
+        collection(db, "trilhaPaciente"),
+        where("profissionaisPB_ids", "array-contains", user.uid)
+      );
 
-      const queryPb = db
-        .collection("trilhaPaciente")
-        .where("profissionaisPB_ids", "array-contains", user.uid);
-
-      console.log("Passo 2: Executando as consultas ao Firestore...");
       const [plantaoSnapshot, pbSnapshot] = await Promise.all([
-        queryPlantao.get(),
-        queryPb.get(),
+        getDocs(queryPlantao),
+        getDocs(queryPb),
       ]);
-      console.log("Passo 3: Consultas concluídas com sucesso.");
-      console.log(
-        ` -> Encontrados ${plantaoSnapshot.size} pacientes potenciais de Plantão.`
-      );
-      console.log(
-        ` -> Encontrados ${pbSnapshot.size} pacientes potenciais de PB.`
-      );
 
       let cardsHtml = "";
       const pacientesProcessados = new Set();
 
-      console.log("Passo 4: Filtrando resultados de Plantão...");
       plantaoSnapshot.forEach((doc) => {
         const paciente = { id: doc.id, ...doc.data() };
-        // O filtro de status é aplicado aqui
-        if (
-          paciente.status === "em_atendimento_plantao" &&
-          !pacientesProcessados.has(paciente.id)
-        ) {
-          console.log(
-            `  - [PLANTÃO] Adicionando card para o paciente: ${paciente.nomeCompleto}`
-          );
+        if (!pacientesProcessados.has(paciente.id)) {
           cardsHtml += criarCardPaciente(paciente);
           pacientesProcessados.add(paciente.id);
         }
       });
 
-      console.log("Passo 5: Filtrando resultados de PB...");
       pbSnapshot.forEach((doc) => {
         const paciente = { id: doc.id, ...doc.data() };
         const meuAtendimento = paciente.atendimentosPB?.find(
           (at) => at.profissionalId === user.uid
         );
 
-        // O filtro de status do atendimento é aplicado aqui
         if (meuAtendimento && meuAtendimento.statusAtendimento === "ativo") {
-          console.log(
-            `  - [PB] Adicionando card para o paciente: ${paciente.nomeCompleto} (Atendimento ID: ${meuAtendimento.atendimentoId})`
-          );
           cardsHtml += criarCardPaciente(paciente, meuAtendimento);
         }
       });
 
       if (cardsHtml === "") {
-        console.log(
-          "Passo 6: Nenhum paciente ativo encontrado para este profissional."
-        );
         container.innerHTML =
           "<p>Você não tem pacientes designados nos estágios de atendimento ativo no momento.</p>";
         return;
       }
 
-      console.log("Passo 7: Renderizando os cards na tela.");
       container.innerHTML = cardsHtml;
       const cards = Array.from(container.querySelectorAll(".paciente-card"));
       cards.sort((a, b) =>
@@ -116,31 +105,23 @@ export function init(db, user, userData) {
       cards.forEach((card) => container.appendChild(card));
 
       adicionarEventListeners();
-      console.log("--- Finalizado carregarMeusPacientes com sucesso. ---");
     } catch (error) {
-      // Log de erro detalhado
-      console.error("--- ERRO CRÍTICO em carregarMeusPacientes ---");
-      console.error(
-        "Ocorreu um erro durante a busca ou processamento dos pacientes."
-      );
-      console.error("Mensagem de erro:", error.message);
-      console.error("Detalhes do erro:", error);
-      container.innerHTML = `<p class="error-message">Ocorreu um erro ao carregar seus pacientes. Verifique o console (F12) para detalhes técnicos.</p>`;
+      console.error("Erro crítico em carregarMeusPacientes:", error);
+      container.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao carregar seus pacientes.</p>`;
     }
   }
 
   function criarCardPaciente(dadosDoPaciente, atendimentoPB = null) {
-    const isAtendimentoDePlantao = !atendimentoPB;
-    const statusGeralDoPaciente = dadosDoPaciente.status;
+    const isPlantao = !atendimentoPB;
+    let statusKey = "em_atendimento_plantao";
 
-    let statusParaExibicao = statusGeralDoPaciente;
-    if (atendimentoPB) {
-      if (statusGeralDoPaciente === "aguardando_info_horarios") {
-        statusParaExibicao = "aguardando_info_horarios";
+    if (!isPlantao) {
+      if (dadosDoPaciente.status === "aguardando_info_horarios") {
+        statusKey = "aguardando_info_horarios";
       } else if (!dadosDoPaciente.contratoAssinado) {
-        statusParaExibicao = "aguardando_contrato";
+        statusKey = "aguardando_contrato";
       } else {
-        statusParaExibicao = "em_atendimento_pb";
+        statusKey = "em_atendimento_pb";
       }
     }
 
@@ -158,7 +139,7 @@ export function init(db, user, userData) {
         ativo: true,
       },
       aguardando_contrato: {
-        label: "Em Atendimento (PB)",
+        label: "Aguardando Contrato (PB)",
         acao: "Enviar Contrato",
         tipo: "contrato",
         ativo: true,
@@ -171,73 +152,71 @@ export function init(db, user, userData) {
       },
     };
 
-    const infoStatus = mapaDeStatus[
-      isAtendimentoDePlantao ? "em_atendimento_plantao" : statusParaExibicao
-    ] || {
+    const infoStatus = mapaDeStatus[statusKey] || {
       label: "Status Desconhecido",
       acao: "-",
       tipo: "info",
       ativo: false,
     };
+    const dataEncaminhamento =
+      atendimentoPB?.dataEncaminhamento ||
+      dadosDoPaciente.plantaoInfo?.dataEncaminhamento
+        ? new Date(
+            (atendimentoPB?.dataEncaminhamento ||
+              dadosDoPaciente.plantaoInfo?.dataEncaminhamento) + "T03:00:00"
+          ).toLocaleDateString("pt-BR")
+        : "N/A";
 
-    const informacoesDeContato = atendimentoPB || dadosDoPaciente.plantaoInfo;
-    const dataEncaminhamento = informacoesDeContato?.dataEncaminhamento
-      ? new Date(
-          informacoesDeContato.dataEncaminhamento + "T03:00:00"
-        ).toLocaleDateString("pt-BR")
-      : "N/A";
-
-    const htmlStatusContrato = dadosDoPaciente.contratoAssinado
-      ? `<p class="contrato-assinado"><i class="fas fa-file-signature"></i> Contrato Assinado</p>`
+    const contratoAssinadoHtml = dadosDoPaciente.contratoAssinado
+      ? `<p class="contrato-assinado">✓ Contrato Assinado</p>`
       : "";
-
-    let htmlBotaoPdf = "";
-    if (atendimentoPB && dadosDoPaciente.contratoAssinado) {
-      htmlBotaoPdf = `<button class="action-button secondary-button" data-id="${dadosDoPaciente.id}" data-atendimento-id="${atendimentoPB.atendimentoId}" data-tipo="pdf_contrato">PDF Contrato</button>`;
-    }
-
-    const atributoIdAtendimento = atendimentoPB
+    const pdfButtonHtml =
+      atendimentoPB && dadosDoPaciente.contratoAssinado
+        ? `<button class="action-button secondary-button" data-id="${dadosDoPaciente.id}" data-atendimento-id="${atendimentoPB.atendimentoId}" data-tipo="pdf_contrato">PDF Contrato</button>`
+        : "";
+    const atendimentoIdAttr = atendimentoPB
       ? `data-atendimento-id="${atendimentoPB.atendimentoId}"`
       : "";
 
     return `
-   <div class="paciente-card" data-id="${dadosDoPaciente.id}" data-telefone="${
-      dadosDoPaciente.telefoneCelular || ""
-    }">
-   <h4>${dadosDoPaciente.nomeCompleto}</h4>
-   <p><strong>Status:</strong> ${infoStatus.label}</p>
-   <p><strong>Telefone:</strong> ${
-     dadosDoPaciente.telefoneCelular || "Não informado"
-   }</p>    <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
-   ${htmlStatusContrato}
-              <div class="card-actions">
-     <button class="action-button" data-id="${dadosDoPaciente.id}" data-tipo="${
-      infoStatus.tipo
-    }" ${atributoIdAtendimento} ${!infoStatus.ativo ? "disabled" : ""}>${
-      infoStatus.acao
-    }</button>
-                ${htmlBotaoPdf}
-              </div>
-  </div>`;
+            <div class="paciente-card" data-id="${
+              dadosDoPaciente.id
+            }" data-telefone="${dadosDoPaciente.telefoneCelular || ""}">
+                <h4>${dadosDoPaciente.nomeCompleto}</h4>
+                <p><strong>Status:</strong> ${infoStatus.label}</p>
+                <p><strong>Telefone:</strong> ${
+                  dadosDoPaciente.telefoneCelular || "Não informado"
+                }</p>
+                <p><strong>Data Encaminhamento:</strong> ${dataEncaminhamento}</p>
+                ${contratoAssinadoHtml}
+                <div class="card-actions">
+                    <button class="action-button" data-id="${
+                      dadosDoPaciente.id
+                    }" data-tipo="${infoStatus.tipo}" ${atendimentoIdAttr} ${
+      !infoStatus.ativo ? "disabled" : ""
+    }>${infoStatus.acao}</button>
+                    ${pdfButtonHtml}
+                </div>
+            </div>`;
   }
 
   function adicionarEventListeners() {
-    container.addEventListener("click", async (evento) => {
+    // Recria o container para evitar múltiplos listeners
+    const newContainer = container.cloneNode(true);
+    container.parentNode.replaceChild(newContainer, container);
+
+    newContainer.addEventListener("click", async (evento) => {
       const botao = evento.target.closest(".action-button:not([disabled])");
       if (!botao) return;
 
-      const card = botao.closest(".paciente-card");
       const pacienteId = botao.dataset.id;
       const atendimentoId = botao.dataset.atendimentoId;
       const tipoDeAcao = botao.dataset.tipo;
-      const telefone = card.dataset.telefone;
 
       try {
-        const docSnap = await db
-          .collection("trilhaPaciente")
-          .doc(pacienteId)
-          .get();
-        if (!docSnap.exists) {
+        const docRef = doc(db, "trilhaPaciente", pacienteId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
           alert("Paciente não encontrado!");
           return;
         }
@@ -254,6 +233,7 @@ export function init(db, user, userData) {
             abrirModalHorariosPb(pacienteId, atendimentoId);
             break;
           case "contrato":
+            const telefone = botao.closest(".paciente-card").dataset.telefone;
             handleEnviarContrato(
               pacienteId,
               telefone,
@@ -289,6 +269,63 @@ export function init(db, user, userData) {
     )}`;
     window.open(whatsappUrl, "_blank");
   }
+  document
+    .getElementById("encerramento-form")
+    .addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const form = evento.target;
+      const botaoSalvar = encerramentoModal.querySelector(
+        'button[type="submit"]'
+      );
+      botaoSalvar.disabled = true;
+      const pacienteId = document.getElementById("paciente-id-modal").value;
+      const encaminhamentos = Array.from(
+        form.querySelectorAll('input[name="encaminhamento"]:checked')
+      ).map((cb) => cb.value);
+
+      if (encaminhamentos.length === 0) {
+        alert("Selecione ao menos uma opção de encaminhamento.");
+        botaoSalvar.disabled = false;
+        return;
+      }
+
+      let novoStatus = encaminhamentos.includes("Alta")
+        ? "alta"
+        : encaminhamentos.includes("Desistência")
+        ? "desistencia"
+        : "encaminhar_para_pb";
+
+      let dadosParaAtualizar = {
+        status: novoStatus,
+        "plantaoInfo.encerramento": {
+          responsavelId: user.uid,
+          responsavelNome: userData.nome,
+          encaminhamento: encaminhamentos,
+          dataEncerramento: form.querySelector("#data-encerramento").value,
+          sessoesRealizadas: form.querySelector("#quantidade-sessoes").value,
+          pagamentoEfetuado: form.querySelector("#pagamento-contribuicao")
+            .value,
+          motivoNaoPagamento: form.querySelector("#motivo-nao-pagamento").value,
+          relato: form.querySelector("#relato-encerramento").value,
+        },
+        lastUpdate: serverTimestamp(),
+      };
+
+      try {
+        await updateDoc(
+          doc(db, "trilhaPaciente", pacienteId),
+          dadosParaAtualizar
+        );
+        alert("Encerramento salvo com sucesso!");
+        encerramentoModal.style.display = "none";
+        carregarMeusPacientes();
+      } catch (error) {
+        console.error("Erro ao salvar encerramento:", error);
+        alert("Erro ao salvar.");
+      } finally {
+        botaoSalvar.disabled = false;
+      }
+    });
 
   document
     .getElementById("horarios-pb-form")
@@ -307,9 +344,9 @@ export function init(db, user, userData) {
         "#atendimento-id-horarios-modal"
       ).value;
 
-      const docRef = db.collection("trilhaPaciente").doc(pacienteId);
-      const docSnap = await docRef.get();
-      if (!docSnap.exists) {
+      const docRef = doc(db, "trilhaPaciente", pacienteId);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
         alert("Erro: Paciente não encontrado!");
         botaoSalvar.disabled = false;
         return;
@@ -366,11 +403,11 @@ export function init(db, user, userData) {
       const dadosParaAtualizar = {
         atendimentosPB: atendimentos,
         status: "cadastrar_horario_psicomanager",
-        lastUpdate: new Date(),
+        lastUpdate: serverTimestamp(),
       };
 
       try {
-        await docRef.update(dadosParaAtualizar);
+        await updateDoc(docRef, dadosParaAtualizar);
         alert("Informações salvas com sucesso!");
         horariosPbModal.style.display = "none";
         carregarMeusPacientes();
@@ -415,9 +452,6 @@ export function init(db, user, userData) {
         pagamentoSelect.value === "nao";
     };
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // A lógica abaixo estava faltando
-
     const dispSelect = form.querySelector("#manter-disponibilidade");
     const novaDisponibilidadeContainer = document.getElementById(
       "nova-disponibilidade-container"
@@ -426,7 +460,6 @@ export function init(db, user, userData) {
     dispSelect.onchange = async () => {
       const mostrar = dispSelect.value === "nao";
       novaDisponibilidadeContainer.classList.toggle("hidden", !mostrar);
-
       if (mostrar && novaDisponibilidadeContainer.innerHTML.trim() === "") {
         novaDisponibilidadeContainer.innerHTML =
           '<div class="loading-spinner"></div>';
@@ -436,25 +469,22 @@ export function init(db, user, userData) {
           );
           const text = await response.text();
           const parser = new DOMParser();
-          const doc = parser.parseFromString(text, "text/html");
-          const disponibilidadeHtml = doc.getElementById(
+          const docHtml = parser.parseFromString(text, "text/html");
+          const disponibilidadeHtml = docHtml.getElementById(
             "disponibilidade-section"
           ).innerHTML;
           novaDisponibilidadeContainer.innerHTML = disponibilidadeHtml;
-          addDisponibilidadeListeners(novaDisponibilidadeContainer); // Chama a função de suporte
+          addDisponibilidadeListeners(novaDisponibilidadeContainer);
         } catch (error) {
           console.error("Erro ao carregar HTML da disponibilidade:", error);
           novaDisponibilidadeContainer.innerHTML =
-            '<p class="error-message">Erro ao carregar opções.</p>';
+            '<p class="alert alert-error">Erro ao carregar opções.</p>';
         }
       }
     };
-    // Reseta o campo ao abrir o modal
     dispSelect.value = "";
     novaDisponibilidadeContainer.classList.add("hidden");
     novaDisponibilidadeContainer.innerHTML = "";
-
-    // --- FIM DA CORREÇÃO ---
 
     encerramentoModal.style.display = "block";
   }
@@ -506,64 +536,6 @@ export function init(db, user, userData) {
     });
     container.innerHTML = html + `</div>`;
   }
-
-  document
-    .getElementById("encerramento-form")
-    .addEventListener("submit", async (evento) => {
-      evento.preventDefault();
-      const form = evento.target;
-      const botaoSalvar = encerramentoModal.querySelector(
-        'button[type="submit"]'
-      );
-      botaoSalvar.disabled = true;
-      const pacienteId = document.getElementById("paciente-id-modal").value;
-      const encaminhamentos = Array.from(
-        form.querySelectorAll('input[name="encaminhamento"]:checked')
-      ).map((cb) => cb.value);
-
-      if (encaminhamentos.length === 0) {
-        alert("Selecione ao menos uma opção de encaminhamento.");
-        botaoSalvar.disabled = false;
-        return;
-      }
-
-      let novoStatus = encaminhamentos.includes("Alta")
-        ? "alta"
-        : encaminhamentos.includes("Desistência")
-        ? "desistencia"
-        : "encaminhar_para_pb";
-
-      let dadosParaAtualizar = {
-        status: novoStatus,
-        "plantaoInfo.encerramento": {
-          responsavelId: user.uid,
-          responsavelNome: userData.nome,
-          encaminhamento: encaminhamentos,
-          dataEncerramento: form.querySelector("#data-encerramento").value,
-          sessoesRealizadas: form.querySelector("#quantidade-sessoes").value,
-          pagamentoEfetuado: form.querySelector("#pagamento-contribuicao")
-            .value,
-          motivoNaoPagamento: form.querySelector("#motivo-nao-pagamento").value,
-          relato: form.querySelector("#relato-encerramento").value,
-        },
-        lastUpdate: new Date(),
-      };
-
-      try {
-        await db
-          .collection("trilhaPaciente")
-          .doc(pacienteId)
-          .update(dadosParaAtualizar);
-        alert("Encerramento salvo com sucesso!");
-        encerramentoModal.style.display = "none";
-        carregarMeusPacientes();
-      } catch (error) {
-        console.error("Erro ao salvar encerramento:", error);
-        alert("Erro ao salvar.");
-      } finally {
-        botaoSalvar.disabled = false;
-      }
-    });
 
   function abrirModalHorariosPb(pacienteId, atendimentoId) {
     const form = document.getElementById("horarios-pb-form");
@@ -630,68 +602,92 @@ export function init(db, user, userData) {
     atendimentoId,
     dadosDoPaciente
   ) {
-    // Lógica para abrir o modal de desfecho
-    // Esta função precisará ser adaptada para receber o atendimentoId e atualizar o atendimento correto
-    // Por enquanto, ela mantém a estrutura original
     const modal = document.getElementById("desfecho-pb-modal");
-    modal.querySelector("form").dataset.pacienteId = pacienteId;
-    modal.querySelector("form").dataset.atendimentoId = atendimentoId; // Adiciona o ID do atendimento
+    const body = document.getElementById("desfecho-pb-modal-body");
+    body.innerHTML = '<div class="loading-spinner"></div>';
     modal.style.display = "block";
+
+    const response = await fetch("../page/form-atendimento-pb.html");
+    body.innerHTML = await response.text();
+
+    const form = body.querySelector("#form-atendimento-pb");
+    form.dataset.pacienteId = pacienteId;
+    form.dataset.atendimentoId = atendimentoId;
+
+    const meuAtendimento = dadosDoPaciente.atendimentosPB.find(
+      (at) => at.atendimentoId === atendimentoId
+    );
+
+    form.querySelector("#profissional-nome").value =
+      meuAtendimento.profissionalNome;
+    form.querySelector("#paciente-nome").value = dadosDoPaciente.nomeCompleto;
+    form.querySelector("#valor-contribuicao").value =
+      dadosDoPaciente.valorContribuicao || "Não definido";
+    form.querySelector("#data-inicio-atendimento").value = meuAtendimento
+      .horarioSessao?.dataInicio
+      ? new Date(
+          meuAtendimento.horarioSessao.dataInicio + "T03:00:00"
+        ).toLocaleDateString("pt-BR")
+      : "N/A";
+
+    const desfechoSelect = form.querySelector("#desfecho-acompanhamento");
+    const motivoContainer = form.querySelector(
+      "#motivo-alta-desistencia-container"
+    );
+    const encaminhamentoContainer = form.querySelector(
+      "#encaminhamento-container"
+    );
+
+    desfechoSelect.addEventListener("change", () => {
+      motivoContainer.style.display = ["Alta", "Desistencia"].includes(
+        desfechoSelect.value
+      )
+        ? "block"
+        : "none";
+      encaminhamentoContainer.style.display =
+        desfechoSelect.value === "Encaminhamento" ? "block" : "none";
+    });
+
+    form.addEventListener("submit", handleDesfechoPbSubmit);
   }
 
   async function handleDesfechoPbSubmit(evento) {
     evento.preventDefault();
     const form = evento.target;
     const pacienteId = form.dataset.pacienteId;
-    const atendimentoId = form.dataset.atendimentoId; // Pega o ID do atendimento
-    const botaoSalvar = form.querySelector('button[type="submit"]');
+    const atendimentoId = form.dataset.atendimentoId;
+    const botaoSalvar = form.querySelector("#btn-salvar-desfecho");
 
     botaoSalvar.disabled = true;
     botaoSalvar.textContent = "Salvando...";
 
     try {
-      const desfecho = form.querySelector("#desfecho-pb-select").value;
-      if (!desfecho) {
-        throw new Error("Selecione um desfecho.");
-      }
+      const desfecho = form.querySelector("#desfecho-acompanhamento").value;
+      if (!desfecho) throw new Error("Selecione um desfecho.");
 
-      // --- INÍCIO DA CORREÇÃO ---
-      // Monta o payload para enviar para a Cloud Function 'registrarDesfechoPb'
-      const payload = {
-        pacienteId,
-        atendimentoId, // Envia o ID do atendimento específico
-        desfecho,
-      };
+      const payload = { pacienteId, atendimentoId, desfecho };
 
       if (desfecho === "Encaminhamento") {
-        const continuaAtendimento = form.querySelector(
-          'input[name="continua-atendimento"]:checked'
-        );
         payload.encaminhamento = {
-          servico: form.querySelector("#encaminhamento-servico-select").value,
-          motivo: form.querySelector("#encaminhamento-motivo-textarea").value,
-          demanda: form.querySelector("#encaminhamento-demanda-textarea").value,
-          continuaAtendimento: continuaAtendimento
-            ? continuaAtendimento.value
-            : null,
-          relatoCaso: form.querySelector("#relato-caso-textarea").value,
+          servico: form.querySelector("#encaminhado-para").value,
+          motivo: form.querySelector("#motivo-encaminhamento").value,
+          demanda: form.querySelector("#demanda-paciente").value,
+          continuaAtendimento: form.querySelector("#continua-atendimento")
+            .value,
+          relatoCaso: form.querySelector("#relato-caso").value,
         };
-        // Validação simples
         if (!payload.encaminhamento.servico || !payload.encaminhamento.motivo) {
           throw new Error(
             "Para encaminhamento, preencha o serviço e o motivo."
           );
         }
       } else {
-        payload.motivo = form.querySelector(
-          "#motivo-alta-desistencia-textarea"
-        ).value;
+        payload.motivo = form.querySelector("#motivo-alta-desistencia").value;
         if (!payload.motivo) {
           throw new Error("O motivo é obrigatório para Alta ou Desistência.");
         }
       }
 
-      // Usa a função 'httpsCallable' importada no topo do arquivo
       const registrarDesfechoPb = httpsCallable(
         functions,
         "registrarDesfechoPb"
@@ -701,17 +697,16 @@ export function init(db, user, userData) {
       if (!result.data.success) {
         throw new Error(result.data.message || "Ocorreu um erro no servidor.");
       }
-      // --- FIM DA CORREÇÃO ---
 
       alert("Desfecho registrado com sucesso!");
       document.getElementById("desfecho-pb-modal").style.display = "none";
-      carregarMeusPacientes(); // Recarrega a lista de pacientes
+      carregarMeusPacientes();
     } catch (error) {
       console.error("Erro ao salvar desfecho:", error);
       alert(`Falha ao salvar: ${error.message}`);
     } finally {
       botaoSalvar.disabled = false;
-      botaoSalvar.textContent = "Salvar Desfecho";
+      botaoSalvar.textContent = "Salvar";
     }
   }
 
@@ -897,7 +892,8 @@ export function init(db, user, userData) {
       console.error("Erro ao gerar PDF:", error);
       alert("Não foi possível gerar o PDF.");
     }
-  } // Inicia o carregamento dos pacientes
+  }
 
+  // Ponto de entrada
   carregarMeusPacientes();
 }
