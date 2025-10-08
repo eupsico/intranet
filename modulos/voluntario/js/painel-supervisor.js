@@ -1,6 +1,5 @@
 // Arquivo: /modulos/voluntario/js/painel-supervisor.js
-// Versão: 3.1 (Com Logs de Depuração)
-// Descrição: Controla as abas do Painel do Supervisor, carregando dados e módulos dinamicamente.
+// Versão: 3.2 (FINAL, com logs e correção de parâmetros)
 
 import { auth, db, doc, getDoc } from "../../../assets/js/firebase-init.js";
 import { init as initPerfil } from "./perfil-supervisor-view.js";
@@ -15,11 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabsContainer = document.getElementById("painel-supervisor-tabs");
   const contentContainer = document.getElementById("painel-supervisor-content");
   let initialTabLoaded = false;
-  let eventListenerAttached = false; // Flag para controlar o listener de clique
+  let eventListenerAttached = false;
 
-  /**
-   * Busca os dados do usuário logado a partir do Firestore.
-   */
   async function getUserData(uid) {
     console.log(
       `[PAINEL SUPERVISOR] Passo 3.1: Buscando dados do usuário (userData) para o UID: ${uid}`
@@ -31,7 +27,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return null;
     }
     try {
-      // ATENÇÃO: Verifique se a coleção é "usuarios" ou "users" no seu Firestore.
       const userRef = doc(db, "usuarios", uid);
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
@@ -55,9 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /**
-   * Carrega o HTML e executa o script de uma aba específica.
-   */
   async function loadTabContent(tabId, user, userData) {
     console.group(`[PAINEL SUPERVISOR] Carregando Aba: ${tabId}`);
     if (!contentContainer) {
@@ -75,13 +67,13 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log(`[PAINEL SUPERVISOR] Buscando HTML em: ${htmlPath}`);
       const htmlResponse = await fetch(htmlPath);
       if (!htmlResponse.ok)
-        throw new Error(`Arquivo HTML '${htmlPath}' não encontrado.`);
+        throw new Error(`Arquivo HTML '${htmlPath}' não foi encontrado.`);
 
       contentContainer.innerHTML = await htmlResponse.text();
       console.log("[PAINEL SUPERVISOR] HTML carregado e inserido na página.");
 
       console.log(
-        `[PAINEL SUPERVISOR] Chamando a função 'init' do módulo correspondente para '${tabId}'...`
+        `[PAINEL SUPERVISOR] Chamando a função 'init' do módulo para '${tabId}' com user e userData...`
       );
       switch (tabId) {
         case "perfil-supervisor-view":
@@ -97,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
           throw new Error(`Ação para a aba '${tabId}' não definida.`);
       }
       console.log(
-        `[PAINEL SUPERVISOR] Função 'init' para '${tabId}' finalizada.`
+        `[PAINEL SUPERVISOR] Função 'init' para '${tabId}' finalizada com sucesso.`
       );
     } catch (error) {
       console.error(
@@ -110,9 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /**
-   * Gerencia a troca de abas.
-   */
   function switchTab(tabId, user, userData) {
     console.log(`[PAINEL SUPERVISOR] Trocando para a aba: ${tabId}`);
     if (!tabsContainer) return;
@@ -124,7 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadTabContent(tabId, user, userData);
   }
 
-  // Monitora o estado de autenticação para iniciar o painel
   auth.onAuthStateChanged(async (user) => {
     console.log(
       "[PAINEL SUPERVISOR] Passo 2: Verificando estado de autenticação..."
@@ -153,7 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
         initialTabLoaded = true;
       }
 
-      // Garante que o listener de clique seja adicionado apenas uma vez
       if (!eventListenerAttached) {
         tabsContainer.addEventListener("click", (event) => {
           if (event.target.matches(".tab-link")) {
@@ -169,11 +156,8 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
     } else {
-      console.warn(
-        "[PAINEL SUPERVISOR] Usuário não está logado. Redirecionando..."
-      );
+      console.warn("[PAINEL SUPERVISOR] Usuário não está logado.");
       contentContainer.innerHTML = `<p>Você precisa estar logado para acessar este painel.</p>`;
-      // window.location.href = '/login.html'; // Descomente para redirecionar
     }
   });
 });
