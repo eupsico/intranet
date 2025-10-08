@@ -1,6 +1,5 @@
 // Arquivo: assets/js/firebase-init.js
 // Versão: 9.3 (Versão limpa, usando importações via CDN)
-
 // 1. Importa as funções de inicialização e os serviços que serão usados no projeto
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
