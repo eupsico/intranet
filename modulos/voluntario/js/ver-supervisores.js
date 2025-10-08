@@ -7,7 +7,7 @@ import {
   query,
   where,
   getDocs,
-} from "../../assets/js/firebase-init.js";
+} from "../../../assets/js/firebase-init.js";
 
 import { agendamentoController } from "./agendamento.js";
 
