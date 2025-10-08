@@ -1,9 +1,9 @@
 // Arquivo: /modulos/servico-social/js/servico-social-painel.js
-// Versão: 2.7 (Adiciona a view de Disponibilidade de Agendamentos)
+// Versão: 3.0 (Migrado para importações modulares do Firebase v9)
 
-export function initsocialPanel(user, db, userData, functions) {
-  window.db = db;
+import { db, functions } from "../../../assets/js/firebase-init.js";
 
+export function initsocialPanel(user, userData) {
   const contentArea = document.getElementById("content-area");
   const sidebarMenu = document.getElementById("sidebar-menu");
 
@@ -102,7 +102,6 @@ export function initsocialPanel(user, db, userData, functions) {
     });
   }
 
-  // **AQUI ESTÁ A CORREÇÃO PRINCIPAL**
   async function loadView(viewName, param) {
     const viewData = views.find((v) => v.id === viewName);
     if (viewData && viewData.isExternal) return;
@@ -125,7 +124,7 @@ export function initsocialPanel(user, db, userData, functions) {
         const viewModule = await import(scriptPath);
         if (viewModule && typeof viewModule.init === "function") {
           // Passa o parâmetro para a função de inicialização do módulo
-          viewModule.init(db, user, userData, functions, param);
+          viewModule.init(user, userData, param); // db e functions já estão disponíveis no escopo do módulo importado
         }
       } catch (e) {
         console.log(
@@ -145,7 +144,6 @@ export function initsocialPanel(user, db, userData, functions) {
 
     const handleHashChange = () => {
       const hash = window.location.hash.substring(1);
-      // Separa o nome da view do parâmetro (ex: 'fila-atendimento/ID123')
       const [viewName, param] = hash.split("/");
       if (viewName) {
         loadView(viewName, param);
