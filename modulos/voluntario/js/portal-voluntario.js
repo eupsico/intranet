@@ -1,6 +1,7 @@
 // Arquivo: /modulos/voluntario/js/portal-voluntario.js
-// Versão: 4.1 (Código Refatorado e Organizado para v9)
+// Versão: 4.0 (Atualizado para a sintaxe modular do Firebase v9)
 
+// 1. Importa as funções necessárias do nosso arquivo central de inicialização
 import {
   auth,
   db,
@@ -20,10 +21,12 @@ async function updateUserPhotoOnLogin(user, userData) {
   const firestorePhotoUrl = userData.fotoUrl || "";
   const googlePhotoUrl = user.photoURL || "";
 
+  // Atualiza a foto apenas se a URL do Google existir e for diferente da que está no banco
   if (googlePhotoUrl && firestorePhotoUrl !== googlePhotoUrl) {
     try {
       const userDocRef = doc(db, "usuarios", user.uid);
       await updateDoc(userDocRef, { fotoUrl: googlePhotoUrl });
+      // Atualiza o objeto local para refletir a mudança imediatamente
       userData.fotoUrl = googlePhotoUrl;
     } catch (error) {
       console.error("Erro ao atualizar a foto do usuário:", error);
@@ -31,21 +34,23 @@ async function updateUserPhotoOnLogin(user, userData) {
   }
 }
 
-// Ouve as mudanças no estado de autenticação para iniciar o portal ou redirecionar
+// 2. Ouve as mudanças no estado de autenticação usando a nova sintaxe
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    // Cria a referência ao documento do usuário com a nova sintaxe
     const userDocRef = doc(db, "usuarios", user.uid);
     const userDoc = await getDoc(userDocRef);
 
     if (userDoc.exists()) {
       const userData = userDoc.data();
       await updateUserPhotoOnLogin(user, userData);
-      initPortal(user, userData); // Inicia o portal
+      initPortal(user, userData); // Inicia o portal com os dados do usuário
     } else {
       console.error("Documento do usuário não encontrado no Firestore.");
       window.location.href = "../../../index.html";
     }
   } else {
+    // Se não houver usuário, redireciona para a página de login
     window.location.href = "../../../index.html";
   }
 });
@@ -169,6 +174,7 @@ function initPortal(user, userData) {
         `;
 
     const userRoles = userData.funcoes || [];
+
     views.forEach((view) => {
       const hasPermission =
         view.roles.includes("todos") ||
@@ -193,6 +199,7 @@ function initPortal(user, userData) {
     });
 
     contentArea.innerHTML = '<div class="loading-spinner"></div>';
+
     const htmlPath = `./${viewId}.html`;
     const jsPath = `../js/${viewId}.js`;
 
@@ -200,25 +207,28 @@ function initPortal(user, userData) {
       const response = await fetch(htmlPath);
       if (!response.ok)
         throw new Error(`Arquivo HTML não encontrado: ${htmlPath}`);
+
       contentArea.innerHTML = await response.text();
 
-      // Tenta carregar o módulo JS associado
       const viewModule = await import(jsPath);
       if (viewModule && typeof viewModule.init === "function") {
-        // Passa os parâmetros corretos (sem 'db')
-        viewModule.init(user, userData, param);
+        viewModule.init(user, userData, param); // Passa os dados do usuário para a view
       }
     } catch (error) {
-      // Se o módulo JS não for encontrado, não mostra erro, pois pode ser opcional.
       if (
         error.message.includes("Failed to fetch dynamically imported module")
       ) {
         console.log(
           `Nenhum módulo JS encontrado ou necessário para a view '${viewId}'.`
         );
+      } else if (error.message.includes("HTML não encontrado")) {
+        console.error(`Erro ao carregar a view ${viewId}:`, error);
+        contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Erro Crítico: A página <strong>${viewId}.html</strong> não foi encontrada.</p></div>`;
       } else {
-        // Mostra erro para outros problemas, como falha no HTML.
-        console.error(`Erro ao carregar a view '${viewId}':`, error);
+        console.error(
+          `Ocorreu um erro inesperado ao carregar a view '${viewId}':`,
+          error
+        );
         contentArea.innerHTML = `<div class="view-container"><p class="alert alert-error">Ocorreu um erro inesperado ao carregar esta página.</p></div>`;
       }
     }
@@ -274,11 +284,12 @@ function initPortal(user, userData) {
 
     if (window.innerWidth > 768) {
       const isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
-      layoutContainer.classList.toggle("sidebar-collapsed", isCollapsed);
-      toggleButton.setAttribute(
-        "title",
-        isCollapsed ? "Expandir menu" : "Recolher menu"
-      );
+      if (isCollapsed) {
+        layoutContainer.classList.add("sidebar-collapsed");
+        toggleButton.setAttribute("title", "Expandir menu");
+      } else {
+        toggleButton.setAttribute("title", "Recolher menu");
+      }
     }
 
     toggleButton.addEventListener("click", handleToggle);
@@ -299,8 +310,8 @@ function initPortal(user, userData) {
       if (!hash) {
         const firstLink = sidebarMenu.querySelector("a[data-view]");
         hash = firstLink ? firstLink.dataset.view : "dashboard";
-        // Usa replaceState para evitar adicionar ao histórico a URL vazia
-        window.history.replaceState(null, "", `#${hash}`);
+        window.location.hash = hash; // Adiciona o hash padrão à URL
+        return; // O evento hashchange será disparado novamente
       }
       const [viewId, param] = hash.split("/");
       loadView(viewId, param);
