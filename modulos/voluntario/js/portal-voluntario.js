@@ -193,7 +193,7 @@ function initPortal(user, userData) {
     });
 
     contentArea.innerHTML = '<div class="loading-spinner"></div>';
-    const htmlPath = `./page/${viewId}.html`; // Corrigido para apontar para a pasta 'page'
+    const htmlPath = `./${viewId}.html`;
     const jsPath = `../js/${viewId}.js`;
 
     try {
