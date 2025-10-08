@@ -1,20 +1,19 @@
 // Arquivo: /modulos/voluntario/js/recursos.js
-// Versão 2.0 (Atualizado para a sintaxe modular do Firebase v9)
+// Versão 2.1 (Atualizado para a sintaxe modular do Firebase v9 e navegação por hash)
 
 /**
  * Função Principal (INIT): Ponto de entrada do módulo de Recursos.
  * @param {object} user - Objeto do usuário autenticado.
  * @param {object} userData - Dados do perfil do usuário do Firestore.
- * @param {string} tabToOpen - (Opcional) ID da aba para abrir diretamente.
  */
-export function init(user, userData, tabToOpen) {
+export function init(user, userData) {
   const view = document.querySelector(".view-container");
   if (!view) return;
 
   const tabContainer = view.querySelector(".tabs-container");
   const contentSections = view.querySelectorAll(".tab-content");
 
-  // Conjunto para rastrear quais abas já foram inicializadas
+  // Conjunto para rastrear quais abas já foram inicializadas e evitar recarregamentos
   const loadedTabs = new Set();
 
   /**
@@ -22,15 +21,11 @@ export function init(user, userData, tabToOpen) {
    * @param {string} tabId - O ID da aba a ser carregada (ex: 'mensagens').
    */
   const loadTabModule = async (tabId) => {
-    // Não recarrega o módulo se ele já foi inicializado
-    if (loadedTabs.has(tabId)) {
-      return;
-    }
+    if (loadedTabs.has(tabId)) return;
 
     try {
       let module;
-      // Parâmetros para a função init do módulo filho
-      let initParams = [user, userData];
+      let initParams = [user, userData]; // Parâmetros para os módulos filhos
 
       switch (tabId) {
         case "mensagens":
@@ -41,18 +36,17 @@ export function init(user, userData, tabToOpen) {
           break;
         case "grade-online":
           module = await import("./grade-view.js");
-          initParams.push("online"); // Adiciona o tipo de grade como terceiro parâmetro
+          initParams.push("online"); // Adiciona o tipo de grade
           break;
         case "grade-presencial":
           module = await import("./grade-view.js");
-          initParams.push("presencial"); // Adiciona o tipo de grade como terceiro parâmetro
+          initParams.push("presencial"); // Adiciona o tipo de grade
           break;
         default:
           return; // Nenhuma ação para abas sem módulo JS
       }
 
       if (module && typeof module.init === "function") {
-        // Chama a função init do módulo filho com os parâmetros corretos
         await module.init(...initParams);
         loadedTabs.add(tabId); // Marca a aba como carregada
       }
@@ -75,40 +69,22 @@ export function init(user, userData, tabToOpen) {
     );
     if (!targetButton) return;
 
-    // Atualiza a aparência dos botões
     tabContainer
       .querySelectorAll(".tab-link")
       .forEach((btn) => btn.classList.remove("active"));
     targetButton.classList.add("active");
 
-    // Mostra o conteúdo da aba correta e esconde as outras
     contentSections.forEach((section) => {
       section.style.display = section.id === tabId ? "block" : "none";
     });
 
-    // Carrega o módulo JS associado à aba
     loadTabModule(tabId);
   };
 
-  // Adiciona o listener de clique ao container das abas
-  if (tabContainer) {
-    tabContainer.addEventListener("click", (e) => {
-      if (
-        e.target.tagName === "BUTTON" &&
-        e.target.classList.contains("tab-link")
-      ) {
-        const tabId = e.target.dataset.tab;
-        // Atualiza o hash da URL para refletir a aba ativa
-        window.location.hash = `recursos/${tabId}`;
-      }
-    });
-  }
-
   /**
-   * Lê o hash da URL e abre a aba correspondente.
+   * Lê o hash da URL (ex: #recursos/disponibilidade) e abre a aba correspondente.
    */
   const handleHashChange = () => {
-    // O hash pode ser #recursos/disponibilidade
     const hashParts = window.location.hash.substring(1).split("/");
     let activeTabId = "mensagens"; // Aba padrão
 
@@ -119,9 +95,27 @@ export function init(user, userData, tabToOpen) {
     switchTab(activeTabId);
   };
 
-  // Listener para quando o hash da URL mudar
+  // Adiciona o listener de clique ao container das abas para atualizar a URL
+  if (tabContainer) {
+    // Usa cloneNode para garantir que não haja múltiplos listeners
+    const newTabContainer = tabContainer.cloneNode(true);
+    tabContainer.parentNode.replaceChild(newTabContainer, tabContainer);
+
+    newTabContainer.addEventListener("click", (e) => {
+      if (
+        e.target.tagName === "BUTTON" &&
+        e.target.classList.contains("tab-link")
+      ) {
+        const tabId = e.target.dataset.tab;
+        // Apenas muda o hash, a lógica de troca de aba será tratada pelo 'handleHashChange'
+        window.location.hash = `recursos/${tabId}`;
+      }
+    });
+  }
+
+  // Listener para quando o hash da URL mudar (seja por clique ou link direto)
   window.addEventListener("hashchange", handleHashChange);
 
-  // Inicialização: abre a aba especificada ou a padrão
+  // Inicialização: chama a função uma vez para carregar a aba correta com base na URL atual
   handleHashChange();
 }
