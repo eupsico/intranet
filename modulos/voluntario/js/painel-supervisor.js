@@ -1,6 +1,6 @@
 import { displaySupervisorProfile } from "./perfil-supervisor-view.js";
 import { displaySupervised } from "./meus-supervisionados-view.js";
-import { displayAppointments } from "./meus-agendamentos-view.js";
+import { displayAgendamentos } from "./meus-agendamentos-view.js";
 import { auth } from "../../../assets/js/firebase-init.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
           await displaySupervised(user.uid);
           break;
         case "meus-agendamentos-supervisor":
-          await displayAppointments(user.uid);
+          await displayAgendamentos(user.uid);
           break;
       }
     } catch (error) {
