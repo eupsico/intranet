@@ -1,4 +1,7 @@
-import { db } from "../../../../assets/js/firebase-init.js";
+// Arquivo: /modulos/trilha-paciente/js/stages/em_atendimento_plantao.js
+// Versão: 2.0 (Migrado para a sintaxe modular do Firebase v9)
+
+import { db, doc, getDoc } from "../../../../assets/js/firebase-init.js";
 
 /**
  * Renderiza o conteúdo do modal para a etapa "Em Atendimento (Plantão)".
@@ -8,15 +11,15 @@ import { db } from "../../../../assets/js/firebase-init.js";
  * @returns {HTMLElement} O elemento HTML com o resumo informativo.
  */
 export async function render(cardId, cardTitle) {
-  // Busca os dados mais recentes do paciente para exibir no resumo.
-  const docRef = db.collection("trilhaPaciente").doc(cardId);
-  const doc = await docRef.get();
-  if (!doc.exists) {
+  // Busca os dados mais recentes do paciente com a sintaxe v9.
+  const docRef = doc(db, "trilhaPaciente", cardId);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
     const errorElement = document.createElement("div");
     errorElement.textContent = "Erro: Paciente não encontrado.";
     return errorElement;
   }
-  const data = doc.data();
+  const data = docSnap.data();
   const plantaoInfo = data.plantaoInfo || {};
 
   // Formata a data e a hora da sessão para exibição
@@ -50,8 +53,8 @@ export async function render(cardId, cardTitle) {
         <p><strong>Telefone de contato:</strong> ${
           data.telefoneCelular || "Não informado"
         }</p>
-        <p><strong>Contribuição:</strong> R$ ${
-          data.valorContribuicao || "0,00"
+        <p><strong>Contribuição:</strong> ${
+          data.valorContribuicao || "Não definido"
         }</p>
 
         
