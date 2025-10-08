@@ -1,7 +1,16 @@
 // Arquivo: /modulos/servico-social/js/agendamentos-triagem.js
-// Versão: 2.1 (CORRIGIDO)
+// Versão: 3.0 (Migrado para a sintaxe modular do Firebase v9)
 
-export function init(db, user, userData) {
+import {
+  db,
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+} from "../../../assets/js/firebase-init.js";
+
+export function init(user, userData) {
   const tableBody = document.getElementById("triagem-table-body");
   if (!tableBody) return;
 
@@ -12,16 +21,27 @@ export function init(db, user, userData) {
       '<tr><td colspan="10"><div class="loading-spinner"></div></td></tr>';
 
     try {
-      let query = db
-        .collection("trilhaPaciente")
-        .where("status", "==", "triagem_agendada")
-        .orderBy("lastUpdate", "asc");
+      // 1. Cria a referência para a coleção
+      const trilhaRef = collection(db, "trilhaPaciente");
 
+      // 2. Constrói a lista de condições da query
+      const queryConstraints = [
+        where("status", "==", "triagem_agendada"),
+        orderBy("lastUpdate", "asc"),
+      ];
+
+      // 3. Adiciona uma condição extra se o usuário não for admin
       if (!isAdmin) {
-        query = query.where("assistenteSocialNome", "==", userData.nome);
+        queryConstraints.push(
+          where("assistenteSocialNome", "==", userData.nome)
+        );
       }
 
-      const snapshot = await query.get();
+      // 4. Cria a query final
+      const q = query(trilhaRef, ...queryConstraints);
+
+      // 5. Executa a query
+      const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
         tableBody.innerHTML =
@@ -36,9 +56,6 @@ export function init(db, user, userData) {
           ? new Date(data.dataTriagem + "T03:00:00").toLocaleDateString("pt-BR")
           : "Não definida";
 
-        // ===== ALTERAÇÃO APLICADA AQUI =====
-        // Trocamos 'data.inscricaoId' por 'doc.id'.
-        // Agora, passamos o ID do próprio documento da trilha, que é mais direto.
         rowsHtml += `
                     <tr>
                         <td>${data.tipoTriagem || "N/A"}</td>
