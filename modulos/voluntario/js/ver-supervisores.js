@@ -1,11 +1,22 @@
 // Arquivo: /modulos/voluntario/js/ver-supervisores.js
-// Versão: 3.2 (Altera layout do card para o design final com faixa de título)
+// Versão: 4.0 (Migrado para a sintaxe modular do Firebase v9)
+
+// 1. Importa as funções necessárias do Firestore v9
+import {
+  db, // A instância do DB já vem do firebase-init
+  collection,
+  query,
+  where,
+  getDocs,
+} from "../../../assets/js/firebase-init.js";
 import { agendamentoController } from "./agendamento.js";
 
-let db, user, userData;
+// Variáveis de escopo do módulo
+let user, userData;
 
 export function init(dbRef, userRef, userDataRef) {
-  db = dbRef;
+  // As referências dbRef não são mais necessárias com a importação modular,
+  // mas mantemos a assinatura da função para compatibilidade com o chamador (supervisao.js)
   user = userRef;
   userData = userDataRef;
 
@@ -34,12 +45,18 @@ async function loadSupervisores() {
   grid.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    const q = db
-      .collection("usuarios")
-      .where("funcoes", "array-contains", "supervisor")
-      .where("inativo", "==", false);
+    // 2. Cria a referência da coleção
+    const supervisoresRef = collection(db, "usuarios");
 
-    const querySnapshot = await q.get();
+    // 3. Constrói a query com a sintaxe v9
+    const q = query(
+      supervisoresRef,
+      where("funcoes", "array-contains", "supervisor"),
+      where("inativo", "==", false)
+    );
+
+    // 4. Executa a query com getDocs
+    const querySnapshot = await getDocs(q);
     const supervisores = [];
     querySnapshot.forEach((doc) =>
       supervisores.push({ id: doc.id, uid: doc.id, ...doc.data() })
@@ -67,17 +84,16 @@ async function loadSupervisores() {
         fotoSupervisor = `../../../assets/img/supervisores/${cleanPath}`;
       }
 
-      // --- ESTRUTURA HTML FINAL DO CARD ---
       card.innerHTML = `
                 <div class="supervisor-card-header">
-                    <div class.supervisor-identity>
+                    <div class="supervisor-identity">
                         <div class="supervisor-photo-container">
                             <img src="${fotoSupervisor}" alt="Foto de ${
         supervisor.nome
       }" class="supervisor-photo" onerror="this.onerror=null;this.src='../../../assets/img/avatar-padrao.png';">
                         </div>
                         <h3>${supervisor.nome || "Nome não informado"}</h3>
-                    </div class.supervisor-identity>
+                    </div>
                     <div class="title-banner">${
                       supervisor.titulo || "Supervisor(a) Clínico(a)"
                     }</div>
@@ -105,7 +121,7 @@ async function loadSupervisores() {
   } catch (error) {
     console.error("Erro ao carregar supervisores:", error);
     grid.innerHTML =
-      '<p class="alert alert-error">Não foi possível carregar a lista de supervisores.</p>';
+      '<p class="alert alert-error">Não foi possível carregar la lista de supervisores.</p>';
   }
 }
 
