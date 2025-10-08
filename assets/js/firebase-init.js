@@ -25,6 +25,7 @@ import {
   serverTimestamp,
   documentId,
   Timestamp,
+  displayAppointments,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import {
   getFunctions,
@@ -80,4 +81,5 @@ export {
   serverTimestamp,
   documentId,
   Timestamp,
+  displayAppointments,
 };
