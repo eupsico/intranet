@@ -1,6 +1,6 @@
 // Importa as funções 'doc' e 'getDoc' do seu arquivo de inicialização do Firebase.
 // É importante garantir que seu firebase-init.js exporte essas funções.
-import { db, doc, getDoc } from "../../../assets/js/firebase-init.js";
+import { db, doc, getDoc } from "../../../../assets/js/firebase-init.js";
 
 /**
  * Busca configurações no Firestore e calcula os slots válidos de supervisão
