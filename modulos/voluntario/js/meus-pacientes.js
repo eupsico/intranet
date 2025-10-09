@@ -467,6 +467,7 @@ export function init(user, userData) {
         botaoSalvar.disabled = false;
       }
     });
+
   async function abrirModalEncerramento(pacienteId, dadosDoPaciente) {
     const form = document.getElementById("encerramento-form");
     form.reset();
