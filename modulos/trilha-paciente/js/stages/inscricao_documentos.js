@@ -73,7 +73,6 @@ export async function render(cardId, cardData, currentUserData) {
                 <textarea id="desistencia-motivo" class="form-control"></textarea>
             </div>
         </div>
-
         <div id="agendamento-section">
             <h3 class="form-section-title">Agendamento da Triagem</h3>
             <fieldset disabled>
