@@ -269,6 +269,7 @@ function initPortal(user, userData) {
 
     const handleToggle = () => {
       const isMobile = window.innerWidth <= 768;
+      const sidebar = document.querySelector(".sidebar");
       if (isMobile) {
         sidebar.classList.toggle("is-visible");
         layoutContainer.classList.toggle("mobile-menu-open");
