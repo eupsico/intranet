@@ -662,9 +662,38 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   }
 });
 
-// -----------------------------------------
-// FUNÇÃO: assinarContrato
-// -----------------------------------------
+// ==============================================================================
+//  NOVA FUNÇÃO AUXILIAR: Adicione esta função ao seu arquivo
+// ==============================================================================
+/**
+ * Valida um CPF.
+ * @param {string} cpf O CPF a ser validado.
+ * @return {boolean} Retorna true se o CPF for válido.
+ */
+function validaCPF(cpf) {
+  cpf = String(cpf).replace(/[^\d]/g, ""); // Remove formatação
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
+    return false;
+  }
+  let soma = 0;
+  let resto;
+  for (let i = 1; i <= 9; i++)
+    soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpf.substring(9, 10))) return false;
+  soma = 0;
+  for (let i = 1; i <= 10; i++)
+    soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpf.substring(10, 11))) return false;
+  return true;
+}
+
+// ==============================================================================
+//  FUNÇÃO ATUALIZADA: Substitua sua função 'assinarContrato' por esta
+// ==============================================================================
 exports.assinarContrato = onCall({ cors: true }, async (request) => {
   const {
     pacienteId,
@@ -676,12 +705,16 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
   } = request.data;
 
   if (!pacienteId || !atendimentoId || !nomeSignatario || !cpfSignatario) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Dados obrigatórios ausentes (pacienteId, atendimentoId, nome, cpf)."
-    );
+    throw new HttpsError("invalid-argument", "Dados obrigatórios ausentes.");
   }
 
+  // --- CORREÇÃO AQUI ---
+  // A validação completa agora é feita no servidor.
+  if (!validaCPF(cpfSignatario)) {
+    throw new HttpsError("invalid-argument", "CPF inválido.");
+  }
+
+  const cpfLimpo = String(cpfSignatario).replace(/[^\d]/g, "");
   const pacienteRef = db.collection("trilhaPaciente").doc(pacienteId);
 
   try {
@@ -706,7 +739,7 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
     atendimentos[indiceDoAtendimento].contratoAssinado = {
       assinadoEm: FieldValue.serverTimestamp(),
       nomeSignatario,
-      cpfSignatario,
+      cpfSignatario: cpfLimpo, // Salva o CPF limpo (apenas números)
       versaoContrato: versaoContrato || "1.0",
       ip: ip || "não identificado",
     };
