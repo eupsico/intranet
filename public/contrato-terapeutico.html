@@ -6,59 +6,18 @@
     <title>Contrato Terapêutico - EuPsico</title>
     <link rel="stylesheet" href="../assets/css/design-system.css">
     <style>
-        body {
-            background-color: #f4f7f6;
-            font-family: 'Poppins', sans-serif;
-            color: #333;
-            line-height: 1.6;
-        }
-        .contract-container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 40px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-        .contract-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .contract-header img {
-            max-width: 150px;
-            margin-bottom: 20px;
-        }
-        h1, h2 {
-            color: var(--cor-primaria);
-            border-bottom: 2px solid var(--cor-secundaria);
-            padding-bottom: 10px;
-            margin-top: 30px;
-        }
+        body { background-color: #f4f7f6; font-family: 'Poppins', sans-serif; color: #333; line-height: 1.6; }
+        .contract-container { max-width: 800px; margin: 40px auto; padding: 40px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .contract-header { text-align: center; margin-bottom: 30px; }
+        .contract-header img { max-width: 150px; margin-bottom: 20px; }
+        h1, h2 { color: var(--cor-primaria); border-bottom: 2px solid var(--cor-secundaria); padding-bottom: 10px; margin-top: 30px; }
         h1 { font-size: 1.8em; }
         h2 { font-size: 1.4em; }
-        .data-section {
-            background-color: #f9f9f9;
-            border-left: 4px solid var(--cor-primaria);
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 4px;
-        }
-        .acceptance-section {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .radio-group label {
-            margin-right: 20px;
-        }
-        #signature-feedback {
-            margin-top: 20px;
-            font-weight: bold;
-        }
+        .data-section { background-color: #f9f9f9; border-left: 4px solid var(--cor-primaria); padding: 20px; margin-top: 20px; border-radius: 4px; }
+        .acceptance-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
         .hidden { display: none; }
+        #contract-loading { text-align: center; padding: 40px; }
+        .error-message { color: red; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -69,9 +28,15 @@
             <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS TERAPÊUTICOS</h1>
         </div>
 
-        <div id="contract-loading" class="loading-spinner"></div>
+        <div id="contract-loading">
+            <div class="loading-spinner"></div>
+            <p>Carregando dados do contrato...</p>
+        </div>
         
+        <div id="contract-error" class="error-message hidden"></div>
+
         <div id="contract-content" class="hidden">
+            
             <h2>1. DOS PAPÉIS DE CADA PARTE</h2>
             <p>Ao <strong>TERAPEUTA</strong>, cabe a escuta técnica e reflexiva sem julgamentos, as intervenções, as orientações e os encaminhamentos. Sendo vedado pelo código de ética da profissão a indução de convicções políticas, filosóficas, morais, ideológicas, religiosas, orientação sexual, ou a qualquer tipo de preconceito no seu exercício funcional.</p>
             <p>Ao <strong>PACIENTE</strong>, cabe expressar suas necessidades sem medo de ser julgado, falar como se sente no processo terapêutico, tirar suas dúvidas, e seguir as orientações ligadas ao objetivo de seu tratamento.</p>
@@ -118,16 +83,16 @@
                 <li>Pela alta concedida pelo profissional;</li>
                 <li>Não pagamento da contribuição por dois meses.</li>
             </ol>
-            
+
             <div class="data-section">
-                <h3>Dados do Terapeuta e Paciente</h3>
+                <h3>Dados do Atendimento</h3>
                 <p><strong>Terapeuta:</strong> <span id="data-terapeuta"></span></p>
                 <p><strong>Nome completo do PACIENTE:</strong> <span id="data-paciente-nome"></span></p>
                 <div id="responsavel-section" class="hidden">
                     <p><strong>Nome do Responsável:</strong> <span id="data-responsavel-nome"></span></p>
                 </div>
                 <p><strong>Data de nascimento do PACIENTE:</strong> <span id="data-paciente-nascimento"></span></p>
-                <p><strong>Valor da contribuição mensal:</strong><span id="data-contribuicao"></span></p>
+                <p><strong>Valor da contribuição mensal:</strong> <span id="data-contribuicao"></span></p>
             </div>
             
             <div class="data-section">
@@ -142,17 +107,17 @@
                 <p>Ao preencher o formulário abaixo com meus dados pessoais e confirmar digitalmente, declaro ter ciência e concordar com os termos propostos.</p>
                 <form id="signature-form">
                     <div class="form-group">
-                        <label for="signer-name" id="signer-name-label">Nome Completo:</label>
+                        <label for="signer-name" id="signer-name-label">Nome Completo do Signatário:</label>
                         <input type="text" id="signer-name" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="signer-cpf" id="signer-cpf-label">CPF:</label>
+                        <label for="signer-cpf" id="signer-cpf-label">CPF do Signatário:</label>
                         <input type="text" id="signer-cpf" class="form-control" required>
                     </div>
-                    <div class="form-group radio-group">
-                        <p><strong>Declaro ter ciência e concordar com os termos propostos no CONTRATO DE PRESTAÇÃO DE SERVIÇOS TERAPÊUTICOS.</strong></p>
-                        <label><input type="radio" name="agreement" value="concordo" required> Concordo com os termos.</label>
-                        <label><input type="radio" name="agreement" value="nao-concordo"> Não concordo.</label>
+                    <div class="form-group">
+                        <p><strong>Declaro ter ciência e concordar com os termos propostos.</strong></p>
+                        <label><input type="radio" name="agreement" value="concordo" required> Concordo</label>
+                        <label><input type="radio" name="agreement" value="nao-concordo"> Não concordo</label>
                     </div>
                     <button type="submit" class="action-button">Assinar Contrato</button>
                     <div id="signature-feedback"></div>
@@ -163,11 +128,146 @@
                 <h2>Obrigado!</h2>
                 <p>O contrato foi assinado digitalmente com sucesso. A EuPsico foi notificada.</p>
             </div>
+        </div>
+    </div>
 
-        </div> </div>
+    <script type="module">
+      // Importa as funções necessárias do seu arquivo de inicialização do Firebase
+      import { db, doc, getDoc, updateDoc, serverTimestamp } from '../assets/js/firebase-init.js';
 
-    <script type="module" src="../assets/js/firebase-init.js"></script>
-    <script type="module" src="../assets/js/contrato-terapeutico.js"></script>
+      // Ponto de entrada do script
+      document.addEventListener('DOMContentLoaded', async () => {
+        const loadingDiv = document.getElementById('contract-loading');
+        const contentDiv = document.getElementById('contract-content');
+        const errorDiv = document.getElementById('contract-error');
 
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            loadingDiv.classList.add('hidden');
+            contentDiv.classList.add('hidden');
+        }
+
+        // 1. Obter IDs da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const pacienteId = urlParams.get('id');
+        const atendimentoId = urlParams.get('atendimentoId');
+
+        if (!pacienteId || !atendimentoId) {
+            showError("Erro: Parâmetros inválidos. O link do contrato está incompleto.");
+            return;
+        }
+
+        try {
+            // 2. Buscar dados do paciente no Firestore
+            const docRef = doc(db, 'trilhaPaciente', pacienteId);
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) {
+                showError("Erro: Paciente não encontrado.");
+                return;
+            }
+
+            const pacienteData = docSnap.data();
+            
+            // 3. Encontrar o atendimento específico dentro do array atendimentosPB
+            const meuAtendimento = pacienteData.atendimentosPB?.find(at => at.atendimentoId === atendimentoId);
+
+            if (!meuAtendimento) {
+                showError("Erro: Atendimento específico não localizado para este paciente.");
+                return;
+            }
+
+            // 4. Verificar se o contrato já foi assinado PARA ESTE ATENDIMENTO
+            if (meuAtendimento.contratoAssinado) {
+                loadingDiv.classList.add('hidden');
+                contentDiv.classList.remove('hidden');
+                document.getElementById('acceptance-form-section').classList.add('hidden');
+                document.getElementById('thank-you-section').classList.remove('hidden');
+            } else {
+                 document.getElementById('acceptance-form-section').classList.remove('hidden');
+            }
+
+            // 5. Preencher os dados na página
+            document.getElementById('data-terapeuta').textContent = meuAtendimento.profissionalNome || 'Não informado';
+            document.getElementById('data-paciente-nome').textContent = pacienteData.nomeCompleto || 'Não informado';
+            document.getElementById('data-paciente-nascimento').textContent = new Date(pacienteData.dataNascimento + 'T03:00:00').toLocaleDateString('pt-BR');
+            document.getElementById('data-contribuicao').textContent = `R$ ${pacienteData.valorContribuicao || '0,00'}`;
+
+            if (pacienteData.responsavel && pacienteData.responsavel.nome) {
+                document.getElementById('responsavel-section').classList.remove('hidden');
+                document.getElementById('data-responsavel-nome').textContent = pacienteData.responsavel.nome;
+            }
+
+            const horarioInfo = meuAtendimento.horarioSessao || {};
+            document.getElementById('data-dia-sessao').textContent = horarioInfo.diaSemana || 'A definir';
+            document.getElementById('data-horario-sessao').textContent = horarioInfo.horario || 'A definir';
+            document.getElementById('data-tipo-atendimento').textContent = horarioInfo.tipoAtendimento || 'A definir';
+            
+            // Exibe o conteúdo e esconde o loading
+            loadingDiv.classList.add('hidden');
+            contentDiv.classList.remove('hidden');
+
+            // 6. Configurar o formulário de assinatura
+            const signatureForm = document.getElementById('signature-form');
+            signatureForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const feedbackDiv = document.getElementById('signature-feedback');
+                const submitButton = signatureForm.querySelector('button');
+
+                const agreement = signatureForm.elements['agreement'].value;
+                if (agreement !== 'concordo') {
+                    feedbackDiv.textContent = 'Você precisa concordar com os termos para assinar.';
+                    feedbackDiv.style.color = 'red';
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.textContent = 'Salvando...';
+                feedbackDiv.textContent = '';
+
+                try {
+                    const signatureData = {
+                        nomeSignatario: document.getElementById('signer-name').value,
+                        cpfSignatario: document.getElementById('signer-cpf').value,
+                        assinadoEm: serverTimestamp()
+                    };
+
+                    // Cria uma nova versão do array de atendimentos com o contrato assinado
+                    const novosAtendimentos = pacienteData.atendimentosPB.map(at => {
+                        if (at.atendimentoId === atendimentoId) {
+                            return { ...at, contratoAssinado: signatureData };
+                        }
+                        return at;
+                    });
+                    
+                    // Prepara a atualização para o Firestore
+                    const updateData = {
+                        atendimentosPB: novosAtendimentos,
+                        status: 'em_atendimento_pb', // Atualiza o status geral do paciente
+                        lastUpdate: serverTimestamp()
+                    };
+
+                    await updateDoc(docRef, updateData);
+
+                    // Mostra a mensagem de sucesso
+                    document.getElementById('acceptance-form-section').classList.add('hidden');
+                    document.getElementById('thank-you-section').classList.remove('hidden');
+
+                } catch (error) {
+                    console.error("Erro ao salvar assinatura:", error);
+                    feedbackDiv.textContent = 'Erro ao salvar a assinatura. Tente novamente.';
+                    feedbackDiv.style.color = 'red';
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Assinar Contrato';
+                }
+            });
+
+        } catch (error) {
+            console.error("Erro ao carregar o contrato:", error);
+            showError("Ocorreu um erro inesperado ao carregar o contrato. Verifique o link e tente novamente.");
+        }
+      });
+    </script>
 </body>
 </html>
