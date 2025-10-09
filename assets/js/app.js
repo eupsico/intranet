@@ -2,6 +2,7 @@
 // Versão: 9.0 (Migração completa para a sintaxe modular do Firebase v9)
 
 // 1. Importa os serviços e funções necessários do nosso arquivo de configuração central
+export let currentUserData = {};
 import {
   auth,
   db,

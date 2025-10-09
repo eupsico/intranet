@@ -8,7 +8,7 @@ import {
   updateDoc,
   serverTimestamp,
 } from "../../../../assets/js/firebase-init.js";
-
+import { currentUserData } from "../../../../assets/js/app.js";
 /**
  * Renderiza o conteúdo do modal.
  */
