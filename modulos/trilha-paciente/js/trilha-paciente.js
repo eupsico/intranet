@@ -1,6 +1,6 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
 // Versão: 10.2 (CORRIGIDO: Restaura a aparência dos cards e o comportamento do modal flutuante)
-
+export let currentUserData = {};
 import {
   db,
   collection,
@@ -280,7 +280,7 @@ async function openCardModal(cardId) {
         newSaveButton.disabled = true;
         newSaveButton.textContent = "Salvando...";
         try {
-          await stageModule.save(cardId, cardData, modalBody, currentUserData);
+          await stageModule.save(cardId, cardData, modalBody);
           modal.style.display = "none";
         } catch (error) {
           console.error("Erro ao salvar:", error);
