@@ -104,19 +104,35 @@
                     <div>
                         <input type="radio" id="iniciou-pb-sim" name="iniciou-pb" value="sim" required> <label for="iniciou-pb-sim">Sim</label>
                         <input type="radio" id="iniciou-pb-nao" name="iniciou-pb" value="nao" required> <label for="iniciou-pb-nao">Não</label>
+                        <small style="display: block; margin-left: 25px; color: #666;">Selecione 'Não' apenas se o paciente desistiu ou não irá mais ser atendido por você.</small>
                     </div>
                 </div>
+
                 <div id="motivo-nao-inicio-pb-container" class="form-group hidden">
-                    <label for="motivo-nao-inicio-pb">Motivo:</label>
-                    <textarea id="motivo-nao-inicio-pb" rows="3"></textarea>
+                    <label>Qual o motivo do não início do atendimento?</label>
+                    <div class="radio-group-vertical">
+                        <label><input type="radio" name="motivo-nao-inicio" value="desistiu"> Desistiu</label>
+                        <label><input type="radio" name="motivo-nao-inicio" value="outra_modalidade"> Prefere outra modalidade de atendimento</label>
+                        <label><input type="radio" name="motivo-nao-inicio" value="outro_horario"> Tem preferência por outro horário</label>
+                    </div>
+                </div>
+                
+                <div id="motivo-desistencia-container" class="form-group hidden">
+                    <label for="motivo-desistencia-pb">Descreva o motivo da desistência:</label>
+                    <textarea id="motivo-desistencia-pb" rows="3" class="form-control"></textarea>
+                </div>
+                
+                <div id="detalhar-solicitacao-container" class="form-group hidden">
+                    <label for="detalhes-solicitacao-pb">Detalhe a solicitação do paciente (será enviada ao administrativo):</label>
+                    <textarea id="detalhes-solicitacao-pb" rows="3" class="form-control"></textarea>
                 </div>
                 <div id="form-continuacao-pb" class="hidden">
-                </div>
+                    </div>
             </form>
         </div>
         <div class="modal-footer">
             <button type="button" class="action-button secondary" data-close-modal>Cancelar</button>
-            <button type="submit" class="action-button" form="horarios-pb-form">Salvar Horários</button>
+            <button type="submit" class="action-button" form="horarios-pb-form">Salvar</button>
         </div>
     </div>
 </div>

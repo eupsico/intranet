@@ -371,14 +371,9 @@ export function init(user, userData) {
         return;
       }
 
-      if (iniciou === "nao") {
-        atendimentos[indiceDoAtendimento].statusAtendimento = "encerrado";
-        atendimentos[
-          indiceDoAtendimento
-        ].motivoDesistencia = `Não iniciou PB. Motivo: ${
-          formulario.querySelector("#motivo-nao-inicio-pb").value
-        }`;
-      } else {
+      let dadosParaAtualizar = {};
+
+      if (iniciou === "sim") {
         atendimentos[indiceDoAtendimento].horarioSessao = {
           responsavelId: user.uid,
           responsavelNome: userData.nome,
@@ -396,13 +391,69 @@ export function init(user, userData) {
           observacoes: formulario.querySelector("#observacoes-pb-horarios")
             .value,
         };
-      }
+        dadosParaAtualizar = {
+          atendimentosPB: atendimentos,
+          status: "cadastrar_horario_psicomanager",
+          lastUpdate: serverTimestamp(),
+        };
+      } else {
+        // Se iniciou for "nao"
+        const motivoNaoInicio = formulario.querySelector(
+          'input[name="motivo-nao-inicio"]:checked'
+        )?.value;
+        if (!motivoNaoInicio) {
+          alert("Por favor, selecione o motivo do não início.");
+          botaoSalvar.disabled = false;
+          return;
+        }
 
-      const dadosParaAtualizar = {
-        atendimentosPB: atendimentos,
-        status: "cadastrar_horario_psicomanager",
-        lastUpdate: serverTimestamp(),
-      };
+        atendimentos[indiceDoAtendimento].statusAtendimento = "encerrado";
+
+        if (motivoNaoInicio === "desistiu") {
+          const motivoTexto = formulario.querySelector(
+            "#motivo-desistencia-pb"
+          ).value;
+          if (!motivoTexto) {
+            alert("Por favor, descreva o motivo da desistência.");
+            botaoSalvar.disabled = false;
+            return;
+          }
+          atendimentos[
+            indiceDoAtendimento
+          ].motivoDesistencia = `Desistiu antes de iniciar PB. Motivo: ${motivoTexto}`;
+          dadosParaAtualizar = {
+            atendimentosPB: atendimentos,
+            lastUpdate: serverTimestamp(),
+          };
+        } else {
+          // Se for "outra_modalidade" ou "outro_horario"
+          const detalhesSolicitacao = formulario.querySelector(
+            "#detalhes-solicitacao-pb"
+          ).value;
+          if (!detalhesSolicitacao) {
+            alert("Por favor, detalhe a solicitação do paciente.");
+            botaoSalvar.disabled = false;
+            return;
+          }
+          atendimentos[
+            indiceDoAtendimento
+          ].motivoDesistencia = `Retornou ao plantão por preferência do paciente.`;
+          dadosParaAtualizar = {
+            atendimentosPB: atendimentos,
+            status: "encaminhar_para_plantao",
+            logRetornoPlantao: {
+              motivo: detalhesSolicitacao,
+              data: serverTimestamp(),
+              profissionalAnterior: userData.nome,
+              tipo:
+                motivoNaoInicio === "outro_horario"
+                  ? "Preferência de Horário"
+                  : "Preferência de Modalidade",
+            },
+            lastUpdate: serverTimestamp(),
+          };
+        }
+      }
 
       try {
         await updateDoc(docRef, dadosParaAtualizar);
@@ -410,13 +461,12 @@ export function init(user, userData) {
         horariosPbModal.style.display = "none";
         carregarMeusPacientes();
       } catch (error) {
-        console.error("Erro ao salvar horários:", error);
+        console.error("Erro ao salvar informações:", error);
         alert("Erro ao salvar. Tente novamente.");
       } finally {
         botaoSalvar.disabled = false;
       }
     });
-
   async function abrirModalEncerramento(pacienteId, dadosDoPaciente) {
     const form = document.getElementById("encerramento-form");
     form.reset();
@@ -548,31 +598,51 @@ export function init(user, userData) {
     form.querySelector("#paciente-id-horarios-modal").value = pacienteId;
     form.querySelector("#atendimento-id-horarios-modal").value = atendimentoId;
 
-    // --- INÍCIO DA CORREÇÃO ---
+    // Garante que todos os containers condicionais comecem ocultos
     const motivoContainer = document.getElementById(
       "motivo-nao-inicio-pb-container"
     );
     const continuacaoContainer = document.getElementById("form-continuacao-pb");
+    const desistenciaContainer = document.getElementById(
+      "motivo-desistencia-container"
+    );
+    const solicitacaoContainer = document.getElementById(
+      "detalhar-solicitacao-container"
+    );
+
     motivoContainer.classList.add("hidden");
     continuacaoContainer.classList.add("hidden");
-    continuacaoContainer.innerHTML = "";
-    // --- FIM DA CORREÇÃO ---
+    desistenciaContainer.classList.add("hidden");
+    solicitacaoContainer.classList.add("hidden");
 
+    continuacaoContainer.innerHTML = ""; // Limpa o formulário de horários se já foi carregado
+
+    // Zera o 'required' de todos os campos de texto
+    document.getElementById("motivo-desistencia-pb").required = false;
+    document.getElementById("detalhes-solicitacao-pb").required = false;
+
+    // Listener para os botões "Sim" e "Não"
     const iniciouRadio = form.querySelectorAll('input[name="iniciou-pb"]');
     iniciouRadio.forEach((radio) => {
       radio.onchange = () => {
         const mostrarFormulario = radio.value === "sim" && radio.checked;
         const mostrarMotivo = radio.value === "nao" && radio.checked;
-        motivoContainer.classList.toggle("hidden", !mostrarMotivo);
+
         continuacaoContainer.classList.toggle("hidden", !mostrarFormulario);
-        document.getElementById("motivo-nao-inicio-pb").required =
-          mostrarMotivo;
+        motivoContainer.classList.toggle("hidden", !mostrarMotivo);
+
+        // Se o usuário voltar para "Sim", esconde os sub-menus de "Não"
+        if (mostrarFormulario) {
+          desistenciaContainer.classList.add("hidden");
+          solicitacaoContainer.classList.add("hidden");
+        }
 
         if (mostrarFormulario && continuacaoContainer.innerHTML === "") {
           continuacaoContainer.innerHTML = construirFormularioHorarios(
             userData.nome
           );
         }
+
         continuacaoContainer
           .querySelectorAll("select, input, textarea")
           .forEach((elemento) => {
@@ -582,6 +652,25 @@ export function init(user, userData) {
           });
       };
     });
+
+    // Listener para as sub-opções de "Não"
+    const motivoNaoInicioRadio = form.querySelectorAll(
+      'input[name="motivo-nao-inicio"]'
+    );
+    motivoNaoInicioRadio.forEach((radio) => {
+      radio.onchange = () => {
+        if (radio.checked) {
+          const eDesistiu = radio.value === "desistiu";
+          desistenciaContainer.classList.toggle("hidden", !eDesistiu);
+          solicitacaoContainer.classList.toggle("hidden", eDesistiu);
+
+          document.getElementById("motivo-desistencia-pb").required = eDesistiu;
+          document.getElementById("detalhes-solicitacao-pb").required =
+            !eDesistiu;
+        }
+      };
+    });
+
     horariosPbModal.style.display = "block";
   }
 
