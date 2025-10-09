@@ -8,7 +8,6 @@
     <style>
         /* CSS GERAL E FONTES */
         :root {
-            /* Definindo cores padrão caso o design-system.css não esteja disponível */
             --cor-primaria: #0056b3;
             --cor-secundaria: #f0f8ff;
             --cor-texto: #333;
@@ -217,14 +216,15 @@
                 <li>Não pagamento da contribuição por dois meses.</li>
             </ol>
             
-           
+            <hr class="section-divider">
+
             <div id="clausula-menor-idade-section" class="hidden">
                 <h2>AUTORIZAÇÃO PARA ACOMPANHAMENTO PSICOTERAPÊUTICO DE CRIANÇAS E ADOLESCENTES (MENORES DE 18 ANOS)</h2>
                 <p>Eu como RESPONSÁVEL LEGAL pela(o) criança/adolescente (PACIENTE), autorizo o acompanhamento terapêutico e os encaminhamentos cabíveis.</p>
                 <p>Todas as intervenções e documentos produzidos serão regidos pelos dispositivos legais vigentes, em especial pelo disposto na Resolução CFP nº10, de 2005 (Código de Ética Profissional do Psicólogo), bem como pelas demais Resoluções da Psicologia relacionadas ao exercício da profissão.</p>
                 <p>Em especial, serão garantidos à(s) criança(s) ou adolescente(s) o sigilo das informações e a preservação da dignidade e da intimidade durante a prestação dos serviços de que trata esta autorização.</p>
             </div>
-            <hr class="section-divider">
+
             <div class="data-section">
                 <h3>Dados do Atendimento</h3>
                 <p><strong>Terapeuta:</strong> <span id="data-terapeuta"></span></p>
@@ -272,10 +272,11 @@
             </div>
         </div>
     </div>
-    <script type="module">
-      import { db, doc, getDoc, updateDoc, serverTimestamp } from '../assets/js/firebase-init.js';
 
-      // --- FUNÇÕES AUXILIARES ---
+    <script type="module">
+      import { db, doc, getDoc, functions, httpsCallable } from '../assets/js/firebase-init.js';
+
+      const assinarContrato = httpsCallable(functions, 'assinarContrato');
 
       function showError(message) {
           const errorDiv = document.getElementById('contract-error');
@@ -300,26 +301,20 @@
       function validaCPF(cpf) {
           cpf = String(cpf).replace(/[^\d]/g, '');
           if (cpf.length !== 11) return false;
-          if (/^(\d)\1+$/.test(cpf)) return false; // Verifica sequências repetidas
-          
+          if (/^(\d)\1+$/.test(cpf)) return false;
           let soma = 0;
           let resto;
-          
           for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
           resto = (soma * 10) % 11;
           if (resto === 10 || resto === 11) resto = 0;
           if (resto !== parseInt(cpf.substring(9, 10))) return false;
-          
           soma = 0;
           for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
           resto = (soma * 10) % 11;
           if (resto === 10 || resto === 11) resto = 0;
           if (resto !== parseInt(cpf.substring(10, 11))) return false;
-          
           return true;
       }
-
-      // --- SCRIPT PRINCIPAL ---
 
       document.addEventListener('DOMContentLoaded', async () => {
         const loadingDiv = document.getElementById('contract-loading');
@@ -351,7 +346,6 @@
                 return;
             }
 
-            // Lógica para menor de idade
             const idade = calculateAge(pacienteData.dataNascimento);
             const isMenor = idade !== null && idade < 18;
 
@@ -365,7 +359,6 @@
                 document.getElementById('signer-cpf-label').textContent = 'CPF do Responsável Legal:';
             }
 
-            // Preenche os dados na página
             document.getElementById('data-terapeuta').textContent = meuAtendimento.profissionalNome || 'Não informado';
             document.getElementById('data-paciente-nome').textContent = pacienteData.nomeCompleto || 'Não informado';
             document.getElementById('data-paciente-nascimento').textContent = new Date(pacienteData.dataNascimento + 'T03:00:00').toLocaleDateString('pt-BR');
@@ -429,33 +422,27 @@
                 feedbackDiv.textContent = '';
 
                 try {
-                    const signatureData = {
-                        nomeSignatario: document.getElementById('signer-name').value,
-                        cpfSignatario: cpfValue,
-                        assinadoEm: serverTimestamp()
-                    };
+                    const nomeSignatario = document.getElementById('signer-name').value;
+                    const cpfSignatario = cpfValue;
 
-                    const novosAtendimentos = pacienteData.atendimentosPB.map(at => {
-                        if (at.atendimentoId === atendimentoId) {
-                            return { ...at, contratoAssinado: signatureData };
-                        }
-                        return at;
+                    const result = await assinarContrato({
+                        pacienteId: pacienteId,
+                        atendimentoId: atendimentoId,
+                        nomeSignatario: nomeSignatario,
+                        cpfSignatario: cpfSignatario,
+                        versaoContrato: "1.0"
                     });
-                    
-                    const updateData = {
-                        atendimentosPB: novosAtendimentos,
-                        status: 'em_atendimento_pb',
-                        lastUpdate: serverTimestamp()
-                    };
 
-                    await updateDoc(docRef, updateData);
+                    if (result.data && !result.data.success) {
+                        throw new Error(result.data.message || 'Ocorreu um erro no servidor.');
+                    }
 
                     document.getElementById('acceptance-form-section').classList.add('hidden');
                     document.getElementById('thank-you-section').classList.remove('hidden');
 
                 } catch (error) {
                     console.error("Erro ao salvar assinatura:", error);
-                    feedbackDiv.textContent = 'Erro ao salvar a assinatura. Tente novamente.';
+                    feedbackDiv.textContent = `Erro ao salvar a assinatura. (${error.message})`;
                     feedbackDiv.className = 'feedback-error';
                     submitButton.disabled = false;
                     submitButton.textContent = 'Assinar Contrato';
