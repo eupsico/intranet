@@ -36,19 +36,41 @@ export async function init(db, authUser, authData, container, columnFilter) {
   currentColumnFilter = columnFilter;
   currentUserData = authData;
 
-  if (unsubscribe) {
-    unsubscribe();
+  if (typeof unsubscribe === "function") {
+    try {
+      unsubscribe();
+    } catch (e) {
+      console.warn("Erro ao cancelar inscrição anterior:", e);
+    }
   }
 
   try {
-    const response = await fetch("../page/trilha-paciente.html");
-    if (!response.ok) throw new Error("Falha ao carregar o HTML da trilha.");
-    container.innerHTML = await response.text();
+    const response = await fetch("../page/trilha-paciente.html", {
+      cache: "no-store",
+    });
 
-    setupColumns();
-    setupAllModalControls();
-    setupEventListeners();
-    loadAndRenderCards();
+    if (!response.ok) {
+      throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const html = await response.text();
+
+    if (!html || html.trim() === "") {
+      throw new Error("HTML da trilha está vazio ou inválido.");
+    }
+
+    container.innerHTML = html;
+
+    // Protege cada etapa de inicialização
+    try {
+      setupColumns?.();
+      setupAllModalControls?.();
+      setupEventListeners?.();
+      await loadAndRenderCards?.(); // se for async
+    } catch (innerError) {
+      console.error("Erro ao configurar componentes do Kanban:", innerError);
+      container.innerHTML = `<div class="error-message">Erro ao configurar o Kanban.</div>`;
+    }
   } catch (error) {
     console.error("Erro ao inicializar o Kanban:", error);
     container.innerHTML = `<div class="error-message">Erro ao carregar o Kanban.</div>`;
