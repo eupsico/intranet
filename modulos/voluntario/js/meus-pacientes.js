@@ -230,9 +230,11 @@ export function init(user, userData) {
             abrirModalHorariosPb(pacienteId, atendimentoId);
             break;
           case "contrato":
+            const atendimentoId = botao.dataset.atendimentoId;
             const telefone = botao.closest(".paciente-card").dataset.telefone;
             handleEnviarContrato(
               pacienteId,
+              atendimentoId,
               telefone,
               dadosDoPaciente.nomeCompleto
             );
