@@ -1,6 +1,6 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
 // Versão: 10.2 (CORRIGIDO: Restaura a aparência dos cards e o comportamento do modal flutuante)
-export let currentUserData = {};
+
 import {
   db,
   collection,
