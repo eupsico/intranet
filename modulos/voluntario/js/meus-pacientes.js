@@ -136,6 +136,7 @@ export function init(user, userData) {
         tipo: "pb_horarios",
         ativo: true,
       },
+
       aguardando_contrato: {
         label: "Aguardando Contrato (PB)",
         acao: "Enviar Contrato",
