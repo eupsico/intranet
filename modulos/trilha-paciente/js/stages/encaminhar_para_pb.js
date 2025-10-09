@@ -8,6 +8,7 @@ import {
   updateDoc,
   arrayUnion,
   deleteField,
+  serverTimestamp,
 } from "../../../../assets/js/firebase-init.js";
 import { carregarProfissionais } from "../../../../assets/js/app.js";
 
@@ -155,7 +156,7 @@ export async function save(cardId, cardData, modalBody) {
       desistenciaMotivo: `Desistiu antes do PB. Motivo: ${
         document.getElementById("motivo-desistencia-pb").value
       }`,
-      lastUpdate: new Date(),
+      lastUpdate: serverTimestamp(),
     };
     await updateDoc(docRef, updateData);
   } else if (continua === "sim") {
@@ -193,7 +194,7 @@ export async function save(cardId, cardData, modalBody) {
       atendimentosPB: arrayUnion(novoAtendimento), // Sintaxe v9
       profissionaisPB_ids: arrayUnion(profissionalId), // Sintaxe v9
       pbInfo: deleteField(), // Sintaxe v9
-      lastUpdate: new Date(),
+      lastUpdate: serverTimestamp(),
     };
 
     try {
