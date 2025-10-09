@@ -14,12 +14,12 @@ import { carregarProfissionais } from "../../../../assets/js/app.js";
 
 /**
  * Renderiza o conteúdo do modal para a etapa 'Encaminhar para PB'.
+ * AGORA INCLUI LÓGICA PARA ADICIONAR OU SUBSTITUIR PROFISSIONAIS.
  * @param {string} cardId - O ID do documento do paciente na coleção 'trilhaPaciente'.
- * @param {string} cardTitle - O título do card (nome do paciente).
  * @returns {HTMLElement} O elemento HTML com o formulário.
  */
 export async function render(cardId, cardTitle) {
-  // 1. Busca os dados mais recentes do paciente com a sintaxe v9
+  // 1. Busca os dados mais recentes do paciente
   const docRef = doc(db, "trilhaPaciente", cardId);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) {
@@ -30,26 +30,30 @@ export async function render(cardId, cardTitle) {
   }
   const data = docSnap.data();
 
-  // 2. Monta o HTML do formulário
+  // NOVO: Verifica se já existe um atendimento ativo para mostrar a nova opção
+  const atendimentoAtivoExistente = data.atendimentosPB?.find(
+    (at) => at.statusAtendimento === "ativo"
+  );
+  let acaoEncaminhamentoHtml = "";
+
+  if (atendimentoAtivoExistente) {
+    acaoEncaminhamentoHtml = `
+        <div id="acao-encaminhamento-section" class="form-group hidden" style="background-color: #fffbe6; padding: 15px; border-radius: 5px; border: 1px solid #ffe58f;">
+            <p>Este paciente já possui um atendimento ativo com <strong>${atendimentoAtivoExistente.profissionalNome}</strong>. O que você deseja fazer?</p>
+            <div class="radio-group-vertical">
+                <label><input type="radio" name="acao-encaminhamento" value="substituir" required> Substituir o atendimento atual</label>
+                <label><input type="radio" name="acao-encaminhamento" value="adicionar" required> Adicionar como um novo atendimento (ambos ficarão ativos)</label>
+            </div>
+        </div>
+    `;
+  }
+
+  // 2. Monta o HTML do formulário, incluindo a nova seção (se aplicável)
   const content = `
         <div class="patient-info-box">
             <h4>Adicionar Atendimento de Psicoterapia Breve (PB)</h4>
             <p><strong>Nome:</strong> ${
               data.nomeCompleto || "Não informado"
-            }</p>
-            <p><strong>Telefone:</strong> ${
-              data.telefoneCelular || "Não informado"
-            }</p>
-            <p><strong>Disponibilidade:</strong> ${
-              data.disponibilidadeGeral?.join(", ") || "Não informado"
-            }</p>
-            <p><strong>Tipo de Atendimento:</strong> ${
-              data.plantaoInfo?.tipoAtendimento ||
-              data.modalidadeAtendimento ||
-              "Não informado"
-            }</p>
-            <p><strong>Contribuição:</strong> ${
-              data.valorContribuicao || "Não informado"
             }</p>
         </div>
         <form id="pb-form">
@@ -66,6 +70,8 @@ export async function render(cardId, cardTitle) {
                 <textarea id="motivo-desistencia-pb" class="form-control" rows="3"></textarea>
             </div>
             <div id="continuacao-pb-container" class="hidden">
+                ${acaoEncaminhamentoHtml}
+
                 <div class="form-group">
                     <label for="profissional-pb">Selecione o nome profissional do PB:</label>
                     <select id="profissional-pb" class="form-control" required></select>
@@ -117,11 +123,19 @@ export async function render(cardId, cardTitle) {
   const continuacaoContainer = element.querySelector(
     "#continuacao-pb-container"
   );
+  const acaoEncaminhamentoSection = element.querySelector(
+    "#acao-encaminhamento-section"
+  );
 
   continuaTerapiaSelect.addEventListener("change", (e) => {
     const value = e.target.value;
     motivoContainer.classList.toggle("hidden", value !== "nao");
     continuacaoContainer.classList.toggle("hidden", value !== "sim");
+
+    // Mostra a seção de escolha apenas se o valor for "sim" e a seção existir
+    if (acaoEncaminhamentoSection) {
+      acaoEncaminhamentoSection.classList.toggle("hidden", value !== "sim");
+    }
 
     const continuacaoInputs = continuacaoContainer.querySelectorAll(
       "select, input, textarea"
@@ -132,25 +146,25 @@ export async function render(cardId, cardTitle) {
     motivoInput.required = value === "nao";
   });
 
-  // Carrega a lista de profissionais no dropdown
   carregarProfissionais(
     db,
     "atendimento",
     element.querySelector("#profissional-pb")
   );
-
   return element;
 }
 
 /**
- * Salva os dados do formulário, adicionando um novo atendimento de PB.
+ * Salva os dados do formulário, permitindo adicionar um novo atendimento
+ * ou substituir um atendimento ativo existente.
  * @param {string} cardId - O ID do documento do paciente a ser atualizado.
  */
-export async function save(cardId, cardData, modalBody) {
+export async function save(cardId) {
   const continua = document.getElementById("continua-terapia-pb").value;
   const docRef = doc(db, "trilhaPaciente", cardId);
 
   if (continua === "nao") {
+    // Lógica de desistência permanece a mesma
     const updateData = {
       status: "desistencia",
       desistenciaMotivo: `Desistiu antes do PB. Motivo: ${
@@ -160,24 +174,24 @@ export async function save(cardId, cardData, modalBody) {
     };
     await updateDoc(docRef, updateData);
   } else if (continua === "sim") {
+    // 1. Pega os dados do novo profissional do formulário
     const profissionalSelect = document.getElementById("profissional-pb");
     const profissionalId = profissionalSelect.value;
     const profissionalNome =
       profissionalSelect.options[profissionalSelect.selectedIndex].text;
-
     if (!profissionalId) {
       throw new Error(
         "Por favor, selecione um profissional para o encaminhamento."
       );
     }
-
     const novoAtendimento = {
       atendimentoId:
         new Date().getTime().toString() +
         Math.random().toString(36).substring(2, 9),
       statusAtendimento: "ativo",
-      profissionalId: profissionalId,
-      profissionalNome: profissionalNome,
+      // ... (restante dos campos do novoAtendimento)
+      profissionalId,
+      profissionalNome,
       tipoProfissional: document.getElementById("tipo-profissional-pb").value,
       dataEncaminhamento: document.getElementById("data-encaminhamento-pb")
         .value,
@@ -189,27 +203,75 @@ export async function save(cardId, cardData, modalBody) {
       observacoes: document.getElementById("observacoes-pb").value,
     };
 
-    const updateData = {
+    // 2. Busca os dados atuais do paciente
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      throw new Error("Paciente não encontrado.");
+    }
+    const dadosAtuais = docSnap.data();
+    let atendimentosAnteriores = dadosAtuais.atendimentosPB || [];
+    const atendimentoAtivoExistente = atendimentosAnteriores.find(
+      (at) => at.statusAtendimento === "ativo"
+    );
+
+    let updateData = {};
+
+    // 3. Decide a ação com base na escolha do usuário
+    if (atendimentoAtivoExistente) {
+      const acao = document.querySelector(
+        'input[name="acao-encaminhamento"]:checked'
+      )?.value;
+      if (!acao) {
+        throw new Error(
+          "Por favor, defina se deseja substituir ou adicionar o novo profissional."
+        );
+      }
+
+      if (acao === "substituir") {
+        // Desativa o atendimento anterior e adiciona o novo
+        const novosAtendimentos = atendimentosAnteriores.map((at) =>
+          at.statusAtendimento === "ativo"
+            ? {
+                ...at,
+                statusAtendimento: "encerrado",
+                motivoDesistencia: "Substituído por novo encaminhamento.",
+              }
+            : at
+        );
+        novosAtendimentos.push(novoAtendimento);
+        updateData = {
+          atendimentosPB: novosAtendimentos,
+        };
+      } else {
+        // acao === 'adicionar'
+        // Simplesmente adiciona o novo atendimento à lista existente
+        updateData = {
+          atendimentosPB: arrayUnion(novoAtendimento),
+        };
+      }
+    } else {
+      // Se não havia atendimento ativo, apenas adiciona o novo
+      updateData = {
+        atendimentosPB: arrayUnion(novoAtendimento),
+      };
+    }
+
+    // 4. Prepara o objeto final para atualização no Firestore
+    const finalUpdateData = {
       status: "aguardando_info_horarios",
-      atendimentosPB: arrayUnion(novoAtendimento), // Sintaxe v9
-      profissionaisPB_ids: arrayUnion(profissionalId), // Sintaxe v9
-      pbInfo: deleteField(), // Sintaxe v9
+      ...updateData, // Adiciona a lógica de 'atendimentosPB'
+      profissionaisPB_ids: arrayUnion(profissionalId),
+      pbInfo: deleteField(),
       lastUpdate: serverTimestamp(),
     };
 
-    try {
-      await updateDoc(docRef, updateData);
-      console.log("Novo atendimento de PB adicionado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao adicionar novo atendimento de PB:", error);
-      throw new Error("Ocorreu um erro ao salvar os dados. Tente novamente.");
-    }
+    await updateDoc(docRef, finalUpdateData);
+    console.log("Atendimento de PB salvo com sucesso!");
   } else {
     throw new Error(
       "Por favor, selecione se o paciente deseja continuar com a terapia."
     );
   }
 }
-
 // Export default para compatibilidade
 export default { render, save };
