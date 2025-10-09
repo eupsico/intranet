@@ -251,16 +251,21 @@ export function init(user, userData) {
     });
   }
 
-  function handleEnviarContrato(pacienteId, telefone, nomePaciente) {
+  function handleEnviarContrato(
+    pacienteId,
+    atendimentoId,
+    telefone,
+    nomePaciente
+  ) {
     const numeroLimpo = telefone ? telefone.replace(/\D/g, "") : "";
     if (!numeroLimpo || numeroLimpo.length < 10) {
-      alert(
-        "O número de telefone do paciente não é válido para envio via WhatsApp."
-      );
+      alert("O número de telefone do paciente não é válido.");
       return;
     }
-    const contractUrl = `${window.location.origin}/public/contrato-terapeutico.html?id=${pacienteId}`;
-    const mensagem = `Olá, ${nomePaciente}! Tudo bem?\n\nSegue o link para leitura e aceite do nosso contrato terapêutico. Por favor, preencha ao final para darmos continuidade.\n\n${contractUrl}\n\nQualquer dúvida, estou à disposição!`;
+    const contractUrl = `${window.location.origin}/public/contrato-terapeutico.html?id=${pacienteId}&atendimentoId=${atendimentoId}`;
+
+    const mensagem = `Olá, ${nomePaciente}! Tudo bem?\n\nSegue o link para leitura e aceite do nosso contrato terapêutico para darmos continuidade.\n\n${contractUrl}\n\nQualquer dúvida, estou à disposição!`;
+
     const whatsappUrl = `https://api.whatsapp.com/send?phone=55${numeroLimpo}&text=${encodeURIComponent(
       mensagem
     )}`;
