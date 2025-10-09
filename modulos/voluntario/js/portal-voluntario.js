@@ -270,6 +270,7 @@ function initPortal(user, userData) {
     const handleToggle = () => {
       const isMobile = window.innerWidth <= 768;
       if (isMobile) {
+        sidebar.classList.toggle("is-visible");
         layoutContainer.classList.toggle("mobile-menu-open");
       } else {
         const currentlyCollapsed =
