@@ -693,7 +693,61 @@ export function init(user, userData) {
     let salasOptions = salas
       .map((sala) => `<option value="${sala}">${sala}</option>`)
       .join("");
-    return `<div class="form-group"><label for="nome-profissional-pb">Nome Profissional:</label><input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly></div><div class="form-group"><label for="dia-semana-pb">Informe o dia da semana:</label><select id="dia-semana-pb" class="form-control" required><option value="">Selecione...</option><option value="Segunda-feira">Segunda-feira</option><option value="Terça-feira">Terça-feira</option><option value="Quarta-feira">Quarta-feira</option><option value="Quinta-feira">Quinta-feira</option><option value="Sexta-feira">Sexta-feira</option><option value="Sábado">Sábado</option></select></div><div class="form-group"><label for="horario-pb">Selecione o horário:</label><select id="horario-pb" class="form-control" required><option value="">Selecione...</option>${horasOptions}</select></div><div class="form-group"><label for="tipo-atendimento-pb-voluntario">Tipo de atendimento:</label><select id="tipo-atendimento-pb-voluntario" class="form-control" required><option value="">Selecione...</option><option value="Presencial">Presencial</option><option value="Online">Online</option></select></div><div class="form-group"><label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label><select id="alterar-grade-pb" class="form-control" required><option value="">Selecione...</option><option value="Sim">Sim</option><option value="Não">Não</option></select></div><div class="form-group"><label for="frequencia-atendimento-pb">Frequência:</label><select id="frequencia-atendimento-pb" class="form-control" required><option value="">Selecione...</option><option value="Semanal">Semanal</option><option value="Quinzenal">Quinzenal</option><option value="Mensal">Mensal</option></select></div><div class="form-group"><label for="sala-atendimento-pb">Sala de atendimento:</label><select id="sala-atendimento-pb" class="form-control" required><option value="">Selecione...</option>${salasOptions}</select></div><div class="form-group"><label for="data-inicio-sessoes">Data de início das sessões:</label><input type="date" id="data-inicio-sessoes" class="form-control" required></div><div class="form-group"><label for="observacoes-pb-horarios">Observações:</label><textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea></div>`;
+    return `<div class="form-group">
+	<label for="nome-profissional-pb">Nome Profissional:</label>
+		<input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly></div>
+	<div class="form-group"><label for="dia-semana-pb">Informe o dia da semana:</label>
+		<select id="dia-semana-pb" class="form-control" required>
+		<option value="">Selecione...</option>
+		<option value="Segunda-feira">Segunda-feira</option>
+		<option value="Terça-feira">Terça-feira</option>
+		<option value="Quarta-feira">Quarta-feira</option>
+		<option value="Quinta-feira">Quinta-feira</option>
+		<option value="Sexta-feira">Sexta-feira</option>
+		<option value="Sábado">Sábado</option></select>
+	</div>
+	<div class="form-group">
+		<label for="horario-pb">Selecione o horário:</label>
+			<select id="horario-pb" class="form-control" required>
+				<option value="">Selecione...</option>${horasOptions}</select>
+	</div>
+	<div class="form-group">
+		<label for="tipo-atendimento-pb-voluntario">Tipo de atendimento:</label>
+		<select id="tipo-atendimento-pb-voluntario" class="form-control" required>
+			<option value="">Selecione...</option>
+				<option value="Presencial">Presencial</option>
+				<option value="Online">Online</option>
+		</select>
+	</div>
+	<div class="form-group">
+		<label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
+		<select id="alterar-grade-pb" class="form-control" required>
+			<option value="">Selecione...</option>
+			<option value="Sim">Sim</option>
+			<option value="Não">Não</option>
+		</select>
+	</div>
+	<div class="form-group">
+		<label for="frequencia-atendimento-pb">Frequência:</label>
+		<select id="frequencia-atendimento-pb" class="form-control" required>
+			<option value="">Selecione...</option>
+			<option value="Semanal">Semanal</option>
+			<option value="Quinzenal">Quinzenal</option>
+			<option value="Mensal">Mensal</option>
+		</select>
+	</div>
+	<div class="form-group">
+	<label for="sala-atendimento-pb">Sala de atendimento:</label> <small style="display: block; margin-left: 25px; color: #666;">Selecione a opção  <strong>Online</strong> em salas para atendimento online.</small>
+		<select id="sala-atendimento-pb" class="form-control" required>
+			<option value="">Selecione...</option>
+				${salasOptions}</select>
+			</div>
+	<div class="form-group">
+			<label for="data-inicio-sessoes">Data de início das sessões:</label>
+			<input type="date" id="data-inicio-sessoes" class="form-control" required>
+	</div>
+	<div class="form-group">
+	<label for="observacoes-pb-horarios">Observações:</label><textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea></div>`;
   }
 
   async function abrirModalDesfechoPb(
