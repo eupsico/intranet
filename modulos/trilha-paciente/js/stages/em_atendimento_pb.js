@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/stages/em_atendimento_pb.js
-// Versão: 2.0 (Atualizado para Firebase v9 e suporte a múltiplos atendimentos)
+// Versão: 2.1 (Interface focada em visualização, com registro manual como ação de exceção)
 
 import {
   getFunctions,
@@ -15,12 +15,48 @@ import {
 export function render(cardId, cardData) {
   const element = document.createElement("div");
 
-  // 1. Filtra para encontrar todos os atendimentos que estão atualmente ativos.
   const atendimentosAtivos =
     cardData.atendimentosPB?.filter((at) => at.statusAtendimento === "ativo") ||
     [];
 
-  // Cria as opções do <select> com base nos atendimentos ativos
+  // --- SEÇÃO PRINCIPAL: RESUMO INFORMATIVO ---
+  // Mapeia cada atendimento ativo para um bloco de visualização
+  const resumoAtendimentosHtml = atendimentosAtivos
+    .map((atendimento) => {
+      const horarioInfo = atendimento.horarioSessao || {};
+      const dataInicioFormatada = horarioInfo.dataInicio
+        ? new Date(horarioInfo.dataInicio + "T03:00:00").toLocaleDateString(
+            "pt-BR"
+          )
+        : "Não informada";
+
+      // Verifica o status do contrato para este atendimento específico
+      const contratoInfo = cardData.contratoAssinado; // Supondo um contrato por paciente
+      let dataAssinatura = "Aguardando Assinatura";
+      if (contratoInfo && contratoInfo.assinadoEm) {
+        dataAssinatura = `Assinado em ${new Date(
+          contratoInfo.assinadoEm.seconds * 1000
+        ).toLocaleDateString("pt-BR")}`;
+      }
+
+      return `
+      <div class="patient-info-box info" style="margin-bottom: 15px;">
+        <p style="display: flex; justify-content: space-between; align-items: center;">
+            <strong>Profissional: ${atendimento.profissionalNome}</strong>
+            <span class="status-badge active">Ativo</span>
+        </p>
+        <hr style="margin: 8px 0;">
+        <p><strong>Sessão:</strong> ${horarioInfo.diaSemana || ""} às ${
+        horarioInfo.horario || ""
+      }</p>
+        <p><strong>Data de Início:</strong> ${dataInicioFormatada}</p>
+        <p><strong>Contrato:</strong> ${dataAssinatura}</p>
+      </div>
+    `;
+    })
+    .join("");
+
+  // --- SEÇÃO SECUNDÁRIA: AÇÕES ADMINISTRATIVAS (FORMULÁRIO RECOLHÍVEL) ---
   const optionsHtml = atendimentosAtivos
     .map(
       (at) =>
@@ -28,57 +64,64 @@ export function render(cardId, cardData) {
     )
     .join("");
 
-  element.innerHTML = `
-    <div class="patient-info-box info">
-        <p><strong>Paciente:</strong> ${
-          cardData.nomeCompleto || "Não informado"
-        }</p>
-        <p><strong>Contribuição:</strong> R$ ${
-          cardData.valorContribuicao || "0,00"
-        }</p>
-    </div>
-
-    <form id="desfecho-pb-form" class="dynamic-form">
-        <div class="form-group">
-            <label for="profissional-desfecho-select">Selecione o profissional para registrar o desfecho:</label>
-            <select id="profissional-desfecho-select" class="form-control" required>
-                <option value="">Selecione um profissional...</option>
-                ${optionsHtml}
-            </select>
+  const acoesAdministrativasHtml = `
+    <details class="collapsible-section" style="margin-top: 20px;">
+        <summary class="collapsible-summary">
+            Ações Administrativas (Uso Excepcional)
+        </summary>
+        <div class="collapsible-content">
+            <p class="description-box">Utilize esta seção apenas se o profissional estiver impossibilitado de registrar o desfecho pelo portal dele.</p>
+            <form id="desfecho-pb-form" class="dynamic-form">
+                <div class="form-group">
+                    <label for="profissional-desfecho-select">Selecione o profissional para registrar o desfecho:</label>
+                    <select id="profissional-desfecho-select" class="form-control" required>
+                        <option value="">Selecione um profissional...</option>
+                        ${optionsHtml}
+                    </select>
+                </div>
+                <fieldset id="desfecho-fieldset" disabled>
+                    <hr>
+                    <div class="form-group">
+                        <label for="desfecho-pb-select">Qual foi o desfecho do acompanhamento?</label>
+                        <select id="desfecho-pb-select" class="form-control" required>
+                            <option value="">Selecione uma opção...</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Desistência">Desistência</option>
+                            <option value="Encaminhamento">Encaminhar para outro serviço</option>
+                        </select>
+                    </div>
+                    <div id="motivo-desfecho-container" class="form-group hidden">
+                        <label for="motivo-desfecho-textarea">Descreva brevemente os motivos:</label>
+                        <textarea id="motivo-desfecho-textarea" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div id="encaminhamento-pb-container" class="hidden">
+                         <div class="form-group">
+                            <label for="encaminhamento-servico">Serviço de Encaminhamento:</label>
+                            <input type="text" id="encaminhamento-servico" class="form-control">
+                        </div>
+                         <div class="form-group">
+                            <label for="encaminhamento-observacoes">Observações (opcional):</label>
+                            <textarea id="encaminhamento-observacoes" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
         </div>
-
-        <div id="contrato-status-box"></div>
-
-        <fieldset id="desfecho-fieldset" disabled>
-            <hr>
-            <div class="form-group">
-                <label for="desfecho-pb-select">Qual foi o desfecho do acompanhamento?</label>
-                <select id="desfecho-pb-select" class="form-control" required>
-                    <option value="">Selecione uma opção...</option>
-                    <option value="Alta">Alta</option>
-                    <option value="Desistência">Desistência</option>
-                    <option value="Encaminhamento">Encaminhar para outro serviço</option>
-                </select>
-            </div>
-            <div id="motivo-desfecho-container" class="form-group hidden">
-                <label for="motivo-desfecho-textarea">Descreva brevemente os motivos:</label>
-                <textarea id="motivo-desfecho-textarea" class="form-control" rows="4" required placeholder="Forneça um breve resumo do caso e a justificativa..."></textarea>
-            </div>
-            <div id="encaminhamento-pb-container" class="hidden">
-                 <div class="form-group">
-                    <label for="encaminhamento-servico">Serviço de Encaminhamento:</label>
-                    <input type="text" id="encaminhamento-servico" class="form-control" placeholder="Ex: Psiquiatria, Atendimento Social, etc.">
-                </div>
-                 <div class="form-group">
-                    <label for="encaminhamento-observacoes">Observações (opcional):</label>
-                    <textarea id="encaminhamento-observacoes" class="form-control" rows="3"></textarea>
-                </div>
-            </div>
-        </fieldset>
-    </form>
+    </details>
   `;
 
-  // --- Lógica interna do formulário ---
+  // Monta o HTML final
+  element.innerHTML = `
+    <h4 class="form-section-title">Acompanhamentos Ativos</h4>
+    ${
+      resumoAtendimentosHtml.length > 0
+        ? resumoAtendimentosHtml
+        : "<p>Nenhum atendimento ativo encontrado.</p>"
+    }
+    ${acoesAdministrativasHtml}
+  `;
+
+  // Adiciona a lógica para o formulário recolhível
   const profissionalSelect = element.querySelector(
     "#profissional-desfecho-select"
   );
@@ -88,43 +131,11 @@ export function render(cardId, cardData) {
   const encaminhamentoContainer = element.querySelector(
     "#encaminhamento-pb-container"
   );
-  const contratoStatusBox = element.querySelector("#contrato-status-box");
 
-  // Habilita o formulário quando um profissional é selecionado
   profissionalSelect.addEventListener("change", () => {
-    const atendimentoId = profissionalSelect.value;
-    if (atendimentoId) {
-      desfechoFieldset.disabled = false;
-      const atendimentoSelecionado = atendimentosAtivos.find(
-        (at) => at.atendimentoId === atendimentoId
-      );
-
-      // Atualiza o status do contrato para o profissional selecionado
-      const contratoInfo = cardData.contratoAssinado;
-      let dataAssinatura = "Não assinado";
-      if (contratoInfo && contratoInfo.assinadoEm) {
-        dataAssinatura = new Date(
-          contratoInfo.assinadoEm.seconds * 1000
-        ).toLocaleDateString("pt-BR");
-      }
-      contratoStatusBox.innerHTML = `
-        <div class="contract-link-box ${
-          contratoInfo ? "success" : "warning"
-        }" style="margin-top:15px;">
-            <p>Status do Contrato: <strong>${
-              contratoInfo
-                ? `Assinado em ${dataAssinatura}`
-                : "Aguardando Assinatura"
-            }</strong></p>
-        </div>
-      `;
-    } else {
-      desfechoFieldset.disabled = true;
-      contratoStatusBox.innerHTML = "";
-    }
+    desfechoFieldset.disabled = !profissionalSelect.value;
   });
 
-  // Mostra/oculta campos de motivo e encaminhamento
   desfechoSelect.addEventListener("change", () => {
     const value = desfechoSelect.value;
     motivoContainer.classList.toggle("hidden", !value);
@@ -141,6 +152,7 @@ export function render(cardId, cardData) {
 
 /**
  * Salva os dados do desfecho, chamando uma Cloud Function.
+ * ESTA FUNÇÃO NÃO PRECISA DE ALTERAÇÕES.
  * @param {string} cardId - O ID do documento do paciente.
  * @param {object} cardData - Objeto com todos os dados do paciente.
  * @param {HTMLElement} modalBody - O corpo do modal contendo o formulário.
@@ -149,24 +161,27 @@ export async function save(cardId, cardData, modalBody) {
   const atendimentoId = modalBody.querySelector(
     "#profissional-desfecho-select"
   ).value;
+
+  // A função só prossegue se um profissional tiver sido selecionado,
+  // indicando que a ação é intencional.
+  if (!atendimentoId) {
+    // Se o usuário não interagiu com a seção administrativa, não faz nada.
+    console.log("Nenhuma ação administrativa a ser salva.");
+    return; // Encerra a função silenciosamente.
+  }
+
   const desfecho = modalBody.querySelector("#desfecho-pb-select").value;
   const motivo = modalBody.querySelector("#motivo-desfecho-textarea").value;
 
-  if (!atendimentoId) {
-    throw new Error(
-      "Por favor, selecione o profissional para registrar o desfecho."
-    );
-  }
   if (!desfecho || !motivo) {
     throw new Error(
-      "Por favor, preencha todos os campos obrigatórios do desfecho."
+      "Ao registrar um desfecho administrativo, todos os campos são obrigatórios."
     );
   }
 
-  // Prepara os dados para enviar para a Cloud Function
   const payload = {
     pacienteId: cardId,
-    atendimentoId: atendimentoId, // Envia o ID do atendimento específico
+    atendimentoId: atendimentoId,
     desfecho: desfecho,
     motivo: motivo,
   };
@@ -182,7 +197,6 @@ export async function save(cardId, cardData, modalBody) {
     };
   }
 
-  // --- ATUALIZADO: Chamada da Cloud Function com a sintaxe do Firebase v9 ---
   try {
     const functions = getFunctions();
     const registrarDesfechoPb = httpsCallable(functions, "registrarDesfechoPb");
