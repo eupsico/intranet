@@ -82,4 +82,5 @@ export {
   documentId,
   Timestamp,
   setDoc,
+  getFunctions,
 };
