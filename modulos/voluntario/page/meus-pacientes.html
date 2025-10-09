@@ -1,15 +1,12 @@
 <div class="container">
   <h2>Meus Pacientes</h2>
 
-  <!-- Loading -->
   <div id="loading-pacientes" style="display:none">
     <p>Carregando pacientes...</p>
   </div>
 
-  <!-- Container dos cards -->
   <div id="pacientes-cards-container"></div>
 
-  <!-- Estado vazio -->
   <div id="empty-state-pacientes" style="display:none">
     <p>Nenhum paciente encontrado.</p>
   </div>
@@ -19,8 +16,8 @@
 <div id="encerramento-modal" class="modal" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-             <h3 id="encerramento-modal-title">Encerrar Plantão</h3>
-             <span class="close-button">&times;</span>
+            <h3 id="encerramento-modal-title">Encerrar Plantão</h3>
+            <span class="close-button">&times;</span>
         </div>
         <div class="modal-body">
             <form id="encerramento-form">
@@ -81,8 +78,8 @@
                     </select>
                 </div>
                 <div id="nova-disponibilidade-container" class="hidden">
-                     </div>
-                </form>
+                </div>
+            </form>
         </div>
         <div class="modal-footer">
             <button type="button" id="modal-cancel-btn" class="action-button secondary">Cancelar</button>
@@ -91,16 +88,17 @@
     </div>
 </div>
 
-
 <div id="horarios-pb-modal" class="modal" style="display: none;">
     <div class="modal-content">
-         <div class="modal-header">
+        <div class="modal-header">
             <h3>Informar Horários - Psicoterapia Breve (PB)</h3>
             <span class="close-button">&times;</span>
         </div>
         <div class="modal-body">
             <form id="horarios-pb-form">
                 <input type="hidden" id="paciente-id-horarios-modal">
+                <input type="hidden" id="atendimento-id-horarios-modal">
+
                 <div class="form-group">
                     <label>Paciente iniciou o atendimento em PB?</label>
                     <div>
@@ -113,7 +111,7 @@
                     <textarea id="motivo-nao-inicio-pb" rows="3"></textarea>
                 </div>
                 <div id="form-continuacao-pb" class="hidden">
-                    </div>
+                </div>
             </form>
         </div>
         <div class="modal-footer">
@@ -122,6 +120,16 @@
         </div>
     </div>
 </div>
+
+<div id="desfecho-pb-modal" class="modal" style="display: none;">
+    <div class="modal-content large">
+        <span class="close-button" data-close-modal>&times;</span>
+        <h3>Registrar Desfecho do Atendimento (PB)</h3>
+        <div id="desfecho-pb-modal-body">
+        </div>
+    </div>
+</div>
+
 <div id="form-atendimento-pb" class="form-container" style="display: none;">
     <h3>Registro de Atendimento e Desfecho</h3>
 
@@ -205,12 +213,4 @@
         <button id="btn-salvar-desfecho" class="btn-salvar">Salvar</button>
         <button id="btn-cancelar-desfecho" class="btn-cancelar">Cancelar</button>
     </div>
-</div>
-<div id="desfecho-pb-modal" class="modal" style="display: none;">
-  <div class="modal-content large">
-    <span class="close-button" data-close-modal>&times;</span>
-    <h3>Registrar Desfecho do Atendimento (PB)</h3>
-    <div id="desfecho-pb-modal-body">
-      </div>
-  </div>
 </div>
