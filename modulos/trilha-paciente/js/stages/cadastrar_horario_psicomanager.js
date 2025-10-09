@@ -8,8 +8,6 @@ import {
   updateDoc,
   serverTimestamp,
 } from "../../../../assets/js/firebase-init.js";
-// NOVO: Importa a variável diretamente do módulo principal
-import { currentUserData } from "../trilha-paciente.js";
 
 /**
  * Renderiza o conteúdo do modal.
