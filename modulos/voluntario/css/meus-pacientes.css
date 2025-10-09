@@ -8,7 +8,7 @@
 }
 
 /* Card de paciente */
-.paciente-card {
+#pacientes-cards-container .paciente-card{
     background-color: var(--cor-surface);
     border: 1px solid var(--cor-borda);
     border-left: 5px solid var(--cor-primaria);
