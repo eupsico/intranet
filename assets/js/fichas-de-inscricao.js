@@ -221,7 +221,7 @@ async function handleFormSubmit(event) {
         rendaMensal: document.getElementById("update-renda-mensal").value,
         rendaFamiliar: document.getElementById("update-renda-familiar").value,
         lastUpdated: serverTimestamp(),
-        status: "inscricao_realizada",
+        status: "inscricao_documentos",
       };
 
       const docRef = doc(db, "trilhaPaciente", pacienteExistenteData.id);
@@ -229,7 +229,7 @@ async function handleFormSubmit(event) {
     } else {
       const novoCadastro = coletarDadosFormularioNovo();
       novoCadastro.timestamp = serverTimestamp();
-      novoCadastro.status = "inscricao_realizada";
+      novoCadastro.status = "inscricao_documentos";
 
       await addDoc(collection(db, "trilhaPaciente"), novoCadastro);
     }
