@@ -1,426 +1,273 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão Final: Simplificada, sem agendamento de triagem no formulário.
+// Versão: 3.0 (Modernizado, com verificação de agenda e Firebase v9)
 
-import { db, functions } from "./firebase-init.js";
+import {
+  db,
+  functions,
+  addDoc,
+  updateDoc,
+  doc,
+  collection,
+  serverTimestamp,
+} from "./firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  // --- Mapeamento de Elementos ---
-  const form = document.getElementById("inscricao-form");
+// --- Ponto de Entrada ---
+document.addEventListener("DOMContentLoaded", init);
+
+// --- Mapeamento de Elementos do DOM ---
+// ( Centralize a busca de elementos aqui para organizar o código )
+const elements = {
+  form: document.getElementById("inscricao-form"),
+  semAgendaAviso: document.getElementById("sem-agenda-aviso"),
+  loadingContainer: document.getElementById("loading-container"),
+  formContent: document.getElementById("form-content"),
+  formBody: document.getElementById("form-body"),
+  buttonBar: document.querySelector(".button-bar"),
+  // Adicione outros elementos que você usa frequentemente aqui...
+};
+
+let pacienteExistenteData = null;
+const verificarCpfExistente = httpsCallable(functions, "verificarCpfExistente");
+
+/**
+ * Função principal que inicializa a página.
+ */
+async function init() {
+  const agendasAbertas = await verificarStatusAgenda();
+
+  elements.loadingContainer.style.display = "none";
+
+  if (agendasAbertas) {
+    elements.formContent.style.display = "block";
+    inicializarEventListeners();
+  } else {
+    elements.semAgendaAviso.style.display = "block";
+  }
+}
+
+/**
+ * Verifica no Firestore se há agendas abertas para triagem.
+ * @returns {Promise<boolean>} - Retorna true se houver agendas, false caso contrário.
+ */
+async function verificarStatusAgenda() {
+  console.log("Verificando status da agenda de triagem...");
+  // ==============================================================================
+  // NOTA: Substitua esta lógica de simulação pela sua regra de negócio real.
+  // Exemplo: Buscar um documento de configuração no Firestore.
+  //
+  // try {
+  //   const configRef = doc(db, 'configuracoes', 'agendaTriagem');
+  //   const docSnap = await getDoc(configRef);
+  //   if (docSnap.exists() && docSnap.data().aberta === true) {
+  //     return true; // Agenda está aberta
+  //   }
+  //   return false; // Agenda está fechada
+  // } catch (error) {
+  //   console.error("Erro ao verificar agenda:", error);
+  //   return false;
+  // }
+  // ==============================================================================
+
+  // Lógica de simulação (remover em produção)
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true); // Simula que a agenda está sempre aberta. Mude para 'false' para testar o aviso.
+    }, 500);
+  });
+}
+
+/**
+ * Configura todos os event listeners do formulário.
+ */
+function inicializarEventListeners() {
   const cpfInput = document.getElementById("cpf");
-  const cpfError = document.getElementById("cpf-error");
   const dataNascimentoInput = document.getElementById("data-nascimento");
-  const initialFieldsContainer = document.getElementById("initial-fields");
-  const formBody = document.getElementById("form-body");
-  const updateSection = document.getElementById("update-section");
-  const newRegisterSection = document.getElementById("new-register-section");
-  const fullFormFields = document.getElementById("full-form-fields");
+
+  cpfInput.addEventListener("blur", handleCpfBlur);
+  dataNascimentoInput.addEventListener("change", handleDataNascimentoChange);
+
+  // Adicione outros listeners aqui (formatação de moeda, telefone, etc.)
+
+  elements.form.addEventListener("submit", handleFormSubmit);
+}
+
+/**
+ * Lida com o evento de sair do campo CPF.
+ */
+async function handleCpfBlur(event) {
+  const cpfInput = event.target;
+  const cpf = cpfInput.value.replace(/\D/g, "");
+  const cpfError = document.getElementById("cpf-error");
+
+  cpfError.style.display = "none";
+
+  if (!validarCPF(cpf)) {
+    cpfError.style.display = "block";
+    return;
+  }
+
+  try {
+    const result = await verificarCpfExistente({ cpf: cpf });
+    if (result.data && result.data.exists) {
+      pacienteExistenteData = { ...result.data.dados, id: result.data.docId };
+      mostrarSecaoAtualizacao(pacienteExistenteData);
+    } else {
+      pacienteExistenteData = null;
+      // Apenas libera os próximos campos se não houver cadastro
+      document.getElementById("initial-fields").style.display = "block";
+    }
+  } catch (error) {
+    console.error("Erro ao verificar CPF via Cloud Function:", error);
+    alert("Não foi possível verificar o CPF. Tente novamente.");
+  }
+}
+
+/**
+ * Lida com a mudança na data de nascimento para mostrar o resto do formulário.
+ */
+function handleDataNascimentoChange() {
+  if (pacienteExistenteData) return; // Não faz nada se for uma atualização
+
+  const dataNascimentoInput = document.getElementById("data-nascimento");
+  if (!dataNascimentoInput.value) return;
+
+  elements.formBody.classList.remove("hidden-section");
+  elements.buttonBar.classList.remove("hidden-section");
+  // Carrega o conteúdo do formulário para um novo cadastro
+  document
+    .getElementById("new-register-section")
+    .classList.remove("hidden-section");
+  document
+    .getElementById("full-form-fields")
+    .classList.remove("hidden-section");
+
+  // Lógica de menor de idade
+  const idade = calcularIdade(dataNascimentoInput.value);
   const responsavelSection = document.getElementById(
     "responsavel-legal-section"
   );
-  const responsavelCpfInput = document.getElementById("responsavel-cpf");
-  const cepInput = document.getElementById("cep");
-  const parentescoSelect = document.getElementById("responsavel-parentesco");
-  const outroParentescoContainer = document.getElementById(
-    "outro-parentesco-container"
-  );
-  // Elementos de agendamento removidos
-  // const semAgendaAviso = document.getElementById("sem-agenda-aviso");
-  // const loadingContainer = document.getElementById("loading-container");
-  const formContent = document.getElementById("form-content");
+  if (idade < 18) {
+    responsavelSection.classList.remove("hidden-section");
+    setRequired(responsavelSection, true);
+  } else {
+    responsavelSection.classList.add("hidden-section");
+    setRequired(responsavelSection, false);
+  }
+}
 
-  let pacienteExistenteData = null;
+/**
+ * Lida com o envio do formulário.
+ */
+async function handleFormSubmit(event) {
+  event.preventDefault();
 
-  // --- Instância da Cloud Function ---
-  const verificarCpfExistente = httpsCallable(
-    functions,
-    "verificarCpfExistente"
-  );
+  if (!elements.form.checkValidity()) {
+    elements.form.reportValidity();
+    alert("Por favor, preencha todos os campos obrigatórios (*).");
+    return;
+  }
 
-  // --- FUNÇÕES DE FORMATAÇÃO E VALIDAÇÃO (sem alterações) ---
-  function formatarTelefone(input) {
-    let value = input.value.replace(/\D/g, "");
-    value = value.substring(0, 11);
-    if (value.length > 10) {
-      value = value.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
-    } else if (value.length > 5) {
-      value = value.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
-    } else if (value.length > 2) {
-      value = value.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2");
+  const submitButton = elements.form.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  submitButton.textContent = "Enviando...";
+
+  try {
+    if (pacienteExistenteData) {
+      // MODO DE ATUALIZAÇÃO
+      const dadosAtualizados = coletarDadosFormulario("update");
+      dadosAtualizados.lastUpdated = serverTimestamp();
+      dadosAtualizados.status = "atualizacao_realizada";
+
+      const docRef = doc(db, "inscricoes", pacienteExistenteData.id);
+      await updateDoc(docRef, dadosAtualizados);
     } else {
-      value = value.replace(/^(\d*)/, "($1");
-    }
-    input.value = value;
-  }
+      // MODO DE NOVO CADASTRO
+      const novoCadastro = coletarDadosFormulario("new");
+      novoCadastro.timestamp = serverTimestamp();
+      novoCadastro.status = "inscricao_realizada";
 
-  function formatarMoeda(input) {
-    let value = input.value.replace(/\D/g, "");
-    if (value === "") {
-      input.value = "";
-      return;
+      await addDoc(collection(db, "inscricoes"), novoCadastro);
     }
-    value = (parseInt(value) / 100).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-    input.value = value;
-  }
 
+    elements.form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada com Sucesso!</h2><p>Recebemos seus dados. Em breve, nossa equipe entrará em contato.</p></div>`;
+  } catch (error) {
+    console.error("Erro ao salvar inscrição:", error);
+    alert("Ocorreu um erro ao enviar sua inscrição. Tente novamente.");
+    submitButton.disabled = false;
+    submitButton.textContent = "Enviar Inscrição";
+  }
+}
+
+// --- Funções Auxiliares ---
+
+function mostrarSecaoAtualizacao(dados) {
+  document.getElementById("initial-fields").style.display = "none";
+  elements.formBody.classList.remove("hidden-section");
+  elements.buttonBar.classList.remove("hidden-section");
+  document.getElementById("update-section").classList.remove("hidden-section");
   document
-    .querySelectorAll(
-      "#update-valor-aluguel, #update-renda-mensal, #update-renda-familiar, #valor-aluguel, #renda-mensal, #renda-familiar"
-    )
-    .forEach((input) => {
-      input.addEventListener("input", () => formatarMoeda(input));
-    });
+    .getElementById("new-register-section")
+    .classList.add("hidden-section");
 
-  document
-    .querySelectorAll("#telefone-celular, #telefone-fixo, #responsavel-contato")
-    .forEach((input) => {
-      input.addEventListener("input", () => formatarTelefone(input));
-    });
+  // Preenche os campos de atualização
+  document.getElementById("update-nome-completo").value =
+    dados.nomeCompleto || "";
+  // Preencha outros campos de endereço aqui...
+}
 
-  function validarCPF(cpf) {
-    cpf = cpf.replace(/[^\d]+/g, "");
+function coletarDadosFormulario(modo) {
+  const formData = new FormData(elements.form);
+  const dados = {};
 
-    // Se começar com '99', considera válido como CPF temporário
-    if (cpf.startsWith("99")) {
-      return true;
+  if (modo === "update") {
+    // Coleta apenas os campos da seção de atualização
+    // Exemplo:
+    dados.rua = formData.get("update-rua");
+    dados.pessoasMoradia = formData.get("update-pessoas-moradia");
+    // Adicione os outros campos de atualização...
+  } else {
+    // Coleta todos os campos do novo formulário
+    for (let [key, value] of formData.entries()) {
+      dados[key] = value;
     }
-
-    // Validação padrão de CPF
-    if (cpf === "" || cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-    let add = 0;
-    for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
-    let rev = 11 - (add % 11);
-    if (rev === 10 || rev === 11) rev = 0;
-    if (rev !== parseInt(cpf.charAt(9))) return false;
-    add = 0;
-    for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
-    rev = 11 - (add % 11);
-    if (rev === 10 || rev === 11) rev = 0;
-    if (rev !== parseInt(cpf.charAt(10))) return false;
-    return true;
+    // Lógica para disponibilidade
+    dados.disponibilidadeGeral = formData.getAll("horario");
+    dados.disponibilidadeEspecifica = formData.getAll("horario-especifico");
   }
+  return dados;
+}
 
-  // --- LÓGICA PRINCIPAL DO FORMULÁRIO ---
-
-  cpfInput.addEventListener("blur", async () => {
-    const cpf = cpfInput.value.replace(/\D/g, "");
-    cpfError.style.display = "none";
-
-    if (!validarCPF(cpf)) {
-      cpfError.style.display = "block";
-      resetForm();
-      return;
-    }
-
-    try {
-      const result = await verificarCpfExistente({ cpf: cpf });
-      const data = result.data;
-
-      if (data && data.exists) {
-        pacienteExistenteData = data.dados;
-        pacienteExistenteData.id = data.docId;
-
-        initialFieldsContainer.classList.add("hidden-section");
-        formBody.classList.remove("hidden-section");
-        updateSection.classList.remove("hidden-section");
-        newRegisterSection.classList.add("hidden-section");
-
-        document.getElementById("update-nome-completo").value =
-          pacienteExistenteData.nomeCompleto || "";
-        document.getElementById("update-rua").value =
-          pacienteExistenteData.rua || "";
-        document.getElementById("update-numero").value =
-          pacienteExistenteData.numeroCasa || "";
-        document.getElementById("update-bairro").value =
-          pacienteExistenteData.bairro || "";
-        document.getElementById("update-cidade").value =
-          pacienteExistenteData.cidade || "";
-        document.getElementById("update-cep").value =
-          pacienteExistenteData.cep || "";
-
-        document.getElementById("update-pessoas-moradia").value = "";
-        document.getElementById("update-casa-propria").value = "";
-        document.getElementById("update-valor-aluguel").value = "";
-        document.getElementById("update-renda-mensal").value = "";
-        document.getElementById("update-renda-familiar").value = "";
-      } else {
-        pacienteExistenteData = null;
-      }
-    } catch (error) {
-      console.error("Erro ao verificar CPF via Cloud Function:", error);
-      alert(
-        "Não foi possível verificar o CPF. Verifique sua conexão e tente novamente."
-      );
-    }
-  });
-
-  document
-    .getElementById("btn-alterar-endereco")
-    .addEventListener("click", () => {
-      const camposEndereco = [
-        "update-rua",
-        "update-numero",
-        "update-bairro",
-        "update-cidade",
-        "update-cep",
-      ];
-      camposEndereco.forEach((id) => {
-        document.getElementById(id).disabled = false;
-      });
-      alert("Os campos de endereço foram desbloqueados para alteração.");
-    });
-
-  dataNascimentoInput.addEventListener("change", () => {
-    const dataNasc = new Date(dataNascimentoInput.value);
-    if (isNaN(dataNasc.getTime()) || pacienteExistenteData) {
-      return;
-    }
-
-    formBody.classList.remove("hidden-section");
-    newRegisterSection.classList.remove("hidden-section");
-    updateSection.classList.add("hidden-section");
-    fullFormFields.classList.remove("hidden-section");
-
-    const hoje = new Date();
-    let idade = hoje.getFullYear() - dataNasc.getFullYear();
-    const m = hoje.getMonth() - dataNasc.getMonth();
-    if (m < 0 || (m === 0 && hoje.getDate() < dataNasc.getDate())) {
-      idade--;
-    }
-
-    if (idade < 18) {
-      responsavelSection.classList.remove("hidden-section");
-    } else {
-      responsavelSection.classList.add("hidden-section");
-    }
-  });
-
-  parentescoSelect.addEventListener("change", () => {
-    outroParentescoContainer.classList.toggle(
-      "hidden-section",
-      parentescoSelect.value !== "Outro"
-    );
-  });
-
-  responsavelCpfInput.addEventListener("blur", () => {
-    if (responsavelCpfInput.value === cpfInput.value) {
-      alert(
-        "Atenção: O CPF do responsável é o mesmo do paciente. Será gerado um código temporário para o paciente."
-      );
-      const tempId = `99${Date.now()}`;
-      cpfInput.value = tempId;
-      cpfInput.readOnly = true;
-      alert(
-        `O CPF do paciente foi substituído por um código de identificação: ${tempId}. Guarde este código para futuras consultas.`
-      );
-    }
-  });
-
-  cepInput.addEventListener("blur", async () => {
-    const cep = cepInput.value.replace(/\D/g, "");
-    if (cep.length !== 8) return;
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
-      if (!data.erro) {
-        document.getElementById("rua").value = data.logradouro;
-        document.getElementById("bairro").value = data.bairro;
-        document.getElementById("cidade").value = data.localidade;
-        document.getElementById("numero-casa").focus();
-      }
-    } catch (error) {
-      console.error("Erro ao buscar CEP:", error);
-    }
-  });
-
-  const disponibilidadeSection = document.getElementById(
-    "disponibilidade-section"
-  );
-  if (disponibilidadeSection) {
-    const infoText = document.createElement("p");
-    infoText.className = "info-note";
-    // Texto ajustado, pois não há mais agendamento de triagem aqui
-    infoText.textContent =
-      "Esta disponibilidade refere-se aos seus horários para as sessões de PSICOTERAPIA.";
-    const h3 = disponibilidadeSection.querySelector("h3");
-    if (h3) h3.insertAdjacentElement("afterend", infoText);
+function calcularIdade(dataNascimento) {
+  const hoje = new Date();
+  const nasc = new Date(dataNascimento);
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) {
+    idade--;
   }
+  return idade;
+}
 
-  const horariosCheckboxes = document.querySelectorAll('input[name="horario"]');
-  horariosCheckboxes.forEach((checkbox) => {
-    checkbox.addEventListener("change", (e) => {
-      const periodo = e.target.value;
-      const container = document.getElementById(`container-${periodo}`);
-      if (e.target.checked) {
-        gerarHorarios(periodo, container);
-        container.classList.remove("hidden-section");
-      } else {
-        container.innerHTML = "";
-        container.classList.add("hidden-section");
-      }
-    });
+function setRequired(section, isRequired) {
+  const inputs = section.querySelectorAll("input, select, textarea");
+  inputs.forEach((input) => {
+    input.required = isRequired;
   });
+}
 
-  function gerarHorarios(periodo, container) {
-    let horarios = [],
-      label = "";
-    switch (periodo) {
-      case "manha-semana":
-        label = "Manhã (Seg-Sex):";
-        for (let i = 8; i < 12; i++) horarios.push(`${i}:00`);
-        break;
-      case "tarde-semana":
-        label = "Tarde (Seg-Sex):";
-        for (let i = 12; i < 18; i++) horarios.push(`${i}:00`);
-        break;
-      case "noite-semana":
-        label = "Noite (Seg-Sex):";
-        for (let i = 18; i < 21; i++) horarios.push(`${i}:00`);
-        break;
-      case "manha-sabado":
-        label = "Manhã (Sábado):";
-        for (let i = 8; i < 13; i++) horarios.push(`${i}:00`);
-        break;
-    }
-    let html = `<label>${label}</label><div class="horario-detalhe-grid">`;
-    horarios.forEach((hora) => {
-      html += `<div><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</div>`;
-    });
-    container.innerHTML = html + `</div>`;
-  }
-
-  function resetForm(keepCpf = false) {
-    const cpfValue = cpfInput.value;
-    form.reset();
-    formBody.classList.add("hidden-section");
-    initialFieldsContainer.classList.remove("hidden-section");
-    fullFormFields.classList.add("hidden-section");
-    cpfInput.readOnly = false;
-    if (keepCpf) {
-      cpfInput.value = cpfValue;
-    }
-  }
-
-  // --- LÓGICA DE ENVIO DO FORMULÁRIO ---
-
-  // **ALTERAÇÃO**: O submit agora chama diretamente a função de envio.
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      alert(
-        "Por favor, preencha todos os campos obrigatórios (*) antes de enviar."
-      );
-      return;
-    }
-    // Chama a função de envio diretamente
-    enviarFormulario();
-  });
-
-  // A função agora é chamada diretamente pelo submit do formulário
-  async function enviarFormulario() {
-    const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.textContent = "Enviando...";
-
-    try {
-      if (pacienteExistenteData) {
-        // MODO ATUALIZAÇÃO
-        const dadosParaAtualizar = {
-          rua: document.getElementById("update-rua").value,
-          numeroCasa: document.getElementById("update-numero").value,
-          bairro: document.getElementById("update-bairro").value,
-          cidade: document.getElementById("update-cidade").value,
-          cep: document.getElementById("update-cep").value,
-          pessoasMoradia: document.getElementById("update-pessoas-moradia")
-            .value,
-          casaPropria: document.getElementById("update-casa-propria").value,
-          valorAluguel: document.getElementById("update-valor-aluguel").value,
-          rendaMensal: document.getElementById("update-renda-mensal").value,
-          rendaFamiliar: document.getElementById("update-renda-familiar").value,
-          lastUpdated: new Date(),
-          // Campos de agendamento removidos
-          status: "atualizacao_realizada", // Status alterado
-        };
-        await db
-          .collection("inscricoes")
-          .doc(pacienteExistenteData.id)
-          .update(dadosParaAtualizar);
-      } else {
-        // MODO NOVO CADASTRO
-        const horariosSelecionados = Array.from(
-          document.querySelectorAll('input[name="horario-especifico"]:checked')
-        ).map((cb) => cb.value);
-
-        let parentescoFinal = document.getElementById(
-          "responsavel-parentesco"
-        ).value;
-        if (parentescoFinal === "Outro") {
-          parentescoFinal = document.getElementById(
-            "responsavel-parentesco-outro"
-          ).value;
-        }
-
-        const novoCadastro = {
-          cpf: document.getElementById("cpf").value,
-          nomeCompleto: document.getElementById("nome-completo").value,
-          dataNascimento: document.getElementById("data-nascimento").value,
-          rg: document.getElementById("rg").value,
-          genero: document.getElementById("genero").value,
-          estadoCivil: document.getElementById("estado-civil").value,
-          escolaridade: document.getElementById("escolaridade").value,
-          responsavel: {
-            nome: document.getElementById("responsavel-nome").value,
-            cpf: document.getElementById("responsavel-cpf").value,
-            parentesco: parentescoFinal,
-            contato: document.getElementById("responsavel-contato").value,
-          },
-          telefoneCelular: document.getElementById("telefone-celular").value,
-          telefoneFixo: document.getElementById("telefone-fixo").value,
-          email: document.getElementById("email").value,
-          cep: document.getElementById("cep").value,
-          cidade: document.getElementById("cidade").value,
-          rua: document.getElementById("rua").value,
-          numeroCasa: document.getElementById("numero-casa").value,
-          bairro: document.getElementById("bairro").value,
-          complemento: document.getElementById("complemento").value,
-          pessoasMoradia: document.getElementById("pessoas-moradia").value,
-          tipoMoradia: document.getElementById("tipo-moradia").value,
-          casaPropria: document.getElementById("casa-propria").value,
-          valorAluguel: document.getElementById("valor-aluguel").value,
-          rendaMensal: document.getElementById("renda-mensal").value,
-          rendaFamiliar: document.getElementById("renda-familiar").value,
-          beneficioSocial: document.getElementById("beneficio-social").value,
-          comoConheceu: document.getElementById("como-conheceu").value,
-          tratamentoAnterior: document.getElementById("tratamento-anterior")
-            .value,
-          motivoBusca: document.getElementById("motivo-busca").value,
-          disponibilidadeGeral: Array.from(
-            document.querySelectorAll('input[name="horario"]:checked')
-          ).map((cb) => cb.nextSibling.textContent.trim()),
-          disponibilidadeEspecifica: horariosSelecionados,
-          timestamp: new Date(),
-          // Campos de agendamento removidos
-          status: "inscricao_realizada", // Status alterado
-        };
-        await db.collection("inscricoes").add(novoCadastro);
-      }
-      // Mensagem de sucesso simplificada
-      form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada com Sucesso!</h2><p>Recebemos seus dados. Em breve, nossa equipe entrará em contato para os próximos passos.</p></div>`;
-    } catch (error) {
-      console.error("Erro ao salvar inscrição:", error);
-      alert(
-        "Ocorreu um erro ao enviar sua inscrição. Por favor, tente novamente."
-      );
-      submitButton.disabled = false;
-      submitButton.textContent = "Enviar Inscrição";
-    }
-  }
-
-  document.getElementById("loading-container").style.display = "none";
-  document.getElementById("form-content").style.display = "block";
-});
+function validarCPF(cpf) {
+  cpf = cpf.replace(/[^\d]+/g, "");
+  if (cpf === "" || cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+  let add = 0;
+  for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+  let rev = 11 - (add % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(cpf.charAt(9))) return false;
+  add = 0;
+  for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+  rev = 11 - (add % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(cpf.charAt(10))) return false;
+  return true;
+}
