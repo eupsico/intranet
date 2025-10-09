@@ -78,6 +78,14 @@
         .data-section p {
             margin: 8px 0;
         }
+        
+        /* SEPARADOR */
+        .section-divider {
+            margin-top: 40px;
+            margin-bottom: 40px;
+            border: 0;
+            border-top: 1px solid #e0e0e0;
+        }
 
         /* FORMULÁRIO */
         .acceptance-section {
@@ -208,6 +216,15 @@
                 <li>Pela alta concedida pelo profissional;</li>
                 <li>Não pagamento da contribuição por dois meses.</li>
             </ol>
+            
+            <hr class="section-divider">
+
+            <div id="clausula-menor-idade-section" class="hidden">
+                <h2>AUTORIZAÇÃO PARA ACOMPANHAMENTO PSICOTERAPÊUTICO DE CRIANÇAS E ADOLESCENTES (MENORES DE 18 ANOS)</h2>
+                <p>Eu como RESPONSÁVEL LEGAL pela(o) criança/adolescente (PACIENTE), autorizo o acompanhamento terapêutico e os encaminhamentos cabíveis.</p>
+                <p>Todas as intervenções e documentos produzidos serão regidos pelos dispositivos legais vigentes, em especial pelo disposto na Resolução CFP nº10, de 2005 (Código de Ética Profissional do Psicólogo), bem como pelas demais Resoluções da Psicologia relacionadas ao exercício da profissão.</p>
+                <p>Em especial, serão garantidos à(s) criança(s) ou adolescente(s) o sigilo das informações e a preservação da dignidade e da intimidade durante a prestação dos serviços de que trata esta autorização.</p>
+            </div>
 
             <div class="data-section">
                 <h3>Dados do Atendimento</h3>
@@ -225,13 +242,6 @@
                 <p><strong>Dia da sessão:</strong> <span id="data-dia-sessao"></span></p>
                 <p><strong>Horário do atendimento:</strong> <span id="data-horario-sessao"></span></p>
                 <p><strong>Tipo de atendimento:</strong> <span id="data-tipo-atendimento"></span></p>
-            </div>
-
-            <div id="clausula-menor-idade-section" class="hidden">
-                <h2>AUTORIZAÇÃO PARA ACOMPANHAMENTO PSICOTERAPÊUTICO DE CRIANÇAS E ADOLESCENTES (MENORES DE 18 ANOS)</h2>
-                <p>Eu como RESPONSÁVEL LEGAL pela(o) criança/adolescente (PACIENTE), autorizo o acompanhamento terapêutico e os encaminhamentos cabíveis.</p>
-                <p>Todas as intervenções e documentos produzidos serão regidos pelos dispositivos legais vigentes, em especial pelo disposto na Resolução CFP nº10, de 2005 (Código de Ética Profissional do Psicólogo), bem como pelas demais Resoluções da Psicologia relacionadas ao exercício da profissão.</p>
-                <p>Em especial, serão garantidos à(s) criança(s) ou adolescente(s) o sigilo das informações e a preservação da dignidade e da intimidade durante a prestação dos serviços de que trata esta autorização.</p>
             </div>
 
             <div id="acceptance-form-section" class="acceptance-section">
@@ -263,7 +273,6 @@
             </div>
         </div>
     </div>
-
     <script type="module">
       import { db, doc, getDoc, updateDoc, serverTimestamp } from '../assets/js/firebase-init.js';
 
@@ -368,7 +377,6 @@
             document.getElementById('data-horario-sessao').textContent = horarioInfo.horario || 'A definir';
             document.getElementById('data-tipo-atendimento').textContent = horarioInfo.tipoAtendimento || 'A definir';
 
-            // Exibe o conteúdo e lida com o formulário
             loadingDiv.classList.add('hidden');
             contentDiv.classList.remove('hidden');
 
@@ -377,7 +385,6 @@
                 document.getElementById('thank-you-section').classList.remove('hidden');
             }
 
-            // Configura a máscara e validação do CPF em tempo real
             const cpfInput = document.getElementById('signer-cpf');
             const cpfFeedback = document.getElementById('cpf-feedback');
             cpfInput.addEventListener('input', () => {
