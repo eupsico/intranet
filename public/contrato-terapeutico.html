@@ -17,7 +17,8 @@
         .acceptance-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
         .hidden { display: none; }
         #contract-loading { text-align: center; padding: 40px; }
-        .error-message { color: red; text-align: center; font-weight: bold; }
+        .error-message, .feedback-error { color: #d93025; font-weight: bold; }
+        .feedback-success { color: #188038; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -38,58 +39,16 @@
         <div id="contract-content" class="hidden">
             
             <h2>1. DOS PAPÉIS DE CADA PARTE</h2>
-            <p>Ao <strong>TERAPEUTA</strong>, cabe a escuta técnica e reflexiva sem julgamentos, as intervenções, as orientações e os encaminhamentos. Sendo vedado pelo código de ética da profissão a indução de convicções políticas, filosóficas, morais, ideológicas, religiosas, orientação sexual, ou a qualquer tipo de preconceito no seu exercício funcional.</p>
-            <p>Ao <strong>PACIENTE</strong>, cabe expressar suas necessidades sem medo de ser julgado, falar como se sente no processo terapêutico, tirar suas dúvidas, e seguir as orientações ligadas ao objetivo de seu tratamento.</p>
-            <p>Ao <strong>RESPONSÁVEL LEGAL</strong>, cabe a autorização para realização do acompanhamento terapêutico e possíveis encaminhamentos do PACIENTE.</p>
-            
-            <h2>2. DO ATENDIMENTO</h2>
-            <p>O atendimento será realizado por profissional inserido na <strong>EUPSICO</strong> de acordo com a disponibilidade de cada profissional, observada as definições contidas na triagem e o encaminhamento efetuado pela equipe de assistência social.</p>
-            <p>As datas e os horários de cada encontro serão definidos entre o TERAPEUTA e o PACIENTE, bem como a duração de cada encontro será de cinquenta (50) minutos, uma (1) vez por semana ou à critério das partes.</p>
-            <p>A TERAPIA tem um prazo máximo de seis (6) meses podendo ser prorrogada de acordo com a avaliação profissional, e/ou a demanda do paciente.</p>
-            <p>A Eupsico realiza férias coletivas, nas últimas semanas de dezembro, sendo assim não haverá atendimento nesse período e o pagamento será feito de maneira integral, independentemente do número de sessões.</p>
-            <p>Não haverá atendimento aos domingos, e feriados.</p>
-            
-            <h2>3. DO PAGAMENTO</h2>
-            <p>O PACIENTE e/ou RESPONSÁVEL LEGAL com o aceite do presente contrato terapêutico e autorização para o atendimento, se compromete, a contribuir mensalmente com a importância definida na triagem, até o dia dez (10) de cada mês, ficando condicionado este valor por um período mínimo de seis (6) meses e/ou a qualquer tempo, quando houver alteração da capacidade econômica do PACIENTE.</p>
-            <p>Caso o PACIENTE e/ou RESPONSÁVEL LEGAL não proceda com o pagamento acordado na sessão de triagem por mais de dois (2) meses o processo terapêutico será interrompido, e caso o paciente deseje continuar a terapia deverá efetuar uma nova solicitação de atendimento, quitar os débitos pendentes e aguardar na fila de espera, para encaminhamento ao profissional disponível para atendimento.</p>
-            
-            <h2>4. DO REAJUSTE</h2>
-            <p>A cada semestre o PACIENTE será submetido a uma nova avaliação com a equipe de serviço social da EuPsico para a fixação dos valores a serem reajustados.</p>
-            
-            <h2>5. DOS DIREITOS DO PACIENTE</h2>
-            <ul>
-                <li>Sigilo de todas as informações tratadas na sessão.</li>
-                <li>A um (1) mês de férias a pedido do PACIENTE, sendo que se deve realizar o pagamento do mês normalmente, para que possa reservar sua vaga na instituição.</li>
-                <li>A troca do TERAPEUTA, desde que todas as suas contribuições estejam PAGAS.</li>
-            </ul>
-            
-            <h2>6. DOS DEVERES DO PACIENTE</h2>
-            <p>O PACIENTE deve comparecer nos dias e horários ajustados com o TERAPEUTA, e em caso de atraso do TERAPEUTA, poderá o PACIENTE exigir a compensação do tempo de atraso, podendo ser na mesma sessão ou em sessão futura a ser ajustada entre as partes.</p>
-            <p>Em caso de atraso do PACIENTE o período do atraso será considerado como perdido.</p>
-            <p>Caso precise faltar o PACIENTE deverá comunicar ao TERAPEUTA com 24 horas de antecedência o motivo da falta.</p>
-            
+            <p>Ao <strong>TERAPEUTA</strong>, cabe a escuta técnica e reflexiva sem julgamentos...</p>
             <h2>7. DA RESCISÃO CONTRATUAL</h2>
-            <p>O Presente contrato poderá ser rescindido nas modalidades a seguir:</p>
-            <ol>
-                <li>Pela desistência por parte do PACIENTE;
-                    <ol type="a">
-                        <li>Em caso de desistência o PACIENTE deverá comunicar ao profissional ou a EuPsico até o dia 09 do mês vigente, efetuando o pagamento da contribuição do mês vigente para rescisão do contrato.</li>
-                        <li>Caso o PACIENTE não comunique ao profissional ou a EuPsico, as contribuições mensais continuaram em aberto até que o paciente informe sobre a desistência, sendo necessário o pagamento das contribuições em aberto para rescisão do contrato.</li>
-                    </ol>
-                </li>
-                <li>Falta injustificada em duas sessões terapêuticas, ensejando o desligamento automático do tratamento em curso;</li>
-                <li>Por solicitação de troca do TERAPEUTA a pedido do PACIENTE;</li>
-                <li>Por incompatibilidade de horários entre o PACIENTE e o TERAPEUTA;</li>
-                <li>Pela alta concedida pelo profissional;</li>
-                <li>Não pagamento da contribuição por dois meses.</li>
-            </ol>
+            <p>O Presente contrato poderá ser rescindido nas modalidades a seguir...</p>
 
             <div class="data-section">
                 <h3>Dados do Atendimento</h3>
                 <p><strong>Terapeuta:</strong> <span id="data-terapeuta"></span></p>
                 <p><strong>Nome completo do PACIENTE:</strong> <span id="data-paciente-nome"></span></p>
                 <div id="responsavel-section" class="hidden">
-                    <p><strong>Nome do Responsável:</strong> <span id="data-responsavel-nome"></span></p>
+                    <p><strong>Nome do Responsável Legal:</strong> <span id="data-responsavel-nome"></span></p>
                 </div>
                 <p><strong>Data de nascimento do PACIENTE:</strong> <span id="data-paciente-nascimento"></span></p>
                 <p><strong>Valor da contribuição mensal:</strong> <span id="data-contribuicao"></span></p>
@@ -102,17 +61,25 @@
                 <p><strong>Tipo de atendimento:</strong> <span id="data-tipo-atendimento"></span></p>
             </div>
 
+            <div id="clausula-menor-idade-section" class="hidden">
+                <h2>AUTORIZAÇÃO PARA ACOMPANHAMENTO PSICOTERAPÊUTICO DE CRIANÇAS E ADOLESCENTES (MENORES DE 18 ANOS)</h2>
+                <p>Eu como RESPONSÁVEL LEGAL pela(o) criança/adolescente (PACIENTE), autorizo o acompanhamento terapêutico e os encaminhamentos cabíveis.</p>
+                <p>Todas as intervenções e documentos produzidos serão regidos pelos dispositivos legais vigentes, em especial pelo disposto na Resolução CFP nº10, de 2005 (Código de Ética Profissional do Psicólogo), bem como pelas demais Resoluções da Psicologia relacionadas ao exercício da profissão.</p>
+                <p>Em especial, serão garantidos à(s) criança(s) ou adolescente(s) o sigilo das informações e a preservação da dignidade e da intimidade durante a prestação dos serviços de que trata esta autorização.</p>
+            </div>
+
             <div id="acceptance-form-section" class="acceptance-section">
                 <h2>ACEITE DOS TERMOS E CONDIÇÕES</h2>
-                <p>Ao preencher o formulário abaixo com meus dados pessoais e confirmar digitalmente, declaro ter ciência e concordar com os termos propostos.</p>
-                <form id="signature-form">
+                <p>Ao preencher o formulário abaixo e confirmar digitalmente, declaro ter ciência e concordar com todos os termos propostos.</p>
+                <form id="signature-form" novalidate>
                     <div class="form-group">
-                        <label for="signer-name" id="signer-name-label">Nome Completo do Signatário:</label>
+                        <label for="signer-name" id="signer-name-label">Nome Completo (de quem assina o contrato):</label>
                         <input type="text" id="signer-name" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="signer-cpf" id="signer-cpf-label">CPF do Signatário:</label>
-                        <input type="text" id="signer-cpf" class="form-control" required>
+                        <label for="signer-cpf" id="signer-cpf-label">CPF (de quem assina o contrato):</label>
+                        <input type="text" id="signer-cpf" class="form-control" required maxlength="14">
+                        <div id="cpf-feedback" class="feedback-error" style="font-size: 0.9em; margin-top: 5px;"></div>
                     </div>
                     <div class="form-group">
                         <p><strong>Declaro ter ciência e concordar com os termos propostos.</strong></p>
@@ -120,7 +87,7 @@
                         <label><input type="radio" name="agreement" value="nao-concordo"> Não concordo</label>
                     </div>
                     <button type="submit" class="action-button">Assinar Contrato</button>
-                    <div id="signature-feedback"></div>
+                    <div id="signature-feedback" style="margin-top: 15px;"></div>
                 </form>
             </div>
             
@@ -132,23 +99,58 @@
     </div>
 
     <script type="module">
-      // Importa as funções necessárias do seu arquivo de inicialização do Firebase
       import { db, doc, getDoc, updateDoc, serverTimestamp } from '../assets/js/firebase-init.js';
 
-      // Ponto de entrada do script
+      // --- FUNÇÕES AUXILIARES ---
+
+      function showError(message) {
+          const errorDiv = document.getElementById('contract-error');
+          errorDiv.textContent = message;
+          errorDiv.classList.remove('hidden');
+          document.getElementById('contract-loading').classList.add('hidden');
+          document.getElementById('contract-content').classList.add('hidden');
+      }
+
+      function calculateAge(birthDateString) {
+          if (!birthDateString) return null;
+          const today = new Date();
+          const birthDate = new Date(birthDateString + "T03:00:00");
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+              age--;
+          }
+          return age;
+      }
+
+      function validaCPF(cpf) {
+          cpf = String(cpf).replace(/[^\d]/g, '');
+          if (cpf.length !== 11) return false;
+          if (/^(\d)\1+$/.test(cpf)) return false; // Verifica sequências repetidas
+          
+          let soma = 0;
+          let resto;
+          
+          for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+          resto = (soma * 10) % 11;
+          if (resto === 10 || resto === 11) resto = 0;
+          if (resto !== parseInt(cpf.substring(9, 10))) return false;
+          
+          soma = 0;
+          for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+          resto = (soma * 10) % 11;
+          if (resto === 10 || resto === 11) resto = 0;
+          if (resto !== parseInt(cpf.substring(10, 11))) return false;
+          
+          return true;
+      }
+
+      // --- SCRIPT PRINCIPAL ---
+
       document.addEventListener('DOMContentLoaded', async () => {
         const loadingDiv = document.getElementById('contract-loading');
         const contentDiv = document.getElementById('contract-content');
-        const errorDiv = document.getElementById('contract-error');
 
-        function showError(message) {
-            errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
-            loadingDiv.classList.add('hidden');
-            contentDiv.classList.add('hidden');
-        }
-
-        // 1. Obter IDs da URL
         const urlParams = new URLSearchParams(window.location.search);
         const pacienteId = urlParams.get('id');
         const atendimentoId = urlParams.get('atendimentoId');
@@ -159,7 +161,6 @@
         }
 
         try {
-            // 2. Buscar dados do paciente no Firestore
             const docRef = doc(db, 'trilhaPaciente', pacienteId);
             const docSnap = await getDoc(docRef);
 
@@ -169,8 +170,6 @@
             }
 
             const pacienteData = docSnap.data();
-            
-            // 3. Encontrar o atendimento específico dentro do array atendimentosPB
             const meuAtendimento = pacienteData.atendimentosPB?.find(at => at.atendimentoId === atendimentoId);
 
             if (!meuAtendimento) {
@@ -178,47 +177,81 @@
                 return;
             }
 
-            // 4. Verificar se o contrato já foi assinado PARA ESTE ATENDIMENTO
-            if (meuAtendimento.contratoAssinado) {
-                loadingDiv.classList.add('hidden');
-                contentDiv.classList.remove('hidden');
-                document.getElementById('acceptance-form-section').classList.add('hidden');
-                document.getElementById('thank-you-section').classList.remove('hidden');
-            } else {
-                 document.getElementById('acceptance-form-section').classList.remove('hidden');
+            // Lógica para menor de idade
+            const idade = calculateAge(pacienteData.dataNascimento);
+            const isMenor = idade !== null && idade < 18;
+
+            if (isMenor) {
+                document.getElementById('clausula-menor-idade-section').classList.remove('hidden');
+                if (pacienteData.responsavel && pacienteData.responsavel.nome) {
+                    document.getElementById('responsavel-section').classList.remove('hidden');
+                    document.getElementById('data-responsavel-nome').textContent = pacienteData.responsavel.nome;
+                }
+                document.getElementById('signer-name-label').textContent = 'Nome Completo do Responsável Legal:';
+                document.getElementById('signer-cpf-label').textContent = 'CPF do Responsável Legal:';
             }
 
-            // 5. Preencher os dados na página
+            // Preenche os dados na página
             document.getElementById('data-terapeuta').textContent = meuAtendimento.profissionalNome || 'Não informado';
             document.getElementById('data-paciente-nome').textContent = pacienteData.nomeCompleto || 'Não informado';
             document.getElementById('data-paciente-nascimento').textContent = new Date(pacienteData.dataNascimento + 'T03:00:00').toLocaleDateString('pt-BR');
             document.getElementById('data-contribuicao').textContent = `R$ ${pacienteData.valorContribuicao || '0,00'}`;
 
-            if (pacienteData.responsavel && pacienteData.responsavel.nome) {
-                document.getElementById('responsavel-section').classList.remove('hidden');
-                document.getElementById('data-responsavel-nome').textContent = pacienteData.responsavel.nome;
-            }
-
             const horarioInfo = meuAtendimento.horarioSessao || {};
             document.getElementById('data-dia-sessao').textContent = horarioInfo.diaSemana || 'A definir';
             document.getElementById('data-horario-sessao').textContent = horarioInfo.horario || 'A definir';
             document.getElementById('data-tipo-atendimento').textContent = horarioInfo.tipoAtendimento || 'A definir';
-            
-            // Exibe o conteúdo e esconde o loading
+
+            // Exibe o conteúdo e lida com o formulário
             loadingDiv.classList.add('hidden');
             contentDiv.classList.remove('hidden');
 
-            // 6. Configurar o formulário de assinatura
+            if (meuAtendimento.contratoAssinado) {
+                document.getElementById('acceptance-form-section').classList.add('hidden');
+                document.getElementById('thank-you-section').classList.remove('hidden');
+            }
+
+            // Configura a máscara e validação do CPF em tempo real
+            const cpfInput = document.getElementById('signer-cpf');
+            const cpfFeedback = document.getElementById('cpf-feedback');
+            cpfInput.addEventListener('input', () => {
+                let value = cpfInput.value.replace(/\D/g, '');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                cpfInput.value = value;
+                
+                // Validação em tempo real após o campo estar completo
+                if (value.length === 14) {
+                    if (validaCPF(value)) {
+                        cpfFeedback.textContent = '';
+                    } else {
+                        cpfFeedback.textContent = 'CPF inválido.';
+                    }
+                } else {
+                    cpfFeedback.textContent = '';
+                }
+            });
+            
+            // Configura o formulário de assinatura
             const signatureForm = document.getElementById('signature-form');
             signatureForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const feedbackDiv = document.getElementById('signature-feedback');
                 const submitButton = signatureForm.querySelector('button');
+                const cpfValue = document.getElementById('signer-cpf').value;
+
+                // Validação final do CPF no momento do envio
+                if (!validaCPF(cpfValue)) {
+                    feedbackDiv.textContent = 'O CPF informado não é válido. Por favor, corrija.';
+                    feedbackDiv.className = 'feedback-error';
+                    return;
+                }
 
                 const agreement = signatureForm.elements['agreement'].value;
                 if (agreement !== 'concordo') {
                     feedbackDiv.textContent = 'Você precisa concordar com os termos para assinar.';
-                    feedbackDiv.style.color = 'red';
+                    feedbackDiv.className = 'feedback-error';
                     return;
                 }
 
@@ -229,11 +262,10 @@
                 try {
                     const signatureData = {
                         nomeSignatario: document.getElementById('signer-name').value,
-                        cpfSignatario: document.getElementById('signer-cpf').value,
+                        cpfSignatario: cpfValue,
                         assinadoEm: serverTimestamp()
                     };
 
-                    // Cria uma nova versão do array de atendimentos com o contrato assinado
                     const novosAtendimentos = pacienteData.atendimentosPB.map(at => {
                         if (at.atendimentoId === atendimentoId) {
                             return { ...at, contratoAssinado: signatureData };
@@ -241,23 +273,21 @@
                         return at;
                     });
                     
-                    // Prepara a atualização para o Firestore
                     const updateData = {
                         atendimentosPB: novosAtendimentos,
-                        status: 'em_atendimento_pb', // Atualiza o status geral do paciente
+                        status: 'em_atendimento_pb',
                         lastUpdate: serverTimestamp()
                     };
 
                     await updateDoc(docRef, updateData);
 
-                    // Mostra a mensagem de sucesso
                     document.getElementById('acceptance-form-section').classList.add('hidden');
                     document.getElementById('thank-you-section').classList.remove('hidden');
 
                 } catch (error) {
                     console.error("Erro ao salvar assinatura:", error);
                     feedbackDiv.textContent = 'Erro ao salvar a assinatura. Tente novamente.';
-                    feedbackDiv.style.color = 'red';
+                    feedbackDiv.className = 'feedback-error';
                     submitButton.disabled = false;
                     submitButton.textContent = 'Assinar Contrato';
                 }
@@ -265,7 +295,7 @@
 
         } catch (error) {
             console.error("Erro ao carregar o contrato:", error);
-            showError("Ocorreu um erro inesperado ao carregar o contrato. Verifique o link e tente novamente.");
+            showError("Ocorreu um erro inesperado ao carregar o contrato.");
         }
       });
     </script>
