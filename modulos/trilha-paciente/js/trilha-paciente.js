@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
-// Versão: 10.1 (CORRIGIDO: Restaura a aparência dos cards e o comportamento do modal flutuante)
+// Versão: 10.2 (CORRIGIDO: Restaura a aparência dos cards e o comportamento do modal flutuante)
 
 import {
   db,
@@ -41,7 +41,6 @@ export async function init(db, authUser, authData, container, columnFilter) {
   }
 
   try {
-    // O HTML carregado aqui (trilha-paciente.html) DEVE conter a estrutura dos modais.
     const response = await fetch("../page/trilha-paciente.html");
     if (!response.ok) throw new Error("Falha ao carregar o HTML da trilha.");
     container.innerHTML = await response.text();
@@ -75,6 +74,45 @@ function setupColumns() {
     .join("");
 }
 
+function setupAllModalControls() {
+  const cardModal = document.getElementById("card-modal");
+  document
+    .getElementById("close-modal-btn")
+    .addEventListener("click", () => (cardModal.style.display = "none"));
+  document
+    .getElementById("modal-cancel-btn")
+    .addEventListener("click", () => (cardModal.style.display = "none"));
+  cardModal.addEventListener("click", (e) => {
+    if (e.target === cardModal) cardModal.style.display = "none";
+  });
+
+  const moveModal = document.getElementById("move-card-modal");
+  document
+    .getElementById("close-move-card-modal-btn")
+    .addEventListener("click", () => (moveModal.style.display = "none"));
+  document
+    .getElementById("cancel-move-btn")
+    .addEventListener("click", () => (moveModal.style.display = "none"));
+  moveModal.addEventListener("click", (e) => {
+    if (e.target === moveModal) moveModal.style.display = "none";
+  });
+  document
+    .getElementById("confirm-move-btn")
+    .addEventListener("click", confirmMove);
+}
+function setupEventListeners() {
+  const kanbanBoard = document.getElementById("kanban-board");
+  if (!kanbanBoard) return;
+
+  kanbanBoard.addEventListener("click", (event) => {
+    const cardElement = event.target.closest(".kanban-card");
+    if (cardElement) {
+      const cardId = cardElement.dataset.id;
+      openCardModal(cardId);
+    }
+  });
+}
+
 function loadAndRenderCards() {
   const trilhaRef = collection(db, "trilhaPaciente");
   const q = query(trilhaRef, where("status", "in", currentColumnFilter));
@@ -106,21 +144,16 @@ function loadAndRenderCards() {
   );
 }
 
-// =========================================================================
-// MUDANÇA 1: Aparência dos Cards
-// =========================================================================
 function createCardElement(cardData) {
   const card = document.createElement("div");
   card.className = "kanban-card";
   card.dataset.id = cardData.id;
 
-  // Formata a data para exibição
   const lastUpdateDate = cardData.lastUpdate?.toDate();
   const formattedDate = lastUpdateDate
     ? lastUpdateDate.toLocaleDateString("pt-BR")
     : "Não disponível";
 
-  // Define o HTML do card com as informações adicionais
   card.innerHTML = `
     <p class="card-patient-name">${
       cardData.nomeCompleto || "Nome não informado"
@@ -137,7 +170,6 @@ function createCardElement(cardData) {
     `;
   return card;
 }
-// =========================================================================
 
 function updateColumnCounts() {
   currentColumnFilter.forEach((statusKey) => {
@@ -145,46 +177,6 @@ function updateColumnCounts() {
     const container = document.getElementById(`cards-${statusKey}`);
     if (countEl && container) {
       countEl.textContent = container.children.length;
-    }
-  });
-}
-
-function setupAllModalControls() {
-  const cardModal = document.getElementById("card-modal");
-  document
-    .getElementById("close-modal-btn")
-    .addEventListener("click", () => (cardModal.style.display = "none"));
-  document
-    .getElementById("modal-cancel-btn")
-    .addEventListener("click", () => (cardModal.style.display = "none"));
-  cardModal.addEventListener("click", (e) => {
-    if (e.target === cardModal) cardModal.style.display = "none";
-  });
-
-  const moveModal = document.getElementById("move-card-modal");
-  document
-    .getElementById("close-move-card-modal-btn")
-    .addEventListener("click", () => (moveModal.style.display = "none"));
-  document
-    .getElementById("cancel-move-btn")
-    .addEventListener("click", () => (moveModal.style.display = "none"));
-  moveModal.addEventListener("click", (e) => {
-    if (e.target === moveModal) moveModal.style.display = "none";
-  });
-  document
-    .getElementById("confirm-move-btn")
-    .addEventListener("click", confirmMove);
-}
-
-function setupEventListeners() {
-  const kanbanBoard = document.getElementById("kanban-board");
-  if (!kanbanBoard) return;
-
-  kanbanBoard.addEventListener("click", (event) => {
-    const cardElement = event.target.closest(".kanban-card");
-    if (cardElement) {
-      const cardId = cardElement.dataset.id;
-      openCardModal(cardId);
     }
   });
 }
@@ -243,9 +235,6 @@ async function confirmMove() {
   }
 }
 
-// =========================================================================
-// MUDANÇA 2: Comportamento do Modal
-// =========================================================================
 async function openCardModal(cardId) {
   const modal = document.getElementById("card-modal");
   const modalTitle = document.getElementById("card-modal-title");
@@ -257,8 +246,6 @@ async function openCardModal(cardId) {
   if (!cardData) return;
 
   modalTitle.textContent = `Detalhes: ${cardData.nomeCompleto}`;
-  // A linha abaixo é a chave para o comportamento de overlay.
-  // Ela ativa a div com 'position: fixed' que cobre a tela inteira.
   modal.style.display = "flex";
   modalBody.innerHTML = '<div class="loading-spinner"></div>';
   saveButton.style.display = "inline-block";
@@ -276,7 +263,6 @@ async function openCardModal(cardId) {
       `./stages/${stage}.js?v=${new Date().getTime()}`
     );
 
-    // O conteúdo é carregado dentro do corpo do modal, e não na página principal.
     const contentElement = await stageModule.render(
       cardId,
       cardData,
@@ -295,7 +281,7 @@ async function openCardModal(cardId) {
         newSaveButton.textContent = "Salvando...";
         try {
           await stageModule.save(cardId, cardData, modalBody);
-          modal.style.display = "none"; // Esconde o modal ao salvar.
+          modal.style.display = "none";
         } catch (error) {
           console.error("Erro ao salvar:", error);
           alert("Erro ao salvar: " + error.message);
@@ -316,4 +302,3 @@ async function openCardModal(cardId) {
     saveButton.style.display = "none";
   }
 }
-// =========================================================================
