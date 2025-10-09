@@ -1,11 +1,15 @@
-import { db } from "../../../../assets/js/firebase-config.js"; // Importa 'firebase' para usar FieldValue
-import { carregarProfissionais } from "../../../../assets/js/app.js";
+// Arquivo: /modulos/trilha-paciente/js/stages/encaminhar_para_pb.js
+// Versão: 3.0 (Migrado para a sintaxe modular do Firebase v9)
+
 import {
+  db,
+  doc,
+  getDoc,
+  updateDoc,
   arrayUnion,
   deleteField,
-  updateDoc,
-  doc,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+} from "../../../../assets/js/firebase-init.js";
+import { carregarProfissionais } from "../../../../assets/js/app.js";
 
 /**
  * Renderiza o conteúdo do modal para a etapa 'Encaminhar para PB'.
@@ -14,15 +18,16 @@ import {
  * @returns {HTMLElement} O elemento HTML com o formulário.
  */
 export async function render(cardId, cardTitle) {
-  // 1. Busca os dados mais recentes do paciente
-  const docRef = db.collection("trilhaPaciente").doc(cardId);
-  const doc = await docRef.get();
-  if (!doc.exists) {
+  // 1. Busca os dados mais recentes do paciente com a sintaxe v9
+  const docRef = doc(db, "trilhaPaciente", cardId);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
     console.error("Documento do paciente não encontrado!");
-    return (document.createElement("div").textContent =
-      "Erro: Paciente não encontrado.");
+    const errorEl = document.createElement("div");
+    errorEl.textContent = "Erro: Paciente não encontrado.";
+    return errorEl;
   }
-  const data = doc.data();
+  const data = docSnap.data();
 
   // 2. Monta o HTML do formulário
   const content = `
@@ -49,7 +54,7 @@ export async function render(cardId, cardTitle) {
         <form id="pb-form">
             <div class="form-group">
                 <label for="continua-terapia-pb">Paciente deseja iniciar/continuar com a terapia?</label>
-                <select id="continua-terapia-pb" required>
+                <select id="continua-terapia-pb" class="form-control" required>
                     <option value="">Selecione...</option>
                     <option value="sim">Sim</option>
                     <option value="nao">Não (Desistência)</option>
@@ -57,16 +62,16 @@ export async function render(cardId, cardTitle) {
             </div>
             <div id="motivo-desistencia-pb-container" class="form-group hidden">
                 <label for="motivo-desistencia-pb">Motivo da desistência:</label>
-                <textarea id="motivo-desistencia-pb" rows="3"></textarea>
+                <textarea id="motivo-desistencia-pb" class="form-control" rows="3"></textarea>
             </div>
             <div id="continuacao-pb-container" class="hidden">
                 <div class="form-group">
                     <label for="profissional-pb">Selecione o nome profissional do PB:</label>
-                    <select id="profissional-pb" required></select>
+                    <select id="profissional-pb" class="form-control" required></select>
                 </div>
                 <div class="form-group">
                     <label for="tipo-profissional-pb">O profissional que irá atender o paciente é:</label>
-                    <select id="tipo-profissional-pb" required>
+                    <select id="tipo-profissional-pb" class="form-control" required>
                         <option value="">Selecione...</option>
                         <option value="Estagiária(o)">Estagiária(o)</option>
                         <option value="Voluntária(o)">Voluntária(o)</option>
@@ -74,19 +79,19 @@ export async function render(cardId, cardTitle) {
                 </div>
                 <div class="form-group">
                     <label for="data-encaminhamento-pb">Data do encaminhamento para PB:</label>
-                    <input type="date" id="data-encaminhamento-pb" required>
+                    <input type="date" id="data-encaminhamento-pb" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label for="data-primeira-sessao-pb">Data da Primeira sessão de PB agendada para:</label>
-                    <input type="date" id="data-primeira-sessao-pb" required>
+                    <input type="date" id="data-primeira-sessao-pb" class="form-control" required>
                 </div>
                  <div class="form-group">
                     <label for="hora-primeira-sessao-pb">Horário da Primeira sessão de PB agendada para:</label>
-                    <input type="time" id="hora-primeira-sessao-pb" required>
+                    <input type="time" id="hora-primeira-sessao-pb" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label for="tipo-atendimento-pb">O atendimento será:</label>
-                    <select id="tipo-atendimento-pb" required>
+                    <select id="tipo-atendimento-pb" class="form-control" required>
                         <option value="">Selecione...</option>
                         <option value="Online">Online</option>
                         <option value="Presencial">Presencial</option>
@@ -94,7 +99,7 @@ export async function render(cardId, cardTitle) {
                 </div>
                 <div class="form-group">
                     <label for="observacoes-pb">Observações:</label>
-                    <textarea id="observacoes-pb" rows="3"></textarea>
+                    <textarea id="observacoes-pb" class="form-control" rows="3"></textarea>
                 </div>
             </div>
         </form>
@@ -142,7 +147,7 @@ export async function render(cardId, cardTitle) {
  */
 export async function save(cardId, cardData, modalBody) {
   const continua = document.getElementById("continua-terapia-pb").value;
-  const FieldValue = firebase.firestore.FieldValue;
+  const docRef = doc(db, "trilhaPaciente", cardId);
 
   if (continua === "nao") {
     const updateData = {
@@ -152,7 +157,7 @@ export async function save(cardId, cardData, modalBody) {
       }`,
       lastUpdate: new Date(),
     };
-    await db.collection("trilhaPaciente").doc(cardId).update(updateData);
+    await updateDoc(docRef, updateData);
   } else if (continua === "sim") {
     const profissionalSelect = document.getElementById("profissional-pb");
     const profissionalId = profissionalSelect.value;
@@ -185,14 +190,14 @@ export async function save(cardId, cardData, modalBody) {
 
     const updateData = {
       status: "aguardando_info_horarios",
-      atendimentosPB: FieldValue.arrayUnion(novoAtendimento),
-      profissionaisPB_ids: FieldValue.arrayUnion(profissionalId),
-      pbInfo: FieldValue.delete(),
+      atendimentosPB: arrayUnion(novoAtendimento), // Sintaxe v9
+      profissionaisPB_ids: arrayUnion(profissionalId), // Sintaxe v9
+      pbInfo: deleteField(), // Sintaxe v9
       lastUpdate: new Date(),
     };
 
     try {
-      await db.collection("trilhaPaciente").doc(cardId).update(updateData);
+      await updateDoc(docRef, updateData);
       console.log("Novo atendimento de PB adicionado com sucesso!");
     } catch (error) {
       console.error("Erro ao adicionar novo atendimento de PB:", error);
@@ -205,5 +210,5 @@ export async function save(cardId, cardData, modalBody) {
   }
 }
 
-// ✅ Export default para compatibilidade
+// Export default para compatibilidade
 export default { render, save };
