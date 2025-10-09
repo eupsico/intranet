@@ -127,7 +127,7 @@ async function handleCepBlur(event) {
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await response.json();
     if (!data.erro) {
-      document.getElementById("rua").value = data.logouro;
+      document.getElementById("rua").value = data.logradouro;
       document.getElementById("bairro").value = data.bairro;
       document.getElementById("cidade").value = data.localidade;
       document.getElementById("numero-casa").focus();
