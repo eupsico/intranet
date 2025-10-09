@@ -280,7 +280,7 @@ async function openCardModal(cardId) {
         newSaveButton.disabled = true;
         newSaveButton.textContent = "Salvando...";
         try {
-          await stageModule.save(cardId, cardData, modalBody);
+          await stageModule.save(cardId, cardData, modalBody, currentUserData);
           modal.style.display = "none";
         } catch (error) {
           console.error("Erro ao salvar:", error);
