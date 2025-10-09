@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/stages/cadastrar_horario_psicomanager.js
-// Versão: 3.1 (Substitui checkbox por campo de data para cadastro)
+// Versão: 3.2 (Importa currentUserData diretamente para garantir o acesso)
 
 import {
   db,
@@ -8,14 +8,14 @@ import {
   updateDoc,
   serverTimestamp,
 } from "../../../../assets/js/firebase-init.js";
+// NOVO: Importa a variável diretamente do módulo principal
+import { currentUserData } from "../trilha-paciente.js";
 
 /**
- * Renderiza o conteúdo do modal para a etapa 'Cadastrar Horário Psicomanager'.
- * Exibe uma lista de todos os horários de profissionais que estão pendentes de cadastro.
- * @param {string} cardId - O ID do documento do paciente.
- * @param {object} cardData - Objeto com todos os dados do paciente.
+ * Renderiza o conteúdo do modal.
  */
 export async function render(cardId, cardData) {
+  // A função render permanece a mesma
   const element = document.createElement("div");
 
   const atendimentosParaCadastrar =
@@ -40,7 +40,6 @@ export async function render(cardId, cardData) {
     element.innerHTML += `
         <div class="info-message">
             <p><strong>Não há horários pendentes de cadastro para este paciente.</strong></p>
-            <p>O card será movido para a próxima etapa se não houver mais pendências.</p>
         </div>
     `;
     return element;
@@ -55,7 +54,6 @@ export async function render(cardId, cardData) {
           )
         : "Não informada";
 
-      // --- ALTERAÇÃO AQUI: Troca do Checkbox pelo Input de Data ---
       return `
         <div class="cadastro-item">
             <h4>Resumo para Cadastro: ${atendimento.profissionalNome}</h4>
@@ -104,15 +102,10 @@ export async function render(cardId, cardData) {
 }
 
 /**
- * Salva os dados do formulário, marcando os horários que tiveram a data preenchida.
- * Move o card para 'em_atendimento_pb' apenas quando não houver mais pendências.
- * @param {string} cardId - O ID do documento do paciente.
- * @param {object} cardData - Dados do paciente.
- * @param {HTMLElement} modalBody - O corpo do modal, para encontrar os inputs.
- * @param {object} currentUserData - Dados do usuário logado.
+ * Salva os dados do formulário. Agora usa a variável currentUserData importada.
  */
-export async function save(cardId, cardData, modalBody, currentUserData) {
-  // --- ALTERAÇÃO AQUI: Procura por inputs de data com valor, em vez de checkboxes marcados ---
+// ATUALIZADO: Removemos 'currentUserData' dos parâmetros da função
+export async function save(cardId, cardData, modalBody) {
   const inputsData = modalBody.querySelectorAll(".psicomanager-data-cadastro");
   const inputsPreenchidos = Array.from(inputsData).filter(
     (input) => input.value
@@ -137,7 +130,6 @@ export async function save(cardId, cardData, modalBody, currentUserData) {
 
   const atendimentosAtuais = docSnap.data().atendimentosPB || [];
 
-  // Cria a nova lista de atendimentos, atualizando os que foram preenchidos
   const novosAtendimentos = atendimentosAtuais.map((atendimento) => {
     if (dataPorAtendimento.has(atendimento.atendimentoId)) {
       return {
@@ -145,14 +137,14 @@ export async function save(cardId, cardData, modalBody, currentUserData) {
         horarioCadastradoPsicomanager: true,
         dataCadastroPsicomanager: dataPorAtendimento.get(
           atendimento.atendimentoId
-        ), // Usa a data do input
+        ),
+        // A variável 'currentUserData' agora vem do import, garantindo que ela exista
         responsavelCadastroPsicomanager: currentUserData.nome || "N/A",
       };
     }
     return atendimento;
   });
 
-  // Verifica se ainda existem outros horários pendentes de cadastro
   const aindaExistemPendentes = novosAtendimentos.some(
     (at) =>
       at.statusAtendimento === "ativo" &&
@@ -166,7 +158,6 @@ export async function save(cardId, cardData, modalBody, currentUserData) {
     lastUpdatedBy: currentUserData.nome || "N/A",
   };
 
-  // Se não houver mais pendências, o card avança para a próxima etapa
   if (!aindaExistemPendentes) {
     updateData.status = "em_atendimento_pb";
   }
