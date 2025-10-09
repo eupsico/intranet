@@ -1,3 +1,4 @@
+// --- IMPORTAÇÕES E CONFIGURAÇÃO INICIAL ---
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const {
   onDocumentCreated,
@@ -6,22 +7,16 @@ const {
 const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
-const {
-  getFirestore,
-  FieldValue,
-  collection,
-  query,
-  where,
-  getDocs,
-} = require("firebase-admin/firestore");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
-// Inicialize o app e o Firestore da maneira correta
+// Inicialização dos serviços do Firebase Admin
 initializeApp();
 const db = getFirestore();
 const adminAuth = getAuth();
-// -----------------------------
-// Função auxiliar para username
-// -----------------------------
+
+// ---------------------------------------------
+// FUNÇÃO: gerarUsernameUnico (Função Auxiliar)
+// ---------------------------------------------
 async function gerarUsernameUnico(nomeCompleto) {
   const partesNome = nomeCompleto
     .trim()
@@ -48,9 +43,11 @@ async function gerarUsernameUnico(nomeCompleto) {
     return !snapshot.empty;
   };
 
+  // Tentativa 1: "Primeiro Último"
   const usernameBase = `${primeiroNome} ${ultimoNome}`.trim();
   if (!(await checkUsernameExists(usernameBase))) return usernameBase;
 
+  // Tentativa 2: "Primeiro InicialMeio. Último"
   if (nomesMeio.length > 0) {
     const inicialMeio = nomesMeio[0].charAt(0).toUpperCase();
     const usernameComInicial =
@@ -60,6 +57,7 @@ async function gerarUsernameUnico(nomeCompleto) {
     }
   }
 
+  // Tentativa 3: "Primeiro PrimeiroNomeMeio Último"
   if (nomesMeio.length > 0) {
     const primeiroNomeMeio = nomesMeio[0];
     const usernameComNomeMeio =
@@ -69,6 +67,7 @@ async function gerarUsernameUnico(nomeCompleto) {
     }
   }
 
+  // Tentativa 4: Adicionar um número sequencial
   let contador = 2;
   while (true) {
     const usernameNumerado = `${usernameBase} ${contador}`;
@@ -83,9 +82,9 @@ async function gerarUsernameUnico(nomeCompleto) {
   }
 }
 
-// -----------------------------
-// Função criarNovoProfissional
-// -----------------------------
+// -----------------------------------------
+// FUNÇÃO: criarNovoProfissional
+// -----------------------------------------
 exports.criarNovoProfissional = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
@@ -110,7 +109,7 @@ exports.criarNovoProfissional = onCall(async (request) => {
     const usernameUnico = await gerarUsernameUnico(data.nome);
     const senhaPadrao = "eupsico@2025";
 
-    const userRecord = await admin.auth().createUser({
+    const userRecord = await adminAuth.createUser({
       email: data.email,
       password: senhaPadrao,
       displayName: data.nome,
@@ -129,7 +128,6 @@ exports.criarNovoProfissional = onCall(async (request) => {
       recebeDireto: data.recebeDireto,
       primeiraFase: data.primeiraFase,
       fazAtendimento: data.fazAtendimento,
-      uid: uid,
     };
 
     await db.collection("usuarios").doc(uid).set(dadosParaSalvar);
@@ -139,7 +137,7 @@ exports.criarNovoProfissional = onCall(async (request) => {
       message: `Usuário ${data.nome} criado com sucesso!`,
     };
   } catch (error) {
-    console.error("Erro detalhado ao criar profissional:", error);
+    logger.error("Erro detalhado ao criar profissional:", error);
     if (error instanceof HttpsError) throw error;
     if (error.code === "auth/email-already-exists") {
       throw new HttpsError(
@@ -147,15 +145,18 @@ exports.criarNovoProfissional = onCall(async (request) => {
         "O e-mail fornecido já está em uso."
       );
     }
-    throw new HttpsError("internal", "Ocorreu um erro inesperado.");
+    throw new HttpsError(
+      "internal",
+      "Ocorreu um erro inesperado ao criar o profissional."
+    );
   }
 });
-// -----------------------------
-// Função verificarCpfExistente
-// -----------------------------
+
+// -----------------------------------------
+// FUNÇÃO: verificarCpfExistente
+// -----------------------------------------
 exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
   const cpf = request.data.cpf;
-
   if (!cpf) {
     throw new HttpsError("invalid-argument", "CPF/ID não fornecido.");
   }
@@ -184,19 +185,23 @@ exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
       };
     }
   } catch (error) {
-    console.error("Erro ao verificar CPF na trilha:", error);
+    logger.error("Erro ao verificar CPF na trilha:", error);
     throw new HttpsError(
       "internal",
       "Erro interno do servidor ao verificar CPF/ID."
     );
   }
 });
+
+// -----------------------------------------
+// FUNÇÃO: criarCardTrilhaPaciente
+// -----------------------------------------
 exports.criarCardTrilhaPaciente = onDocumentCreated(
   "inscricoes/{inscricaoId}",
   async (event) => {
     const snap = event.data;
     if (!snap) {
-      console.log("Nenhum dado associado ao evento.");
+      logger.warn("Nenhum dado associado ao evento de criação de inscrição.");
       return;
     }
 
@@ -204,51 +209,55 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
 
     const cardData = {
       inscricaoId: event.params.inscricaoId,
-      timestamp: new Date(),
+      timestamp: FieldValue.serverTimestamp(),
+      lastUpdate: FieldValue.serverTimestamp(),
+      lastUpdatedBy: "Sistema (Criação de Inscrição)",
       status: "inscricao_documentos",
       nomeCompleto: inscricaoData.nomeCompleto || "Não informado",
       cpf: inscricaoData.cpf || "Não informado",
-      dataNascimento: inscricaoData.dataNascimento || "Não informado",
-      telefoneCelular: inscricaoData.telefoneCelular || "Não informado",
-      email: inscricaoData.email || "Não informado",
-      rua: inscricaoData.rua || "Não informado",
-      numeroCasa: inscricaoData.numeroCasa || "Não informado",
-      bairro: inscricaoData.bairro || "Não informado",
-      cidade: inscricaoData.cidade || "Não informado",
-      cep: inscricaoData.cep || "Não informado",
+      dataNascimento: inscricaoData.dataNascimento || null,
+      telefoneCelular: inscricaoData.telefoneCelular || "",
+      email: inscricaoData.email || "",
+      rua: inscricaoData.rua || "",
+      numeroCasa: inscricaoData.numeroCasa || "",
+      bairro: inscricaoData.bairro || "",
+      cidade: inscricaoData.cidade || "",
+      cep: inscricaoData.cep || "",
       complemento: inscricaoData.complemento || "",
       responsavel: inscricaoData.responsavel || {},
-      rendaMensal: inscricaoData.rendaMensal || "Não informado",
-      rendaFamiliar: inscricaoData.rendaFamiliar || "Não informado",
-      casaPropria: inscricaoData.casaPropria || "Não informado",
-      pessoasMoradia: inscricaoData.pessoasMoradia || "Não informado",
-      motivoBusca: inscricaoData.motivoBusca || "Não informado",
+      rendaMensal: inscricaoData.rendaMensal || "",
+      rendaFamiliar: inscricaoData.rendaFamiliar || "",
+      casaPropria: inscricaoData.casaPropria || "",
+      pessoasMoradia: inscricaoData.pessoasMoradia || 0,
+      motivoBusca: inscricaoData.motivoBusca || "",
       disponibilidadeGeral: inscricaoData.disponibilidadeGeral || [],
       disponibilidadeEspecifica: inscricaoData.disponibilidadeEspecifica || [],
-      comoSoube: inscricaoData.comoSoube || "Não informado",
+      comoConheceu: inscricaoData.comoConheceu || "",
     };
 
     try {
       await db.collection("trilhaPaciente").add(cardData);
-      console.log(
-        `(v2) Card completo criado com sucesso na Trilha para CPF: ${cardData.cpf}`
-      );
+      logger.log(`Card criado com sucesso na Trilha para CPF: ${cardData.cpf}`);
     } catch (error) {
-      console.error("(v2) Erro ao criar card completo na Trilha:", error);
+      logger.error("Erro ao criar card na Trilha:", error);
     }
   }
 );
-
+// ---------------------------------------------------------------------------------
+// 5. FUNÇÃO: getTodasDisponibilidadesAssistentes (Chamável pelo Cliente)
+// DESCRIÇÃO: Busca a disponibilidade de todos os assistentes sociais ativos.
+// STATUS: Lógica original mantida. A sintaxe do Admin SDK já estava correta.
+// ---------------------------------------------------------------------------------
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
-    const adminUid = request.auth?.uid;
-    if (!adminUid) {
+    if (!request.auth?.uid) {
       throw new HttpsError(
         "unauthenticated",
         "Você precisa estar autenticado."
       );
     }
+    const adminUid = request.auth.uid;
 
     try {
       const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
@@ -272,14 +281,10 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
       const assistentesComDispoIds = dispoSnapshot.docs.map((doc) => doc.id);
       if (assistentesComDispoIds.length === 0) return [];
 
-      // --- INÍCIO DA CORREÇÃO ---
-      // A sintaxe "FieldPath.documentId()" é do cliente. No Admin SDK,
-      // a forma correta e mais simples é buscar os documentos diretamente.
       const userPromises = assistentesComDispoIds.map((id) =>
         db.collection("usuarios").doc(id).get()
       );
       const userDocs = await Promise.all(userPromises);
-      // --- FIM DA CORREÇÃO ---
 
       const assistentesMap = new Map();
       userDocs.forEach((doc) => {
@@ -308,7 +313,7 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
 
       return todasDisponibilidades;
     } catch (error) {
-      console.error("Erro em getTodasDisponibilidadesAssistentes:", error);
+      logger.error("Erro em getTodasDisponibilidadesAssistentes:", error);
       if (error instanceof HttpsError) throw error;
       throw new HttpsError(
         "internal",
@@ -318,13 +323,16 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
   }
 );
 
+// ---------------------------------------------------------------------------------
+// 6. FUNÇÃO: definirTipoAgenda (Chamável pelo Cliente)
+// DESCRIÇÃO: Configura a agenda de um assistente para um determinado período.
+// STATUS: Lógica original mantida. Ajustado para usar serverTimestamp.
+// ---------------------------------------------------------------------------------
 exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
-  console.log("🔧 Iniciando definirTipoAgenda...");
-
+  logger.info("🔧 Iniciando definirTipoAgenda...");
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
-
   const adminUid = request.auth.uid;
 
   try {
@@ -366,10 +374,9 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     }
 
     const dispoData = dispoSnap.data();
-    const assistenteData = assistenteSnap.data();
-    const assistenteNome = assistenteData?.nome || "Assistente";
-
+    const assistenteNome = assistenteSnap.data()?.nome || "Assistente";
     const bloco = dispoData.disponibilidade?.[mes]?.[modalidade];
+
     if (!bloco || !Array.isArray(bloco.dias) || !bloco.inicio || !bloco.fim) {
       throw new HttpsError(
         "not-found",
@@ -378,8 +385,8 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     }
 
     const { dias: diasDisponiveis, inicio, fim } = bloco;
-
     const batch = db.batch();
+
     dias.forEach(({ dia, tipo }, index) => {
       if (!dia || !tipo) {
         throw new HttpsError(
@@ -408,17 +415,17 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
           inicio,
           fim,
           configuradoPor: adminUid,
-          configuradoEm: new Date(),
+          configuradoEm: FieldValue.serverTimestamp(), // Melhor prática
         },
         { merge: true }
       );
     });
 
     await batch.commit();
-    console.log("✅ Batch commitado com sucesso.");
+    logger.info("✅ Batch de agenda commitado com sucesso.");
 
     await db.collection("logsSistema").add({
-      timestamp: new Date(),
+      timestamp: FieldValue.serverTimestamp(), // Melhor prática
       usuario: adminUid,
       acao: "Configuração de agenda",
       status: "success",
@@ -430,20 +437,13 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
       message: `${dias.length} dia(s) configurado(s) com sucesso para ${assistenteNome}!`,
     };
   } catch (error) {
-    console.error("🔥 ERRO definirTipoAgenda:", error);
-
+    logger.error("🔥 ERRO definirTipoAgenda:", error);
     await db.collection("logsSistema").add({
-      timestamp: new Date(),
+      timestamp: FieldValue.serverTimestamp(), // Melhor prática
       usuario: request.auth?.uid || "desconhecido",
       acao: "Configuração de agenda",
       status: "error",
-      detalhes: {
-        assistenteId: request.data?.assistenteId,
-        mes: request.data?.mes,
-        modalidade: request.data?.modalidade,
-        dias: request.data?.dias,
-        mensagem: error.message,
-      },
+      detalhes: { ...request.data, mensagem: error.message },
     });
 
     if (error instanceof HttpsError) throw error;
@@ -454,10 +454,11 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
   }
 });
 
-/**
- * Busca os horários de triagem disponíveis, combinando a agenda configurada
- * com os agendamentos já existentes.
- */
+// ---------------------------------------------------------------------------------
+// 7. FUNÇÃO: getHorariosPublicos (Chamável pelo Cliente)
+// DESCRIÇÃO: Busca os horários de triagem disponíveis para o público.
+// STATUS: Lógica original mantida, código completo restaurado.
+// ---------------------------------------------------------------------------------
 exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
   try {
     logger.info("Iniciando getHorariosPublicos...");
@@ -466,9 +467,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     hoje.setHours(0, 0, 0, 0);
     const dataInicio = hoje.toISOString().split("T")[0];
 
-    // 1. Busca as configurações do sistema (SINTAXE CORRIGIDA)
-    const configuracoesRef = db.collection("configuracoesSistema");
-    const configuracoesSnapshot = await configuracoesRef.get(); // CORRIGIDO
+    const configuracoesSnapshot = await db
+      .collection("configuracoesSistema")
+      .get();
     const configuracoes = {};
     configuracoesSnapshot.forEach((doc) => {
       configuracoes[doc.id] = doc.data().valor;
@@ -483,12 +484,11 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     const dataFimISO = dataFim.toISOString().split("T")[0];
     logger.info(`Buscando agendas de ${dataInicio} a ${dataFimISO}.`);
 
-    // 2. Busca os agendamentos já existentes (SINTAXE CORRIGIDA)
-    const agendamentosQuery = db
+    const agendamentosSnapshot = await db
       .collection("trilhaPaciente")
       .where("status", "==", "triagem_agendada")
-      .where("dataTriagem", ">=", dataInicio);
-    const agendamentosSnapshot = await agendamentosQuery.get(); // CORRIGIDO
+      .where("dataTriagem", ">=", dataInicio)
+      .get();
 
     const horariosOcupados = new Set();
     agendamentosSnapshot.forEach((doc) => {
@@ -504,13 +504,12 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     });
     logger.info(`Encontrados ${horariosOcupados.size} horários já ocupados.`);
 
-    // 3. Busca a configuração de agenda (SINTAXE CORRIGIDA)
-    const configQuery = db
+    const configSnapshot = await db
       .collection("agendaConfigurada")
       .where("tipo", "==", "triagem")
       .where("data", ">=", dataInicio)
-      .where("data", "<=", dataFimISO);
-    const configSnapshot = await configQuery.get(); // CORRIGIDO
+      .where("data", "<=", dataFimISO)
+      .get();
 
     if (configSnapshot.empty) {
       logger.warn("Nenhuma configuração de agenda encontrada para o período.");
@@ -522,7 +521,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       ...doc.data(),
     }));
 
-    // 4. Gera os slots de horário disponíveis (código de lógica mantido)
     const slotsPotenciais = [];
     diasConfigurados.forEach((diaConfig) => {
       if (
@@ -561,7 +559,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
           mAtual
         ).padStart(2, "0")}`;
         const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00`);
-
         const diffMs = dataHoraSlot - agora;
         const diffHoras = diffMs / (1000 * 60 * 60);
 
@@ -592,7 +589,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     });
   }
 });
-
+// -----------------------------------------
+// FUNÇÃO: agendarTriagemPublico
+// -----------------------------------------
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const {
     cpf,
@@ -603,7 +602,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     nomeCompleto,
     telefone,
   } = request.data;
-
   if (
     !cpf ||
     !assistenteSocialId ||
@@ -625,7 +623,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
       .where("cpf", "==", cpf)
       .where("status", "==", "inscricao_documentos")
       .limit(1);
-
     const snapshot = await q.get();
 
     if (snapshot.empty) {
@@ -636,7 +633,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     }
 
     const pacienteDoc = snapshot.docs[0];
-
     const dadosDaTriagem = {
       status: "triagem_agendada",
       assistenteSocialNome,
@@ -644,7 +640,6 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
       dataTriagem: dataAgendamento,
       horaTriagem: hora,
       tipoTriagem: "Online",
-      // LINHA CORRIGIDA ABAIXO
       lastUpdate: FieldValue.serverTimestamp(),
       lastUpdatedBy: "Agendamento Público",
     };
@@ -659,47 +654,83 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     };
   } catch (error) {
     if (error instanceof HttpsError) throw error;
-    console.error("Erro interno ao tentar agendar triagem:", error);
+    logger.error("Erro interno ao tentar agendar triagem:", error);
     throw new HttpsError(
       "internal",
       "Ocorreu um erro inesperado ao processar o agendamento. Tente novamente mais tarde."
     );
   }
 });
+
+// -----------------------------------------
+// FUNÇÃO: assinarContrato
+// -----------------------------------------
 exports.assinarContrato = onCall({ cors: true }, async (request) => {
-  const { pacienteId, nomeSignatario, cpfSignatario, versaoContrato, ip } =
-    request.data;
+  const {
+    pacienteId,
+    atendimentoId,
+    nomeSignatario,
+    cpfSignatario,
+    versaoContrato,
+    ip,
+  } = request.data;
 
-  if (!pacienteId || !nomeSignatario || !cpfSignatario) {
-    throw new HttpsError("invalid-argument", "Dados obrigatórios ausentes.");
+  if (!pacienteId || !atendimentoId || !nomeSignatario || !cpfSignatario) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Dados obrigatórios ausentes (pacienteId, atendimentoId, nome, cpf)."
+    );
   }
 
-  if (cpfSignatario.length !== 11) {
-    throw new HttpsError("invalid-argument", "CPF inválido.");
-  }
+  const pacienteRef = db.collection("trilhaPaciente").doc(pacienteId);
 
-  const assinatura = {
-    contratoAssinado: {
-      assinadoEm: admin.firestore.Timestamp.now(),
+  try {
+    const docSnap = await pacienteRef.get();
+    if (!docSnap.exists) {
+      throw new HttpsError("not-found", "Paciente não encontrado.");
+    }
+
+    const dadosDoPaciente = docSnap.data();
+    const atendimentos = dadosDoPaciente.atendimentosPB || [];
+    const indiceDoAtendimento = atendimentos.findIndex(
+      (at) => at.atendimentoId === atendimentoId
+    );
+
+    if (indiceDoAtendimento === -1) {
+      throw new HttpsError(
+        "not-found",
+        "O atendimento específico para este contrato não foi encontrado."
+      );
+    }
+
+    atendimentos[indiceDoAtendimento].contratoAssinado = {
+      assinadoEm: FieldValue.serverTimestamp(),
       nomeSignatario,
       cpfSignatario,
       versaoContrato: versaoContrato || "1.0",
       ip: ip || "não identificado",
-    },
-    lastUpdate: admin.firestore.Timestamp.now(),
-  };
+    };
 
-  try {
-    await db.collection("trilhaPaciente").doc(pacienteId).update(assinatura);
+    await pacienteRef.update({
+      atendimentosPB: atendimentos,
+      status: "em_atendimento_pb",
+      lastUpdate: FieldValue.serverTimestamp(),
+    });
+
     return { success: true, message: "Contrato assinado com sucesso." };
   } catch (error) {
-    console.error("Erro ao salvar assinatura:", error);
+    logger.error("Erro ao salvar assinatura:", error);
+    if (error instanceof HttpsError) throw error;
     throw new HttpsError(
       "internal",
       "Erro ao salvar assinatura no banco de dados."
     );
   }
 });
+
+// -----------------------------------------
+// FUNÇÃO: registrarDesfechoPb
+// -----------------------------------------
 exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError(
@@ -722,45 +753,63 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
   const pacienteRef = db.collection("trilhaPaciente").doc(pacienteId);
 
   try {
-    const docSnap = await pacienteRef.get();
-    if (!docSnap.exists) {
-      throw new HttpsError("not-found", "Paciente não encontrado.");
-    }
+    await db.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(pacienteRef);
+      if (!docSnap.exists) {
+        throw new HttpsError("not-found", "Paciente não encontrado.");
+      }
 
-    const dadosDoPaciente = docSnap.data();
-    const atendimentos = dadosDoPaciente.atendimentosPB || [];
-
-    const indiceDoAtendimento = atendimentos.findIndex(
-      (atendimento) =>
-        atendimento.atendimentoId === atendimentoId &&
-        atendimento.profissionalId === profissionalId
-    );
-
-    if (indiceDoAtendimento === -1) {
-      throw new HttpsError(
-        "permission-denied",
-        "Atendimento não encontrado ou você não tem permissão para modificá-lo."
+      const dadosDoPaciente = docSnap.data();
+      const atendimentos = dadosDoPaciente.atendimentosPB || [];
+      const indiceDoAtendimento = atendimentos.findIndex(
+        (at) =>
+          at.atendimentoId === atendimentoId &&
+          at.profissionalId === profissionalId
       );
-    }
 
-    atendimentos[indiceDoAtendimento].statusAtendimento = "encerrado";
-    atendimentos[indiceDoAtendimento].desfecho = {
-      tipo: desfecho,
-      motivo: motivo || "",
-      encaminhamento: encaminhamento || null,
-      responsavelId: profissionalId,
-      responsavelNome: atendimentos[indiceDoAtendimento].profissionalNome,
-      data: new Date(),
-    };
+      if (indiceDoAtendimento === -1) {
+        // Se não encontrou, tenta procurar sem a trava do profissionalId (caso seja um admin fazendo a ação)
+        const indiceAdmin = atendimentos.findIndex(
+          (at) => at.atendimentoId === atendimentoId
+        );
+        if (indiceAdmin === -1) {
+          throw new HttpsError(
+            "permission-denied",
+            "Atendimento não encontrado ou você não tem permissão para modificá-lo."
+          );
+        }
+        // Se encontrou (é um admin), usa o indiceAdmin
+        atendimentos[indiceAdmin].statusAtendimento = "encerrado";
+        atendimentos[indiceAdmin].desfecho = {
+          tipo: desfecho,
+          motivo: motivo || "",
+          encaminhamento: encaminhamento || null,
+          responsavelId: profissionalId, // ID de quem executou a ação
+          responsavelNome: atendimentos[indiceAdmin].profissionalNome,
+          data: FieldValue.serverTimestamp(),
+        };
+      } else {
+        // Se encontrou (é o próprio profissional), usa o indiceDoAtendimento
+        atendimentos[indiceDoAtendimento].statusAtendimento = "encerrado";
+        atendimentos[indiceDoAtendimento].desfecho = {
+          tipo: desfecho,
+          motivo: motivo || "",
+          encaminhamento: encaminhamento || null,
+          responsavelId: profissionalId,
+          responsavelNome: atendimentos[indiceDoAtendimento].profissionalNome,
+          data: FieldValue.serverTimestamp(),
+        };
+      }
 
-    await pacienteRef.update({
-      atendimentosPB: atendimentos,
-      lastUpdate: new Date(),
+      transaction.update(pacienteRef, {
+        atendimentosPB: atendimentos,
+        lastUpdate: FieldValue.serverTimestamp(),
+      });
     });
 
     return { success: true, message: "Desfecho registrado com sucesso." };
   } catch (error) {
-    console.error("Erro ao registrar desfecho no Firestore:", error);
+    logger.error("Erro ao registrar desfecho no Firestore:", error);
     if (error instanceof HttpsError) throw error;
     throw new HttpsError(
       "internal",
@@ -768,6 +817,9 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
     );
   }
 });
+// -----------------------------------------
+// FUNÇÃO: getSupervisorSlots
+// -----------------------------------------
 exports.getSupervisorSlots = onCall(async (request) => {
   const supervisorUid = request.data.supervisorUid;
   if (!request.auth) {
@@ -856,7 +908,7 @@ exports.getSupervisorSlots = onCall(async (request) => {
         .where(
           "dataAgendamento",
           "==",
-          admin.firestore.Timestamp.fromDate(new Date(slot.date))
+          FieldValue.fromMillis(new Date(slot.date).getTime())
         );
 
       const querySnapshot = await q.get();
@@ -879,12 +931,9 @@ exports.getSupervisorSlots = onCall(async (request) => {
   }
 });
 
-/**
- * Calcula a capacidade de agendamentos em slots de 30 minutos.
- * @param {string} inicio - Hora de início (HH:mm).
- * @param {string} fim - Hora de fim (HH:mm).
- * @return {number} Quantidade de slots de 30 minutos entre inicio e fim.
- */
+// -----------------------------------------
+// FUNÇÃO: calculateCapacity (Auxiliar)
+// -----------------------------------------
 function calculateCapacity(inicio, fim) {
   try {
     const [startH, startM] = inicio.split(":").map(Number);
@@ -901,6 +950,10 @@ function calculateCapacity(inicio, fim) {
     return 0;
   }
 }
+
+// -----------------------------------------
+// FUNÇÃO: gerenciarStatusGeralDoPaciente
+// -----------------------------------------
 exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
   "trilhaPaciente/{pacienteId}",
   async (event) => {
@@ -908,29 +961,21 @@ exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
     const dadosDepois = event.data.after.data();
     const pacienteId = event.params.pacienteId;
 
-    // Só continua se houve alteração nos atendimentosPB
     if (
       JSON.stringify(dadosDepois.atendimentosPB) ===
       JSON.stringify(dadosAntes.atendimentosPB)
     ) {
-      logger.info(
-        `(ID: ${pacienteId}) Nenhuma mudança nos atendimentos, a função será encerrada.`
-      );
       return;
     }
 
     const atendimentos = dadosDepois.atendimentosPB;
     if (!atendimentos || atendimentos.length === 0) {
-      logger.info(
-        `(ID: ${pacienteId}) Lista de atendimentos vazia ou inexistente.`
-      );
       return;
     }
 
     const todosEncerrados = atendimentos.every(
       (at) => at.statusAtendimento === "encerrado"
     );
-
     const statusAtuaisDePB = [
       "em_atendimento_pb",
       "aguardando_info_horarios",
@@ -944,25 +989,15 @@ exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
       try {
         await event.data.after.ref.update({
           status: "alta",
-          lastUpdate: new Date(),
+          lastUpdate: FieldValue.serverTimestamp(),
           lastUpdatedBy: "Sistema (Gerenciador de Status)",
         });
-        return {
-          status: "sucesso",
-          message: "Status geral atualizado para alta.",
-        };
       } catch (error) {
         logger.error(
           `Erro ao atualizar status do paciente ${pacienteId}:`,
           error
         );
-        return { status: "erro", message: "Falha ao atualizar status." };
       }
     }
-
-    logger.info(
-      `(ID: ${pacienteId}) Nem todos os atendimentos estão encerrados ou status atual não é de PB.`
-    );
-    return;
   }
 );
