@@ -199,6 +199,7 @@ export function init(user, userData) {
   }
 
   function adicionarEventListeners() {
+    // Clona o container para limpar listeners antigos e evitar duplicação
     const newContainer = container.cloneNode(true);
     container.parentNode.replaceChild(newContainer, container);
 
@@ -206,9 +207,12 @@ export function init(user, userData) {
       const botao = evento.target.closest(".action-button:not([disabled])");
       if (!botao) return;
 
+      // --- CORREÇÃO AQUI ---
+      // Todas as variáveis do 'dataset' são declaradas ANTES de serem usadas.
       const pacienteId = botao.dataset.id;
       const atendimentoId = botao.dataset.atendimentoId;
       const tipoDeAcao = botao.dataset.tipo;
+      // --- FIM DA CORREÇÃO ---
 
       try {
         const docRef = doc(db, "trilhaPaciente", pacienteId);
@@ -217,7 +221,10 @@ export function init(user, userData) {
           alert("Paciente não encontrado!");
           return;
         }
+
         const dadosDoPaciente = { id: docSnap.id, ...docSnap.data() };
+
+        // Agora 'atendimentoId' já existe quando esta linha é executada
         const meuAtendimento = dadosDoPaciente.atendimentosPB?.find(
           (at) => at.atendimentoId === atendimentoId
         );
@@ -230,11 +237,10 @@ export function init(user, userData) {
             abrirModalHorariosPb(pacienteId, atendimentoId);
             break;
           case "contrato":
-            const atendimentoId = botao.dataset.atendimentoId;
             const telefone = botao.closest(".paciente-card").dataset.telefone;
             handleEnviarContrato(
               pacienteId,
-              atendimentoId,
+              atendimentoId, // Passando o atendimentoId
               telefone,
               dadosDoPaciente.nomeCompleto
             );
@@ -252,7 +258,6 @@ export function init(user, userData) {
       }
     });
   }
-
   function handleEnviarContrato(
     pacienteId,
     atendimentoId,
