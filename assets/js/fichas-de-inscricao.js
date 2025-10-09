@@ -1,5 +1,5 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão: 3.2 (Corrige erro de inicialização 'style' of null)
+// Versão: 3.3 (Restaura a lógica de criação de CPF temporário para menores)
 
 import {
   db,
@@ -22,11 +22,7 @@ const verificarCpfExistente = httpsCallable(functions, "verificarCpfExistente");
  * Função principal que inicializa a página.
  */
 function init() {
-  // A linha que causava o erro foi removida.
-  // Agora ele apenas mostra o formulário diretamente.
   document.getElementById("form-content").style.display = "block";
-
-  // Configura todos os event listeners
   inicializarEventListeners();
 }
 
@@ -66,7 +62,6 @@ function inicializarEventListeners() {
       input.addEventListener("input", () => formatarTelefone(input))
     );
 
-  // Listeners de disponibilidade de horário
   document.querySelectorAll('input[name="horario"]').forEach((checkbox) => {
     checkbox.addEventListener("change", handleHorarioChange);
   });
@@ -154,23 +149,37 @@ function handleAlterarEndereco() {
 }
 
 function handleParentescoChange(event) {
+  const outroParentescoInput = document.getElementById(
+    "responsavel-parentesco-outro"
+  );
+  const isOutro = event.target.value === "Outro";
   document
     .getElementById("outro-parentesco-container")
-    .classList.toggle("hidden-section", event.target.value !== "Outro");
+    .classList.toggle("hidden-section", !isOutro);
+  outroParentescoInput.required = isOutro;
 }
 
+// ####################################################################
+// ## FUNÇÃO CORRIGIDA ##
+// ####################################################################
 function handleResponsavelCpfBlur(cpfInput, responsavelCpfInput) {
+  // A condição só é válida se ambos os campos estiverem preenchidos e forem iguais
   if (
     responsavelCpfInput.value &&
     responsavelCpfInput.value === cpfInput.value
   ) {
     alert(
-      "Atenção: O CPF do responsável não pode ser o mesmo do paciente menor de idade."
+      "Atenção: O CPF do responsável é o mesmo do paciente. Será gerado um código temporário para o paciente."
     );
-    responsavelCpfInput.value = "";
-    responsavelCpfInput.focus();
+    const tempId = `99${Date.now()}`;
+    cpfInput.value = tempId;
+    cpfInput.readOnly = true;
+    alert(
+      `O CPF do paciente foi substituído por um código de identificação: ${tempId}. Guarde este código para futuras consultas.`
+    );
   }
 }
+// ####################################################################
 
 function handleHorarioChange(e) {
   const periodo = e.target.value;
@@ -212,7 +221,7 @@ async function handleFormSubmit(event) {
         rendaMensal: document.getElementById("update-renda-mensal").value,
         rendaFamiliar: document.getElementById("update-renda-familiar").value,
         lastUpdated: serverTimestamp(),
-        status: "inscricao_realizada", // Muda status para re-triagem
+        status: "inscricao_realizada",
       };
 
       const docRef = doc(db, "trilhaPaciente", pacienteExistenteData.id);
@@ -234,7 +243,7 @@ async function handleFormSubmit(event) {
   }
 }
 
-// --- Funções Auxiliares ---
+// --- Funções Auxiliares (sem alterações) ---
 
 function mostrarSecaoAtualizacao(dados) {
   document.getElementById("initial-fields").classList.add("hidden-section");
@@ -282,7 +291,7 @@ function coletarDadosFormularioNovo() {
   dados.disponibilidadeEspecifica = Array.from(
     document.querySelectorAll('input[name="horario-especifico"]:checked')
   ).map((cb) => cb.value);
-  delete dados["horario-especifico"]; // Remove a propriedade individual
+  delete dados["horario-especifico"];
 
   return dados;
 }
@@ -332,10 +341,9 @@ function gerarHorarios(periodo, container) {
   container.innerHTML = html + `</div>`;
 }
 
-// --- Funções de Validação e Formatação ---
-
 function validarCPF(cpf) {
   cpf = cpf.replace(/[^\d]+/g, "");
+  if (cpf.startsWith("99")) return true; // Permite o CPF temporário
   if (cpf === "" || cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
   let add = 0;
   for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
