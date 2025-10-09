@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/stages/cadastrar_horario_psicomanager.js
-// Versão: 3.0 (Modernizado para Firebase v9 e suporte a múltiplos atendimentos)
+// Versão: 3.1 (Substitui checkbox por campo de data para cadastro)
 
 import {
   db,
@@ -18,9 +18,6 @@ import {
 export async function render(cardId, cardData) {
   const element = document.createElement("div");
 
-  // 1. Filtra a lista de atendimentos para encontrar apenas os que precisam de cadastro.
-  // A regra é: o atendimento está 'ativo', tem um 'horarioSessao' definido,
-  // e ainda NÃO foi marcado como 'horarioCadastradoPsicomanager'.
   const atendimentosParaCadastrar =
     cardData.atendimentosPB?.filter(
       (at) =>
@@ -29,7 +26,6 @@ export async function render(cardId, cardData) {
         !at.horarioCadastradoPsicomanager
     ) || [];
 
-  // Adiciona estilos para a formatação
   element.innerHTML = `
     <style>
       .info-grid { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; align-items: center; }
@@ -50,7 +46,6 @@ export async function render(cardId, cardData) {
     return element;
   }
 
-  // 2. Mapeia cada atendimento pendente para um bloco de HTML (uma "tarefa")
   const blocosHtml = atendimentosParaCadastrar
     .map((atendimento) => {
       const horarioInfo = atendimento.horarioSessao || {};
@@ -60,6 +55,7 @@ export async function render(cardId, cardData) {
           )
         : "Não informada";
 
+      // --- ALTERAÇÃO AQUI: Troca do Checkbox pelo Input de Data ---
       return `
         <div class="cadastro-item">
             <h4>Resumo para Cadastro: ${atendimento.profissionalNome}</h4>
@@ -84,19 +80,20 @@ export async function render(cardId, cardData) {
             </div>
             <hr class="form-separator">
             <div class="form-group">
-                <label style="display: flex; align-items: center; font-weight: bold; cursor: pointer;">
-                    <input type="checkbox" class="psicomanager-checkbox" data-atendimento-id="${
-                      atendimento.atendimentoId
-                    }" style="width: 20px; height: 20px; margin-right: 10px;">
-                    Horário cadastrado na Psicomanager
-                </label>
+                <label for="data-cadastro-${
+                  atendimento.atendimentoId
+                }" style="font-weight: bold;">Data do Cadastro na Psicomanager:</label>
+                <input type="date" id="data-cadastro-${
+                  atendimento.atendimentoId
+                }" class="form-control psicomanager-data-cadastro" data-atendimento-id="${
+        atendimento.atendimentoId
+      }">
             </div>
         </div>
     `;
     })
     .join("");
 
-  // 3. Monta o formulário final com todos os blocos
   element.innerHTML += `
     <form id="psicomanager-form" class="stage-form">
         ${blocosHtml}
@@ -107,31 +104,32 @@ export async function render(cardId, cardData) {
 }
 
 /**
- * Salva os dados do formulário, marcando os horários selecionados como cadastrados.
+ * Salva os dados do formulário, marcando os horários que tiveram a data preenchida.
  * Move o card para 'em_atendimento_pb' apenas quando não houver mais pendências.
  * @param {string} cardId - O ID do documento do paciente.
- * @param {object} cardData - Dados do paciente (usado para pegar nome do usuário logado).
- * @param {HTMLElement} modalBody - O corpo do modal, para encontrar os checkboxes.
+ * @param {object} cardData - Dados do paciente.
+ * @param {HTMLElement} modalBody - O corpo do modal, para encontrar os inputs.
  * @param {object} currentUserData - Dados do usuário logado.
  */
 export async function save(cardId, cardData, modalBody, currentUserData) {
-  // 1. Encontra todos os checkboxes que foram marcados pelo usuário
-  const checkboxesMarcados = modalBody.querySelectorAll(
-    ".psicomanager-checkbox:checked"
+  // --- ALTERAÇÃO AQUI: Procura por inputs de data com valor, em vez de checkboxes marcados ---
+  const inputsData = modalBody.querySelectorAll(".psicomanager-data-cadastro");
+  const inputsPreenchidos = Array.from(inputsData).filter(
+    (input) => input.value
   );
 
-  if (checkboxesMarcados.length === 0) {
+  if (inputsPreenchidos.length === 0) {
     throw new Error(
-      "Selecione ao menos um horário que foi cadastrado para salvar."
+      "Preencha a data de ao menos um cadastro para poder salvar."
     );
   }
 
-  const idsParaMarcar = Array.from(checkboxesMarcados).map(
-    (cb) => cb.dataset.atendimentoId
-  );
-  const docRef = doc(db, "trilhaPaciente", cardId);
+  const dataPorAtendimento = new Map();
+  inputsPreenchidos.forEach((input) => {
+    dataPorAtendimento.set(input.dataset.atendimentoId, input.value);
+  });
 
-  // 2. Busca os dados mais recentes para garantir que não vamos sobrescrever nada
+  const docRef = doc(db, "trilhaPaciente", cardId);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) {
     throw new Error("Paciente não encontrado no banco de dados.");
@@ -139,20 +137,22 @@ export async function save(cardId, cardData, modalBody, currentUserData) {
 
   const atendimentosAtuais = docSnap.data().atendimentosPB || [];
 
-  // 3. Cria a nova lista de atendimentos, atualizando os que foram marcados
+  // Cria a nova lista de atendimentos, atualizando os que foram preenchidos
   const novosAtendimentos = atendimentosAtuais.map((atendimento) => {
-    if (idsParaMarcar.includes(atendimento.atendimentoId)) {
+    if (dataPorAtendimento.has(atendimento.atendimentoId)) {
       return {
         ...atendimento,
         horarioCadastradoPsicomanager: true,
-        dataCadastroPsicomanager: new Date().toISOString().slice(0, 10), // Salva a data de hoje (YYYY-MM-DD)
+        dataCadastroPsicomanager: dataPorAtendimento.get(
+          atendimento.atendimentoId
+        ), // Usa a data do input
         responsavelCadastroPsicomanager: currentUserData.nome || "N/A",
       };
     }
     return atendimento;
   });
 
-  // 4. Verifica se ainda existem outros horários pendentes de cadastro
+  // Verifica se ainda existem outros horários pendentes de cadastro
   const aindaExistemPendentes = novosAtendimentos.some(
     (at) =>
       at.statusAtendimento === "ativo" &&
@@ -160,7 +160,6 @@ export async function save(cardId, cardData, modalBody, currentUserData) {
       !at.horarioCadastradoPsicomanager
   );
 
-  // 5. Prepara os dados para salvar
   const updateData = {
     atendimentosPB: novosAtendimentos,
     lastUpdate: serverTimestamp(),
@@ -172,6 +171,5 @@ export async function save(cardId, cardData, modalBody, currentUserData) {
     updateData.status = "em_atendimento_pb";
   }
 
-  // 6. Salva as atualizações no Firestore
   await updateDoc(docRef, updateData);
 }
