@@ -190,29 +190,49 @@ function initPortal(user, userData) {
       }
     });
   }
+  function loadCss(path) {
+    // Verifica se o CSS já não foi carregado para evitar duplicatas
+    if (!document.querySelector(`link[href="${path}"]`)) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = path;
+      document.head.appendChild(link);
+    }
+  }
 
   async function loadView(viewId, param = null) {
     if (!sidebarMenu || !contentArea) return;
 
+    // Remove a classe 'active' de todos os links antes de adicionar na correta
     sidebarMenu.querySelectorAll("a").forEach((link) => {
-      link.classList.toggle("active", link.dataset.view === viewId);
+      link.classList.remove("active");
     });
+    // Adiciona a classe 'active' ao link clicado
+    const activeLink = sidebarMenu.querySelector(`a[data-view="${viewId}"]`);
+    if (activeLink) {
+      activeLink.classList.add("active");
+    }
 
     contentArea.innerHTML = '<div class="loading-spinner"></div>';
 
     const htmlPath = `./${viewId}.html`;
     const jsPath = `../js/${viewId}.js`;
+    const cssPath = `../css/${viewId}.css`; // Define o caminho do CSS
 
     try {
+      // Carrega o CSS da view de forma dinâmica e correta
+      loadCss(cssPath);
+
       const response = await fetch(htmlPath);
       if (!response.ok)
         throw new Error(`Arquivo HTML não encontrado: ${htmlPath}`);
 
       contentArea.innerHTML = await response.text();
 
+      // O 'import' do JS continua igual
       const viewModule = await import(jsPath);
       if (viewModule && typeof viewModule.init === "function") {
-        viewModule.init(user, userData, param); // Passa os dados do usuário para a view
+        viewModule.init(user, userData, param);
       }
     } catch (error) {
       if (
