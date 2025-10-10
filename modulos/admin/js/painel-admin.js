@@ -57,7 +57,6 @@ async function loadView(viewId) {
   const sidebarMenu = document.getElementById("sidebar-menu");
   if (!contentArea || !sidebarMenu) return;
 
-  // Reconstrói o menu do admin a cada navegação para garantir que os listeners estejam limpos
   buildAdminSidebarMenu();
 
   sidebarMenu.querySelectorAll("a[data-view]").forEach((link) => {
@@ -67,12 +66,29 @@ async function loadView(viewId) {
   contentArea.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    const htmlPath = `./${viewId}.html`;
+    // --- INÍCIO DA CORREÇÃO ---
+    let htmlPath;
+    switch (viewId) {
+      case "dashboard":
+        htmlPath = "./dashboard-admin.html"; // Nome correto do arquivo
+        break;
+      case "configuracoes":
+        htmlPath = "./configuracoes.html";
+        break;
+      default:
+        // Se a view não for encontrada, carrega o dashboard por padrão
+        htmlPath = "./dashboard-admin.html";
+        window.location.hash = "dashboard";
+        break;
+    }
+    // --- FIM DA CORREÇÃO ---
+
     const response = await fetch(htmlPath);
     if (!response.ok) throw new Error(`Não foi possível carregar ${htmlPath}`);
     contentArea.innerHTML = await response.text();
 
-    if (viewId === "dashboard") {
+    if (viewId === "dashboard" || !viewId) {
+      // Carrega o dashboard como padrão
       renderDisponibilidadeServicoSocial();
       renderGerenciamentoUsuarios();
     } else if (viewId === "configuracoes") {
