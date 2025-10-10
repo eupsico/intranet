@@ -1,83 +1,126 @@
 // Arquivo: /modulos/servico-social/js/calculo-contribuicao.js
-// Versão: 2.1 - Adiciona lógica de arredondamento customizada.
+// Versão: 3.0 (Integrado com as Configurações do Sistema)
 
-export function init(db, user, userData) {
-    const rendaInput = document.getElementById('renda-input');
-    
-    // Mapeamento dos elementos de resultado
-    const resultados = {
-        faixa1: document.getElementById('resultado-faixa1'),
-        familia1: document.getElementById('resultado-familia1'),
-        faixa2: document.getElementById('resultado-faixa2'),
-        familia2: document.getElementById('resultado-familia2'),
-        faixa3: document.getElementById('resultado-faixa3'),
-        familia3: document.getElementById('resultado-familia3'),
-        faixa4: document.getElementById('resultado-faixa4'),
-        familia4: document.getElementById('resultado-familia4'),
-    };
+import { db, doc, getDoc } from "../../../assets/js/firebase-init.js";
 
-    // Mapeamento dos percentuais
-    const percentuais = {
-        faixa1: 0.07,
-        faixa2: 0.08,
-        faixa3: 0.09,
-        faixa4: 0.10,
-    };
+export async function init(user, userData) {
+  const rendaInput = document.getElementById("renda-input");
+  const tableContainer = document.getElementById("tabela-calculo-container");
+  if (!rendaInput || !tableContainer) return;
 
-    // Função para formatar um número como moeda brasileira
-    const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  let faixasDeContribuicao = [];
 
-    /**
-     * NOVA FUNÇÃO DE ARREDONDAMENTO
-     * Arredonda o valor de acordo com as regras de negócio:
-     * - Qualquer centavo arredonda para o próximo inteiro.
-     * - Valores terminados em 1-4 viram 5.
-     * - Valores terminados em 6-9 viram 0 (da próxima dezena).
-     */
-    function arredondarValorContribuicao(valor) {
-        // 1. Arredonda qualquer centavo para cima, para o próximo real.
-        let valorInteiro = Math.ceil(valor);
-        
-        // 2. Pega o último dígito.
-        const ultimoDigito = valorInteiro % 10;
-
-        // 3. Aplica as regras de arredondamento para 5 ou 0.
-        if (ultimoDigito >= 1 && ultimoDigito <= 4) {
-            valorInteiro = valorInteiro - ultimoDigito + 5; // Ex: 41 -> 41 - 1 + 5 = 45
-        } else if (ultimoDigito >= 6 && ultimoDigito <= 9) {
-            valorInteiro = valorInteiro - ultimoDigito + 10; // Ex: 46 -> 46 - 6 + 10 = 50
+  /**
+   * Carrega as faixas de contribuição do Firestore.
+   */
+  async function carregarFaixas() {
+    tableContainer.innerHTML = '<div class="loading-spinner"></div>';
+    try {
+      const configRef = doc(db, "configuracoesSistema", "geral");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists() && docSnap.data().financeiro?.faixasContribuicao) {
+        faixasDeContribuicao = docSnap.data().financeiro.faixasContribuicao;
+        if (faixasDeContribuicao.length > 0) {
+          construirTabela();
+          atualizarResultados(); // Atualiza com valor inicial se houver
+        } else {
+          tableContainer.innerHTML =
+            '<p class="alert alert-warning">Nenhuma faixa de contribuição configurada no sistema.</p>';
         }
-        
-        return valorInteiro;
+      } else {
+        tableContainer.innerHTML =
+          '<p class="alert alert-warning">Faixas de contribuição não encontradas nas configurações.</p>';
+      }
+    } catch (error) {
+      console.error("Erro ao carregar faixas de contribuição:", error);
+      tableContainer.innerHTML =
+        '<p class="alert alert-error">Erro ao carregar as faixas de cálculo.</p>';
     }
+  }
 
-    // Função que recalcula todos os valores e atualiza a tela
-    function atualizarResultados() {
-        const renda = parseFloat(rendaInput.value) || 0;
+  /**
+   * Constrói a tabela de resultados dinamicamente.
+   */
+  function construirTabela() {
+    let tableHtml = `
+            <table class="tabela-calculo">
+                <thead>
+                    <tr>
+                        <th>Faixa de Renda (Salários Mínimos)</th>
+                        <th>%</th>
+                        <th>Valor Sugerido (Individual)</th>
+                        <th>Valor Sugerido (Família)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+    faixasDeContribuicao.forEach((faixa, index) => {
+      const faixaAnterior =
+        index > 0 ? faixasDeContribuicao[index - 1].ateSalarios : 0;
+      tableHtml += `
+                <tr>
+                    <td>De ${faixaAnterior.toFixed(
+                      1
+                    )} a ${faixa.ateSalarios.toFixed(1)}</td>
+                    <td>${faixa.percentual}%</td>
+                    <td id="resultado-individual-${index}">-</td>
+                    <td id="resultado-familia-${index}">-</td>
+                </tr>
+            `;
+    });
+    tableHtml += "</tbody></table>";
+    tableContainer.innerHTML = tableHtml;
+  }
 
-        // Calcula o valor para a Faixa 1 e seu valor familiar
-        const valorFaixa1 = arredondarValorContribuicao(renda * percentuais.faixa1);
-        resultados.faixa1.textContent = formatarMoeda(valorFaixa1);
-        resultados.familia1.textContent = formatarMoeda(arredondarValorContribuicao(valorFaixa1 * 1.40));
+  const formatarMoeda = (valor) =>
+    valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-        // Calcula o valor para a Faixa 2 e seu valor familiar
-        const valorFaixa2 = arredondarValorContribuicao(renda * percentuais.faixa2);
-        resultados.faixa2.textContent = formatarMoeda(valorFaixa2);
-        resultados.familia2.textContent = formatarMoeda(arredondarValorContribuicao(valorFaixa2 * 1.40));
-        
-        // Calcula o valor para a Faixa 3 e seu valor familiar
-        const valorFaixa3 = arredondarValorContribuicao(renda * percentuais.faixa3);
-        resultados.faixa3.textContent = formatarMoeda(valorFaixa3);
-        resultados.familia3.textContent = formatarMoeda(arredondarValorContribuicao(valorFaixa3 * 1.40));
-
-        // Calcula o valor para a Faixa 4 e seu valor familiar
-        const valorFaixa4 = arredondarValorContribuicao(renda * percentuais.faixa4);
-        resultados.faixa4.textContent = formatarMoeda(valorFaixa4);
-        resultados.familia4.textContent = formatarMoeda(arredondarValorContribuicao(valorFaixa4 * 1.40));
+  function arredondarValorContribuicao(valor) {
+    let valorInteiro = Math.ceil(valor);
+    const ultimoDigito = valorInteiro % 10;
+    if (ultimoDigito >= 1 && ultimoDigito <= 4) {
+      valorInteiro = valorInteiro - ultimoDigito + 5;
+    } else if (ultimoDigito >= 6 && ultimoDigito <= 9) {
+      valorInteiro = valorInteiro - ultimoDigito + 10;
     }
+    return valorInteiro;
+  }
 
-    // Adiciona o listener para o evento 'input'
-    if (rendaInput) {
-        rendaInput.addEventListener('input', atualizarResultados);
-    }
+  /**
+   * Recalcula os valores com base na renda e nas faixas carregadas.
+   */
+  function atualizarResultados() {
+    const renda = parseFloat(rendaInput.value) || 0;
+    if (faixasDeContribuicao.length === 0) return;
+
+    faixasDeContribuicao.forEach((faixa, index) => {
+      const valorCalculado = renda * (faixa.percentual / 100);
+      const valorIndividualArredondado =
+        arredondarValorContribuicao(valorCalculado);
+      const valorFamiliaArredondado = arredondarValorContribuicao(
+        valorIndividualArredondado * 1.4
+      );
+
+      const resultadoIndividualEl = document.getElementById(
+        `resultado-individual-${index}`
+      );
+      const resultadoFamiliaEl = document.getElementById(
+        `resultado-familia-${index}`
+      );
+
+      if (resultadoIndividualEl) {
+        resultadoIndividualEl.textContent = formatarMoeda(
+          valorIndividualArredondado
+        );
+      }
+      if (resultadoFamiliaEl) {
+        resultadoFamiliaEl.textContent = formatarMoeda(valorFamiliaArredondado);
+      }
+    });
+  }
+
+  rendaInput.addEventListener("input", atualizarResultados);
+
+  // Ponto de entrada
+  await carregarFaixas();
 }
