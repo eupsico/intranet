@@ -30,7 +30,26 @@
                     <label for="diaLimiteComprovantes">Dia Limite para Envio de Comprovantes</label>
                     <input type="number" id="diaLimiteComprovantes" name="financeiro.diaLimiteComprovantes" placeholder="Ex: 10">
                 </div>
-            </div>
+                
+                <hr>
+
+                <h4>Faixas de Contribuição (Serviço Social)</h4>
+                <p class="description">Defina as faixas de salário mínimo e os percentuais de contribuição correspondentes.</p>
+                <div class="faixas-table-container">
+                    <table class="faixas-table">
+                        <thead>
+                            <tr>
+                                <th>Faixa (Até X salários mínimos)</th>
+                                <th>Percentual (%)</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="faixas-contribuicao-tbody">
+                            </tbody>
+                    </table>
+                    <button type="button" id="btn-adicionar-faixa" class="btn-adicionar-faixa">+ Adicionar Faixa</button>
+                </div>
+                </div>
 
             <div id="agendamentos" class="tab-content">
                 <h4>Regras de Agendamento (Triagem)</h4>
@@ -85,7 +104,6 @@
             <div id="textos" class="tab-content">
                 <h3>Modelos de Mensagem</h3>
                 <p class="description">Use variáveis como {`{saudacao}`}, {`{p}`}, {`{d}`}, {`{t}`}, etc. para personalizar as mensagens.</p>
-                
                 <hr>
                 <h4>Mensagens Gerais e de Contrato</h4>
                 <div class="form-group">
@@ -96,7 +114,6 @@
                     <label for="msgEnvioContrato">Mensagem de Envio do Contrato</label>
                     <textarea id="msgEnvioContrato" name="textos.envioContrato" rows="6"></textarea>
                 </div>
-
                 <hr>
                 <h4>Mensagens de Boas-Vindas e Agendamento</h4>
                 <div class="form-group">
@@ -115,16 +132,14 @@
                     <label for="msgPrimeiroPagamento">Mensagem de Primeiro Pagamento</label>
                     <textarea id="msgPrimeiroPagamento" name="textos.primeiroPagamento" rows="6"></textarea>
                 </div>
-
             </div>
-            </form>
+        </form>
         
         <div class="actions">
             <button id="save-button" class="btn-primary">Salvar Alterações</button>
             <div id="loading-spinner" class="spinner" style="display: none;"></div>
             <div id="save-feedback"></div>
         </div>
-
     </div>
 </body>
 </html>
