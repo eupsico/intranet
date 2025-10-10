@@ -20,7 +20,6 @@ export function render(cardId, cardData) {
     [];
 
   // --- SEÇÃO PRINCIPAL: RESUMO INFORMATIVO ---
-  // Mapeia cada atendimento ativo para um bloco de visualização
   const resumoAtendimentosHtml = atendimentosAtivos
     .map((atendimento) => {
       const horarioInfo = atendimento.horarioSessao || {};
@@ -30,12 +29,14 @@ export function render(cardId, cardData) {
           )
         : "Não informada";
 
-      // Verifica o status do contrato para este atendimento específico
-      const contratoInfo = cardData.contratoAssinado; // Supondo um contrato por paciente
+      // --- ALTERAÇÃO AQUI ---
+      // A variável 'contratoInfo' agora pega os dados de 'atendimento.contratoAssinado'.
+      const contratoInfo = atendimento.contratoAssinado;
       let dataAssinatura = "Aguardando Assinatura";
       if (contratoInfo && contratoInfo.assinadoEm) {
+        // A data salva com 'new Date()' na function vem como uma string ou objeto que pode ser convertido.
         dataAssinatura = `Assinado em ${new Date(
-          contratoInfo.assinadoEm.seconds * 1000
+          contratoInfo.assinadoEm
         ).toLocaleDateString("pt-BR")}`;
       }
 

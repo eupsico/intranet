@@ -114,9 +114,12 @@ export function init(user, userData) {
     let statusKey = "em_atendimento_plantao";
 
     if (!isPlantao) {
+      // --- ALTERAÇÃO AQUI ---
+      // A lógica agora verifica o 'contratoAssinado' dentro do atendimento específico (atendimentoPB).
       if (dadosDoPaciente.status === "aguardando_info_horarios") {
         statusKey = "aguardando_info_horarios";
-      } else if (!dadosDoPaciente.contratoAssinado) {
+      } else if (!atendimentoPB.contratoAssinado) {
+        // Verifica no lugar certo
         statusKey = "aguardando_contrato";
       } else {
         statusKey = "em_atendimento_pb";
@@ -165,11 +168,14 @@ export function init(user, userData) {
           ).toLocaleDateString("pt-BR")
         : "N/A";
 
-    const contratoAssinadoHtml = dadosDoPaciente.contratoAssinado
+    // --- ALTERAÇÃO AQUI ---
+    // O HTML do contrato assinado também verifica o 'contratoAssinado' dentro do atendimentoPB.
+    const contratoAssinadoHtml = atendimentoPB?.contratoAssinado
       ? `<p class="contrato-assinado">✓ Contrato Assinado</p>`
       : "";
+
     const pdfButtonHtml =
-      atendimentoPB && dadosDoPaciente.contratoAssinado
+      atendimentoPB && atendimentoPB.contratoAssinado // Verifica no lugar certo
         ? `<button class="action-button secondary-button" data-id="${dadosDoPaciente.id}" data-atendimento-id="${atendimentoPB.atendimentoId}" data-tipo="pdf_contrato">PDF Contrato</button>`
         : "";
     const atendimentoIdAttr = atendimentoPB
