@@ -1,9 +1,7 @@
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-} from "../../../assets/js/firebase-init.js";
+// --- INÍCIO DA CORREÇÃO ---
+// Importa a instância 'db' já inicializada e as funções 'doc', 'getDoc', 'setDoc'
+import { db, doc, getDoc, setDoc } from "../../../assets/js/firebase-init.js";
+// --- FIM DA CORREÇÃO ---
 
 // --- LÓGICA DAS ABAS ---
 function openTab(evt, tabName) {
@@ -18,7 +16,6 @@ function openTab(evt, tabName) {
 }
 
 // --- LÓGICA DE CARREGAMENTO E SALVAMENTO ---
-const db = getFirestore();
 const configRef = doc(db, "configuracoesSistema", "geral");
 
 async function loadConfig() {
@@ -122,21 +119,17 @@ async function saveConfig() {
 
 /**
  * Função de inicialização do módulo de configurações.
- * É exportada para ser chamada pelo painel de administração principal.
  */
 export function init() {
   console.log("⚙️ Módulo de Configurações iniciado.");
 
-  // Garante que a primeira aba esteja visível ao carregar
   const firstTabLink = document.querySelector(".tab-link");
   if (firstTabLink) {
     firstTabLink.click();
   }
 
-  // Carrega as configurações do Firestore
   loadConfig();
 
-  // Adiciona o listener ao botão de salvar
   const saveButton = document.getElementById("save-button");
   if (saveButton) {
     saveButton.addEventListener("click", saveConfig);
@@ -145,6 +138,5 @@ export function init() {
     console.error("Botão 'Salvar' não encontrado no DOM.");
   }
 
-  // Torna a função de abas acessível no escopo global para o onclick no HTML
   window.openTab = openTab;
 }
