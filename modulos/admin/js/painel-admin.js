@@ -3,57 +3,36 @@ import {
   getFunctions,
   httpsCallable,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
-import { checkUserRole } from "../../../assets/js/app.js"; // VERIFIQUE SE ESTE CAMINHO ESTÁ CORRETO
+// A função checkUserRole não é mais necessária aqui, pois app.js já faz essa verificação.
+// Removida para simplificar e evitar redundância.
 
-/**
- * Ponto de entrada: Executa quando o DOM está totalmente carregado.
- * Verifica a autenticação e o perfil do usuário antes de iniciar o painel.
- */
-document.addEventListener("DOMContentLoaded", () => {
-  const auth = getAuth();
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      const userRole = await checkUserRole(user.uid);
-      if (userRole === "admin") {
-        initAdminPanel(); // Usuário autenticado e é admin
-      } else {
-        console.warn(
-          "Acesso negado. Usuário não tem permissão de administrador."
-        );
-        window.location.href = "/index.html"; // Redireciona se não for admin
-      }
-    } else {
-      console.log(
-        "Nenhum usuário logado. Redirecionando para a página inicial."
-      );
-      window.location.href = "/index.html"; // Redireciona se não estiver logado
-    }
-  });
-});
-
-/**
- * Inicializa os componentes do painel de administração.
- */
-function initAdminPanel() {
+// A função init é exportada para ser chamada pelo app.js
+export function init(user, userData) {
   console.log("Painel do Administrador iniciado!");
   setupNavigation();
-  loadView("dashboard"); // Carrega a view inicial (Dashboard) por padrão
+  // Determina a view a ser carregada a partir da URL (hash) ou usa 'dashboard' como padrão
+  const initialView = window.location.hash.substring(1) || "dashboard";
+  loadView(initialView);
 }
 
 /**
- * Configura os eventos de clique para a navegação por abas.
+ * Configura os eventos de clique para a navegação do menu lateral.
+ * Esta é a principal função alterada.
  */
 function setupNavigation() {
-  const navLinks = document.querySelectorAll("#admin-panel-tabs .nav-link");
+  // O seletor agora aponta para os links dentro do novo menu lateral
+  const navLinks = document.querySelectorAll("#admin-sidebar-menu a");
+
   navLinks.forEach((link) => {
     link.addEventListener("click", (e) => {
-      e.preventDefault();
+      e.preventDefault(); // Remove a classe 'active' de todos os links do menu
 
-      // Gerencia a classe 'active' para o feedback visual
-      navLinks.forEach((l) => l.classList.remove("active"));
+      navLinks.forEach((l) => l.classList.remove("active")); // Adiciona a classe 'active' apenas ao link que foi clicado
       e.currentTarget.classList.add("active");
 
       const viewName = e.currentTarget.dataset.view;
+      // Atualiza a URL com um hash para manter o estado da página
+      window.location.hash = viewName;
       loadView(viewName);
     });
   });
@@ -61,11 +40,14 @@ function setupNavigation() {
 
 /**
  * Carrega o HTML e o JavaScript de uma view específica (dashboard ou configurações).
- * @param {string} viewName - O nome da view a ser carregada ('dashboard' ou 'configuracoes').
  */
 async function loadView(viewName) {
   const contentArea = document.getElementById("admin-content-area");
-  // Mostra um spinner enquanto o conteúdo é carregado
+  // Coloca o seletor de menu correto em estado 'ativo' ao carregar a view
+  document.querySelectorAll("#admin-sidebar-menu a").forEach((link) => {
+    link.classList.toggle("active", link.dataset.view === viewName);
+  }); // Mostra um spinner enquanto o conteúdo é carregado
+
   contentArea.innerHTML = `<div class="text-center mt-5"><div class="spinner-border" role="status"><span class="sr-only">Carregando...</span></div></div>`;
 
   try {
@@ -78,22 +60,22 @@ async function loadView(viewName) {
         htmlPath = "./configuracoes.html"; // Arquivo HTML para as configurações
         break;
       default:
-        throw new Error("View não encontrada");
-    }
+        // Se a view na URL for inválida, carrega o dashboard
+        window.location.hash = "dashboard";
+        loadView("dashboard");
+        return;
+    } // Carrega o conteúdo HTML da view
 
-    // Carrega o conteúdo HTML da view
     const response = await fetch(htmlPath);
     if (!response.ok) throw new Error(`Não foi possível carregar ${htmlPath}`);
-    contentArea.innerHTML = await response.text();
+    contentArea.innerHTML = await response.text(); // Após carregar o HTML, executa os scripts correspondentes
 
-    // Após carregar o HTML, executa os scripts correspondentes
     if (viewName === "dashboard") {
       renderDisponibilidadeServicoSocial();
       renderGerenciamentoUsuarios();
     } else if (viewName === "configuracoes") {
       // Importa o módulo de configurações dinamicamente e o inicializa
       const configModule = await import("./configuracoes.js");
-      // Supondo que configuracoes.js tenha uma função init exportada
       if (configModule.init) {
         configModule.init();
       }
@@ -104,11 +86,8 @@ async function loadView(viewName) {
   }
 }
 
-// --- Funções Específicas do Dashboard ---
+// --- Funções Específicas do Dashboard (permanecem inalteradas) ---
 
-/**
- * Busca e renderiza o widget de disponibilidade do Serviço Social.
- */
 async function renderDisponibilidadeServicoSocial() {
   const container = document.getElementById("disponibilidade-admin-container");
   if (!container) return;
@@ -146,9 +125,6 @@ async function renderDisponibilidadeServicoSocial() {
   }
 }
 
-/**
- * Busca e renderiza a tabela de gerenciamento de usuários.
- */
 async function renderGerenciamentoUsuarios() {
   const container = document.getElementById("usuarios-admin-container");
   if (!container) return;
