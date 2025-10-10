@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/agendamento.js
-// Versão 2.0 (Atualizado para a sintaxe modular do Firebase v9)
+// Versão 3.0 (Integrado com as Configurações do Sistema)
 
 import { obterSlotsValidos } from "./utils/slots.js";
 import {
@@ -11,14 +11,46 @@ import {
   getDocs,
   Timestamp,
   serverTimestamp,
+  doc,
+  getDoc,
 } from "../../../assets/js/firebase-init.js";
 
-// Variáveis de escopo do módulo para manter o estado
+// Variáveis de escopo do módulo
 let currentUser;
 let currentUserData;
+let systemConfigs = null; // Cache para as configurações do sistema
 const modal = document.getElementById("agendamento-modal");
 
-// --- Funções Utilitárias (sem alteração de lógica) ---
+/**
+ * Carrega as configurações do sistema do Firestore.
+ * Usa um cache para evitar buscas repetidas.
+ */
+async function loadSystemConfigs() {
+  if (systemConfigs) {
+    return systemConfigs; // Retorna do cache se já carregado
+  }
+  try {
+    const configRef = doc(db, "configuracoesSistema", "geral");
+    const docSnap = await getDoc(configRef);
+    if (docSnap.exists()) {
+      systemConfigs = docSnap.data();
+      console.log("Configurações do sistema carregadas:", systemConfigs);
+      return systemConfigs;
+    } else {
+      console.warn(
+        "Documento de configurações do sistema não encontrado. Usando valores padrão."
+      );
+      // Define valores padrão para evitar que a aplicação quebre
+      systemConfigs = { financeiro: { percentualSupervisao: 20 } };
+      return systemConfigs;
+    }
+  } catch (error) {
+    console.error("Erro ao carregar configurações do sistema:", error);
+    // Define valores padrão em caso de erro
+    systemConfigs = { financeiro: { percentualSupervisao: 20 } };
+    return systemConfigs;
+  }
+}
 
 function formatarMoeda(input) {
   let value = input.value.replace(/\D/g, "");
@@ -54,10 +86,8 @@ function calculateCapacity(inicio, fim) {
   }
 }
 
-// --- Funções de Renderização e Lógica do Modal (com pequenas melhorias) ---
-
 function updateSupervisionCost() {
-  if (!modal) return;
+  if (!modal || !systemConfigs) return;
   const numeroPacientesInput = modal.querySelector("#numero-pacientes");
   if (!numeroPacientesInput) return;
 
@@ -73,7 +103,9 @@ function updateSupervisionCost() {
     }
   }
 
-  const valorSupervisao = valorTotalContribuicao * 0.2;
+  const percentual =
+    parseFloat(systemConfigs.financeiro?.percentualSupervisao) || 20;
+  const valorSupervisao = valorTotalContribuicao * (percentual / 100);
 
   const totalEl = modal.querySelector("#total-contribuicoes-valor");
   const supervisaoEl = modal.querySelector("#valor-supervisao-calculado");
@@ -105,16 +137,16 @@ function renderPatientInputs(count) {
 
   for (let i = 1; i <= count; i++) {
     container.innerHTML += `
-            <div class="form-row" style="gap: 15px; align-items: flex-end; border-left: 3px solid #f0f0f0; padding-left: 15px; margin-bottom: 10px;">
-                <div class="form-group" style="flex-grow: 2;">
-                    <label for="paciente-iniciais-${i}">Iniciais do Paciente ${i}</label>
-                    <input type="text" id="paciente-iniciais-${i}" class="form-control" placeholder="Ex: A.B.C.">
-                </div>
-                <div class="form-group" style="flex-grow: 1;">
-                    <label for="paciente-contribuicao-${i}">Valor Contribuição</label>
-                    <input type="text" id="paciente-contribuicao-${i}" class="form-control" placeholder="R$ 0,00">
-                </div>
-            </div>`;
+              <div class="form-row" style="gap: 15px; align-items: flex-end; border-left: 3px solid #f0f0f0; padding-left: 15px; margin-bottom: 10px;">
+                  <div class="form-group" style="flex-grow: 2;">
+                      <label for="paciente-iniciais-${i}">Iniciais do Paciente ${i}</label>
+                      <input type="text" id="paciente-iniciais-${i}" class="form-control" placeholder="Ex: A.B.C.">
+                  </div>
+                  <div class="form-group" style="flex-grow: 1;">
+                      <label for="paciente-contribuicao-${i}">Valor Contribuição</label>
+                      <input type="text" id="paciente-contribuicao-${i}" class="form-control" placeholder="R$ 0,00">
+                  </div>
+              </div>`;
   }
 
   container
@@ -163,21 +195,19 @@ function renderDates(horariosDisponiveis) {
     const radioId = `date-${index}`;
 
     datasContainer.innerHTML += `
-            <div class="date-option">
-                <input type="radio" id="${radioId}" name="data_agendamento" value="${slot.date.toISOString()}">
-                <label for="${radioId}">
-                    <strong>${formattedDate}</strong> (${horarioInfo}) <span>Vagas restantes: ${vagasRestantes}</span>
-                </label>
-            </div>`;
+              <div class="date-option">
+                  <input type="radio" id="${radioId}" name="data_agendamento" value="${slot.date.toISOString()}">
+                  <label for="${radioId}">
+                      <strong>${formattedDate}</strong> (${horarioInfo}) <span>Vagas restantes: ${vagasRestantes}</span>
+                  </label>
+              </div>`;
   });
 
   confirmBtn.disabled = false;
 }
 
-// --- Funções de Interação com o Firebase (ATUALIZADAS) ---
-
 async function handleConfirmAgendamento(currentSupervisorData) {
-  if (!modal) return;
+  if (!modal || !systemConfigs) return;
   const nome = modal.querySelector("#agendamento-profissional-nome").value;
   const email = modal.querySelector("#agendamento-profissional-email").value;
   const telefone = modal.querySelector(
@@ -230,12 +260,14 @@ async function handleConfirmAgendamento(currentSupervisorData) {
     }
   }
 
-  const valorSupervisao = valorTotalContribuicao * 0.2;
+  const percentual =
+    parseFloat(systemConfigs.financeiro?.percentualSupervisao) || 20;
+  const valorSupervisao = valorTotalContribuicao * (percentual / 100);
 
   const agendamentoData = {
     supervisorUid: currentSupervisorData.uid,
     supervisorNome: currentSupervisorData.nome,
-    dataAgendamento: Timestamp.fromDate(new Date(selectedRadio.value)), // SINTAXE V9
+    dataAgendamento: Timestamp.fromDate(new Date(selectedRadio.value)),
     profissionalUid: currentUser.uid,
     profissionalNome: nome,
     profissionalEmail: email,
@@ -243,12 +275,12 @@ async function handleConfirmAgendamento(currentSupervisorData) {
     pacientes,
     valorTotalContribuicao,
     valorSupervisao,
-    criadoEm: serverTimestamp(), // SINTAXE V9
+    criadoEm: serverTimestamp(),
   };
 
   try {
-    const agendamentosRef = collection(db, "agendamentos"); // SINTAXE V9
-    await addDoc(agendamentosRef, agendamentoData); // SINTAXE V9
+    const agendamentosRef = collection(db, "agendamentos");
+    await addDoc(agendamentosRef, agendamentoData);
 
     modal.querySelector("#agendamento-step-1").style.display = "none";
     modal.querySelector("#agendamento-step-2").style.display = "block";
@@ -287,18 +319,19 @@ async function open(user, userData, supervisorData) {
         "Erro grave: Os dados do supervisor não foram carregados. Por favor, contate o suporte técnico."
       );
     }
-    return; // Interrompe a execução da função para evitar o erro
+    return;
   }
+
+  await loadSystemConfigs();
+
   currentUser = user;
   currentUserData = userData;
 
-  // Resetar o estado do modal
   modal.querySelector("#agendamento-step-1").style.display = "block";
   modal.querySelector("#agendamento-step-2").style.display = "none";
   modal.querySelector("#footer-step-1").style.display = "flex";
   modal.querySelector("#footer-step-2").style.display = "none";
 
-  // Preencher dados do supervisor e do profissional
   modal.querySelector("#agendamento-supervisor-nome").textContent =
     supervisorData.nome;
   modal.querySelector("#agendamento-profissional-nome").value =
@@ -310,7 +343,6 @@ async function open(user, userData, supervisorData) {
 
   const numeroPacientesInput = modal.querySelector("#numero-pacientes");
   if (numeroPacientesInput) {
-    // Recria o event listener para evitar duplicação
     const newNumeroPacientesInput = numeroPacientesInput.cloneNode(true);
     numeroPacientesInput.parentNode.replaceChild(
       newNumeroPacientesInput,
@@ -321,12 +353,11 @@ async function open(user, userData, supervisorData) {
       const count = parseInt(e.target.value, 10);
       renderPatientInputs(count);
     });
-    renderPatientInputs(parseInt(newNumeroPacientesInput.value, 10)); // Renderiza o estado inicial
+    renderPatientInputs(parseInt(newNumeroPacientesInput.value, 10));
   }
 
   modal.style.display = "flex";
 
-  // Recria o event listener do botão de confirmação para evitar chamadas múltiplas
   const confirmBtn = modal.querySelector("#agendamento-confirm-btn");
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
@@ -343,20 +374,18 @@ async function open(user, userData, supervisorData) {
       supervisorData.diasHorarios &&
       Array.isArray(supervisorData.diasHorarios)
     ) {
-      // A função obterSlotsValidos agora importa o 'db' diretamente
       potentialSlots = await obterSlotsValidos(supervisorData.diasHorarios);
     }
 
-    const agendamentosRef = collection(db, "agendamentos"); // SINTAXE V9
+    const agendamentosRef = collection(db, "agendamentos");
     const slotChecks = potentialSlots.map(async (slot) => {
-      // SINTAXE V9 para criar a consulta
       const q = query(
         agendamentosRef,
         where("supervisorUid", "==", supervisorData.uid),
         where("dataAgendamento", "==", Timestamp.fromDate(slot.date))
       );
 
-      const querySnapshot = await getDocs(q); // SINTAXE V9
+      const querySnapshot = await getDocs(q);
       slot.booked = querySnapshot.size;
       slot.capacity = calculateCapacity(slot.horario.inicio, slot.horario.fim);
       return slot;
@@ -369,8 +398,6 @@ async function open(user, userData, supervisorData) {
     datasContainer.innerHTML = `<p class="alert alert-error">Ocorreu um erro ao buscar os horários.</p>`;
   }
 }
-
-// --- Inicialização dos Event Listeners do Modal ---
 
 if (modal) {
   const closeModal = () => {
@@ -385,7 +412,6 @@ if (modal) {
     .addEventListener("click", closeModal);
 }
 
-// Exporta o controller para ser usado por outras partes do sistema
 export const agendamentoController = {
   open,
 };
