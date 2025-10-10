@@ -1,32 +1,33 @@
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Painel do Administrador</h1>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Disponibilidade do Serviço Social</h6>
-        </div>
-        <div class="card-body" id="disponibilidade-admin-container">
-            <div class="text-center">
-                <div class="spinner-border" role="status">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administração</title>
+    </head>
+<body>
+    <div class="container-fluid">
+        <h1 class="h3 mb-2 text-gray-800">Painel de Controle</h1>
+        <p class="mb-4">Gerencie as operações e configurações do sistema.</p>
+        
+        <ul class="nav nav-tabs mb-4" id="admin-panel-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-view="dashboard">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-view="configuracoes">Configurações do Sistema</a>
+            </li>
+        </ul>
+    
+        <div id="admin-content-area">
+            <div class="text-center mt-5">
+                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                     <span class="sr-only">Carregando...</span>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Gerenciamento de Usuários</h6>
-        </div>
-        <div class="card-body" id="usuarios-admin-container">
-             <div class="text-center">
-                <div class="spinner-border" role="status">
-                    <span class="sr-only">Carregando...</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<script type="module" src="../js/painel-admin.js"></script>
+    
+    <script type="module" src="../js/painel-admin.js"></script>
+</body>
+</html>
