@@ -1,3 +1,4 @@
+// Arquivo: /modulos/administrativo/js/gestao_agendas.js
 import { functions } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
@@ -92,7 +93,7 @@ async function carregarDisponibilidades() {
                         data-mes="${mes}"
                         data-modalidade="${modalidade}"
                         data-dias='${JSON.stringify(diasOrdenados)}'>
-                        <i class="fas fa-cog me-1"></i> Configurar
+                      <i class="fas fa-cog me-1"></i> Configurar
                     </button>
                   </td>
                 </tr>`;
