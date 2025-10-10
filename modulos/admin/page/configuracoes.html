@@ -19,6 +19,7 @@
         </div>
 
         <form id="config-form">
+            
             <div id="financeiro" class="tab-content active">
                 <h3>Parâmetros Financeiros</h3>
                 <div class="form-group">
@@ -32,7 +33,6 @@
             </div>
 
             <div id="agendamentos" class="tab-content">
-                
                 <h4>Regras de Agendamento (Triagem)</h4>
                 <p class="description">Parâmetros que afetam a busca e agendamento de horários para a triagem inicial com o serviço social.</p>
                 <div class="form-group">
@@ -43,9 +43,7 @@
                     <label for="quantidadeDiasBusca">Quantidade de Dias para Busca de Horários (Triagem)</label>
                     <input type="number" id="quantidadeDiasBusca" name="agendamentos.quantidadeDiasBusca" placeholder="Ex: 90">
                 </div>
-                
                 <hr>
-                
                 <h4>Regras de Agendamento (Supervisão)</h4>
                 <p class="description">Parâmetros que afetam a busca e agendamento de horários de supervisão pelos voluntários.</p>
                 <div class="form-group">
@@ -56,9 +54,7 @@
                     <label for="quantidadeDiasSupervisao">Quantidade de Dias para Busca de Horários (Supervisão)</label>
                     <input type="number" id="quantidadeDiasSupervisao" name="agendamentos.quantidadeDiasSupervisao" placeholder="Ex: 60">
                 </div>
-            
                 <hr>
-            
                 <h4>Prazos da Trilha do Paciente (em dias úteis)</h4>
                 <div class="form-group">
                     <label for="prazoContatoTriagem">Prazo para Contato da Triagem</label>
@@ -68,8 +64,8 @@
                     <label for="prazoInicioTerapia">Prazo para Início da Terapia</label>
                     <input type="number" id="prazoInicioTerapia" name="prazos.inicioTerapia" placeholder="Ex: 20">
                 </div>
-
             </div>
+
             <div id="listas" class="tab-content">
                 <h3>Listas Editáveis</h3>
                 <div class="form-group">
@@ -99,13 +95,12 @@
                 </div>
             </div>
 
-        </form>
-        
-        <div class="actions">
+        </form> <div class="actions">
             <button id="save-button" class="btn-primary">Salvar Alterações</button>
             <div id="loading-spinner" class="spinner" style="display: none;"></div>
             <div id="save-feedback"></div>
         </div>
-    </div>
+
+        </div>
 </body>
 </html>
