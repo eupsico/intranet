@@ -1,10 +1,10 @@
 // Arquivo: /modulos/administrativo/js/grade.js
-// Versão: 2.1 (CORREÇÃO PROFUNDA)
+// Versão: 2.2 (Padronizado para Firebase v9.6.1)
 // Descrição: Módulo agora importa 'db' diretamente para garantir a instância correta do Firestore.
 
-// ### MUDANÇA 1: Importar 'db' diretamente da fonte ###
-// Isso garante que estamos usando a instância correta do Firestore, eliminando problemas de passagem de parâmetros.
+// Importa 'db' diretamente da fonte
 import { db } from "../../../assets/js/firebase-init.js";
+// ### ATUALIZAÇÃO: Imports padronizados para a versão 9.6.1 ###
 import {
   doc,
   setDoc,
@@ -14,18 +14,15 @@ import {
   orderBy,
   getDocs,
   onSnapshot,
-} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// ### MUDANÇA 2: Remover 'db' dos parâmetros da função 'init' ###
-// Como agora estamos importando 'db', não precisamos mais recebê-lo como um argumento.
+// A função init não recebe mais 'db'
 export function init(user, userData) {
-  // A checagem if (!db) foi removida pois o import já garante que ele existe.
   const gradeContent = document.getElementById("grade-content");
   if (!gradeContent) return;
 
   let listaProfissionais = [];
   const coresProfissionais = new Map();
-
   let dadosDasGrades = {};
   const horarios = [
     "07:00",
@@ -69,8 +66,6 @@ export function init(user, userData) {
     "Christian Dunker",
     "Maria Célia Malaquias (Grupo)",
   ];
-
-  // --- NENHUMA OUTRA MUDANÇA NECESSÁRIA NO RESTANTE DO CÓDIGO ---
 
   function generateColorFromString(str) {
     let hash = 0;
@@ -277,7 +272,6 @@ export function init(user, userData) {
 
   async function start() {
     try {
-      // O 'db' usado aqui agora é o importado diretamente, garantindo que é a instância correta.
       const q = query(
         collection(db, "usuarios"),
         where("fazAtendimento", "==", true),
