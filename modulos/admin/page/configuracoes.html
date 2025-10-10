@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configurações do Sistema</title>
-    <link rel="stylesheet" href="../css/configuracoes.css">
+    <link rel="stylesheet" href="../css/configuracoes.css"> 
 </head>
 <body>
     <div class="config-container">
@@ -29,35 +29,47 @@
                     <label for="diaLimiteComprovantes">Dia Limite para Envio de Comprovantes</label>
                     <input type="number" id="diaLimiteComprovantes" name="financeiro.diaLimiteComprovantes" placeholder="Ex: 10">
                 </div>
-                <hr>
-                <h4>Faixas de Contribuição (Serviço Social)</h4>
-                <div class="form-group">
-                     <p class="description">Adicione as faixas de salário mínimo e o percentual ou valor fixo correspondente. (Funcionalidade a ser implementada)</p>
-                     </div>
             </div>
 
             <div id="agendamentos" class="tab-content">
-                <h3>Prazos e Regras de Agendamento</h3>
-                 <div class="form-group">
-                    <label for="minimoHorasAntecedencia">Mínimo de Horas de Antecedência para Agendamento</label>
+                
+                <h4>Regras de Agendamento (Triagem)</h4>
+                <p class="description">Parâmetros que afetam a busca e agendamento de horários para a triagem inicial com o serviço social.</p>
+                <div class="form-group">
+                    <label for="minimoHorasAntecedencia">Mínimo de Horas de Antecedência para Agendamento (Triagem)</label>
                     <input type="number" id="minimoHorasAntecedencia" name="agendamentos.minimoHorasAntecedencia" placeholder="Ex: 24">
                 </div>
-                 <div class="form-group">
-                    <label for="quantidadeDiasBusca">Quantidade de Dias para Busca de Horários</label>
+                <div class="form-group">
+                    <label for="quantidadeDiasBusca">Quantidade de Dias para Busca de Horários (Triagem)</label>
                     <input type="number" id="quantidadeDiasBusca" name="agendamentos.quantidadeDiasBusca" placeholder="Ex: 90">
                 </div>
+                
                 <hr>
-                 <h4>Prazos da Trilha do Paciente (em dias úteis)</h4>
+                
+                <h4>Regras de Agendamento (Supervisão)</h4>
+                <p class="description">Parâmetros que afetam a busca e agendamento de horários de supervisão pelos voluntários.</p>
+                <div class="form-group">
+                    <label for="minimoAgendaSupervisao">Mínimo de Horas de Antecedência para Agendamento (Supervisão)</label>
+                    <input type="number" id="minimoAgendaSupervisao" name="agendamentos.minimoAgendaSupervisao" placeholder="Ex: 48">
+                </div>
+                <div class="form-group">
+                    <label for="quantidadeDiasSupervisao">Quantidade de Dias para Busca de Horários (Supervisão)</label>
+                    <input type="number" id="quantidadeDiasSupervisao" name="agendamentos.quantidadeDiasSupervisao" placeholder="Ex: 60">
+                </div>
+            
+                <hr>
+            
+                <h4>Prazos da Trilha do Paciente (em dias úteis)</h4>
                 <div class="form-group">
                     <label for="prazoContatoTriagem">Prazo para Contato da Triagem</label>
                     <input type="number" id="prazoContatoTriagem" name="prazos.contatoTriagem" placeholder="Ex: 30">
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="prazoInicioTerapia">Prazo para Início da Terapia</label>
                     <input type="number" id="prazoInicioTerapia" name="prazos.inicioTerapia" placeholder="Ex: 20">
                 </div>
-            </div>
 
+            </div>
             <div id="listas" class="tab-content">
                 <h3>Listas Editáveis</h3>
                 <div class="form-group">
