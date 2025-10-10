@@ -35,6 +35,15 @@
 
                 <h4>Faixas de Contribuição (Serviço Social)</h4>
                 <p class="description">Defina as faixas de salário mínimo e os percentuais de contribuição correspondentes.</p>
+                
+                {/* --- INÍCIO DA ALTERAÇÃO --- */}
+                <div class="form-group">
+                    <label for="percentualAdicionalFamilia">Percentual Adicional (Família %)</label>
+                    <input type="number" id="percentualAdicionalFamilia" name="financeiro.percentualAdicionalFamilia" placeholder="Ex: 40">
+                    <p class="description">Percentual a ser acrescido no valor de contribuição para atendimentos familiares.</p>
+                </div>
+                {/* --- FIM DA ALTERAÇÃO --- */}
+
                 <div class="faixas-table-container">
                     <table class="faixas-table">
                         <thead>
@@ -45,11 +54,11 @@
                             </tr>
                         </thead>
                         <tbody id="faixas-contribuicao-tbody">
-                            </tbody>
+                        </tbody>
                     </table>
                     <button type="button" id="btn-adicionar-faixa" class="btn-adicionar-faixa">+ Adicionar Faixa</button>
                 </div>
-                </div>
+            </div>
 
             <div id="agendamentos" class="tab-content">
                 <h4>Regras de Agendamento (Triagem)</h4>
