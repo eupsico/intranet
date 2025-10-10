@@ -1,0 +1,114 @@
+/* Remove margens padrão para ocupar toda a área do container */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif; /* Use a fonte do seu projeto */
+}
+
+/* Container principal com layout flex */
+.admin-panel-container {
+    display: flex;
+    min-height: 100vh; /* Ocupa a altura total da tela */
+    background-color: #f4f7f6;
+}
+
+/* Estilos da barra lateral (sidebar) */
+.admin-sidebar {
+    width: 240px;
+    background-color: #ffffff;
+    border-right: 1px solid #dee2e6;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem; /* Espaço entre o header e o menu */
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.sidebar-header p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Estilos do menu */
+.admin-sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-sidebar-menu li {
+    margin-bottom: 0.5rem;
+}
+
+.admin-sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Espaço entre o ícone e o texto */
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #495057;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-sidebar-menu a:hover {
+    background-color: #e9ecef;
+    color: #000;
+}
+
+/* Estilo do item de menu ativo */
+.admin-sidebar-menu a.active {
+    background-color: #007bff; /* Cor primária do seu design system */
+    color: white;
+    font-weight: 600;
+}
+
+/* Faz a cor do ícone SVG herdar a cor do link (branco quando ativo) */
+.admin-sidebar-menu a.active svg {
+    stroke: white;
+}
+
+
+/* Área de conteúdo principal */
+.admin-content {
+    flex-grow: 1; /* Ocupa todo o espaço restante */
+    padding: 2rem;
+    overflow-y: auto; /* Adiciona scroll se o conteúdo for muito grande */
+}
+
+/* Estilos para o spinner de carregamento (opcional, mas recomendado) */
+.text-center {
+    text-align: center;
+}
+.mt-5 {
+    margin-top: 3rem;
+}
+.spinner-border {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    border: .25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border .75s linear infinite;
+}
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
