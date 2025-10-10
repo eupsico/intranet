@@ -66,29 +66,25 @@ async function loadView(viewId) {
   contentArea.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    // --- INÍCIO DA CORREÇÃO ---
     let htmlPath;
     switch (viewId) {
       case "dashboard":
-        htmlPath = "./dashboard-admin.html"; // Nome correto do arquivo
+        htmlPath = "./dashboard-admin.html";
         break;
       case "configuracoes":
         htmlPath = "./configuracoes.html";
         break;
       default:
-        // Se a view não for encontrada, carrega o dashboard por padrão
         htmlPath = "./dashboard-admin.html";
         window.location.hash = "dashboard";
         break;
     }
-    // --- FIM DA CORREÇÃO ---
 
     const response = await fetch(htmlPath);
     if (!response.ok) throw new Error(`Não foi possível carregar ${htmlPath}`);
     contentArea.innerHTML = await response.text();
 
     if (viewId === "dashboard" || !viewId) {
-      // Carrega o dashboard como padrão
       renderDisponibilidadeServicoSocial();
       renderGerenciamentoUsuarios();
     } else if (viewId === "configuracoes") {
@@ -122,6 +118,7 @@ async function renderDisponibilidadeServicoSocial() {
       return;
     }
 
+    // --- INÍCIO DA ALTERAÇÃO ---
     let html = '<div class="disponibilidade-list">';
     disponibilidades.forEach((assistente) => {
       html += `<div class="assistente-item">`;
@@ -130,7 +127,7 @@ async function renderDisponibilidadeServicoSocial() {
       if (!dispoMap || Object.keys(dispoMap).length === 0) {
         html += '<p class="no-dispo">Nenhuma disponibilidade informada.</p>';
       } else {
-        html += "<ul>";
+        html += '<ul class="disponibilidade-detalhes">';
         Object.keys(dispoMap)
           .sort()
           .forEach((mesKey) => {
@@ -140,12 +137,16 @@ async function renderDisponibilidadeServicoSocial() {
               "pt-BR",
               { month: "long" }
             );
+            const nomeMesCapitalizado =
+              nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+
+            html += `<li><strong>${nomeMesCapitalizado}:</strong></li>`;
 
             if (dadosDoMes.online && dadosDoMes.online.dias.length > 0) {
               const dias = dadosDoMes.online.dias
                 .map((d) => d.split("-")[2])
                 .join(", ");
-              html += `<li><strong>${nomeMes} (Online):</strong> Dias ${dias} das ${dadosDoMes.online.inicio} às ${dadosDoMes.online.fim}</li>`;
+              html += `<li class="detalhe-item"><span>Online:</span> Dias ${dias} (das ${dadosDoMes.online.inicio} às ${dadosDoMes.online.fim})</li>`;
             }
             if (
               dadosDoMes.presencial &&
@@ -154,7 +155,7 @@ async function renderDisponibilidadeServicoSocial() {
               const dias = dadosDoMes.presencial.dias
                 .map((d) => d.split("-")[2])
                 .join(", ");
-              html += `<li><strong>${nomeMes} (Presencial):</strong> Dias ${dias} das ${dadosDoMes.presencial.inicio} às ${dadosDoMes.presencial.fim}</li>`;
+              html += `<li class="detalhe-item"><span>Presencial:</span> Dias ${dias} (das ${dadosDoMes.presencial.inicio} às ${dadosDoMes.presencial.fim})</li>`;
             }
           });
         html += "</ul>";
@@ -162,6 +163,7 @@ async function renderDisponibilidadeServicoSocial() {
       html += `</div>`;
     });
     container.innerHTML = html + "</div>";
+    // --- FIM DA ALTERAÇÃO ---
   } catch (error) {
     console.error("Erro ao carregar disponibilidade:", error);
     container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar os dados de disponibilidade.</div>`;
