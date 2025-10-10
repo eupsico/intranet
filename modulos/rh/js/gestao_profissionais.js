@@ -1,9 +1,7 @@
 // Arquivo: /modulos/rh/js/gestao_profissionais.js
-// Versão: 1.0 (Atualizado para Firebase v9)
-// Descrição: Lógica para gerenciar profissionais, agora no módulo de RH.
+// Versão: 2.0 (Integrado com as Configurações do Sistema)
 
-// Importa as funções e instâncias necessárias do v9
-import { functions } from "../../../assets/js/firebase-init.js";
+import { functions, db } from "../../../assets/js/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
 import {
   collection,
@@ -13,15 +11,10 @@ import {
   doc,
   deleteDoc,
   updateDoc,
+  getDoc, // Adicionado
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-export function init(db, user, userData) {
-  if (!db) {
-    console.error("Instância do Firestore (db) não encontrada.");
-    return;
-  }
-
-  // A instância de 'functions' agora é importada diretamente do firebase-init
+export function init(db_ignored, user, userData) {
   const usuariosCollectionRef = collection(db, "usuarios");
   let localUsuariosList = [];
 
@@ -34,7 +27,35 @@ export function init(db, user, userData) {
   const deleteBtn = document.getElementById("modal-delete-btn");
   const form = document.getElementById("profissional-form");
 
-  // Funções de validação e formatação (sem alterações)
+  // --- INÍCIO DA ALTERAÇÃO ---
+  /**
+   * Carrega a lista de profissões do Firestore e popula o select.
+   */
+  async function carregarListaDeProfissoes() {
+    const selectProfissao = document.getElementById("prof-profissao");
+    if (!selectProfissao) return;
+
+    try {
+      const configRef = doc(db, "configuracoesSistema", "geral");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists() && docSnap.data().listas?.profissoes) {
+        const profissoes = docSnap.data().listas.profissoes;
+        let optionsHtml =
+          '<option value="" disabled selected>Selecione uma profissão</option>';
+        profissoes.forEach((p) => {
+          optionsHtml += `<option value="${p}">${p}</option>`;
+        });
+        selectProfissao.innerHTML = optionsHtml;
+      } else {
+        console.warn("Lista de profissões não encontrada nas configurações.");
+        // Mantém as opções hardcoded do HTML como fallback
+      }
+    } catch (error) {
+      console.error("Erro ao carregar lista de profissões:", error);
+    }
+  }
+  // --- FIM DA ALTERAÇÃO ---
+
   const formatarTelefone = (value) => {
     if (!value) return "";
     value = value.replace(/\D/g, "").substring(0, 11);
@@ -60,7 +81,6 @@ export function init(db, user, userData) {
     return isValid;
   };
 
-  // Funções do Modal (sem alterações)
   const openModal = (profissional = null) => {
     form.reset();
     document.getElementById("profissional-id").value = profissional
@@ -99,7 +119,6 @@ export function init(db, user, userData) {
     modal.style.display = "none";
   };
 
-  // Renderização da Tabela (sem alterações)
   const renderTable = (profissionais) => {
     tableBody.innerHTML = "";
     if (profissionais.length === 0) {
@@ -124,12 +143,10 @@ export function init(db, user, userData) {
     });
   };
 
-  // ATUALIZAÇÃO v9: Busca de dados e listeners
   const q = query(usuariosCollectionRef, orderBy("nome"));
   onSnapshot(
     q,
     (snapshot) => {
-      // O uid já vem como id no documento do v9, mas para manter compatibilidade, adicionamos ambos
       localUsuariosList = snapshot.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id,
@@ -169,7 +186,6 @@ export function init(db, user, userData) {
       return;
 
     try {
-      // ATUALIZAÇÃO v9: Usando doc() e deleteDoc()
       await deleteDoc(doc(db, "usuarios", userId));
       window.showToast("Profissional excluído com sucesso!", "success");
       closeModal();
@@ -212,11 +228,9 @@ export function init(db, user, userData) {
 
     try {
       if (id) {
-        // ATUALIZAÇÃO v9: Usando doc() e updateDoc()
         await updateDoc(doc(db, "usuarios", id), dados);
         window.showToast("Profissional atualizado com sucesso!", "success");
       } else {
-        // ATUALIZAÇÃO v9: Usando a função httpsCallable importada do v9
         const criarNovoProfissional = httpsCallable(
           functions,
           "criarNovoProfissional"
@@ -233,4 +247,9 @@ export function init(db, user, userData) {
       saveBtn.textContent = "Salvar";
     }
   });
+
+  // --- INÍCIO DA ALTERAÇÃO ---
+  // Chama a função para carregar as profissões ao inicializar o módulo
+  carregarListaDeProfissoes();
+  // --- FIM DA ALTERAÇÃO ---
 }
