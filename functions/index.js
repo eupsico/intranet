@@ -671,10 +671,8 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
  * @return {boolean} Retorna true se o CPF for válido.
  */
 function validaCPF(cpf) {
-  cpf = String(cpf).replace(/[^\d]/g, ""); // Remove formatação
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
-    return false;
-  }
+  cpf = String(cpf).replace(/[^\d]/g, "");
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
   let soma = 0;
   let resto;
   for (let i = 1; i <= 9; i++)
@@ -708,8 +706,6 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
     throw new HttpsError("invalid-argument", "Dados obrigatórios ausentes.");
   }
 
-  // --- CORREÇÃO AQUI ---
-  // A validação completa agora é feita no servidor.
   if (!validaCPF(cpfSignatario)) {
     throw new HttpsError("invalid-argument", "CPF inválido.");
   }
@@ -736,10 +732,11 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
       );
     }
 
+    // O objeto 'contratoAssinado' agora usará o 'FieldValue' importado corretamente
     atendimentos[indiceDoAtendimento].contratoAssinado = {
       assinadoEm: FieldValue.serverTimestamp(),
       nomeSignatario,
-      cpfSignatario: cpfLimpo, // Salva o CPF limpo (apenas números)
+      cpfSignatario: cpfLimpo,
       versaoContrato: versaoContrato || "1.0",
       ip: ip || "não identificado",
     };
