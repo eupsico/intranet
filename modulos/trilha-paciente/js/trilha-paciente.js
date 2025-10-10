@@ -97,30 +97,67 @@ function setupColumns() {
 }
 
 function setupAllModalControls() {
+  // Configuração para o 'card-modal'
   const cardModal = document.getElementById("card-modal");
-  document
-    .getElementById("close-modal-btn")
-    .addEventListener("click", () => (cardModal.style.display = "none"));
-  document
-    .getElementById("modal-cancel-btn")
-    .addEventListener("click", () => (cardModal.style.display = "none"));
-  cardModal.addEventListener("click", (e) => {
-    if (e.target === cardModal) cardModal.style.display = "none";
-  });
+  if (cardModal) {
+    // Verificação adicionada
+    const closeModalBtn = document.getElementById("close-modal-btn");
+    if (closeModalBtn) {
+      // Verificação adicionada
+      closeModalBtn.addEventListener(
+        "click",
+        () => (cardModal.style.display = "none")
+      );
+    }
 
+    const modalCancelBtn = document.getElementById("modal-cancel-btn");
+    if (modalCancelBtn) {
+      // Verificação adicionada
+      modalCancelBtn.addEventListener(
+        "click",
+        () => (cardModal.style.display = "none")
+      );
+    }
+
+    cardModal.addEventListener("click", (e) => {
+      if (e.target === cardModal) cardModal.style.display = "none";
+    });
+  }
+
+  // Configuração para o 'move-card-modal'
   const moveModal = document.getElementById("move-card-modal");
-  document
-    .getElementById("close-move-card-modal-btn")
-    .addEventListener("click", () => (moveModal.style.display = "none"));
-  document
-    .getElementById("cancel-move-btn")
-    .addEventListener("click", () => (moveModal.style.display = "none"));
-  moveModal.addEventListener("click", (e) => {
-    if (e.target === moveModal) moveModal.style.display = "none";
-  });
-  document
-    .getElementById("confirm-move-btn")
-    .addEventListener("click", confirmMove);
+  if (moveModal) {
+    // Verificação adicionada
+    const closeMoveCardModalBtn = document.getElementById(
+      "close-move-card-modal-btn"
+    );
+    if (closeMoveCardModalBtn) {
+      // Verificação adicionada
+      closeMoveCardModalBtn.addEventListener(
+        "click",
+        () => (moveModal.style.display = "none")
+      );
+    }
+
+    const cancelMoveBtn = document.getElementById("cancel-move-btn");
+    if (cancelMoveBtn) {
+      // Verificação adicionada
+      cancelMoveBtn.addEventListener(
+        "click",
+        () => (moveModal.style.display = "none")
+      );
+    }
+
+    moveModal.addEventListener("click", (e) => {
+      if (e.target === moveModal) moveModal.style.display = "none";
+    });
+
+    const confirmMoveBtn = document.getElementById("confirm-move-btn");
+    if (confirmMoveBtn) {
+      // Verificação adicionada
+      confirmMoveBtn.addEventListener("click", confirmMove);
+    }
+  }
 }
 function setupEventListeners() {
   const kanbanBoard = document.getElementById("kanban-board");
