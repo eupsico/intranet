@@ -1,84 +1,119 @@
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import {
   getFunctions,
   httpsCallable,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
-// A função checkUserRole não é mais necessária aqui, pois app.js já faz essa verificação.
-// Removida para simplificar e evitar redundância.
 
-// A função init é exportada para ser chamada pelo app.js
-export function init(user, userData) {
-  console.log("Painel do Administrador iniciado!");
-  setupNavigation();
-  // Determina a view a ser carregada a partir da URL (hash) ou usa 'dashboard' como padrão
-  const initialView = window.location.hash.substring(1) || "dashboard";
-  loadView(initialView);
+// Variáveis de escopo do módulo
+let user, userData;
+const contentArea = document.getElementById("content-area");
+const sidebarMenu = document.getElementById("sidebar-menu");
+
+// Definição das "sub-páginas" do módulo Admin
+const views = [
+  {
+    id: "dashboard",
+    name: "Dashboard",
+    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>',
+  },
+  {
+    id: "configuracoes",
+    name: "Configurações",
+    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
+  },
+];
+
+/**
+ * Função de entrada do módulo, chamada pelo app.js
+ */
+export function init(userRef, userDataRef) {
+  user = userRef;
+  userData = userDataRef;
+
+  console.log("🔹 Painel de Administração iniciado para:", userData.nome);
+
+  buildAdminSidebarMenu();
+  handleNavigation(); // Carrega a view inicial
+  window.addEventListener("hashchange", handleNavigation);
 }
 
 /**
- * Configura os eventos de clique para a navegação do menu lateral.
- * Esta é a principal função alterada.
+ * Constrói o menu na barra lateral principal.
  */
-function setupNavigation() {
-  // O seletor agora aponta para os links dentro do novo menu lateral
-  const navLinks = document.querySelectorAll("#admin-sidebar-menu a");
+function buildAdminSidebarMenu() {
+  if (!sidebarMenu) return;
 
-  navLinks.forEach((link) => {
+  // Adiciona o link "Voltar"
+  let menuHtml = `
+        <li>
+            <a href="../../../index.html" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>Voltar à Intranet</span>
+            </a>
+        </li>
+        <li class="menu-separator"></li>
+    `;
+
+  // Adiciona os links das sub-páginas
+  views.forEach((view) => {
+    menuHtml += `<li><a href="#${view.id}" data-view="${view.id}">${view.icon}<span>${view.name}</span></a></li>`;
+  });
+
+  sidebarMenu.innerHTML = menuHtml;
+
+  // Adiciona os listeners aos links recém-criados
+  sidebarMenu.querySelectorAll("a[data-view]").forEach((link) => {
     link.addEventListener("click", (e) => {
-      e.preventDefault(); // Remove a classe 'active' de todos os links do menu
-
-      navLinks.forEach((l) => l.classList.remove("active")); // Adiciona a classe 'active' apenas ao link que foi clicado
-      e.currentTarget.classList.add("active");
-
-      const viewName = e.currentTarget.dataset.view;
-      // Atualiza a URL com um hash para manter o estado da página
-      window.location.hash = viewName;
-      loadView(viewName);
+      e.preventDefault();
+      window.location.hash = link.dataset.view;
     });
   });
 }
 
 /**
- * Carrega o HTML e o JavaScript de uma view específica (dashboard ou configurações).
+ * Gerencia a navegação e o carregamento da view correta baseada no hash da URL.
  */
-async function loadView(viewName) {
-  const contentArea = document.getElementById("admin-content-area");
-  // Coloca o seletor de menu correto em estado 'ativo' ao carregar a view
-  document.querySelectorAll("#admin-sidebar-menu a").forEach((link) => {
-    link.classList.toggle("active", link.dataset.view === viewName);
-  }); // Mostra um spinner enquanto o conteúdo é carregado
+function handleNavigation() {
+  const viewId = window.location.hash.substring(1) || "dashboard"; // Padrão é dashboard
+  loadView(viewId);
+}
 
-  contentArea.innerHTML = `<div class="text-center mt-5"><div class="spinner-border" role="status"><span class="sr-only">Carregando...</span></div></div>`;
+/**
+ * Carrega o HTML e o JavaScript de uma sub-página específica.
+ */
+async function loadView(viewId) {
+  if (!contentArea) return;
+
+  // Atualiza o item ativo no menu lateral
+  sidebarMenu.querySelectorAll("a[data-view]").forEach((link) => {
+    link.classList.toggle("active", link.dataset.view === viewId);
+  });
+
+  contentArea.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    let htmlPath = "";
-    switch (viewName) {
+    let htmlPath;
+    switch (viewId) {
       case "dashboard":
-        htmlPath = "./dashboard-admin.html"; // Arquivo HTML para o dashboard
+        htmlPath = "./dashboard-admin.html";
         break;
       case "configuracoes":
-        htmlPath = "./configuracoes.html"; // Arquivo HTML para as configurações
+        htmlPath = "./configuracoes.html";
         break;
       default:
-        // Se a view na URL for inválida, carrega o dashboard
-        window.location.hash = "dashboard";
-        loadView("dashboard");
-        return;
-    } // Carrega o conteúdo HTML da view
+        throw new Error("Página não encontrada.");
+    }
 
     const response = await fetch(htmlPath);
     if (!response.ok) throw new Error(`Não foi possível carregar ${htmlPath}`);
-    contentArea.innerHTML = await response.text(); // Após carregar o HTML, executa os scripts correspondentes
+    contentArea.innerHTML = await response.text();
 
-    if (viewName === "dashboard") {
+    // Após carregar o HTML, executa os scripts correspondentes
+    if (viewId === "dashboard") {
       renderDisponibilidadeServicoSocial();
       renderGerenciamentoUsuarios();
-    } else if (viewName === "configuracoes") {
-      // Importa o módulo de configurações dinamicamente e o inicializa
+    } else if (viewId === "configuracoes") {
       const configModule = await import("./configuracoes.js");
-      if (configModule.init) {
-        configModule.init();
-      }
+      if (configModule.init) configModule.init();
     }
   } catch (error) {
     console.error("Erro ao carregar a view:", error);
@@ -86,86 +121,66 @@ async function loadView(viewName) {
   }
 }
 
-// --- Funções Específicas do Dashboard (permanecem inalteradas) ---
+// --- Funções Específicas do Dashboard (permanecem as mesmas) ---
 
 async function renderDisponibilidadeServicoSocial() {
   const container = document.getElementById("disponibilidade-admin-container");
   if (!container) return;
-
   try {
     const functions = getFunctions();
     const getDisponibilidades = httpsCallable(
       functions,
       "getTodasDisponibilidadesAssistentes"
     );
-
     const result = await getDisponibilidades();
     const disponibilidades = result.data;
-
     if (!disponibilidades || disponibilidades.length === 0) {
       container.innerHTML = "<p>Nenhuma disponibilidade encontrada.</p>";
       return;
     }
-
     let html = '<ul class="list-group">';
     disponibilidades.forEach((item) => {
       const horarios = item.disponibilidade
-        ? item.disponibilidade.join(", ")
-        : "Nenhum horário informado";
-      html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        ${item.nome}
-                        <span class="badge badge-primary badge-pill">${horarios}</span>
-                     </li>`;
+        ? Object.values(item.disponibilidade)
+            .map((m) =>
+              Object.values(m)
+                .map((t) => t.dias.join(", "))
+                .join(", ")
+            )
+            .join("; ")
+        : "Nenhum horário";
+      html += `<li class="list-group-item d-flex justify-content-between align-items-center">${item.nome}<span class="badge bg-primary rounded-pill">${horarios}</span></li>`;
     });
-    html += "</ul>";
-    container.innerHTML = html;
+    container.innerHTML = html + "</ul>";
   } catch (error) {
-    console.error("Erro ao carregar disponibilidade para admin:", error);
-    container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar os dados. Tente novamente mais tarde.</div>`;
+    console.error("Erro ao carregar disponibilidade:", error);
+    container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar os dados.</div>`;
   }
 }
 
 async function renderGerenciamentoUsuarios() {
   const container = document.getElementById("usuarios-admin-container");
   if (!container) return;
-
+  container.innerHTML =
+    '<div class="spinner-border" role="status"><span class="visually-hidden">Carregando...</span></div>';
   try {
     const functions = getFunctions();
     const getUsuarios = httpsCallable(functions, "getTodosUsuarios");
-
     const result = await getUsuarios();
     const usuarios = result.data;
-
-    let tableHtml = `
-            <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody>`;
-
-    if (!usuarios || usuarios.length === 0) {
-      tableHtml += `<tr><td colspan="4" class="text-center">Nenhum usuário encontrado.</td></tr>`;
-    } else {
-      usuarios.forEach((user) => {
-        tableHtml += `
-                    <tr>
-                        <td>${user.nome || "Não informado"}</td>
-                        <td>${user.email}</td>
-                        <td><span class="badge badge-secondary">${
-                          user.role
-                        }</span></td>
-                        <td><button class="btn btn-sm btn-outline-primary" data-uid="${
-                          user.uid
-                        }">Gerenciar</button></td>
-                    </tr>`;
-      });
-    }
-
-    tableHtml += "</tbody></table></div>";
-    container.innerHTML = tableHtml;
+    let tableHtml = `<table class="table table-striped"><thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Ações</th></tr></thead><tbody>`;
+    usuarios.forEach((user) => {
+      tableHtml += `<tr><td>${user.nome || "N/A"}</td><td>${
+        user.email
+      }</td><td><span class="badge bg-info">${
+        user.role
+      }</span></td><td><button class="btn btn-sm btn-primary" data-uid="${
+        user.uid
+      }">Editar</button></td></tr>`;
+    });
+    container.innerHTML = tableHtml + "</tbody></table>";
   } catch (error) {
     console.error("Erro ao carregar usuários:", error);
-    container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar a lista de usuários.</div>`;
+    container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar os usuários.</div>`;
   }
 }
