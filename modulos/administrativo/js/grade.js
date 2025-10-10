@@ -1,10 +1,7 @@
 // Arquivo: /modulos/administrativo/js/grade.js
-// Versão: 2.2 (Padronizado para Firebase v9.6.1)
-// Descrição: Módulo agora importa 'db' diretamente para garantir a instância correta do Firestore.
+// Versão: 3.0 (Integrado com as Configurações do Sistema)
 
-// Importa 'db' diretamente da fonte
 import { db } from "../../../assets/js/firebase-init.js";
-// ### ATUALIZAÇÃO: Imports padronizados para a versão 9.6.1 ###
 import {
   doc,
   setDoc,
@@ -14,9 +11,9 @@ import {
   orderBy,
   getDocs,
   onSnapshot,
+  getDoc, // Adicionado
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// A função init não recebe mais 'db'
 export function init(user, userData) {
   const gradeContent = document.getElementById("grade-content");
   if (!gradeContent) return;
@@ -24,6 +21,11 @@ export function init(user, userData) {
   let listaProfissionais = [];
   const coresProfissionais = new Map();
   let dadosDasGrades = {};
+
+  // --- INÍCIO DA ALTERAÇÃO ---
+  let colunasPresencial = []; // Agora será carregado do Firestore
+  // --- FIM DA ALTERAÇÃO ---
+
   const horarios = [
     "07:00",
     "08:00",
@@ -58,14 +60,38 @@ export function init(user, userData) {
     "Sexta-feira",
     "Sábado",
   ];
-  const colunasPresencial = [
-    "Leila Tardivo",
-    "Leonardo Abrahão",
-    "Karina Okajima Fukumitsu",
-    "Maria Júlia Kovacs",
-    "Christian Dunker",
-    "Maria Célia Malaquias (Grupo)",
-  ];
+
+  // --- INÍCIO DA ALTERAÇÃO ---
+  /**
+   * Carrega as configurações do sistema, especificamente a lista de salas.
+   */
+  async function carregarConfiguracoesDaGrade() {
+    try {
+      const configRef = doc(db, "configuracoesSistema", "geral");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists() && docSnap.data().listas?.salasPresenciais) {
+        colunasPresencial = docSnap.data().listas.salasPresenciais;
+        console.log("Salas presenciais carregadas:", colunasPresencial);
+      } else {
+        console.warn(
+          "Lista de salas presenciais não encontrada nas configurações. Usando lista padrão."
+        );
+        // Lista padrão para evitar que a grade quebre se a configuração não existir
+        colunasPresencial = [
+          "Leila Tardivo",
+          "Leonardo Abrahão",
+          "Karina Okajima Fukumitsu",
+          "Maria Júlia Kovacs",
+          "Christian Dunker",
+          "Maria Célia Malaquias (Grupo)",
+        ];
+      }
+    } catch (error) {
+      console.error("Erro ao carregar lista de salas:", error);
+      colunasPresencial = []; // Define como vazio em caso de erro para indicar o problema.
+    }
+  }
+  // --- FIM DA ALTERAÇÃO ---
 
   function generateColorFromString(str) {
     let hash = 0;
@@ -272,6 +298,11 @@ export function init(user, userData) {
 
   async function start() {
     try {
+      // --- INÍCIO DA ALTERAÇÃO ---
+      // Carrega as configurações (lista de salas) antes de qualquer outra coisa
+      await carregarConfiguracoesDaGrade();
+      // --- FIM DA ALTERAÇÃO ---
+
       const q = query(
         collection(db, "usuarios"),
         where("fazAtendimento", "==", true),
