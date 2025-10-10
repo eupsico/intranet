@@ -17,9 +17,8 @@ export function render(cardId, cardData) {
 
   const atendimentosAtivos =
     cardData.atendimentosPB?.filter((at) => at.statusAtendimento === "ativo") ||
-    [];
+    []; // --- SEÇÃO PRINCIPAL: RESUMO INFORMATIVO ---
 
-  // --- SEÇÃO PRINCIPAL: RESUMO INFORMATIVO ---
   const resumoAtendimentosHtml = atendimentosAtivos
     .map((atendimento) => {
       const horarioInfo = atendimento.horarioSessao || {};
@@ -29,35 +28,35 @@ export function render(cardId, cardData) {
           )
         : "Não informada";
 
-      // --- ALTERAÇÃO AQUI ---
-      // A variável 'contratoInfo' agora pega os dados de 'atendimento.contratoAssinado'.
       const contratoInfo = atendimento.contratoAssinado;
-      let dataAssinatura = "Aguardando Assinatura";
-      if (contratoInfo && contratoInfo.assinadoEm) {
-        // A data salva com 'new Date()' na function vem como uma string ou objeto que pode ser convertido.
-        dataAssinatura = `Assinado em ${new Date(
-          contratoInfo.assinadoEm
-        ).toLocaleDateString("pt-BR")}`;
+      let dataAssinatura = "Aguardando Assinatura"; // --- CORREÇÃO AQUI --- // Usamos o método .toDate() para converter o Timestamp do Firebase em um objeto Date do JavaScript
+      if (
+        contratoInfo &&
+        contratoInfo.assinadoEm &&
+        typeof contratoInfo.assinadoEm.toDate === "function"
+      ) {
+        dataAssinatura = `Assinado em ${contratoInfo.assinadoEm
+          .toDate()
+          .toLocaleDateString("pt-BR")}`;
       }
 
       return `
-      <div class="patient-info-box info" style="margin-bottom: 15px;">
-        <p style="display: flex; justify-content: space-between; align-items: center;">
-            <strong>Profissional: ${atendimento.profissionalNome}</strong>
-            <span class="status-badge active">Ativo</span>
-        </p>
-        <hr style="margin: 8px 0;">
-        <p><strong>Sessão:</strong> ${horarioInfo.diaSemana || ""} às ${
+      <div class="patient-info-box info" style="margin-bottom: 15px;">
+        <p style="display: flex; justify-content: space-between; align-items: center;">
+            <strong>Profissional: ${atendimento.profissionalNome}</strong>
+            <span class="status-badge active">Ativo</span>
+        </p>
+        <hr style="margin: 8px 0;">
+        <p><strong>Sessão:</strong> ${horarioInfo.diaSemana || ""} às ${
         horarioInfo.horario || ""
       }</p>
-        <p><strong>Data de Início:</strong> ${dataInicioFormatada}</p>
-        <p><strong>Contrato:</strong> ${dataAssinatura}</p>
-      </div>
-    `;
+        <p><strong>Data de Início:</strong> ${dataInicioFormatada}</p>
+        <p><strong>Contrato:</strong> ${dataAssinatura}</p>
+      </div>
+    `;
     })
-    .join("");
+    .join(""); // --- O RESTANTE DA FUNÇÃO CONTINUA IGUAL ---
 
-  // --- SEÇÃO SECUNDÁRIA: AÇÕES ADMINISTRATIVAS (FORMULÁRIO RECOLHÍVEL) ---
   const optionsHtml = atendimentosAtivos
     .map(
       (at) =>
@@ -66,63 +65,61 @@ export function render(cardId, cardData) {
     .join("");
 
   const acoesAdministrativasHtml = `
-    <details class="collapsible-section" style="margin-top: 20px;">
-        <summary class="collapsible-summary">
-            Ações Administrativas (Uso Excepcional)
-        </summary>
-        <div class="collapsible-content">
-            <p class="description-box">Utilize esta seção apenas se o profissional estiver impossibilitado de registrar o desfecho pelo portal dele.</p>
-            <form id="desfecho-pb-form" class="dynamic-form">
-                <div class="form-group">
-                    <label for="profissional-desfecho-select">Selecione o profissional para registrar o desfecho:</label>
-                    <select id="profissional-desfecho-select" class="form-control" required>
-                        <option value="">Selecione um profissional...</option>
-                        ${optionsHtml}
-                    </select>
-                </div>
-                <fieldset id="desfecho-fieldset" disabled>
-                    <hr>
-                    <div class="form-group">
-                        <label for="desfecho-pb-select">Qual foi o desfecho do acompanhamento?</label>
-                        <select id="desfecho-pb-select" class="form-control" required>
-                            <option value="">Selecione uma opção...</option>
-                            <option value="Alta">Alta</option>
-                            <option value="Desistência">Desistência</option>
-                            <option value="Encaminhamento">Encaminhar para outro serviço</option>
-                        </select>
-                    </div>
-                    <div id="motivo-desfecho-container" class="form-group hidden">
-                        <label for="motivo-desfecho-textarea">Descreva brevemente os motivos:</label>
-                        <textarea id="motivo-desfecho-textarea" class="form-control" rows="4" required></textarea>
-                    </div>
-                    <div id="encaminhamento-pb-container" class="hidden">
-                         <div class="form-group">
-                            <label for="encaminhamento-servico">Serviço de Encaminhamento:</label>
-                            <input type="text" id="encaminhamento-servico" class="form-control">
-                        </div>
-                         <div class="form-group">
-                            <label for="encaminhamento-observacoes">Observações (opcional):</label>
-                            <textarea id="encaminhamento-observacoes" class="form-control" rows="3"></textarea>
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
-        </div>
-    </details>
-  `;
+    <details class="collapsible-section" style="margin-top: 20px;">
+        <summary class="collapsible-summary">
+            Ações Administrativas (Uso Excepcional)
+        </summary>
+        <div class="collapsible-content">
+            <p class="description-box">Utilize esta seção apenas se o profissional estiver impossibilitado de registrar o desfecho pelo portal dele.</p>
+            <form id="desfecho-pb-form" class="dynamic-form">
+                <div class="form-group">
+                    <label for="profissional-desfecho-select">Selecione o profissional para registrar o desfecho:</label>
+                    <select id="profissional-desfecho-select" class="form-control" required>
+                        <option value="">Selecione um profissional...</option>
+                        ${optionsHtml}
+                    </select>
+                </div>
+                <fieldset id="desfecho-fieldset" disabled>
+                    <hr>
+                    <div class="form-group">
+                        <label for="desfecho-pb-select">Qual foi o desfecho do acompanhamento?</label>
+                        <select id="desfecho-pb-select" class="form-control" required>
+                            <option value="">Selecione uma opção...</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Desistência">Desistência</option>
+                            <option value="Encaminhamento">Encaminhar para outro serviço</option>
+                        </select>
+                    </div>
+                    <div id="motivo-desfecho-container" class="form-group hidden">
+                        <label for="motivo-desfecho-textarea">Descreva brevemente os motivos:</label>
+                        <textarea id="motivo-desfecho-textarea" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div id="encaminhamento-pb-container" class="hidden">
+                         <div class="form-group">
+                            <label for="encaminhamento-servico">Serviço de Encaminhamento:</label>
+                            <input type="text" id="encaminhamento-servico" class="form-control">
+                        </div>
+                         <div class="form-group">
+                            <label for="encaminhamento-observacoes">Observações (opcional):</label>
+                            <textarea id="encaminhamento-observacoes" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </details>
+  `;
 
-  // Monta o HTML final
   element.innerHTML = `
-    <h4 class="form-section-title">Acompanhamentos Ativos</h4>
-    ${
-      resumoAtendimentosHtml.length > 0
-        ? resumoAtendimentosHtml
-        : "<p>Nenhum atendimento ativo encontrado.</p>"
-    }
-    ${acoesAdministrativasHtml}
-  `;
+    <h4 class="form-section-title">Acompanhamentos Ativos</h4>
+    ${
+    resumoAtendimentosHtml.length > 0
+      ? resumoAtendimentosHtml
+      : "<p>Nenhum atendimento ativo encontrado.</p>"
+  }
+    ${acoesAdministrativasHtml}
+  `;
 
-  // Adiciona a lógica para o formulário recolhível
   const profissionalSelect = element.querySelector(
     "#profissional-desfecho-select"
   );
