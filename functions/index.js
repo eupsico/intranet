@@ -1033,3 +1033,57 @@ exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
     }
   }
 );
+exports.getTodosUsuarios = onCall({ cors: true }, async (request) => {
+  // 1. Verificação de autenticação e permissão de administrador
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
+  }
+  const adminUid = request.auth.uid;
+  try {
+    const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
+    if (
+      !adminUserDoc.exists ||
+      !(adminUserDoc.data().funcoes || []).includes("admin")
+    ) {
+      throw new HttpsError(
+        "permission-denied",
+        "Você não tem permissão para listar usuários."
+      );
+    }
+
+    // 2. Lógica principal para buscar usuários
+    const listUsersResult = await adminAuth.listUsers(1000); // Limite de 1000 por chamada
+    const allUsersData = [];
+
+    // 3. Itera sobre os usuários do Auth e busca dados complementares no Firestore
+    for (const userRecord of listUsersResult.users) {
+      const userDoc = await db.collection("usuarios").doc(userRecord.uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        allUsersData.push({
+          uid: userRecord.uid,
+          email: userRecord.email,
+          nome: userData.nome || "Nome não cadastrado",
+          role: (userData.funcoes || []).join(", ") || "Sem função",
+        });
+      } else {
+        // Caso de um usuário existir no Auth mas não no Firestore
+        allUsersData.push({
+          uid: userRecord.uid,
+          email: userRecord.email,
+          nome: userRecord.displayName || "Nome não encontrado",
+          role: "Registro no Firestore ausente",
+        });
+      }
+    }
+
+    // 4. Retorna a lista combinada para o cliente
+    return allUsersData;
+  } catch (error) {
+    logger.error("Erro ao listar usuários:", error);
+    if (error instanceof HttpsError) {
+      throw error; // Re-lança o erro se já for do tipo HttpsError
+    }
+    throw new HttpsError("internal", "Não foi possível listar os usuários.");
+  }
+});
