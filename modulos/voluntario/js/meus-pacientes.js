@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes.js
-// Versão: 6.1 (Corrigida a visibilidade inicial dos campos nos modais)
+// Versão: 7.0 (Integrado com as Configurações do Sistema para Mensagens)
 
 import {
   db,
@@ -15,11 +15,33 @@ import {
   serverTimestamp,
 } from "../../../assets/js/firebase-init.js";
 
-export function init(user, userData) {
+export async function init(user, userData) {
   const container = document.getElementById("pacientes-cards-container");
   if (!container) {
     console.error("Container de pacientes não encontrado.");
     return;
+  }
+
+  let systemConfigs = null;
+
+  async function loadSystemConfigs() {
+    if (systemConfigs) return systemConfigs;
+    try {
+      const configRef = doc(db, "configuracoesSistema", "geral");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists()) {
+        systemConfigs = docSnap.data();
+        return systemConfigs;
+      } else {
+        console.warn("Documento de configurações não encontrado.");
+        systemConfigs = { textos: {} };
+        return systemConfigs;
+      }
+    } catch (error) {
+      console.error("Erro ao carregar configurações:", error);
+      systemConfigs = { textos: {} };
+      return systemConfigs;
+    }
   }
 
   const encerramentoModal = document.getElementById("encerramento-modal");
@@ -114,12 +136,9 @@ export function init(user, userData) {
     let statusKey = "em_atendimento_plantao";
 
     if (!isPlantao) {
-      // --- ALTERAÇÃO AQUI ---
-      // A lógica agora verifica o 'contratoAssinado' dentro do atendimento específico (atendimentoPB).
       if (dadosDoPaciente.status === "aguardando_info_horarios") {
         statusKey = "aguardando_info_horarios";
       } else if (!atendimentoPB.contratoAssinado) {
-        // Verifica no lugar certo
         statusKey = "aguardando_contrato";
       } else {
         statusKey = "em_atendimento_pb";
@@ -168,14 +187,12 @@ export function init(user, userData) {
           ).toLocaleDateString("pt-BR")
         : "N/A";
 
-    // --- ALTERAÇÃO AQUI ---
-    // O HTML do contrato assinado também verifica o 'contratoAssinado' dentro do atendimentoPB.
     const contratoAssinadoHtml = atendimentoPB?.contratoAssinado
       ? `<p class="contrato-assinado">✓ Contrato Assinado</p>`
       : "";
 
     const pdfButtonHtml =
-      atendimentoPB && atendimentoPB.contratoAssinado // Verifica no lugar certo
+      atendimentoPB && atendimentoPB.contratoAssinado
         ? `<button class="action-button secondary-button" data-id="${dadosDoPaciente.id}" data-atendimento-id="${atendimentoPB.atendimentoId}" data-tipo="pdf_contrato">PDF Contrato</button>`
         : "";
     const atendimentoIdAttr = atendimentoPB
@@ -205,7 +222,6 @@ export function init(user, userData) {
   }
 
   function adicionarEventListeners() {
-    // Clona o container para limpar listeners antigos e evitar duplicação
     const newContainer = container.cloneNode(true);
     container.parentNode.replaceChild(newContainer, container);
 
@@ -213,12 +229,9 @@ export function init(user, userData) {
       const botao = evento.target.closest(".action-button:not([disabled])");
       if (!botao) return;
 
-      // --- CORREÇÃO AQUI ---
-      // Todas as variáveis do 'dataset' são declaradas ANTES de serem usadas.
       const pacienteId = botao.dataset.id;
       const atendimentoId = botao.dataset.atendimentoId;
       const tipoDeAcao = botao.dataset.tipo;
-      // --- FIM DA CORREÇÃO ---
 
       try {
         const docRef = doc(db, "trilhaPaciente", pacienteId);
@@ -229,8 +242,6 @@ export function init(user, userData) {
         }
 
         const dadosDoPaciente = { id: docSnap.id, ...docSnap.data() };
-
-        // Agora 'atendimentoId' já existe quando esta linha é executada
         const meuAtendimento = dadosDoPaciente.atendimentosPB?.find(
           (at) => at.atendimentoId === atendimentoId
         );
@@ -246,7 +257,7 @@ export function init(user, userData) {
             const telefone = botao.closest(".paciente-card").dataset.telefone;
             handleEnviarContrato(
               pacienteId,
-              atendimentoId, // Passando o atendimentoId
+              atendimentoId,
               telefone,
               dadosDoPaciente.nomeCompleto
             );
@@ -264,6 +275,7 @@ export function init(user, userData) {
       }
     });
   }
+
   function handleEnviarContrato(
     pacienteId,
     atendimentoId,
@@ -277,7 +289,13 @@ export function init(user, userData) {
     }
     const contractUrl = `${window.location.origin}/public/contrato-terapeutico.html?id=${pacienteId}&atendimentoId=${atendimentoId}`;
 
-    const mensagem = `Olá, ${nomePaciente}! Tudo bem?\n\nSegue o link para leitura e aceite do nosso contrato terapêutico para darmos continuidade.\n\n${contractUrl}\n\nQualquer dúvida, estou à disposição!`;
+    let template =
+      systemConfigs.textos?.envioContrato ||
+      `(Modelo 'envioContrato' não encontrado nas configurações)`;
+
+    const mensagem = template
+      .replace(/{nomePaciente}/g, nomePaciente)
+      .replace(/{contractUrl}/g, contractUrl);
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=55${numeroLimpo}&text=${encodeURIComponent(
       mensagem
@@ -415,7 +433,6 @@ export function init(user, userData) {
           lastUpdate: serverTimestamp(),
         };
       } else {
-        // Se iniciou for "nao"
         const motivoNaoInicio = formulario.querySelector(
           'input[name="motivo-nao-inicio"]:checked'
         )?.value;
@@ -444,7 +461,6 @@ export function init(user, userData) {
             lastUpdate: serverTimestamp(),
           };
         } else {
-          // Se for "outra_modalidade" ou "outro_horario"
           const detalhesSolicitacao = formulario.querySelector(
             "#detalhes-solicitacao-pb"
           ).value;
@@ -490,9 +506,6 @@ export function init(user, userData) {
     const form = document.getElementById("encerramento-form");
     form.reset();
     document.getElementById("paciente-id-modal").value = pacienteId;
-
-    // --- INÍCIO DA CORREÇÃO ---
-    // Garante que os containers condicionais comecem ocultos
     document
       .getElementById("motivo-nao-pagamento-container")
       .classList.add("hidden");
@@ -501,7 +514,6 @@ export function init(user, userData) {
     );
     novaDisponibilidadeContainer.classList.add("hidden");
     novaDisponibilidadeContainer.innerHTML = "";
-    // --- FIM DA CORREÇÃO ---
 
     const disponibilidadeEspecifica =
       dadosDoPaciente.disponibilidadeEspecifica || [];
@@ -617,7 +629,6 @@ export function init(user, userData) {
     form.querySelector("#paciente-id-horarios-modal").value = pacienteId;
     form.querySelector("#atendimento-id-horarios-modal").value = atendimentoId;
 
-    // Garante que todos os containers condicionais comecem ocultos
     const motivoContainer = document.getElementById(
       "motivo-nao-inicio-pb-container"
     );
@@ -634,13 +645,11 @@ export function init(user, userData) {
     desistenciaContainer.classList.add("hidden");
     solicitacaoContainer.classList.add("hidden");
 
-    continuacaoContainer.innerHTML = ""; // Limpa o formulário de horários se já foi carregado
+    continuacaoContainer.innerHTML = "";
 
-    // Zera o 'required' de todos os campos de texto
     document.getElementById("motivo-desistencia-pb").required = false;
     document.getElementById("detalhes-solicitacao-pb").required = false;
 
-    // Listener para os botões "Sim" e "Não"
     const iniciouRadio = form.querySelectorAll('input[name="iniciou-pb"]');
     iniciouRadio.forEach((radio) => {
       radio.onchange = () => {
@@ -650,7 +659,6 @@ export function init(user, userData) {
         continuacaoContainer.classList.toggle("hidden", !mostrarFormulario);
         motivoContainer.classList.toggle("hidden", !mostrarMotivo);
 
-        // Se o usuário voltar para "Sim", esconde os sub-menus de "Não"
         if (mostrarFormulario) {
           desistenciaContainer.classList.add("hidden");
           solicitacaoContainer.classList.add("hidden");
@@ -672,7 +680,6 @@ export function init(user, userData) {
       };
     });
 
-    // Listener para as sub-opções de "Não"
     const motivoNaoInicioRadio = form.querySelectorAll(
       'input[name="motivo-nao-inicio"]'
     );
@@ -712,60 +719,60 @@ export function init(user, userData) {
       .map((sala) => `<option value="${sala}">${sala}</option>`)
       .join("");
     return `<div class="form-group">
-	<label for="nome-profissional-pb">Nome Profissional:</label>
-		<input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly></div>
-	<div class="form-group"><label for="dia-semana-pb">Informe o dia da semana:</label>
-		<select id="dia-semana-pb" class="form-control" required>
-		<option value="">Selecione...</option>
-		<option value="Segunda-feira">Segunda-feira</option>
-		<option value="Terça-feira">Terça-feira</option>
-		<option value="Quarta-feira">Quarta-feira</option>
-		<option value="Quinta-feira">Quinta-feira</option>
-		<option value="Sexta-feira">Sexta-feira</option>
-		<option value="Sábado">Sábado</option></select>
-	</div>
-	<div class="form-group">
-		<label for="horario-pb">Selecione o horário:</label>
-			<select id="horario-pb" class="form-control" required>
-				<option value="">Selecione...</option>${horasOptions}</select>
-	</div>
-	<div class="form-group">
-		<label for="tipo-atendimento-pb-voluntario">Tipo de atendimento:</label>
-		<select id="tipo-atendimento-pb-voluntario" class="form-control" required>
-			<option value="">Selecione...</option>
-				<option value="Presencial">Presencial</option>
-				<option value="Online">Online</option>
-		</select>
-	</div>
-	<div class="form-group">
-		<label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
-		<select id="alterar-grade-pb" class="form-control" required>
-			<option value="">Selecione...</option>
-			<option value="Sim">Sim</option>
-			<option value="Não">Não</option>
-		</select>
-	</div>
-	<div class="form-group">
-		<label for="frequencia-atendimento-pb">Frequência:</label>
-		<select id="frequencia-atendimento-pb" class="form-control" required>
-			<option value="">Selecione...</option>
-			<option value="Semanal">Semanal</option>
-			<option value="Quinzenal">Quinzenal</option>
-			<option value="Mensal">Mensal</option>
-		</select>
-	</div>
-	<div class="form-group">
-	<label for="sala-atendimento-pb">Sala de atendimento:</label> <small style="display: block; margin-left: 25px; color: #666;">Selecione a opção  <strong>Online</strong> em salas para atendimento online.</small>
-		<select id="sala-atendimento-pb" class="form-control" required>
-			<option value="">Selecione...</option>
-				${salasOptions}</select>
-			</div>
-	<div class="form-group">
-			<label for="data-inicio-sessoes">Data de início das sessões:</label>
-			<input type="date" id="data-inicio-sessoes" class="form-control" required>
-	</div>
-	<div class="form-group">
-	<label for="observacoes-pb-horarios">Observações:</label><textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea></div>`;
+  <label for="nome-profissional-pb">Nome Profissional:</label>
+    <input type="text" id="nome-profissional-pb" class="form-control" value="${nomeProfissional}" readonly></div>
+  <div class="form-group"><label for="dia-semana-pb">Informe o dia da semana:</label>
+    <select id="dia-semana-pb" class="form-control" required>
+    <option value="">Selecione...</option>
+    <option value="Segunda-feira">Segunda-feira</option>
+    <option value="Terça-feira">Terça-feira</option>
+    <option value="Quarta-feira">Quarta-feira</option>
+    <option value="Quinta-feira">Quinta-feira</option>
+    <option value="Sexta-feira">Sexta-feira</option>
+    <option value="Sábado">Sábado</option></select>
+  </div>
+  <div class="form-group">
+    <label for="horario-pb">Selecione o horário:</label>
+      <select id="horario-pb" class="form-control" required>
+        <option value="">Selecione...</option>${horasOptions}</select>
+  </div>
+  <div class="form-group">
+    <label for="tipo-atendimento-pb-voluntario">Tipo de atendimento:</label>
+    <select id="tipo-atendimento-pb-voluntario" class="form-control" required>
+      <option value="">Selecione...</option>
+        <option value="Presencial">Presencial</option>
+        <option value="Online">Online</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="alterar-grade-pb">Será preciso alterar ou incluir o novo horário na grade?</label>
+    <select id="alterar-grade-pb" class="form-control" required>
+      <option value="">Selecione...</option>
+      <option value="Sim">Sim</option>
+      <option value="Não">Não</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="frequencia-atendimento-pb">Frequência:</label>
+    <select id="frequencia-atendimento-pb" class="form-control" required>
+      <option value="">Selecione...</option>
+      <option value="Semanal">Semanal</option>
+      <option value="Quinzenal">Quinzenal</option>
+      <option value="Mensal">Mensal</option>
+    </select>
+  </div>
+  <div class="form-group">
+  <label for="sala-atendimento-pb">Sala de atendimento:</label> <small style="display: block; margin-left: 25px; color: #666;">Selecione a opção  <strong>Online</strong> em salas para atendimento online.</small>
+    <select id="sala-atendimento-pb" class="form-control" required>
+      <option value="">Selecione...</option>
+        ${salasOptions}</select>
+      </div>
+  <div class="form-group">
+      <label for="data-inicio-sessoes">Data de início das sessões:</label>
+      <input type="date" id="data-inicio-sessoes" class="form-control" required>
+  </div>
+  <div class="form-group">
+  <label for="observacoes-pb-horarios">Observações:</label><textarea id="observacoes-pb-horarios" rows="3" class="form-control"></textarea></div>`;
   }
 
   async function abrirModalDesfechoPb(
@@ -1066,5 +1073,6 @@ export function init(user, userData) {
   }
 
   // Ponto de entrada
+  await loadSystemConfigs();
   carregarMeusPacientes();
 }
