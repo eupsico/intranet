@@ -1,12 +1,34 @@
 // Arquivo: /modulos/voluntario/js/mensagens.js
-// Versão: 2.0 (Código Refatorado para Melhor Legibilidade)
-// Descrição: Módulo para a aba "Modelos de Mensagem".
+// Versão: 3.0 (Integrado com as Configurações do Sistema)
 
-export function init() {
+import { db, doc, getDoc } from "../../../assets/js/firebase-init.js";
+
+export async function init() {
   const container = document.querySelector("#mensagens");
   if (!container) return;
 
-  // --- FUNÇÕES AUXILIARES ---
+  let systemConfigs = null;
+
+  async function loadSystemConfigs() {
+    if (systemConfigs) return systemConfigs;
+    try {
+      const configRef = doc(db, "configuracoesSistema", "geral");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists()) {
+        systemConfigs = docSnap.data();
+        return systemConfigs;
+      } else {
+        console.warn("Documento de configurações não encontrado.");
+        systemConfigs = { textos: {} };
+        return systemConfigs;
+      }
+    } catch (error) {
+      console.error("Erro ao carregar configurações:", error);
+      systemConfigs = { textos: {} };
+      return systemConfigs;
+    }
+  }
+
   const getGreeting = () => {
     const h = new Date().getHours();
     if (h >= 5 && h < 12) return "Bom dia";
@@ -54,11 +76,6 @@ export function init() {
       .catch(() => alert("Falha ao copiar. Por favor, copie manualmente."));
   };
 
-  // --- LÓGICA DE INICIALIZAÇÃO E EVENTOS ---
-
-  /**
-   * Preenche os selects de mês e hora com as opções.
-   */
   function setupSelects() {
     const meses = [
       "Janeiro",
@@ -90,24 +107,17 @@ export function init() {
     );
   }
 
-  /**
-   * Configura o funcionamento do componente "accordion".
-   */
   function setupAccordion() {
     const triggers = container.querySelectorAll(".accordion-trigger");
     triggers.forEach((trigger) => {
       trigger.addEventListener("click", function () {
         const isActive = this.classList.contains("active");
-
-        // Fecha todos os accordions
         triggers.forEach((t) => {
           t.classList.remove("active");
           const content = t.nextElementSibling;
           content.classList.remove("active");
           content.style.maxHeight = null;
         });
-
-        // Abre o accordion clicado (se não estava ativo)
         if (!isActive) {
           this.classList.add("active");
           const content = this.nextElementSibling;
@@ -118,9 +128,6 @@ export function init() {
     });
   }
 
-  /**
-   * Adiciona os event listeners aos botões de gerar mensagem.
-   */
   function setupButtonListeners() {
     container.querySelector("#btn-cobranca").addEventListener("click", () => {
       const p = container.querySelector("#cobranca-paciente").value;
@@ -128,9 +135,19 @@ export function init() {
       const m = container.querySelector("#cobranca-mes").value;
       const v = container.querySelector("#cobranca-valor").value;
       const px = container.querySelector("#cobranca-pix").value;
-      const msg = `${getGreeting()}, ${p}!\n\nPassando para lembrar sobre a sua contribuição mensal, com vencimento em *${formatDateToDDMM(
-        d
-      )}*.\n\n*Ao contribuir, você garante a continuidade do seu atendimento e apoia o trabalho da EuPsico.* 😊\n\n*Mês de Referência:* ${m}\n*Valor:* R$ ${v}\n*Chave PIX:* ${px}\n\nQualquer dúvida, estou à disposição.`;
+
+      let template =
+        systemConfigs.textos?.cobrancaVoluntario ||
+        `(Modelo de mensagem 'cobrancaVoluntario' não encontrado nas configurações)`;
+
+      let msg = template
+        .replace(/{saudacao}/g, getGreeting())
+        .replace(/{p}/g, p)
+        .replace(/{d}/g, formatDateToDDMM(d))
+        .replace(/{m}/g, m)
+        .replace(/{v}/g, v)
+        .replace(/{px}/g, px);
+
       generateAndCopy("output-cobranca", msg);
     });
 
@@ -143,19 +160,25 @@ export function init() {
       const data = container.querySelector("#agendada-data").value;
       const hora = container.querySelector("#agendada-hora").value;
 
-      let intro =
-        tipo === "plantao"
-          ? `Meu nome é ${t} e sou o/a ${prof} da EuPsico que irá realizar seu atendimento no Plantão Psicológico.`
-          : `Meu nome é ${t} e sou o/a ${prof} da EuPsico que irá realizar seu atendimento.`;
+      let template;
+      if (tipo === "plantao") {
+        template =
+          systemConfigs.textos?.boasVindasPlantao ||
+          `(Modelo de mensagem 'boasVindasPlantao' não encontrado nas configurações)`;
+      } else {
+        template =
+          systemConfigs.textos?.boasVindas ||
+          `(Modelo de mensagem 'boasVindas' não encontrado nas configurações)`;
+      }
 
-      let msg =
-        tipo === "plantao"
-          ? `${getGreeting()}, ${p}!\n\n${intro}\n\nEscrevo para confirmar nossa primeira sessão:\n✨ *${dia}, ${formatDateToDDMM(
-              data
-            )} às ${hora}* ✨\n\nPara que você se sinta mais confortável para o nosso encontro, gostaria de explicar como funciona este acolhimento inicial. O Plantão Psicológico é um *atendimento breve e focado* (de até quatro sessões), onde nosso objetivo será:\n\n➡️ *Identificar sua demanda principal:* Compreender as questões que levaram você a buscar ajuda neste momento.\n➡️ *Avaliar sua necessidade:* Analisar a urgência e a natureza da sua queixa.\n➡️ *Realizar o encaminhamento adequado:* Direcionar você para a modalidade de terapia mais indicada ao final do nosso processo.\n\nDois pontos importantes sobre este formato:\n1. O Plantão funciona como uma porta de entrada. Ele *não é um processo psicoterapêutico completo*, mas sim o primeiro passo para o cuidado contínuo.\n2. Como profissional do Plantão, meu papel é te acolher e direcionar da melhor forma. Por isso, a terapia contínua, se for o caso, será realizada por *outro colega*, garantindo um encaminhamento isento e focado no que é melhor para você.\n\nSou ${prof} com registro profissional, e nosso atendimento é totalmente protegido pelo sigilo e pela ética profissional.\n\nSe tiver qualquer dúvida antes da nossa sessão, pode me perguntar. Estou à disposição para te acolher nesta jornada.`
-          : `${getGreeting()}, ${p}!\n\n${intro}\n\nEscrevo para confirmar nossa primeira sessão:\n✨ *${dia}, ${formatDateToDDMM(
-              data
-            )} às ${hora}* ✨\n\nCaso precise remarcar, por favor, me avise com no mínimo 24 horas de antecedência.\n\nAté lá!`;
+      let msg = template
+        .replace(/{saudacao}/g, getGreeting())
+        .replace(/{p}/g, p)
+        .replace(/{t}/g, t)
+        .replace(/{prof}/g, prof)
+        .replace(/{dia}/g, dia)
+        .replace(/{data}/g, formatDateToDDMM(data))
+        .replace(/{hora}/g, hora);
 
       generateAndCopy("output-agendada", msg);
     });
@@ -167,7 +190,20 @@ export function init() {
       const mod = container.querySelector("#agendar-modalidade").value;
       const dia = container.querySelector("#agendar-diasemana").value;
       const hora = container.querySelector("#agendar-hora").value;
-      const msg = `${getGreeting()}, ${p}!\n\nSou ${t}, ${prof} na EuPsico.\n\nTenho uma vaga disponível para você no seguinte horário:\n*- Modalidade:* ${mod}\n*- Dia e Hora:* ${dia}, às ${hora}.\n\nEste horário funciona para você?\n\nAguardo sua confirmação para darmos os próximos passos. 😉`;
+
+      let template =
+        systemConfigs.textos?.agendarHorario ||
+        `(Modelo de mensagem 'agendarHorario' não encontrado nas configurações)`;
+
+      let msg = template
+        .replace(/{saudacao}/g, getGreeting())
+        .replace(/{p}/g, p)
+        .replace(/{t}/g, t)
+        .replace(/{prof}/g, prof)
+        .replace(/{mod}/g, mod)
+        .replace(/{dia}/g, dia)
+        .replace(/{hora}/g, hora);
+
       generateAndCopy("output-agendar", msg);
     });
 
@@ -176,16 +212,24 @@ export function init() {
       const data = container.querySelector("#primeira-data-agendamento").value;
       const v = container.querySelector("#primeira-valor").value;
       const px = container.querySelector("#primeira-pix").value;
-      const msg = `Olá, ${p}! Que bom que o horário funcionou para você.\n\nPara confirmarmos e garantirmos sua vaga, o próximo passo é realizar o pagamento da primeira contribuição.\n\n*Agendamento:* ${formatDateTimeLocalString(
-        data
-      )}\n*Valor:* R$ ${v}\n*Chave PIX:* ${px}\n\n*Prazo para envio do comprovante:* ${getFutureDate(
-        2
-      )}\n\nSeu horário será confirmado assim que recebermos o comprovante. Qualquer dúvida, é só chamar!`;
+
+      let template =
+        systemConfigs.textos?.primeiroPagamento ||
+        `(Modelo de mensagem 'primeiroPagamento' não encontrado nas configurações)`;
+
+      let msg = template
+        .replace(/{p}/g, p)
+        .replace(/{data}/g, formatDateTimeLocalString(data))
+        .replace(/{v}/g, v)
+        .replace(/{px}/g, px)
+        .replace(/{prazo}/g, getFutureDate(2));
+
       generateAndCopy("output-primeira", msg);
     });
   }
 
-  // --- PONTO DE ENTRADA ---
+  // Ponto de entrada
+  await loadSystemConfigs();
   setupSelects();
   setupAccordion();
   setupButtonListeners();
