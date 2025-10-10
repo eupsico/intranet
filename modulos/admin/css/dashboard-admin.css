@@ -8,9 +8,11 @@
 }
 
 .assistente-item {
+    background-color: var(--cor-fundo);
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
     padding: 15px;
+    box-shadow: var(--sombra-suave);
 }
 
 .assistente-item .assistente-nome {
@@ -22,19 +24,30 @@
     border-bottom: 1px solid var(--cor-borda);
 }
 
-.assistente-item ul {
+.assistente-item .disponibilidade-detalhes {
     list-style: none;
     padding-left: 0;
     margin: 0;
     font-size: 0.95em;
 }
 
-.assistente-item ul li {
-    margin-bottom: 5px;
+.assistente-item .disponibilidade-detalhes li {
+    margin-bottom: 8px;
     color: var(--cor-texto-secundario);
 }
 
-.assistente-item ul li strong {
+.assistente-item .disponibilidade-detalhes li.detalhe-item {
+    padding-left: 20px; /* Adiciona um recuo para os detalhes */
+}
+
+.assistente-item .disponibilidade-detalhes li.detalhe-item span {
+    font-weight: 600;
+    color: var(--cor-texto-principal);
+    min-width: 80px;
+    display: inline-block;
+}
+
+.assistente-item .disponibilidade-detalhes li strong {
     color: var(--cor-texto-principal);
 }
 
@@ -54,7 +67,6 @@
     min-width: 600px;
 }
 
-/* Adiciona um estilo de badge para o perfil */
 #usuarios-admin-container .badge {
     display: inline-block;
     padding: .35em .65em;
@@ -67,14 +79,13 @@
     vertical-align: baseline;
     border-radius: .25rem;
     background-color: var(--cor-secundaria);
+    text-transform: capitalize;
 }
 
-/* Alinha a coluna de ações à direita */
 #usuarios-admin-container .text-right {
     text-align: right;
 }
 
-/* Botão de ação menor */
 .action-button.btn-sm {
     padding: 5px 10px;
     font-size: 0.8em;
@@ -82,4 +93,7 @@
 
 .action-button.secondary {
     background-color: #6c757d;
+}
+.action-button.secondary:hover {
+    background-color: #5a6268;
 }
