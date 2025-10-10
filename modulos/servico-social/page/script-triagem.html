@@ -4,7 +4,6 @@
         Utilize este guia como um roteiro para a conversa durante a triagem, garantindo que todos os pontos importantes sejam abordados de forma padronizada e acolhedora.
     </p>
 
-    <!-- Apresentação -->
     <div class="secao-titulo">Apresentação</div>
     <div class="secao-conteudo">
         <p><strong>Profissional:</strong> Apresente-se com seu nome e profissão.</p>
@@ -16,31 +15,30 @@
         <p><em>(Neste momento, cheque se as informações batem com a ficha.)</em></p>
     </div>
 
-    <!-- Objetivos -->
     <div class="secao-titulo">Objetivos da Triagem</div>
     <div class="secao-conteudo">
         <ol>
-            <li><strong>Compreender as necessidades sociais e contextuais do paciente</strong></li>
-            <ul><li>Identificar fatores como moradia, rede de apoio, acesso a serviços públicos e condições de vida.</li></ul>
-
-            <li><strong>Avaliar a capacidade financeira para contribuição mensal</strong></li>
-            <ul><li>Levantar informações sobre renda familiar, despesas fixas, número de dependentes etc.</li></ul>
-
-            <li><strong>Detectar situações de vulnerabilidade socioeconômica</strong></li>
-            <ul><li>Ex.: desemprego, insegurança alimentar, violência doméstica, discriminação.</li></ul>
-
-            <li><strong>Mapear recursos comunitários e institucionais disponíveis</strong></li>
-            <ul><li>Programas sociais, ONGs, serviços públicos e redes de apoio.</li></ul>
-
-            <li><strong>Estabelecer critérios justos e personalizados para contribuição</strong></li>
-            <ul><li>Propor valores adequados e justos.</li></ul>
-
-            <li><strong>Orientar encaminhamentos para suporte social e jurídico</strong></li>
-            <ul><li>Encaminhar para assistência social, defensoria pública, inclusão etc.</li></ul>
+            <li><strong>Compreender as necessidades sociais e contextuais do paciente</strong>
+                <ul><li>Identificar fatores como moradia, rede de apoio, acesso a serviços públicos e condições de vida.</li></ul>
+            </li>
+            <li><strong>Avaliar a capacidade financeira para contribuição mensal</strong>
+                <ul><li>Levantar informações sobre renda familiar, despesas fixas, número de dependentes etc.</li></ul>
+            </li>
+            <li><strong>Detectar situações de vulnerabilidade socioeconômica</strong>
+                <ul><li>Ex.: desemprego, insegurança alimentar, violência doméstica, discriminação.</li></ul>
+            </li>
+            <li><strong>Mapear recursos comunitários e institucionais disponíveis</strong>
+                <ul><li>Programas sociais, ONGs, serviços públicos e redes de apoio.</li></ul>
+            </li>
+            <li><strong>Estabelecer critérios justos e personalizados para contribuição</strong>
+                <ul><li>Propor valores adequados e justos.</li></ul>
+            </li>
+            <li><strong>Orientar encaminhamentos para suporte social e jurídico</strong>
+                <ul><li>Encaminhar para assistência social, defensoria pública, inclusão etc.</li></ul>
+            </li>
         </ol>
     </div>
 
-    <!-- Contextualização -->
     <div class="secao-titulo">Contextualização</div>
     <div class="secao-conteudo">
         <h4>A Importância da Saúde Mental</h4>
@@ -58,7 +56,6 @@
         </ul>
     </div>
 
-    <!-- Apresentação da EuPsico -->
     <div class="secao-titulo">Apresentação da EuPsico</div>
     <div class="secao-conteudo">
         <p><strong>Apresente os seguintes pontos:</strong></p>
@@ -76,7 +73,6 @@
         </ul>
     </div>
 
-    <!-- Triagem -->
     <div class="secao-titulo">Triagem</div>
     <div class="secao-conteudo">
         <h4>Avaliação Socioeconômica</h4>
@@ -101,7 +97,6 @@
         <p><em>(Momento de identificar a queixa principal.)</em></p>
     </div>
 
-    <!-- Fechamento -->
     <div class="secao-titulo">Fechamento da Triagem</div>
     <div class="secao-conteudo">
         <h4>Definição da Contribuição</h4>
@@ -115,13 +110,13 @@
 
         <h4>Próximos Passos</h4>
         <ul>
-            <li>Após a triagem, nossa equipe entrará em contato em até 30 dias úteis.</li>
+            <li>Após a triagem, nossa equipe entrará em contato em até <span id="prazo-contato-triagem">30</span> dias úteis.</li>
             <li>O plantão psicológico pode ter de 1 a 4 sessões.</li>
-            <li>Após o plantão, o encaminhamento para terapia breve pode levar até 20 dias úteis.</li>
+            <li>Após o plantão, o encaminhamento para terapia breve pode levar até <span id="prazo-inicio-terapia">20</span> dias úteis.</li>
             <li>A terapia breve dura até 6 meses.</li>
         </ul>
     </div>
-    <!-- Encerramento -->
+    
     <div class="secao-titulo">Encerramento</div>
     <div class="secao-conteudo">
         <h4>Informes</h4>
@@ -129,9 +124,11 @@
         <p>O que ficou acordado hoje:</p>
         <ul>
             <li><strong>Contribuição mensal:</strong> R$ XXXXX</li>
-            <li><strong>Prazo para contato do agendamento:</strong> até 30 dias úteis</li>
-            <li><strong>Prazo para início da terapia breve:</strong> até 20 dias úteis após o plantão</li>
-        </ul>
+            <li><strong>Prazo para contato do agendamento:</strong> até <span id="prazo-contato-triagem-resumo">30</span> dias úteis</li>
+            <li><strong>Prazo para início da terapia breve:</strong> até <span id="prazo-inicio-terapia-resumo">20</span> dias úteis após o plantão</li>
+            </ul>
         <p>"Ficou alguma dúvida? Encaminharei um documento com todas as informações discutidas aqui. Obrigado por confiar em nosso trabalho!"</p>
     </div>
 </div>
+
+<script type="module" src="../js/script-triagem.js"></script>
