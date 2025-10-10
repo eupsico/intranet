@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 9.0 (Migração completa para a sintaxe modular do Firebase v9)
+// Versão: 9.1 (Com integração do Painel de Administração)
 
 // 1. Importa os serviços e funções necessários do nosso arquivo de configuração central
 export let currentUserData = {};
@@ -66,9 +66,8 @@ export async function carregarProfissionais(dbInstance, funcao, selectElement) {
 document.addEventListener("DOMContentLoaded", function () {
   const loginView = document.getElementById("login-view");
   const dashboardView = document.getElementById("dashboard-view");
-  let inactivityTimer;
+  let inactivityTimer; // Gerencia o timer de inatividade
 
-  // Gerencia o timer de inatividade
   function resetInactivityTimer() {
     clearTimeout(inactivityTimer);
     inactivityTimer = setTimeout(() => {
@@ -89,9 +88,8 @@ document.addEventListener("DOMContentLoaded", function () {
       window.addEventListener(event, resetInactivityTimer)
     );
     resetInactivityTimer();
-  }
+  } // Função principal de autenticação
 
-  // Função principal de autenticação
   function handleAuth() {
     // onAuthStateChanged já foi importado do firebase-init.js
     onAuthStateChanged(auth, async (user) => {
@@ -103,7 +101,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
           if (userDoc.exists() && userDoc.data().funcoes?.length > 0) {
             const userData = userDoc.data();
-            // Esta função será definida na Parte 3
             await renderLayoutAndContent(user, userData);
             setupInactivityListeners();
           } else {
@@ -118,9 +115,8 @@ document.addEventListener("DOMContentLoaded", function () {
         signOut(auth); // Usa a função signOut da v9
       }
     });
-  }
+  } // Renderiza a tela de login
 
-  // Renderiza a tela de login
   function renderLogin(message = "Por favor, faça login para continuar.") {
     if (!loginView || !dashboardView) return;
     dashboardView.style.display = "none";
@@ -130,24 +126,23 @@ document.addEventListener("DOMContentLoaded", function () {
     const pathPrefix = isSubPage ? "../../../" : "./";
 
     loginView.innerHTML = `
-        <div class="login-container">
-            <div class="login-card">
-                <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
-                <h2>Intranet EuPsico</h2>
-                <p>${message}</p>
-                <p class="login-email-info" style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
-                <button id="login-button" class="action-button login-button">Login com Google</button>
-            </div>
-        </div>`;
+        <div class="login-container">
+            <div class="login-card">
+                <img src="${pathPrefix}assets/img/logo-eupsico.png" alt="Logo EuPsico" class="login-logo">
+                <h2>Intranet EuPsico</h2>
+                <p>${message}</p>
+                <p class="login-email-info" style="font-size: 0.9em; font-weight: 500; color: var(--cor-primaria); background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 25px;">Utilize seu e-mail @eupsico.org.br para acessar.</p>
+                <button id="login-button" class="action-button login-button">Login com Google</button>
+            </div>
+        </div>`;
 
     document.getElementById("login-button").addEventListener("click", () => {
       loginView.innerHTML = `<p style="text-align:center; margin-top: 50px;">Aguarde...</p>`;
       const provider = new GoogleAuthProvider(); // Sintaxe v9
       signInWithPopup(auth, provider).catch((error) => console.error(error)); // Sintaxe v9
     });
-  }
+  } // Renderiza a tela de acesso negado
 
-  // Renderiza a tela de acesso negado
   function renderAccessDenied() {
     if (!loginView || !dashboardView) return;
     dashboardView.style.display = "none";
@@ -156,18 +151,15 @@ document.addEventListener("DOMContentLoaded", function () {
     document
       .getElementById("denied-logout")
       .addEventListener("click", () => signOut(auth));
-  }
-  // ...continuação do código da Parte 2
+  } // Retorna a saudação apropriada com base na hora
 
-  // Retorna a saudação apropriada com base na hora
   function getGreeting() {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return "Bom dia";
     if (hour >= 12 && hour < 18) return "Boa tarde";
     return "Boa noite";
-  }
+  } // Renderiza o layout principal e carrega o módulo da página atual
 
-  // Renderiza o layout principal e carrega o módulo da página atual
   async function renderLayoutAndContent(user, userData) {
     if (!loginView || !dashboardView) return;
     loginView.style.display = "none";
@@ -195,13 +187,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const modules = getVisibleModules(userData);
     setupSidebarToggle();
-    renderSidebarMenu(modules);
+    renderSidebarMenu(modules); // Lógica para carregar o módulo JS da página correta
 
-    // Lógica para carregar o módulo JS da página correta
-    const path = window.location.pathname;
+    const path = window.location.pathname; // Mapeia o caminho do arquivo para a função de inicialização do módulo
 
-    // Mapeia o caminho do arquivo para a função de inicialização do módulo
     const moduleMap = {
+      "painel-admin.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = `<h1>Painel de Controle</h1><p>Configurações gerais e gerenciamento do sistema.</p>`;
+        }
+        const module = await import("../../modulos/admin/js/painel-admin.js");
+        // Chama a função 'init' exportada pelo módulo, passando o contexto do usuário
+        module.init(user, userData);
+      },
+
       "painel-financeiro.html": async () => {
         const pageTitleContainer = document.getElementById(
           "page-title-container"
@@ -227,41 +229,12 @@ document.addEventListener("DOMContentLoaded", function () {
         module.initadministrativoPanel(user, db, userData);
       },
       "trilha-paciente-painel.html": async () => {
-        console.log(
-          "[LOG] Iniciando carregamento da trilha-paciente-painel.html"
-        );
         const pageTitleContainer = document.getElementById(
           "page-title-container"
         );
         if (pageTitleContainer) {
-          console.log("[LOG] Atualizando título da página");
           pageTitleContainer.innerHTML = `<h2>Trilha do Paciente</h2><p>Acompanhe o fluxo de pacientes desde a inscrição até o atendimento.</p>`;
-        } else {
-          console.warn("[LOG] Elemento 'page-title-container' não encontrado");
         }
-        console.log(
-          "[LOG] Tentando importar módulo trilha-paciente-painel.js..."
-        );
-        const modulePath =
-          "../../modulos/trilha-paciente/js/trilha-paciente-painel.js";
-        try {
-          const module = await import(modulePath);
-          console.log("[LOG] Módulo importado com sucesso");
-
-          if (typeof module.init === "function") {
-            console.log("[LOG] Chamando função init do módulo");
-            module.init(user, userData);
-          } else {
-            console.error("[LOG] Função 'init' não encontrada no módulo");
-          }
-        } catch (error) {
-          console.error("[LOG] ERRO ao importar módulo:", error);
-          const contentArea = document.getElementById("content-area");
-          if (contentArea) {
-            contentArea.innerHTML = `<div class="error-message">Erro ao carregar o módulo. Verifique o console.</div>`;
-          }
-        }
-
         const module = await import(
           "../../modulos/trilha-paciente/js/trilha-paciente-painel.js"
         );
@@ -317,8 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         break;
       }
-    }
-    // Se nenhum módulo foi carregado, define um título padrão
+    } // Se nenhum módulo foi carregado, define um título padrão
     if (!moduleLoaded) {
       const pageTitleContainer = document.getElementById(
         "page-title-container"
@@ -393,9 +365,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const menuItem = document.createElement("li");
       const link = document.createElement("a");
       link.href = config.url;
-      link.innerHTML = `${config.icon || ""}<span>${config.titulo}</span>`;
+      link.innerHTML = `${config.icon || ""}<span>${config.titulo}</span>`; // Adiciona a classe 'active' se o link corresponder à página atual
 
-      // Adiciona a classe 'active' se o link corresponder à página atual
       if (window.location.pathname.includes(config.url.replace("./", "/"))) {
         menuItem.classList.add("active");
       }
@@ -407,6 +378,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function getVisibleModules(userData) {
     const icons = {
+      admin: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
       intranet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12c0-5.25-4.25-9.5-9.5-9.5S2.5 6.75 2.5 12s4.25 9.5 9.5 9.5s9.5-4.25 9.5-9.5Z"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/></svg>`,
       administrativo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
       captacao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
@@ -420,6 +392,14 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     const areas = {
+      admin: {
+        titulo: "Admin",
+        descricao: "Configurações gerais do sistema e gerenciamento.",
+        url: "./modulos/admin/page/painel-admin.html",
+        roles: ["admin"], // Apenas usuários com a função 'admin' verão este item
+        icon: icons.admin,
+      },
+
       portal_voluntario: {
         titulo: "Portal do Voluntário",
         descricao: "Avisos, notícias e ferramentas para todos os voluntários.",
@@ -510,8 +490,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return a.titulo.localeCompare(b.titulo);
     });
     return modulesToShow;
-  }
+  } // Inicia o processo de autenticação
 
-  // Inicia o processo de autenticação
   handleAuth();
 });
