@@ -84,23 +84,47 @@
             
             <div id="textos" class="tab-content">
                 <h3>Modelos de Mensagem</h3>
-                <p class="description">Use variáveis como {p} para nome do paciente, {v} para nome do voluntário, {d} para data, etc.</p>
+                <p class="description">Use variáveis como {`{saudacao}`}, {`{p}`}, {`{d}`}, {`{t}`}, etc. para personalizar as mensagens.</p>
+                
+                <hr>
+                <h4>Mensagens Gerais e de Contrato</h4>
                 <div class="form-group">
                     <label for="msgCobrancaVoluntario">Mensagem de Cobrança (Voluntário)</label>
                     <textarea id="msgCobrancaVoluntario" name="textos.cobrancaVoluntario" rows="6"></textarea>
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="msgEnvioContrato">Mensagem de Envio do Contrato</label>
                     <textarea id="msgEnvioContrato" name="textos.envioContrato" rows="6"></textarea>
                 </div>
-            </div>
 
-        </form> <div class="actions">
+                <hr>
+                <h4>Mensagens de Boas-Vindas e Agendamento</h4>
+                <div class="form-group">
+                    <label for="msgBoasVindas">Mensagem de Boas-Vindas (Sessão Agendada)</label>
+                    <textarea id="msgBoasVindas" name="textos.boasVindas" rows="6"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="msgBoasVindasPlantao">Mensagem de Boas-Vindas (Plantão Psicológico)</label>
+                    <textarea id="msgBoasVindasPlantao" name="textos.boasVindasPlantao" rows="6"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="msgAgendarHorario">Mensagem para Agendar (Oferecer Horário)</label>
+                    <textarea id="msgAgendarHorario" name="textos.agendarHorario" rows="6"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="msgPrimeiroPagamento">Mensagem de Primeiro Pagamento</label>
+                    <textarea id="msgPrimeiroPagamento" name="textos.primeiroPagamento" rows="6"></textarea>
+                </div>
+
+            </div>
+            </form>
+        
+        <div class="actions">
             <button id="save-button" class="btn-primary">Salvar Alterações</button>
             <div id="loading-spinner" class="spinner" style="display: none;"></div>
             <div id="save-feedback"></div>
         </div>
 
-        </div>
+    </div>
 </body>
 </html>
