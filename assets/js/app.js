@@ -224,7 +224,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const module = await import(
           "../../modulos/administrativo/js/administrativo-painel.js"
         );
-        module.initadministrativoPanel(user, userData);
+        module.initadministrativoPanel(user, db, userData);
       },
       "trilha-paciente-painel.html": async () => {
         console.log(
