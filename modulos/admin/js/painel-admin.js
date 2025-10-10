@@ -6,7 +6,9 @@ import {
 // Função de entrada do módulo, chamada pelo app.js
 export function init(user, userData) {
   console.log("🔹 Painel de Administração iniciado para:", userData.nome);
+  // As funções de navegação agora são chamadas dentro do handleNavigation
   handleNavigation();
+  // Adiciona o listener para futuras mudanças no hash (navegação interna)
   window.addEventListener("hashchange", handleNavigation);
 }
 
@@ -118,12 +120,13 @@ async function renderDisponibilidadeServicoSocial() {
       return;
     }
 
-    // --- INÍCIO DA ALTERAÇÃO ---
+    // --- INÍCIO DA CORREÇÃO ---
     let html = '<div class="disponibilidade-list">';
     disponibilidades.forEach((assistente) => {
       html += `<div class="assistente-item">`;
       html += `<h5 class="assistente-nome">${assistente.nome}</h5>`;
       const dispoMap = assistente.disponibilidade;
+
       if (!dispoMap || Object.keys(dispoMap).length === 0) {
         html += '<p class="no-dispo">Nenhuma disponibilidade informada.</p>';
       } else {
@@ -142,11 +145,13 @@ async function renderDisponibilidadeServicoSocial() {
 
             html += `<li><strong>${nomeMesCapitalizado}:</strong></li>`;
 
+            let hasDetails = false;
             if (dadosDoMes.online && dadosDoMes.online.dias.length > 0) {
               const dias = dadosDoMes.online.dias
                 .map((d) => d.split("-")[2])
                 .join(", ");
               html += `<li class="detalhe-item"><span>Online:</span> Dias ${dias} (das ${dadosDoMes.online.inicio} às ${dadosDoMes.online.fim})</li>`;
+              hasDetails = true;
             }
             if (
               dadosDoMes.presencial &&
@@ -156,6 +161,10 @@ async function renderDisponibilidadeServicoSocial() {
                 .map((d) => d.split("-")[2])
                 .join(", ");
               html += `<li class="detalhe-item"><span>Presencial:</span> Dias ${dias} (das ${dadosDoMes.presencial.inicio} às ${dadosDoMes.presencial.fim})</li>`;
+              hasDetails = true;
+            }
+            if (!hasDetails) {
+              html += `<li class="detalhe-item"><span>Nenhum horário informado para este mês.</span></li>`;
             }
           });
         html += "</ul>";
@@ -163,7 +172,7 @@ async function renderDisponibilidadeServicoSocial() {
       html += `</div>`;
     });
     container.innerHTML = html + "</div>";
-    // --- FIM DA ALTERAÇÃO ---
+    // --- FIM DA CORREÇÃO ---
   } catch (error) {
     console.error("Erro ao carregar disponibilidade:", error);
     container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar os dados de disponibilidade.</div>`;
