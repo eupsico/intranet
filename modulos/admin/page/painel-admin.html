@@ -1,51 +1,59 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <title>Painel de Administração - EuPsico</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Administração</title>
+    
+    <link rel="stylesheet" href="../../../assets/css/design-system.css">
     <link rel="stylesheet" href="../css/painel-admin.css">
+
 </head>
 <body>
-    <div class="admin-panel-container">
-        <aside class="admin-sidebar">
+    <div id="app">
+        <div id="login-view"></div>
 
-            <a href="../../../index.html" class="back-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                <span>Voltar à Intranet</span>
-            </a>
-            <div class="menu-separator"></div>
-            <div class="sidebar-header">
-                <h3>Admin</h3>
-                <p>Gestão do Sistema</p>
-            </div>
-            <nav>
-                <ul class="admin-sidebar-menu" id="admin-sidebar-menu">
-                    <li>
-                        <a href="#" class="active" data-view="dashboard">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" data-view="configuracoes">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                            <span>Configurações</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+        <div id="dashboard-view">
+            <div class="layout-container">
+                
+                <nav class="sidebar">
+                    <div class="sidebar-content-wrapper">
+                        <ul id="sidebar-menu" class="sidebar-menu">
+                            </ul>
+                    </div>
+                </nav>
+                
+                <div id="menu-overlay" class="menu-overlay"></div>
 
-        <main class="admin-content" id="admin-content-area">
-            <div class="text-center mt-5">
-                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-                    <span class="sr-only">Carregando...</span>
-                </div>
+                <header class="header">
+                    <div class="header-start">
+                        <button id="sidebar-toggle" title="Alternar menu">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                        </button>
+                        
+                        <div id="page-title-container">
+                            <h1>Admin</h1>
+                            <p>Gestão do Sistema</p>
+                        </div>
+                    </div>
+                    <div class="user-profile-header">
+                        <img id="user-photo-header" src="" alt="Foto do usuário">
+                        <span id="user-greeting"></span>
+                        <a href="#" id="logout-button-dashboard" class="logout-button-dashboard">Sair</a>
+                    </div>
+                </header>
+
+                <main class="main-content">
+                    <div id="content-area">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </main>
             </div>
-        </main>
+        </div> 
     </div>
+    
+    <script type="module" src="../../../assets/js/firebase-init.js"></script>
+    <script type="module" src="../../../assets/js/app.js"></script>
 
-    <script type="module" src="../js/painel-admin.js"></script>
 </body>
 </html>
