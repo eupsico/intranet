@@ -1,25 +1,52 @@
 // Arquivo: /modulos/servico-social/js/script-triagem.js
-// Descrição: Controla a interatividade do acordeão na página do Script de Triagem.
+// Versão: 1.0 (Integrado com as Configurações do Sistema)
 
-export function init(db, user, userData) {
-    const container = document.querySelector('.view-container');
-    if (!container) return;
+import { db, doc, getDoc } from "../../../assets/js/firebase-init.js";
 
-    const accordionHeaders = container.querySelectorAll(".accordion-header");
+/**
+ * Carrega os prazos configuráveis do Firestore e atualiza o texto na página.
+ */
+async function carregarPrazosConfiguraveis() {
+  console.log("Carregando prazos configuráveis do script de triagem...");
 
-    accordionHeaders.forEach(header => {
-        header.addEventListener("click", () => {
-            const accordionBody = header.nextElementSibling;
-            
-            // Alterna a classe 'active' no cabeçalho clicado
-            header.classList.toggle("active");
+  // IDs dos elementos no HTML que serão atualizados
+  const elementosParaAtualizar = {
+    prazoContatoTriagem: [
+      document.getElementById("prazo-contato-triagem"),
+      document.getElementById("prazo-contato-triagem-resumo"),
+    ],
+    prazoInicioTerapia: [
+      document.getElementById("prazo-inicio-terapia"),
+      document.getElementById("prazo-inicio-terapia-resumo"),
+    ],
+  };
 
-            // Abre ou fecha o corpo do acordeão
-            if (header.classList.contains("active")) {
-                accordionBody.style.maxHeight = accordionBody.scrollHeight + "px";
-            } else {
-                accordionBody.style.maxHeight = 0;
-            }
+  try {
+    const configRef = doc(db, "configuracoesSistema", "geral");
+    const docSnap = await getDoc(configRef);
+
+    if (docSnap.exists()) {
+      const configs = docSnap.data();
+      const prazos = configs.prazos;
+
+      if (prazos && prazos.contatoTriagem) {
+        elementosParaAtualizar.prazoContatoTriagem.forEach((el) => {
+          if (el) el.textContent = prazos.contatoTriagem;
         });
-    });
+      }
+
+      if (prazos && prazos.inicioTerapia) {
+        elementosParaAtualizar.prazoInicioTerapia.forEach((el) => {
+          if (el) el.textContent = prazos.inicioTerapia;
+        });
+      }
+    } else {
+      console.warn("Documento de configurações do sistema não encontrado.");
+    }
+  } catch (error) {
+    console.error("Erro ao buscar prazos da trilha do paciente:", error);
+  }
 }
+
+// Executa a função assim que o script é carregado
+carregarPrazosConfiguraveis();
