@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/envio_comprovantes.js
-// Versão: 3.1 (Com máscara de moeda no campo de valor)
+// Versão: 3.2 (Integrado com as Configurações do Sistema)
 
 import {
   db,
@@ -10,6 +10,8 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
+  doc,
+  getDoc,
 } from "../../../assets/js/firebase-init.js";
 
 export function init(user, userData) {
@@ -33,14 +35,9 @@ export function init(user, userData) {
     btnEdit: document.getElementById("btn-edit"),
     btnConfirmSend: document.getElementById("btn-confirm-send"),
     btnNewForm: document.getElementById("btn-new-form"),
+    prazoDiaElement: document.getElementById("prazo-dia"), // Elemento do prazo
   };
 
-  // --- INÍCIO DAS NOVAS FUNÇÕES DE MOEDA ---
-
-  /**
-   * Formata o valor de um campo de input como moeda BRL (R$) enquanto o usuário digita.
-   * @param {HTMLInputElement} input - O elemento de input a ser formatado.
-   */
   function formatCurrency(input) {
     let value = input.value.replace(/\D/g, "");
     if (value === "") {
@@ -54,11 +51,6 @@ export function init(user, userData) {
     input.value = value;
   }
 
-  /**
-   * Converte uma string de moeda formatada (ex: "R$ 123,45") para um número (ex: 123.45).
-   * @param {string} currencyString - A string de moeda a ser convertida.
-   * @returns {number} - O valor numérico.
-   */
   function parseCurrency(currencyString) {
     if (!currencyString) return 0;
     const numericString = currencyString
@@ -69,9 +61,23 @@ export function init(user, userData) {
     return parseFloat(numericString) || 0;
   }
 
-  // --- FIM DAS NOVAS FUNÇÕES DE MOEDA ---
-
   async function initializeView() {
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Busca a configuração do dia limite
+    try {
+      const configRef = doc(db, "configuracoesSistema", "geral");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists()) {
+        const diaLimite = docSnap.data().financeiro?.diaLimiteComprovantes;
+        if (diaLimite && elements.prazoDiaElement) {
+          elements.prazoDiaElement.textContent = diaLimite;
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dia limite dos comprovantes:", error);
+    }
+    // --- FIM DA ALTERAÇÃO ---
+
     try {
       const q = query(
         collection(db, "usuarios"),
@@ -167,7 +173,6 @@ export function init(user, userData) {
         return false;
       }
     }
-    // ATUALIZAÇÃO: Usa a função parseCurrency para validar
     const valorNumerico = parseCurrency(fields.valor.value);
     if (isNaN(valorNumerico) || valorNumerico <= 0) {
       showMessage(
@@ -194,7 +199,7 @@ export function init(user, userData) {
         paciente: formData.paciente,
         dataPagamento: formData.dataPagamentoOriginal,
         mesReferencia: formData.mesReferencia,
-        valor: formData.valor, // O valor já é um número aqui
+        valor: formData.valor,
         fileName: formData.file.name,
         mimeType: formData.file.type,
         fileData: fileData,
@@ -229,19 +234,19 @@ export function init(user, userData) {
         .then((payload) => {
           elements.confirmationSection.style.display = "none";
           const summaryHtml = `
-                    <p><strong>Profissional:</strong> <span>${
-                      payload.profissional
-                    }</span></p>
-                    <p><strong>Paciente:</strong> <span>${
-                      payload.paciente
-                    }</span></p>
-                    <p><strong>Data:</strong> <span>${new Date(
-                      payload.dataPagamento + "T03:00:00"
-                    ).toLocaleDateString("pt-BR")}</span></p>
-                    <p><strong>Valor:</strong> <span>${payload.valor.toLocaleString(
-                      "pt-BR",
-                      { style: "currency", currency: "BRL" }
-                    )}</span></p>`;
+                      <p><strong>Profissional:</strong> <span>${
+                        payload.profissional
+                      }</span></p>
+                      <p><strong>Paciente:</strong> <span>${
+                        payload.paciente
+                      }</span></p>
+                      <p><strong>Data:</strong> <span>${new Date(
+                        payload.dataPagamento + "T03:00:00"
+                      ).toLocaleDateString("pt-BR")}</span></p>
+                      <p><strong>Valor:</strong> <span>${payload.valor.toLocaleString(
+                        "pt-BR",
+                        { style: "currency", currency: "BRL" }
+                      )}</span></p>`;
           document.getElementById("sent-data-summary").innerHTML = summaryHtml;
           elements.finalMessageSection.style.display = "block";
           elements.form.reset();
@@ -269,9 +274,6 @@ export function init(user, userData) {
     };
   }
 
-  // --- Adição dos Event Listeners ---
-
-  // ATUALIZAÇÃO: Adiciona o listener para formatar o campo de valor
   elements.inputValor.addEventListener("input", () => {
     formatCurrency(elements.inputValor);
   });
@@ -282,7 +284,6 @@ export function init(user, userData) {
     const dataPagamento = new Date(
       elements.inputDataPagamento.value + "T03:00:00"
     ).toLocaleDateString("pt-BR");
-    // ATUALIZAÇÃO: Usa a função parseCurrency para obter o número
     const valor = parseCurrency(elements.inputValor.value);
     const file = elements.inputFile.files[0];
 
