@@ -1,7 +1,10 @@
 // Arquivo: /modulos/administrativo/js/grade.js
-// Versão: 2.0 (Atualizado para Firebase v9)
-// Descrição: Lógica refatorada para a Grade de Horários, adaptada para o novo formato modular.
+// Versão: 2.1 (CORREÇÃO PROFUNDA)
+// Descrição: Módulo agora importa 'db' diretamente para garantir a instância correta do Firestore.
 
+// ### MUDANÇA 1: Importar 'db' diretamente da fonte ###
+// Isso garante que estamos usando a instância correta do Firestore, eliminando problemas de passagem de parâmetros.
+import { db } from "../../../assets/js/firebase-init.js";
 import {
   doc,
   setDoc,
@@ -13,11 +16,10 @@ import {
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-export function init(db, user, userData) {
-  if (!db) {
-    console.error("Instância do Firestore (db) não encontrada.");
-    return;
-  }
+// ### MUDANÇA 2: Remover 'db' dos parâmetros da função 'init' ###
+// Como agora estamos importando 'db', não precisamos mais recebê-lo como um argumento.
+export function init(user, userData) {
+  // A checagem if (!db) foi removida pois o import já garante que ele existe.
   const gradeContent = document.getElementById("grade-content");
   if (!gradeContent) return;
 
@@ -68,7 +70,7 @@ export function init(db, user, userData) {
     "Maria Célia Malaquias (Grupo)",
   ];
 
-  // --- FUNÇÕES DE LÓGICA E RENDERIZAÇÃO (PRESERVADAS DO CÓDIGO ORIGINAL) ---
+  // --- NENHUMA OUTRA MUDANÇA NECESSÁRIA NO RESTANTE DO CÓDIGO ---
 
   function generateColorFromString(str) {
     let hash = 0;
@@ -118,7 +120,7 @@ export function init(db, user, userData) {
 
   function renderGrade(tipo, dia) {
     if (!gradeContent) return;
-    gradeContent.innerHTML = ""; // Limpa o conteúdo (loading spinner, etc.)
+    gradeContent.innerHTML = "";
 
     const weekTabsNav = document.createElement("div");
     weekTabsNav.className = "grade-day-tabs";
@@ -153,7 +155,6 @@ export function init(db, user, userData) {
       else rowClass = "periodo-noite";
       row.className = rowClass;
 
-      // Adicionado data-label para Período
       if (index === 0)
         row.insertCell().outerHTML = `<td data-label="Período" class="period-cell" rowspan="5">Manhã</td>`;
       if (index === 5)
@@ -161,14 +162,12 @@ export function init(db, user, userData) {
       if (index === 11)
         row.insertCell().outerHTML = `<td data-label="Período" class="period-cell" rowspan="5">Noite</td>`;
 
-      // Adicionado data-label para Horário
       row.insertCell().outerHTML = `<td data-label="Horário" class="hour-cell">${hora}</td>`;
 
       const colunasParaIterar =
         tipo === "online" ? 6 : colunasPresencial.length;
       for (let i = 0; i < colunasParaIterar; i++) {
         const cell = row.insertCell();
-        // Adicionado data-label para a célula do profissional
         const headerLabel = tipo === "online" ? "Online" : colunasPresencial[i];
         cell.setAttribute("data-label", headerLabel);
 
@@ -208,7 +207,6 @@ export function init(db, user, userData) {
     selectElement.classList.add("is-saving");
     selectElement.classList.remove("is-saved", "is-error");
     try {
-      // ATUALIZAÇÃO v9: Usando doc() e setDoc()
       const gradesDocRef = doc(db, "administrativo", "grades");
       await setDoc(gradesDocRef, { [fieldPath]: newValue }, { merge: true });
 
@@ -232,7 +230,7 @@ export function init(db, user, userData) {
             .querySelectorAll("button")
             .forEach((b) => b.classList.remove("active"));
           e.target.classList.add("active");
-          renderGrade(e.target.dataset.tab, "segunda"); // Sempre volta para segunda ao trocar modalidade
+          renderGrade(e.target.dataset.tab, "segunda");
         }
       });
     }
@@ -242,6 +240,8 @@ export function init(db, user, userData) {
         e.target.tagName === "BUTTON" &&
         e.target.closest(".grade-day-tabs")
       ) {
+        const mainTabsContainer = document.querySelector("#grade-main-tabs");
+        if (!mainTabsContainer) return;
         const activeMainTab =
           mainTabsContainer.querySelector("button.active").dataset.tab;
         if (e.target.dataset.day) {
@@ -277,7 +277,7 @@ export function init(db, user, userData) {
 
   async function start() {
     try {
-      // ATUALIZAÇÃO v9: Usando query(), collection(), where(), orderBy(), getDocs()
+      // O 'db' usado aqui agora é o importado diretamente, garantindo que é a instância correta.
       const q = query(
         collection(db, "usuarios"),
         where("fazAtendimento", "==", true),
@@ -291,10 +291,8 @@ export function init(db, user, userData) {
         coresProfissionais.set(prof.username, color);
       });
 
-      // ATUALIZAÇÃO v9: Usando onSnapshot() e doc()
       const gradesDocRef = doc(db, "administrativo", "grades");
       onSnapshot(gradesDocRef, (doc) => {
-        // ATUALIZAÇÃO v9: doc.exists é agora um método doc.exists()
         dadosDasGrades = doc.exists() ? doc.data() : {};
 
         const mainTabsContainer = document.querySelector("#grade-main-tabs");
@@ -306,7 +304,6 @@ export function init(db, user, userData) {
           ".grade-day-tabs button.active"
         );
 
-        // Atualiza a view atual sem piscar a tela, se já estiver renderizada
         if (activeMainTabEl && activeDayTabEl) {
           const activeMainTab = activeMainTabEl.dataset.tab;
           const activeDayTab = activeDayTabEl.dataset.day;
@@ -315,7 +312,7 @@ export function init(db, user, userData) {
       });
 
       attachEventListeners();
-      renderGrade("online", "segunda"); // Renderização inicial
+      renderGrade("online", "segunda");
     } catch (error) {
       console.error("Erro ao inicializar a grade:", error);
       gradeContent.innerHTML = `<p style="color:red; text-align:center;">Erro ao carregar dados.</p>`;
