@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/perfil-supervisor-view.js
-// Versão 2.0 (Atualizado para a sintaxe modular do Firebase v9)
+// Versão 3.0 (Integrado com as Configurações do Sistema)
 
 import {
   db,
@@ -10,6 +10,7 @@ import {
   doc,
   updateDoc,
   documentId,
+  getDoc, // Adicionado
 } from "../../../assets/js/firebase-init.js";
 
 export async function init(user, userData) {
@@ -24,23 +25,48 @@ export async function init(user, userData) {
 
   let fetchedSupervisors = [];
   const isAdmin = (userData.funcoes || []).includes("admin");
-  const conselhos = ["Nenhum", "CRP", "CRM", "CRESS", "OAB", "CFN", "Outro"];
+
+  // --- INÍCIO DA ALTERAÇÃO ---
+  let conselhos = []; // Agora será carregado do Firestore
+  // --- FIM DA ALTERAÇÃO ---
 
   container.classList.toggle("admin", isAdmin);
   container.classList.toggle("supervisor", !isAdmin);
+
+  // --- INÍCIO DA ALTERAÇÃO ---
+  /**
+   * Carrega a lista de conselhos do Firestore.
+   */
+  async function carregarListaDeConselhos() {
+    try {
+      const configRef = doc(db, "configuracoesSistema", "geral");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists() && docSnap.data().listas?.conselhos) {
+        conselhos = docSnap.data().listas.conselhos;
+        console.log("Conselhos profissionais carregados:", conselhos);
+      } else {
+        console.warn(
+          "Lista de conselhos não encontrada nas configurações. Usando lista padrão."
+        );
+        // Lista padrão para fallback
+        conselhos = ["Nenhum", "CRP", "CRM", "CRESS", "OAB", "CFN", "Outro"];
+      }
+    } catch (error) {
+      console.error("Erro ao carregar lista de conselhos:", error);
+      conselhos = ["Nenhum", "Outro"]; // Mínimo para evitar quebras
+    }
+  }
+  // --- FIM DA ALTERAÇÃO ---
 
   const createSupervisorCard = (supervisor) => {
     const card = document.createElement("div");
     card.className = "supervisor-card";
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // Adiciona a lógica para montar o caminho relativo da imagem corretamente.
     let fotoSupervisor =
       supervisor.fotoSupervisor || "../../../assets/img/avatar-padrao.png";
     if (fotoSupervisor && !fotoSupervisor.startsWith("http")) {
       fotoSupervisor = `../../../${fotoSupervisor.replace(/^\/*/, "")}`;
     }
-    // --- FIM DA CORREÇÃO ---
 
     const registroCompleto =
       supervisor.conselhoProfissional &&
@@ -222,8 +248,8 @@ export async function init(user, userData) {
     saveBtn.textContent = "Salvando...";
 
     try {
-      const userDocRef = doc(db, "usuarios", uid); // v9
-      await updateDoc(userDocRef, dataToUpdate); // v9
+      const userDocRef = doc(db, "usuarios", uid);
+      await updateDoc(userDocRef, dataToUpdate);
 
       alert("Perfil salvo com sucesso!");
       editModal.style.display = "none";
@@ -245,14 +271,14 @@ export async function init(user, userData) {
         q = query(
           collection(db, "usuarios"),
           where("funcoes", "array-contains", "supervisor")
-        ); // v9
+        );
       } else {
         q = query(
           collection(db, "usuarios"),
           where(documentId(), "==", user.uid)
-        ); // v9
+        );
       }
-      const querySnapshot = await getDocs(q); // v9
+      const querySnapshot = await getDocs(q);
 
       fetchedSupervisors = querySnapshot.docs.map((doc) => ({
         uid: doc.id,
@@ -272,7 +298,6 @@ export async function init(user, userData) {
     }
   }
 
-  // Adiciona os listeners para o modal uma única vez
   editModal
     .querySelector(".close-modal-btn")
     .addEventListener("click", () => (editModal.style.display = "none"));
@@ -283,5 +308,8 @@ export async function init(user, userData) {
   });
   form.addEventListener("submit", saveProfileChanges);
 
+  // --- INÍCIO DA ALTERAÇÃO ---
+  await carregarListaDeConselhos(); // Carrega a lista antes de carregar os perfis
   await loadProfiles();
+  // --- FIM DA ALTERAÇÃO ---
 }
