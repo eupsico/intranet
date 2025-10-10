@@ -736,7 +736,7 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
 
     // O objeto 'contratoAssinado' agora usará o 'FieldValue' importado corretamente
     atendimentos[indiceDoAtendimento].contratoAssinado = {
-      assinadoEm: FieldValue.serverTimestamp(),
+      assinadoEm: new Date(),
       nomeSignatario,
       cpfSignatario: cpfLimpo,
       versaoContrato: versaoContrato || "1.0",
