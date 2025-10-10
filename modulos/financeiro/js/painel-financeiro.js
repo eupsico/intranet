@@ -179,8 +179,9 @@ export function initFinancePanel(user, userData) {
       try {
         const viewModule = await import(scriptPath);
         if (viewModule && typeof viewModule.init === "function") {
-          // Os módulos importados agora pegarão o 'db' do firebase-init.js
-          viewModule.init(user, userData);
+          // CORREÇÃO: Passando o objeto 'db' importado para a função init do módulo.
+          // Muitos módulos precisam do 'db' como primeiro argumento.
+          viewModule.init(db, user, userData);
         }
       } catch (e) {
         console.log(
