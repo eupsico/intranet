@@ -287,7 +287,7 @@ document.addEventListener("DOMContentLoaded", function () {
           pageTitleContainer.innerHTML = `<h2>Recursos Humanos</h2><p>Gestão de profissionais, vagas e comunicados.</p>`;
         }
         const module = await import("../../modulos/rh/js/rh-painel.js");
-        module.initrhPanel(user, userData);
+        module.initrhPanel(user, db, userData);
       },
       "portal-voluntario.html": async () => {
         const pageTitleContainer = document.getElementById(
