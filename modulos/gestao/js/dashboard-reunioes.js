@@ -1,5 +1,5 @@
 // /modulos/gestao/js/dashboard-reunioes.js
-// VERSÃO 2.0 (CORRIGIDO - Buscando dados do Cloud Firestore)
+// VERSÃO 2.1 (Layout do Acordeão Melhorado)
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -9,48 +9,36 @@ import {
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-let todasAsAtas = []; // Cache para armazenar todas as atas carregadas
+let todasAsAtas = [];
 
-/**
- * Função de inicialização do módulo, chamada pelo painel-gestao.js
- */
 export function init() {
   console.log("[DASH] Módulo Dashboard de Reuniões iniciado.");
   loadAtasFromFirestore();
   setupEventListeners();
 }
 
-/**
- * Carrega as atas da coleção 'gestao_atas' no Cloud Firestore em tempo real.
- */
 function loadAtasFromFirestore() {
   const atasContainer = document.getElementById("atas-container");
-  const atasCollectionRef = collection(firestoreDb, "gestao_atas");
-  const q = query(atasCollectionRef, orderBy("dataReuniao", "desc"));
+  const q = query(
+    collection(firestoreDb, "gestao_atas"),
+    orderBy("dataReuniao", "desc")
+  );
 
   onSnapshot(
     q,
     (snapshot) => {
-      todasAsAtas = [];
-      if (!snapshot.empty) {
-        snapshot.forEach((doc) => {
-          todasAsAtas.push({ id: doc.id, ...doc.data() });
-        });
-      }
+      todasAsAtas = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       filtrarEExibirAtas();
     },
     (error) => {
       console.error("[DASH] Erro ao carregar atas do Firestore:", error);
       if (atasContainer)
         atasContainer.innerHTML =
-          '<div class="alert alert-danger">Erro ao carregar atas. Verifique o console para mais detalhes.</div>';
+          '<div class="alert alert-danger">Erro ao carregar atas.</div>';
     }
   );
 }
 
-/**
- * Filtra as atas com base no tipo selecionado e as exibe.
- */
 function filtrarEExibirAtas() {
   const filterType = document.getElementById("tipo-filtro")?.value || "Todos";
   const atasContainer = document.getElementById("atas-container");
@@ -72,9 +60,6 @@ function filtrarEExibirAtas() {
   exibirProximaReuniao(atasFiltradas);
 }
 
-/**
- * Encontra e exibe a próxima reunião agendada a partir das atas filtradas.
- */
 function exibirProximaReuniao(atasFiltradas) {
   const infoBox = document.getElementById("proxima-reuniao-info");
   if (!infoBox) return;
@@ -97,17 +82,14 @@ function exibirProximaReuniao(atasFiltradas) {
 
   if (proximaReuniao) {
     const data = new Date(proximaReuniao.proximaReuniao);
-    infoBox.innerHTML = `<h3>Próxima Reunião Agendada</h3><p><strong>${
+    infoBox.innerHTML = `<h3>Próxima Reunião</h3><p><strong>${
       proximaReuniao.tipo
     }</strong> em ${data.toLocaleString("pt-BR")}</p>`;
   } else {
-    infoBox.innerHTML = `<h3>Próxima Reunião Agendada</h3><p>Nenhuma reunião futura agendada.</p>`;
+    infoBox.innerHTML = `<h3>Próxima Reunião</h3><p>Nenhuma reunião futura agendada.</p>`;
   }
 }
 
-/**
- * Renderiza o HTML para um único item de ata no formato de acordeão.
- */
 function renderSavedAtaAccordion(id, data) {
   const date = data.dataReuniao
     ? new Date(data.dataReuniao + "T00:00:00")
@@ -128,9 +110,9 @@ function renderSavedAtaAccordion(id, data) {
     const listItems = listData
       .map(
         (item) =>
-          `<li>${item.descricao} (Responsável: ${
-            item.responsavel
-          }, Prazo: ${new Date(item.prazo).toLocaleDateString("pt-BR", {
+          `<li><strong>${item.responsavel}:</strong> ${
+            item.descricao
+          } (Prazo: ${new Date(item.prazo).toLocaleDateString("pt-BR", {
             timeZone: "UTC",
           })})</li>`
       )
@@ -140,10 +122,9 @@ function renderSavedAtaAccordion(id, data) {
 
   let contentHtml = createItem(
     "Data e Horário",
-    `Data: ${formattedDate}<br>Início: ${data.horaInicio || "N/A"}<br>Fim: ${
-      data.horaFim || "N/A"
-    }`
+    `Início: ${data.horaInicio || "N/A"} | Fim: ${data.horaFim || "N/A"}`
   );
+
   if (data.tipo === "Reunião Técnica") {
     contentHtml += createItem("Tema", data.pauta);
     contentHtml += createItem("Responsável", data.responsavelTecnica);
@@ -162,7 +143,7 @@ function renderSavedAtaAccordion(id, data) {
       data.temasProximaReuniao
     );
     contentHtml += createItem(
-      "Próxima Reuniao",
+      "Próxima Reunião",
       data.proximaReuniao
         ? new Date(data.proximaReuniao).toLocaleString("pt-BR")
         : ""
@@ -180,42 +161,40 @@ function renderSavedAtaAccordion(id, data) {
   return `<div class="accordion">
                 <button class="accordion-trigger">${title}</button>
                 <div class="accordion-content">
-                    ${contentHtml}
-                    <div class="action-buttons-container">
-                        ${pdfButtonHtml}
-                        ${feedbackButtonHtml}
+                    <div class="content-wrapper">
+                        ${contentHtml}
+                        <div class="action-buttons-container">
+                            ${pdfButtonHtml}
+                            ${feedbackButtonHtml}
+                        </div>
                     </div>
                 </div>
             </div>`;
 }
 
-/**
- * Configura os event listeners para o filtro e os acordeões.
- */
 function setupEventListeners() {
   const tipoFiltro = document.getElementById("tipo-filtro");
   if (tipoFiltro) tipoFiltro.addEventListener("change", filtrarEExibirAtas);
 
   const contentArea = document.querySelector(".main-content");
-  if (!contentArea) return;
-
-  // Usamos um único event listener na área de conteúdo para gerenciar todos os cliques
   contentArea.addEventListener("click", (e) => {
     if (e.target.classList.contains("accordion-trigger")) {
       const content = e.target.nextElementSibling;
       if (content.style.maxHeight) {
         content.style.maxHeight = null;
       } else {
+        // Fecha outros acordeões abertos para uma melhor experiência
+        document
+          .querySelectorAll(".accordion-content")
+          .forEach((c) => (c.style.maxHeight = null));
         content.style.maxHeight = content.scrollHeight + "px";
       }
     }
     if (e.target.classList.contains("feedback")) {
       const key = e.target.dataset.key;
       if (key) {
-        const urlFeedback = `https://sites.google.com/eupsico.org.br/reunioes/feedback#${key}`;
+        const urlFeedback = `./feedback.html#${key}`;
         window.open(urlFeedback, "_blank");
-      } else {
-        alert("ERRO: Chave da reunião não encontrada!");
       }
     }
   });
