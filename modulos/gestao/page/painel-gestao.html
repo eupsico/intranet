@@ -13,17 +13,29 @@
         <div class="user-info">
             <img src="../../../assets/img/logo-branca.png" alt="Logo EuPsico" class="logo">
             <p id="user-name">Carregando...</p>
+            <p id="user-role">Gestão</p>
         </div>
-        <ul class="menu">
-            <li class="menu-item active" data-page="dashboard-reunioes"><a href="#">Dashboard de Reuniões</a></li>
-            <li class="menu-item" data-page="ata-de-reuniao"><a href="#">Registrar Ata</a></li>
-            <li class="menu-item" data-page="plano-de-acao"><a href="#">Plano de Ação</a></li>
-            <li class="menu-item" data-page="relatorio-feedback"><a href="#">Relatório de Feedbacks</a></li>
-            </ul>
-        <button id="logout-button">Sair</button>
+        <nav class="menu">
+            <a href="#" class="menu-item active" data-page="dashboard-reunioes">
+                <i class="icon">📊</i> Dashboard de Reuniões
+            </a>
+            <a href="#" class="menu-item" data-page="ata-de-reuniao">
+                <i class="icon">✍️</i> Registrar Ata
+            </a>
+            <a href="#" class="menu-item" data-page="plano-de-acao">
+                <i class="icon">📋</i> Plano de Ação
+            </a>
+            <a href="#" class="menu-item" data-page="relatorio-feedback">
+                <i class="icon">📈</i> Relatório de Feedbacks
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="../../../index.html" class="logout-button">Voltar</a>
+        </div>
     </div>
-    <div class="main-content" id="content-area">
-        </div>
+
+    <main class="main-content" id="content-area">
+        </main>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>

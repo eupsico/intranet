@@ -1,83 +1,120 @@
+/* Estrutura principal com Flexbox para alinhar sidebar e conteúdo */
 body {
     display: flex;
     margin: 0;
-    font-family: 'Arial', sans-serif;
+    font-family: var(--font-family-sans-serif); /* Usando variável do design-system */
     height: 100vh;
-    background-color: #f4f4f9;
-    overflow: hidden; /* Evita barras de rolagem no body */
+    background-color: var(--neutral-color-light); /* Usando variável do design-system */
+    overflow: hidden; /* Evita a barra de rolagem no corpo da página */
 }
 
+/* Sidebar (Menu Lateral) */
 .sidebar {
     width: 260px;
-    background-color: #04396d;
-    color: white;
+    background-color: var(--primary-color-dark); /* Usando variável do design-system */
+    color: var(--neutral-color-white);
     display: flex;
     flex-direction: column;
-    padding: 20px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    flex-shrink: 0; /* Impede que o sidebar encolha */
+    padding: 1.5rem;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0; /* Impede que o menu encolha */
+    transition: width 0.3s ease;
 }
 
+/* Informações do usuário no topo do menu */
 .user-info {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1.5rem;
 }
 
 .user-info .logo {
-    max-width: 80%;
-    margin-bottom: 15px;
+    max-width: 70%;
+    margin-bottom: 1rem;
 }
 
 #user-name {
     font-weight: bold;
     font-size: 1.1em;
+    margin: 0.5rem 0 0.2rem;
 }
 
+#user-role {
+    font-size: 0.9em;
+    color: var(--neutral-color-light);
+    opacity: 0.8;
+}
+
+/* Navegação e itens do menu */
 .menu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    flex-grow: 1; /* Ocupa o espaço restante */
+    flex-grow: 1; /* Faz o menu ocupar o espaço disponível */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Espaçamento entre os itens do menu */
 }
 
-.menu-item a {
-    color: white;
+.menu-item {
+    color: var(--neutral-color-white);
     text-decoration: none;
-    display: block;
-    padding: 15px 20px;
-    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Espaço entre o ícone e o texto */
+    padding: 0.8rem 1rem;
+    border-radius: var(--border-radius); /* Usando variável do design-system */
     transition: background-color 0.3s ease;
+    font-size: 0.95em;
 }
 
-.menu-item a:hover {
-    background-color: #1d70b7;
+.menu-item:hover {
+    background-color: var(--primary-color); /* Usando variável do design-system */
 }
 
-.menu-item.active a {
-    background-color: #1d70b7;
+.menu-item.active {
+    background-color: var(--primary-color-light); /* Usando variável do design-system */
     font-weight: bold;
 }
 
-#logout-button {
-    background-color: #c82333;
-    color: white;
+.menu-item .icon {
+    font-style: normal;
+}
+
+/* Rodapé da Sidebar com o botão de voltar */
+.sidebar-footer {
+    margin-top: auto; /* Empurra para o final */
+    padding-top: 1rem;
+}
+
+.logout-button {
+    display: block;
+    width: 100%;
+    padding: 0.8rem;
+    background-color: var(--secondary-color);
+    color: var(--neutral-color-white);
     border: none;
-    padding: 12px;
+    border-radius: var(--border-radius);
     cursor: pointer;
-    border-radius: 5px;
     text-align: center;
     font-weight: bold;
-    margin-top: 20px; /* Adiciona espaço acima do botão */
+    text-decoration: none;
     transition: background-color 0.3s ease;
 }
 
-#logout-button:hover {
-    background-color: #a41a27;
+.logout-button:hover {
+    background-color: var(--secondary-color-dark);
 }
 
+/* Área de conteúdo principal */
 .main-content {
     flex-grow: 1;
-    overflow-y: auto; /* Permite scroll apenas no conteúdo principal */
+    overflow-y: auto; /* Permite rolagem apenas no conteúdo */
     height: 100vh;
-    padding: 1px; /* Hack para evitar colapso de margens */
+    padding: 0; /* Remove padding para que o conteúdo das páginas o defina */
+}
+
+/* Efeito de carregamento para o conteúdo (opcional, mas recomendado) */
+.main-content h1 {
+    color: var(--neutral-color-dark);
+    text-align: center;
+    margin-top: 3rem;
 }
