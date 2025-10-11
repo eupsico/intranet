@@ -124,3 +124,56 @@
 .action-button.pdf {
     background-color: var(--cor-erro);
 }
+.next-meeting-info-card {
+    background-color: var(--cor-fundo-box); /* Azul bem clarinho */
+    border: 1px solid var(--cor-borda);
+    border-left: 5px solid var(--cor-secundaria);
+    border-radius: var(--borda-radius);
+    padding: 20px 25px;
+    margin-bottom: 30px;
+    box-shadow: var(--sombra-suave);
+}
+
+.next-meeting-info-card h3 {
+    margin: 0 0 8px 0;
+    color: var(--cor-primaria-dark);
+    font-size: 1.2em;
+}
+
+.next-meeting-info-card p {
+    margin: 0;
+    font-size: 1em;
+    color: var(--cor-texto-principal);
+}
+
+/* Ajuste no cabeçalho da seção para incluir controles (filtro) */
+.section-header.with-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Permite que o filtro vá para baixo em telas pequenas */
+    gap: 20px;
+}
+
+.section-header.with-controls h2 {
+    margin-bottom: 0; /* Remove a margem inferior do h2 quando há controles */
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Grupo de filtro que foi movido */
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-group label {
+    font-weight: 500;
+    font-size: 0.9em;
+    white-space: nowrap; /* Impede que o texto do label quebre */
+}
+
+.filter-group select {
+    min-width: 220px; /* Define uma largura mínima para o seletor */
+}
