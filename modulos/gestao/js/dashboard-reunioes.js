@@ -1,11 +1,12 @@
 // /modulos/gestao/js/dashboard-reunioes.js
-// VERSÃO 1.0 (Modularizada para SPA)
+// VERSÃO 1.1 (CORRIGIDO - Erro de consulta ao Firebase)
 
 import {
   getDatabase,
   ref,
   onValue,
   orderByChild,
+  query,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 let todasAsAtas = []; // Cache para armazenar todas as atas carregadas
@@ -26,7 +27,10 @@ function loadAtas() {
   const atasContainer = document.getElementById("atas-container");
   const rtDb = getDatabase();
   const atasRef = ref(rtDb, "gestao/atas");
-  const atasQuery = orderByChild(atasRef, "dataReuniao");
+
+  // --- CORREÇÃO APLICADA AQUI ---
+  // A função `query` é usada para combinar a referência do local com a ordenação.
+  const atasQuery = query(atasRef, orderByChild("dataReuniao"));
 
   onValue(
     atasQuery,
@@ -44,7 +48,7 @@ function loadAtas() {
       console.error("[DASH] Erro ao carregar atas:", error);
       if (atasContainer)
         atasContainer.innerHTML =
-          '<div class="alert alert-danger">Erro ao carregar atas.</div>';
+          '<div class="alert alert-danger">Erro ao carregar atas. Verifique o console.</div>';
     }
   );
 }
@@ -197,7 +201,9 @@ function setupEventListeners() {
   const tipoFiltro = document.getElementById("tipo-filtro");
   if (tipoFiltro) tipoFiltro.addEventListener("change", filtrarEExibirAtas);
 
-  const contentArea = document.querySelector(".main-content"); // Ouve eventos na área principal
+  const contentArea = document.querySelector(".main-content");
+  if (!contentArea) return;
+
   contentArea.addEventListener("click", (e) => {
     // Lógica para abrir/fechar o acordeão
     if (e.target.classList.contains("accordion-trigger")) {
