@@ -52,7 +52,7 @@ export async function init(user, userData) {
    * Constrói a tabela de resultados dinamicamente.
    */
   function construirTabela() {
-    const adicionalFormatado = ((percentualFamiliar - 1) * 100).toFixed(0);
+    const adicionalFormatado = (percentualFamiliar - 1) * 100;
     let tableHtml = `
             <table class="tabela-calculo">
                 <thead>
