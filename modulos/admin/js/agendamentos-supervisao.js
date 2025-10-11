@@ -164,13 +164,21 @@ function renderizarTabela(agendamentos) {
  * Gera e baixa um PDF com os dados filtrados na tabela.
  */
 function exportarParaPDF() {
-  if (typeof jspdf === "undefined") {
+  // --- INÍCIO DA CORREÇÃO ---
+  // Verifica se as bibliotecas jsPDF e autoTable estão disponíveis no objeto window
+  if (
+    typeof window.jspdf === "undefined" ||
+    typeof window.jspdf.jsPDF === "undefined"
+  ) {
     alert(
-      "Erro: A biblioteca de PDF não foi carregada. Tente recarregar a página."
+      "Erro: A biblioteca de PDF (jsPDF) não foi carregada. Tente recarregar a página."
     );
+    console.error("Objeto window.jspdf ou window.jspdf.jsPDF não encontrado.");
     return;
   }
-  const { jsPDF } = jspdf;
+  // --- FIM DA CORREÇÃO ---
+
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
   const filtroMesSelect = document.getElementById("filtro-mes");
