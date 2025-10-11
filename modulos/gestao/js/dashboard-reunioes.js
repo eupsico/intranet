@@ -1,13 +1,13 @@
 // /modulos/gestao/js/dashboard-reunioes.js
-// VERSÃO 1.1 (CORRIGIDO - Erro de consulta ao Firebase)
+// VERSÃO 2.0 (CORRIGIDO - Buscando dados do Cloud Firestore)
 
+import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
-  getDatabase,
-  ref,
-  onValue,
-  orderByChild,
+  collection,
   query,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+  orderBy,
+  onSnapshot,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 let todasAsAtas = []; // Cache para armazenar todas as atas carregadas
 
@@ -16,39 +16,34 @@ let todasAsAtas = []; // Cache para armazenar todas as atas carregadas
  */
 export function init() {
   console.log("[DASH] Módulo Dashboard de Reuniões iniciado.");
-  loadAtas();
+  loadAtasFromFirestore();
   setupEventListeners();
 }
 
 /**
- * Carrega as atas do Firebase Realtime Database.
+ * Carrega as atas da coleção 'gestao_atas' no Cloud Firestore em tempo real.
  */
-function loadAtas() {
+function loadAtasFromFirestore() {
   const atasContainer = document.getElementById("atas-container");
-  const rtDb = getDatabase();
-  const atasRef = ref(rtDb, "gestao/atas");
+  const atasCollectionRef = collection(firestoreDb, "gestao_atas");
+  const q = query(atasCollectionRef, orderBy("dataReuniao", "desc"));
 
-  // --- CORREÇÃO APLICADA AQUI ---
-  // A função `query` é usada para combinar a referência do local com a ordenação.
-  const atasQuery = query(atasRef, orderByChild("dataReuniao"));
-
-  onValue(
-    atasQuery,
+  onSnapshot(
+    q,
     (snapshot) => {
       todasAsAtas = [];
-      if (snapshot.exists()) {
-        snapshot.forEach((childSnapshot) => {
-          todasAsAtas.push({ key: childSnapshot.key, ...childSnapshot.val() });
+      if (!snapshot.empty) {
+        snapshot.forEach((doc) => {
+          todasAsAtas.push({ id: doc.id, ...doc.data() });
         });
-        todasAsAtas.reverse(); // Mostra as mais recentes primeiro
       }
       filtrarEExibirAtas();
     },
     (error) => {
-      console.error("[DASH] Erro ao carregar atas:", error);
+      console.error("[DASH] Erro ao carregar atas do Firestore:", error);
       if (atasContainer)
         atasContainer.innerHTML =
-          '<div class="alert alert-danger">Erro ao carregar atas. Verifique o console.</div>';
+          '<div class="alert alert-danger">Erro ao carregar atas. Verifique o console para mais detalhes.</div>';
     }
   );
 }
@@ -71,7 +66,7 @@ function filtrarEExibirAtas() {
       '<div class="card"><p>Nenhuma ata encontrada para este filtro.</p></div>';
   } else {
     atasContainer.innerHTML = atasFiltradas
-      .map((ata) => renderSavedAtaAccordion(ata.key, ata))
+      .map((ata) => renderSavedAtaAccordion(ata.id, ata))
       .join("");
   }
   exibirProximaReuniao(atasFiltradas);
@@ -113,7 +108,7 @@ function exibirProximaReuniao(atasFiltradas) {
 /**
  * Renderiza o HTML para um único item de ata no formato de acordeão.
  */
-function renderSavedAtaAccordion(key, data) {
+function renderSavedAtaAccordion(id, data) {
   const date = data.dataReuniao
     ? new Date(data.dataReuniao + "T00:00:00")
     : null;
@@ -123,14 +118,14 @@ function renderSavedAtaAccordion(key, data) {
   const title = `${data.tipo} - ${formattedDate}`;
 
   const createItem = (title, content) =>
-    content
+    content && String(content).trim()
       ? `<div class="ata-item-title">${title}</div><div class="ata-item-content"><p>${String(
           content
         ).replace(/\n/g, "<br>")}</p></div>`
       : "";
   const createList = (title, listData) => {
-    if (!listData || Object.keys(listData).length === 0) return "";
-    const listItems = Object.values(listData)
+    if (!Array.isArray(listData) || listData.length === 0) return "";
+    const listItems = listData
       .map(
         (item) =>
           `<li>${item.descricao} (Responsável: ${
@@ -167,7 +162,7 @@ function renderSavedAtaAccordion(key, data) {
       data.temasProximaReuniao
     );
     contentHtml += createItem(
-      "Próxima Reunião",
+      "Próxima Reuniao",
       data.proximaReuniao
         ? new Date(data.proximaReuniao).toLocaleString("pt-BR")
         : ""
@@ -179,7 +174,7 @@ function renderSavedAtaAccordion(key, data) {
     : "";
   const feedbackButtonHtml =
     data.tipo === "Reunião Técnica"
-      ? `<button class="action-button feedback" data-key="${key}">Abrir Feedback</button>`
+      ? `<button class="action-button feedback" data-key="${id}">Abrir Feedback</button>`
       : "";
 
   return `<div class="accordion">
@@ -204,8 +199,8 @@ function setupEventListeners() {
   const contentArea = document.querySelector(".main-content");
   if (!contentArea) return;
 
+  // Usamos um único event listener na área de conteúdo para gerenciar todos os cliques
   contentArea.addEventListener("click", (e) => {
-    // Lógica para abrir/fechar o acordeão
     if (e.target.classList.contains("accordion-trigger")) {
       const content = e.target.nextElementSibling;
       if (content.style.maxHeight) {
@@ -214,7 +209,6 @@ function setupEventListeners() {
         content.style.maxHeight = content.scrollHeight + "px";
       }
     }
-    // Lógica para o botão de feedback
     if (e.target.classList.contains("feedback")) {
       const key = e.target.dataset.key;
       if (key) {
