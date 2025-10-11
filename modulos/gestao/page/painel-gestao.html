@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão - EuPsico</title>
+    <link rel="stylesheet" href="../../../assets/css/design-system.css">
+    <link rel="stylesheet" href="../css/painel-gestao.css">
+    <link rel="shortcut icon" href="../../../favicon.png" type="image/x-icon">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="user-info">
+            <img src="../../../assets/img/logo-branca.png" alt="Logo EuPsico" class="logo">
+            <p id="user-name">Carregando...</p>
+        </div>
+        <ul class="menu">
+            <li class="menu-item active" data-page="dashboard-reunioes"><a href="#">Dashboard de Reuniões</a></li>
+            <li class="menu-item" data-page="ata-de-reuniao"><a href="#">Registrar Ata</a></li>
+            <li class="menu-item" data-page="plano-de-acao"><a href="#">Plano de Ação</a></li>
+            <li class="menu-item" data-page="relatorio-feedback"><a href="#">Relatório de Feedbacks</a></li>
+        </ul>
+        <button id="logout-button">Sair</button>
+    </div>
+    <div class="main-content" id="content-area">
+        </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="../../../assets/js/firebase-init.js"></script>
+    <script src="../js/painel-gestao.js"></script>
+</body>
+</html>
