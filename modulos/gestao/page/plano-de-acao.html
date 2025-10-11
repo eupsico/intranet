@@ -1,351 +1,56 @@
-<style>
-    .plano-body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 25px; }
-    .plano-container { max-width: 1500px; margin: 0 auto; }
-    .plano-h1 { background-color: #1d70b7; color: white; padding: 20px; border-radius: 8px; margin-top: 0; text-align: center; }
-    .kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-    .kanban-column { background-color: #e9ecef; border-radius: 8px; padding: 15px; }
-    .column-header { text-align: center; color: #495057; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #ced4da; }
-
-    .kanban-card { background-color: #fff; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 12px; margin-bottom: 15px; cursor: pointer; transition: all 0.2s ease-in-out; }
-    .kanban-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); transform: translateY(-2px); }
-    .kanban-card p { margin: 0 0 8px 0; word-wrap: break-word; }
-    .kanban-card small { color: #6c757d; font-style: italic; }
-    .kanban-card small a { color: #6c757d; text-decoration: underline; }
-
-    .card-details { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
-    .kanban-card.expanded .card-details { display: block; }
-
-    .card-actions { margin-top: 15px; padding-top:10px; display:flex; justify-content:space-between; align-items:center; }
-    .card-actions button { background: #6c757d; color:white; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; }
-    .status-buttons button { background: none; border: 1px solid #007bff; color: #007bff; border-radius: 5px; padding: 5px 10px; cursor: pointer; margin-left: 5px; }
-    .card-atividade { border-left: 5px solid #007bff; }
-    .card-encaminhamento { border-left: 5px solid #ffc107; }
-    
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: flex-start; padding-top: 5vh; }
-    .modal-content { background: #fff; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto; }
-    .modal-content h3 { margin-top: 0; color: #1d70b7; }
-    .modal-label { font-weight: bold; color: #555; display:block; margin-top:15px; margin-bottom:5px; }
-    .modal-input, .modal-textarea, .modal-select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    .modal-actions { text-align: right; margin-top: 20px; }
-    .modal-actions button { padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; }
-    .btn-save { background: #28a745; color: white; }
-    .btn-cancel { background: #6c757d; color: white; margin-right: 10px; }
-    
-    #encaminhamento-vinculado-form { border-top: 2px dashed #ccc; margin-top: 20px; padding-top: 20px; }
-    .checkbox-label { display: flex; align-items: center; font-weight:bold; color:#555;}
-    .checkbox-label input { width: auto; margin-right: 10px; }
-    .message-box.error { background-color: #f8d7da; color: #721c24; padding: 20px; text-align: center; font-size: 1.1em; border-radius: 8px; }
-
-    #historico-atualizacoes { border: 1px solid #ddd; padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto; background-color: #f9f9f9; }
-    .entrada-historico { border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
-    .entrada-historico:last-child { border-bottom: none; }
-    .entrada-historico p { margin: 0; font-size: 0.95em; }
-    .entrada-historico small { color: #888; }
-    #nova-atualizacao-form { border-top: 2px dashed #ccc; margin-top: 20px; padding-top: 20px; }
-
-    #coluna-a-fazer { background-color: #cfe2ff; }
-    #coluna-em-andamento { background-color: #fff3cd; }
-    #coluna-atrasado { background-color: #f8d7da; }
-    #coluna-concluido { background-color: #c3e6cb; }
-</style>
-
-<div class="plano-body">
-    <div class="plano-container">
-        <h1 class="plano-h1">Plano de Ação</h1>
+<div class="view-container">
+    <div id="plano-de-acao-content">
         <div class="kanban-board">
-            <div class="kanban-column" id="coluna-a-fazer"><h2 class="column-header">A Fazer</h2><div class="cards-container"></div></div>
-            <div class="kanban-column" id="coluna-em-andamento"><h2 class="column-header">Em Andamento</h2><div class="cards-container"></div></div>
-            <div class="kanban-column" id="coluna-atrasado"><h2 class="column-header">Atrasado</h2><div class="cards-container"></div></div>
-            <div class="kanban-column" id="coluna-concluido"><h2 class="column-header">Concluído</h2><div class="cards-container"></div></div>
-        </div>
-    </div>
-
-    <div id="update-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 id="modal-title">Atualizar Item</h3>
-            <small id="modal-origem"></small>
-
-            <label class="modal-label">Histórico de Atualizações</label>
-            <div id="historico-atualizacoes"></div>
-
-            <div id="nova-atualizacao-form">
-                <label class="modal-label" for="modal-nova-atualizacao">Inserir nova atualização</label>
-                <textarea id="modal-nova-atualizacao" class="modal-textarea" rows="4"></textarea>
-                <div class="modal-actions">
-                    <button type="button" class="btn-save" id="btn-salvar-nova-atualizacao">Salvar Atualização</button>
-                </div>
+            <div class="kanban-column" id="coluna-a-fazer">
+                <h2 class="column-header">A Fazer</h2>
+                <div class="cards-container"></div>
             </div>
-
-            <label class="checkbox-label"><input type="checkbox" id="modal-necessita-encaminhar"> Necessário Encaminhar?</label>
-            <div id="encaminhamento-vinculado-form" style="display:none;">
-                <h4>Novo Encaminhamento Vinculado</h4>
-                <label class="modal-label">Gestor</label><select id="modal-enc-gestor" class="modal-select"></select>
-                <label class="modal-label">Departamento</label><select id="modal-enc-departamento" class="modal-select"></select>
-                <label class="modal-label">Motivo</label><textarea id="modal-enc-motivo" class="modal-textarea" rows="3"></textarea>
-                <label class="modal-label">Prazo</label><input type="date" id="modal-enc-prazo" class="modal-input">
-                <div class="modal-actions">
-                    <button type="button" class="btn-save" id="btn-save-encaminhamento">Salvar Encaminhamento</button>
-                </div>
+            <div class="kanban-column" id="coluna-em-andamento">
+                <h2 class="column-header">Em Andamento</h2>
+                <div class="cards-container"></div>
             </div>
-            <hr>
-            <div class="modal-actions">
-                <button type="button" class="btn-cancel" id="btn-cancel-update">Fechar</button>
+            <div class="kanban-column" id="coluna-atrasado">
+                <h2 class="column-header">Atrasado</h2>
+                <div class="cards-container"></div>
+            </div>
+            <div class="kanban-column" id="coluna-concluido">
+                <h2 class="column-header">Concluído</h2>
+                <div class="cards-container"></div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    (function() {
-        const database = firebase.database();
-        
-        let todasAsTarefas = [], profissionaisGestores = [], departamentos = [];
-        const dashboardUrl = "dashboard-reunioes.html";
+<div id="update-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modal-title">Atualizar Item</h3>
+        <small id="modal-origem"></small>
 
-        async function carregarDadosIniciais() {
-            const atasPromise = database.ref('gestao/atas').once('value');
-            const profPromise = database.ref('financeiro/profissionais').once('value');
-            const departamentosPromise = database.ref('gestao/departamentos').once('value');
+        <label>Histórico de Atualizações</label>
+        <div id="historico-atualizacoes"></div>
 
-            try {
-                const [atasSnapshot, profSnap, departamentosSnap] = await Promise.all([atasPromise, profPromise, departamentosPromise]);
-                
-                if (profSnap.exists()) {
-                    profissionaisGestores = Object.values(profSnap.val()).filter(p => p && p.gestor === true);
-                    profissionaisGestores.sort((a, b) => a.eupsico.localeCompare(b.eupsico));
-                }
+        <div id="nova-atualizacao-form">
+            <label for="modal-nova-atualizacao">Inserir nova atualização</label>
+            <textarea id="modal-nova-atualizacao" rows="4"></textarea>
+            <div class="modal-actions">
+                <button type="button" class="action-button btn-save" id="btn-salvar-nova-atualizacao">Salvar Atualização</button>
+            </div>
+        </div>
 
-                if (departamentosSnap.exists()) {
-                    departamentos = Object.values(departamentosSnap.val()).map(d => d.nome).sort();
-                }
-                
-                todasAsTarefas = [];
-                if (atasSnapshot.exists()) {
-                    atasSnapshot.forEach(ataSnapshot => {
-                        const ata = { id: ataSnapshot.key, ...ataSnapshot.val() };
-                        const origem = `${ata.tipo} - ${new Date(ata.datetime).toLocaleDateString('pt-BR', {timeZone:'UTC'})}`;
-                        const processarItens = (lista, tipo) => {
-                            if (lista) {
-                                Object.keys(lista).forEach(itemId => {
-                                    if(lista[itemId]) {
-                                        todasAsTarefas.push({ ...lista[itemId], type: tipo, ataId: ata.id, itemId: itemId, origem });
-                                    }
-                                });
-                            }
-                        };
-                        processarItens(ata.planoDeAcao, 'atividade');
-                        processarItens(ata.encaminhamentos, 'encaminhamento');
-                    });
-                }
-                
-                await verificarEmoverAtrasadas();
-                renderizarQuadroKanban();
-            } catch (error) {
-                console.error("Erro ao carregar dados iniciais:", error);
-                const board = document.querySelector('.kanban-board');
-                board.innerHTML = `<div class="message-box error"><strong>Ocorreu um erro ao carregar os dados.</strong><br><small>Detalhe: ${error.message}</small></div>`;
-            }
-        }
-
-        async function verificarEmoverAtrasadas() {
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0); 
-            const updates = {}; 
-
-            todasAsTarefas.forEach(item => {
-                if (item.prazo && item.status !== 'Concluído' && item.status !== 'Atrasado') {
-                    const prazo = new Date(item.prazo + 'T00:00:00');
-                    if (prazo < hoje) {
-                        const itemType = item.type === 'atividade' ? 'planoDeAcao' : 'encaminhamentos';
-                        const firebasePath = `gestao/atas/${item.ataId}/${itemType}/${item.itemId}/status`;
-                        updates[firebasePath] = 'Atrasado';
-                        item.status = 'Atrasado';
-                    }
-                }
-            });
-
-            if (Object.keys(updates).length > 0) {
-                await database.ref().update(updates);
-            }
-        }
-
-        function renderizarQuadroKanban() {
-            const colunas = {
-                'A Fazer': document.querySelector('#coluna-a-fazer .cards-container'),
-                'Em Andamento': document.querySelector('#coluna-em-andamento .cards-container'),
-                'Atrasado': document.querySelector('#coluna-atrasado .cards-container'),
-                'Concluído': document.querySelector('#coluna-concluido .cards-container')
-            };
-            Object.values(colunas).forEach(col => col.innerHTML = '');
-
-            todasAsTarefas.forEach(item => {
-                const status = item.status || 'A Fazer';
-                if (colunas[status]) {
-                    colunas[status].innerHTML += criarCardHtml(item);
-                }
-            });
-        }
-        
-        function criarCardHtml(item){
-            const itemIdentifier = `'${item.ataId}', '${item.type === 'atividade' ? 'planoDeAcao' : 'encaminhamentos'}', '${item.itemId}'`;
-            const linkOrigem = `<a href="${dashboardUrl}#${item.ataId}" target="_blank" onclick="event.stopPropagation()">${item.origem}</a>`;
-            const responsavel = item.responsavel || item.nomeEncaminhado;
-            const prazo = item.prazo ? new Date(item.prazo + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
-            const btnAtualizarHtml = item.status !== 'A Fazer' ? `<button onclick="event.stopPropagation(); abrirModalAtualizacao(${itemIdentifier})">Ver/Atualizar</button>` : '';
-            const departamentoHtml = item.departamentoIndicado ? `<p><strong>Para (Departamento):</strong> ${item.departamentoIndicado}</p>` : '';
-
-            let detailsHtml = `<p>${item.descricao || item.motivo}</p>`;
-            if (item.type === 'encaminhamento') {
-                 detailsHtml = `${departamentoHtml}<p><strong>Motivo:</strong> ${item.motivo}</p>`;
-            }
-
-            return `
-                <div class="kanban-card card-${item.type}" onclick="this.classList.toggle('expanded')">
-                    <div class="card-summary">
-                        <p><strong>Responsável:</strong> ${responsavel}</p>
-                        <p><strong>Prazo:</strong> ${prazo}</p>
-                    </div>
-                    <div class="card-details">
-                        ${detailsHtml}
-                        <small>Origem: ${linkOrigem}</small>
-                        <div class="card-actions">
-                            ${btnAtualizarHtml}
-                            <div class="status-buttons">${criarBotoesDeAcao(item)}</div>
-                        </div>
-                    </div>
-                </div>`;
-        }
-
-        function criarBotoesDeAcao(item) {
-            const status = item.status || 'A Fazer';
-            const itemIdentifier = `'${item.ataId}', '${item.type === 'atividade' ? 'planoDeAcao' : 'encaminhamentos'}', '${item.itemId}'`;
-            const stopPropagation = "event.stopPropagation();";
-
-            if (status === 'A Fazer') return `<button onclick="${stopPropagation} abrirModalParaMover(${itemIdentifier}, 'Em Andamento')">Iniciar ▶</button>`;
-            if (status === 'Em Andamento') return `<button onclick="${stopPropagation} abrirModalParaMover(${itemIdentifier}, 'A Fazer')">◀ Voltar</button><button onclick="${stopPropagation} abrirModalParaMover(${itemIdentifier}, 'Concluído')">✔ Concluir</button>`;
-            if (status === 'Atrasado') return `<button onclick="${stopPropagation} abrirModalParaMover(${itemIdentifier}, 'Em Andamento')">Retomar ▶</button><button onclick="${stopPropagation} abrirModalParaMover(${itemIdentifier}, 'Concluído')">✔ Concluir</button>`;
-            if (status === 'Concluído') return `<button onclick="${stopPropagation} abrirModalParaMover(${itemIdentifier}, 'Em Andamento')">◀ Reabrir</button>`;
-            return '';
-        }
-
-        function abrirModalParaMover(ataId, itemType, itemId, novoStatus) {
-            abrirModalAtualizacao(ataId, itemType, itemId, novoStatus);
-        }
-
-        async function abrirModalAtualizacao(ataId, itemType, itemId, novoStatus = null) {
-            const modal = document.getElementById('update-modal');
-            const item = todasAsTarefas.find(t => t.ataId === ataId && t.itemId === itemId);
-            if (!item) return;
-
-            modal.dataset.ataId = ataId;
-            modal.dataset.itemType = itemType;
-            modal.dataset.itemId = itemId;
-            modal.dataset.novoStatus = novoStatus || '';
-
-            document.getElementById('modal-title').textContent = 'Atualizar ' + (item.type === 'atividade' ? 'Atividade' : 'Encaminhamento');
-            document.getElementById('modal-origem').textContent = `Origem: ${item.origem}`;
-            renderizarHistorico(item.historicoAtualizacoes);
-            
-            document.getElementById('modal-nova-atualizacao').value = '';
-            document.getElementById('modal-necessita-encaminhar').checked = false;
-            document.getElementById('encaminhamento-vinculado-form').style.display = 'none';
-
-            const gestorSelect = document.getElementById('modal-enc-gestor');
-            gestorSelect.innerHTML = '<option value="">Selecione um gestor...</option>';
-            profissionaisGestores.forEach(p => gestorSelect.innerHTML += `<option value="${p.eupsico}">${p.eupsico}</option>`);
-            
-            const deptoSelect = document.getElementById('modal-enc-departamento');
-            deptoSelect.innerHTML = '<option value="">Selecione um departamento...</option>';
-            departamentos.forEach(d => deptoSelect.innerHTML += `<option value="${d}">${d}</option>`);
-            
-            modal.style.display = 'flex';
-        }
-
-        function renderizarHistorico(historico) {
-            const container = document.getElementById('historico-atualizacoes');
-            container.innerHTML = '';
-            if (historico) {
-                Object.values(historico).reverse().forEach(entrada => {
-                    const dataFormatada = new Date(entrada.data).toLocaleString('pt-BR');
-                    container.innerHTML += `
-                        <div class="entrada-historico">
-                            <p>${entrada.texto}</p>
-                            <small>Por: ${entrada.responsavel} em ${dataFormatada}</small>
-                        </div>
-                    `;
-                });
-            } else {
-                container.innerHTML = '<p style="text-align:center; color:#888;">Nenhuma atualização registrada.</p>';
-            }
-        }
-        
-        document.getElementById('btn-salvar-nova-atualizacao').onclick = async () => {
-            const modal = document.getElementById('update-modal');
-            const { ataId, itemType, itemId, novoStatus } = modal.dataset;
-            const textoAtualizacao = document.getElementById('modal-nova-atualizacao').value;
-
-            if (!textoAtualizacao.trim()) {
-                alert('Por favor, descreva a atualização.');
-                return;
-            }
-
-            const novaAtualizacao = {
-                texto: textoAtualizacao,
-                data: new Date().toISOString(),
-                responsavel: "Usuário Logado"
-            };
-
-            const pathHistorico = `gestao/atas/${ataId}/${itemType}/${itemId}/historicoAtualizacoes`;
-            
-            try {
-                await database.ref(pathHistorico).push(novaAtualizacao);
-                if (novoStatus) {
-                    const pathStatus = `gestao/atas/${ataId}/${itemType}/${itemId}/status`;
-                    await database.ref(pathStatus).set(novoStatus);
-                }
-                modal.style.display = 'none';
-                carregarDadosIniciais();
-
-            } catch(error) {
-                console.error("Erro ao salvar atualização:", error);
-                alert("Ocorreu um erro ao salvar. Tente novamente.");
-            }
-        };
-
-        document.getElementById('btn-save-encaminhamento').onclick = async () => {
-            const modal = document.getElementById('update-modal');
-            const { ataId } = modal.dataset;
-            const novoEncaminhamento = {
-                nomeEncaminhado: document.getElementById('modal-enc-gestor').value,
-                departamentoIndicado: document.getElementById('modal-enc-departamento').value,
-                motivo: document.getElementById('modal-enc-motivo').value,
-                prazo: document.getElementById('modal-enc-prazo').value,
-                status: 'A Fazer'
-            };
-
-            if (novoEncaminhamento.nomeEncaminhado && novoEncaminhamento.departamentoIndicado && novoEncaminhamento.motivo && novoEncaminhamento.prazo) {
-                await database.ref(`gestao/atas/${ataId}/encaminhamentos`).push(novoEncaminhamento);
-                alert('Novo encaminhamento salvo!');
-                document.getElementById('modal-necessita-encaminhar').checked = false;
-                document.getElementById('encaminhamento-vinculado-form').style.display = 'none';
-                carregarDadosIniciais();
-            } else {
-                alert('Por favor, preencha todos os campos do encaminhamento.');
-            }
-        };
-
-        document.getElementById('btn-cancel-update').addEventListener('click', () => document.getElementById('update-modal').style.display = 'none');
-        
-        document.getElementById('modal-necessita-encaminhar').addEventListener('change', (e) => {
-            document.getElementById('encaminhamento-vinculado-form').style.display = e.target.checked ? 'block' : 'none';
-        });
-
-        document.getElementById('modal-enc-gestor').addEventListener('change', (e) => {
-            const deptoSelect = document.getElementById('modal-enc-departamento');
-            const profissional = profissionaisGestores.find(p => p.eupsico === e.target.value);
-            deptoSelect.value = (profissional && profissional.departamento) ? profissional.departamento : "";
-        });
-
-        window.onload = carregarDadosIniciais;
-    })();
-</script>
+        <label class="checkbox-label"><input type="checkbox" id="modal-necessita-encaminhar"> Necessário Encaminhar?</label>
+        <div id="encaminhamento-vinculado-form" style="display:none;">
+            <h4>Novo Encaminhamento Vinculado</h4>
+            <label>Gestor</label><select id="modal-enc-gestor" class="form-control"></select>
+            <label>Departamento</label><select id="modal-enc-departamento" class="form-control"></select>
+            <label>Motivo</label><textarea id="modal-enc-motivo" class="form-control" rows="3"></textarea>
+            <label>Prazo</label><input type="date" id="modal-enc-prazo" class="form-control">
+            <div class="modal-actions">
+                <button type="button" class="action-button btn-save" id="btn-save-encaminhamento">Salvar Encaminhamento</button>
+            </div>
+        </div>
+        <hr>
+        <div class="modal-actions">
+            <button type="button" class="action-button btn-cancel" id="btn-cancel-update">Fechar</button>
+        </div>
+    </div>
+</div>

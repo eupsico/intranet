@@ -1,7 +1,6 @@
 // /modulos/gestao/js/painel-gestao.js
-// VERSÃO 3.1 (Com integração do Dashboard)
+// VERSÃO 3.2 (Com integração do Plano de Ação)
 
-// Mapeia os IDs das views para seus arquivos HTML e JS correspondentes
 const views = {
   "dashboard-reunioes": {
     html: "dashboard-reunioes.html",
@@ -11,11 +10,10 @@ const views = {
     html: "ata-de-reuniao.html",
     js: "../js/ata-de-reuniao.js",
   },
-  "plano-de-acao": { html: "plano-de-acao.html", js: null },
+  "plano-de-acao": { html: "plano-de-acao.html", js: "../js/plano-de-acao.js" },
   "relatorio-feedback": { html: "relatorio-feedback.html", js: null },
 };
 
-// Funções globais da aplicação (usuário e dados do usuário)
 let appUser, appUserData;
 
 export function init(user, userData) {
