@@ -1,0 +1,273 @@
+<style>
+    .relatorio-body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 25px; }
+    .relatorio-container { max-width: 900px; margin: 0 auto; }
+    .page-header img { max-width: 250px; height: auto; }
+    .relatorio-h1 { background-color: #1d70b7; color: white; padding: 20px; border-radius: 8px; margin-top: 0; font-size: 2em; text-align: center; }
+    .relatorio-h2 { color: #04396d; border-bottom: 2px solid #04396d; padding-bottom: 5px; margin-top: 0; }
+    .page-footer { text-align: center; margin-top: 40px; padding: 20px; border-top: 1px solid #ccc; font-size: 0.9em; color: #555; }
+
+    /* --- Abas de Navegação --- */
+    .tab-nav { border-bottom: 2px solid #ccc; margin-bottom: 20px; }
+    .tab-link { background: none; border: none; padding: 12px 25px; font-size: 1.1em; cursor: pointer; margin-bottom: -2px; color: #555; }
+    .tab-link.active { border-bottom: 3px solid #04396d; font-weight: bold; color: #04396d; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* --- Conteúdo Geral --- */
+    .relatorio-card { background-color: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 25px; padding: 25px; }
+    .table-container { overflow-x: auto; }
+    .resumo-tabela { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .resumo-tabela th, .resumo-tabela td { padding: 8px 10px; border: 1px solid #ddd; text-align: center; white-space: nowrap; }
+    .resumo-tabela th { background-color: #e9ecef; }
+    .resumo-tabela td:first-child { text-align: left; font-weight: bold; }
+    .accordion { margin-bottom: 10px; border-radius: 8px; overflow:hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .accordion-trigger { background-color: #04396d; color: white; cursor: pointer; padding: 15px 20px; width: 100%; border: none; text-align: left; font-size: 1.2em; }
+    .accordion-trigger.level-2 { background-color: #1d70b7; font-size: 1.1em; }
+    .accordion-content { background: #fff; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .content-wrapper { padding: 20px; }
+    .feedback-item { border-top: 1px dashed #ccc; padding-top: 15px; margin-top: 15px; }
+    .feedback-item:first-child { border-top: none; }
+    .feedback-profissional { font-weight: bold; color: #1d70b7; }
+    .resposta-item strong { display: block; }
+    .export-btn { background-color: #218838; color: white; border: none; border-radius: 5px; padding: 10px 18px; cursor: pointer; margin-bottom: 20px; }
+    .loading, .no-feedback { text-align: center; font-size: 1.1em; color: #6c757d; padding: 20px; }
+</style>
+
+<div class="relatorio-body">
+    <div class="page-header" style="text-align: center;">
+        <img src="https://i.ibb.co/JwVcskKb/Saude-Mental.png" alt="Logo Saúde Mental EuPsico">
+    </div>
+
+    <div class="relatorio-container">
+        <h1 class="relatorio-h1">Relatório de Feedbacks</h1>
+        
+        <div class="tab-nav">
+            <button class="tab-link active" data-tab="resumo">Resumo de Participação</button>
+            <button class="tab-link" data-tab="feedbacks">Feedbacks por Reunião</button>
+        </div>
+
+        <div id="resumo" class="tab-content active">
+            <div id="resumo-container" class="loading relatorio-card">Carregando resumo...</div>
+        </div>
+
+        <div id="feedbacks" class="tab-content">
+            <div id="relatorio-container" class="loading relatorio-card">Carregando feedbacks...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const database = firebase.database();
+
+        // Variáveis globais no escopo do IIFE para armazenar dados de exportação
+        let dadosResumoParaExportar = {};
+        let dadosReunioesParaExportar = {};
+
+        const perguntasTexto = {
+            clareza: "O tema foi apresentado com clareza?",
+            objetivos: "Os objetivos da reunião foram alcançados?",
+            duracao: "A duração da reunião foi adequada?",
+            sugestaoTema: "Sugestão de tema para próxima reunião:"
+        };
+
+        // --- Funções Auxiliares para Exportação CSV ---
+        function formatarCelulaCsv(celula) {
+            const texto = celula ? String(celula) : '';
+            if (texto.includes(',') || texto.includes('"') || texto.includes('\n')) {
+                return `"${texto.replace(/"/g, '""')}"`;
+            }
+            return texto;
+        }
+
+        window.exportarTabelaParaCsv = function(filename) {
+            const { headers, rows } = dadosResumoParaExportar;
+            if (!headers || !rows) return;
+            const csvRows = rows.map(row => row.map(cell => formatarCelulaCsv(cell)).join(','));
+            const conteudoCsv = [headers.join(','), ...csvRows].join('\n');
+            const blob = new Blob(['\uFEFF' + conteudoCsv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${filename}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.exportarReuniaoParaCsv = function(reuniaoKey, nomeArquivo) {
+            const dados = dadosReunioesParaExportar[reuniaoKey];
+            if (!dados) { alert("Dados não encontrados."); return; }
+            const headers = ['Profissional', 'Pergunta', 'Resposta'];
+            const rows = dados.map(d => [d.profissional, d.pergunta, d.resposta]);
+            
+            const csvRows = rows.map(row => row.map(cell => formatarCelulaCsv(cell)).join(','));
+            const conteudoCsv = [headers.join(','), ...csvRows].join('\n');
+            const blob = new Blob(['\uFEFF' + conteudoCsv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${nomeArquivo}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Funções de Renderização ---
+        function renderizarResumo(atas, profissionais) {
+            const container = document.getElementById('resumo-container');
+            const atasComFeedback = atas.filter(ata => ata.feedbacks && ata.tipo === 'Reunião Técnica').sort((a, b) => new Date(a.dataReuniao) - new Date(b.dataReuniao));
+            if(atasComFeedback.length === 0) {
+                container.innerHTML = `<div class="no-feedback"><p>Nenhum feedback encontrado para gerar resumo.</p></div>`;
+                container.classList.remove('loading');
+                return;
+            }
+
+            const participacaoMatrix = {};
+            profissionais.forEach(nome => participacaoMatrix[nome] = {});
+            atasComFeedback.forEach(ata => {
+                const dataFormatada = new Date(ata.dataReuniao + 'T00:00:00').toLocaleDateString('pt-BR');
+                profissionais.forEach(nome => participacaoMatrix[nome][dataFormatada] = 'Não'); // Padrão
+                Object.values(ata.feedbacks).forEach(fb => {
+                    if (participacaoMatrix[fb.nome]) {
+                        participacaoMatrix[fb.nome][dataFormatada] = 'Sim';
+                    }
+                });
+            });
+
+            const headers = ['Profissional', ...atasComFeedback.map(ata => new Date(ata.dataReuniao + 'T00:00:00').toLocaleDateString('pt-BR')), 'Total'];
+            const rows = profissionais.map(nome => {
+                let total = 0;
+                const participacoes = atasComFeedback.map(ata => {
+                    const dataFormatada = new Date(ata.dataReuniao + 'T00:00:00').toLocaleDateString('pt-BR');
+                    const valor = participacaoMatrix[nome][dataFormatada] || 'Não';
+                    if (valor === 'Sim') total++;
+                    return valor;
+                });
+                return [nome, ...participacoes, total];
+            });
+
+            dadosResumoParaExportar = { headers, rows };
+            const anoAtual = new Date().getFullYear();
+            const nomeArquivo = `Resumo_Participacao_${anoAtual}`;
+            
+            const resumoHtml = `
+                <button class="export-btn" onclick="window.exportarTabelaParaCsv('${nomeArquivo}')">Exportar Resumo</button>
+                <div class="table-container">
+                    <table class="resumo-tabela">
+                        <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                        <tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>
+                    </table>
+                </div>`;
+            container.innerHTML = resumoHtml;
+            container.classList.remove('loading');
+        }
+        
+        function renderizarFeedbacksDetalhados(atas) {
+            const container = document.getElementById('relatorio-container');
+            const atasComFeedback = atas.filter(ata => ata.feedbacks && ata.tipo === 'Reunião Técnica').sort((a, b) => new Date(b.dataReuniao) - new Date(a.dataReuniao));
+
+            if (atasComFeedback.length === 0) {
+                container.innerHTML = `<div class="no-feedback"><p>Nenhum feedback encontrado.</p></div>`;
+                container.classList.remove('loading');
+                return;
+            }
+
+            let htmlFinal = '';
+            atasComFeedback.forEach(ata => {
+                const dataFormatada = new Date(ata.dataReuniao + 'T00:00:00').toLocaleDateString('pt-BR');
+                const nomeArquivo = `Feedbacks_${(ata.pauta || 'Reuniao').replace(/[^a-zA-Z0-9]/g, '_')}_${dataFormatada}`;
+                let feedbacksHtml = '';
+                let dadosDaReuniaoParaExportar = [];
+
+                Object.values(ata.feedbacks).forEach(feedback => {
+                    const nomeProfissional = feedback.nome || 'Anônimo';
+                    feedbacksHtml += `<div class="feedback-item"><div class="feedback-profissional">${nomeProfissional}</div>`;
+                    for (const perguntaId in feedback) {
+                        if (perguntasTexto[perguntaId]) {
+                            feedbacksHtml += `<div class="resposta-item"><strong>${perguntasTexto[perguntaId]}</strong><span>${feedback[perguntaId]}</span></div>`;
+                            dadosDaReuniaoParaExportar.push({ profissional: nomeProfissional, pergunta: perguntasTexto[perguntaId], resposta: feedback[perguntaId] });
+                        }
+                    }
+                    feedbacksHtml += `</div>`;
+                });
+                
+                dadosReunioesParaExportar[ata.key] = dadosDaReuniaoParaExportar;
+                const pauta = ata.pauta || 'Reunião Sem Tema';
+                
+                htmlFinal += `
+                    <div class="accordion">
+                        <button class="accordion-trigger level-2">
+                            <div>${pauta} <span>(Data: ${dataFormatada})</span></div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="content-wrapper">
+                                <button class="export-btn" onclick="window.exportarReuniaoParaCsv('${ata.key}', '${nomeArquivo}')">Exportar Feedbacks</button>
+                                ${feedbacksHtml}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            
+            container.innerHTML = htmlFinal;
+            container.classList.remove('loading');
+        }
+
+        async function carregarRelatorios() {
+            try {
+                const [atasSnapshot, profissionaisSnapshot] = await Promise.all([
+                    database.ref('gestao/atas').once('value'),
+                    database.ref('financeiro/profissionais').once('value')
+                ]);
+
+                if (!atasSnapshot.exists() || !profissionaisSnapshot.exists()) { throw new Error("Dados de Atas ou Profissionais não encontrados no Firebase."); }
+                
+                const todosProfissionais = Object.values(profissionaisSnapshot.val()).map(p => p.eupsico).sort();
+                const todasAsAtas = [];
+                atasSnapshot.forEach(snap => { todasAsAtas.push({ key: snap.key, ...snap.val() }); });
+
+                renderizarResumo(todasAsAtas, todosProfissionais);
+                renderizarFeedbacksDetalhados(todasAsAtas);
+
+            } catch (err) {
+                console.error("Erro ao carregar relatórios:", err);
+                document.getElementById('resumo-container').innerHTML = `<div class="no-feedback" style="color: red;">${err.message}</div>`;
+                document.getElementById('relatorio-container').innerHTML = `<div class="no-feedback" style="color: red;">${err.message}</div>`;
+            }
+        }
+        
+        function setupInterface() {
+            const tabsContainer = document.querySelector('.relatorio-body');
+            if (!tabsContainer) return;
+
+            tabsContainer.addEventListener('click', e => {
+                // Lógica para as abas
+                if (e.target.classList.contains('tab-link')) {
+                    const tabName = e.target.dataset.tab;
+                    tabsContainer.querySelectorAll('.tab-content, .tab-link').forEach(el => el.classList.remove('active'));
+                    document.getElementById(tabName).classList.add('active');
+                    e.target.classList.add('active');
+                }
+
+                // Lógica para o acordeão
+                const trigger = e.target.closest('.accordion-trigger');
+                if (trigger) {
+                    const content = trigger.nextElementSibling;
+                    if (content) {
+                        const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+                        if (isOpen) {
+                            content.style.maxHeight = null;
+                        } else {
+                            content.style.maxHeight = content.scrollHeight + 'px';
+                        }
+                    }
+                }
+            });
+        }
+        
+        // --- Inicialização ---
+        setupInterface();
+        carregarRelatorios();
+    })();
+</script>
