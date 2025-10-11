@@ -2,80 +2,81 @@ document.addEventListener("DOMContentLoaded", function () {
   const contentArea = document.getElementById("content-area");
   const menuItems = document.querySelectorAll(".menu-item");
   const userNameDisplay = document.getElementById("user-name");
-  const logoutButton = document.getElementById("logout-button");
 
-  // Função para carregar dinamicamente o conteúdo das páginas
+  // Função para carregar dinamicamente as páginas internas do módulo
   function loadPage(pageName) {
-    contentArea.innerHTML = "<h1>Carregando...</h1>"; // Feedback visual
+    // Exibe um feedback de carregamento para o usuário
+    contentArea.innerHTML =
+      '<div class="loading-feedback"><h1>Carregando...</h1></div>';
+
     fetch(`${pageName}.html`)
       .then((response) => {
-        if (!response.ok)
-          throw new Error(`Página ${pageName}.html não encontrada.`);
+        if (!response.ok) {
+          throw new Error(
+            `A página '${pageName}.html' não foi encontrada. Verifique o nome do arquivo.`
+          );
+        }
         return response.text();
       })
       .then((html) => {
         contentArea.innerHTML = html;
-        // Re-executa os scripts da página carregada
+
+        // É crucial re-executar os scripts da página que foi carregada.
+        // Esta abordagem encontra todos os scripts no HTML injetado e cria novos
+        // elementos de script para que o navegador os execute.
         Array.from(contentArea.querySelectorAll("script")).forEach(
           (oldScript) => {
             const newScript = document.createElement("script");
-            Array.from(oldScript.attributes).forEach((attr) =>
-              newScript.setAttribute(attr.name, attr.value)
-            );
+            // Copia todos os atributos (como src, type, etc.)
+            Array.from(oldScript.attributes).forEach((attr) => {
+              newScript.setAttribute(attr.name, attr.value);
+            });
+            // Copia o conteúdo de scripts inline
             newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            // Substitui o script antigo pelo novo para acionar a execução
             oldScript.parentNode.replaceChild(newScript, oldScript);
           }
         );
       })
       .catch((error) => {
-        console.error("Erro ao carregar página:", error);
-        contentArea.innerHTML = `<h1 style="color:red;">Erro: ${error.message}</h1>`;
+        console.error("Erro ao carregar a página:", error);
+        contentArea.innerHTML = `<div class="error-feedback"><h1>Erro ao Carregar</h1><p>${error.message}</p></div>`;
       });
   }
 
-  // Verifica o estado da autenticação
+  // Monitora o estado de autenticação do usuário
   firebase.auth().onAuthStateChanged((user) => {
     if (user) {
+      // Se o usuário está logado, busca seu nome no Realtime Database
       database
         .ref("users/" + user.uid)
         .once("value")
         .then((snapshot) => {
           const userData = snapshot.val();
-          if (userData && userData.nome) {
-            userNameDisplay.textContent = userData.nome;
-          } else {
-            userNameDisplay.textContent = user.email; // Fallback para o email
-          }
+          // Exibe o nome do usuário ou o email como fallback
+          userNameDisplay.textContent =
+            userData && userData.nome ? userData.nome : user.email;
         });
-      // Carrega a página inicial por padrão
+      // Carrega a página inicial padrão do módulo (dashboard)
       loadPage("dashboard-reunioes");
     } else {
-      // Se não houver usuário logado, redireciona para a página de login
+      // Se não houver usuário, redireciona para a página de login
       window.location.href = "../../../index.html";
     }
   });
 
-  // Adiciona os listeners de evento para os itens do menu
+  // Adiciona o evento de clique para cada item do menu
   menuItems.forEach((item) => {
     item.addEventListener("click", function (e) {
-      e.preventDefault();
-      menuItems.forEach((i) => i.classList.remove("active"));
-      this.classList.add("active");
-      const page = this.getAttribute("data-page");
-      loadPage(page);
-    });
-  });
+      e.preventDefault(); // Impede o comportamento padrão do link
 
-  // Funcionalidade do botão de logout
-  logoutButton.addEventListener("click", () => {
-    firebase
-      .auth()
-      .signOut()
-      .then(() => {
-        window.location.href = "../../../index.html";
-      })
-      .catch((error) => {
-        console.error("Erro ao fazer logout:", error);
-      });
+      // Remove a classe 'active' de todos os itens
+      menuItems.forEach((i) => i.classList.remove("active"));
+      // Adiciona a classe 'active' apenas ao item que foi clicado
+      this.classList.add("active");
+
+      const pageName = this.getAttribute("data-page");
+      loadPage(pageName);
+    });
   });
 });
