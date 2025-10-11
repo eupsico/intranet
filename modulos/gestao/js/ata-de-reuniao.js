@@ -1,7 +1,13 @@
 // /modulos/gestao/js/ata-de-reuniao.js
-// VERSÃO 4.0 (CORRIGIDA - Com busca de gestores do Firestore e lógica aprimorada)
+// VERSÃO 4.1 (COMPLETA E CORRIGIDA)
 
-import { db } from "../../../assets/js/firebase-init.js";
+import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
+import {
+  getDatabase,
+  ref as dbRef,
+  push,
+  set,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import {
   collection,
   query,
@@ -9,11 +15,6 @@ import {
   getDocs,
   orderBy,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import {
-  ref as dbRef,
-  push,
-  set,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 let atividadesPlanoAcao = [];
 let gestoresCache = []; // Cache para armazenar a lista de gestores e evitar múltiplas buscas
@@ -38,7 +39,7 @@ async function fetchGestores() {
   if (gestoresCache.length > 0) return; // Usa o cache se já foi preenchido
 
   try {
-    const usuariosRef = collection(db, "usuarios");
+    const usuariosRef = collection(firestoreDb, "usuarios");
     const q = query(
       usuariosRef,
       where("funcoes", "array-contains", "gestor"),
@@ -121,17 +122,34 @@ function populateGestorFields() {
     .join("");
 
   gestorSelect.innerHTML += optionsHtml;
-  responsavelSelect.innerHTML += optionsHtml; // Popula todos os gestores aqui inicialmente
+  responsavelSelect.innerHTML += optionsHtml;
   checkboxContainer.innerHTML = checkboxesHtml;
 }
 
+/**
+ * Renderiza a lista de atividades do plano de ação.
+ */
+function renderPlanoAcaoList() {
+  const lista = document.getElementById("lista-atividades");
+  if (!lista) return;
+  lista.innerHTML = atividadesPlanoAcao
+    .map((atividade, index) => {
+      const prazo = new Date(atividade.prazo).toLocaleDateString("pt-BR", {
+        timeZone: "UTC",
+      });
+      return `<div class="atividade-item"><span><strong>${atividade.responsavel}:</strong> ${atividade.descricao} (Prazo: ${prazo})</span><button type="button" class="remove-activity-btn" data-index="${index}">X</button></div>`;
+    })
+    .join("");
+}
+
+/**
+ * Configura todos os event listeners do formulário.
+ * @param {HTMLElement} container - O elemento que contém o formulário.
+ */
 function setupEventListeners(container) {
   container.addEventListener("change", (e) => {
-    // Lógica para mostrar/esconder campos baseada no TIPO de reunião
     if (e.target.classList.contains("ata-tipo")) {
       const tipo = e.target.value;
-      // ... (código para mostrar/esconder seções do formulário - sem alterações)
-      // ... (Este bloco de código é longo, mas não precisa ser alterado)
       const pautaLabel = container.querySelector("#pauta-label");
 
       container
@@ -175,26 +193,15 @@ function setupEventListeners(container) {
       }
     }
 
-    // **NOVA LÓGICA:** Quando um gestor é selecionado em "Reunião com Gestor"
     if (e.target.classList.contains("ata-nome-gestor")) {
       const nomeGestorSelecionado = e.target.value;
       const responsavelPlanoAcao =
         container.querySelector("#plano-responsavel");
-
-      if (nomeGestorSelecionado) {
-        // Define o valor do dropdown do plano de ação para ser o mesmo gestor
-        responsavelPlanoAcao.value = nomeGestorSelecionado;
-      } else {
-        // Se nenhum gestor for selecionado, reseta o dropdown do plano de ação
-        responsavelPlanoAcao.value = "";
-      }
+      responsavelPlanoAcao.value = nomeGestorSelecionado || "";
     }
   });
 
-  // O listener de 'click' não precisa de alterações na sua lógica principal
   container.addEventListener("click", async (e) => {
-    // ... (código para adicionar atividade, remover atividade e salvar ata)
-    // ... (Este bloco de código é longo, mas não precisa ser alterado)
     if (e.target.id === "add-activity") {
       const errorSpan = container.querySelector("#activity-error-feedback");
       const responsavel = container.querySelector("#plano-responsavel").value;
@@ -210,8 +217,6 @@ function setupEventListeners(container) {
         renderPlanoAcaoList();
         container.querySelector("#plano-descricao").value = "";
         container.querySelector("#plano-prazo").value = "";
-        // Não reseta o responsável, pois pode ser o gestor selecionado
-        // container.querySelector('#plano-responsavel').value = '';
         errorSpan.textContent = "";
       } else {
         errorSpan.textContent = "Preencha todos os campos da atividade.";
@@ -228,22 +233,11 @@ function setupEventListeners(container) {
   });
 }
 
-// O restante das funções (renderPlanoAcaoList, handleSaveAta) permanecem as mesmas.
-// ... (cole o restante do seu código de ata-de-reuniao.js aqui)
-
-function renderPlanoAcaoList() {
-  const lista = document.getElementById("lista-atividades");
-  if (!lista) return;
-  lista.innerHTML = atividadesPlanoAcao
-    .map((atividade, index) => {
-      const prazo = new Date(atividade.prazo).toLocaleDateString("pt-BR", {
-        timeZone: "UTC",
-      });
-      return `<div class="atividade-item"><span><strong>${atividade.responsavel}:</strong> ${atividade.descricao} (Prazo: ${prazo})</span><button type="button" class="remove-activity-btn" data-index="${index}">X</button></div>`;
-    })
-    .join("");
-}
-
+/**
+ * Valida o formulário, coleta os dados e envia para o Firebase e Google Apps Script.
+ * @param {HTMLButtonElement} saveButton - O botão de salvar.
+ * @param {HTMLElement} form - O container do formulário.
+ */
 async function handleSaveAta(saveButton, form) {
   const originalButtonText = saveButton.textContent;
   const statusBox = form.querySelector("#form-status-message");
@@ -255,13 +249,15 @@ async function handleSaveAta(saveButton, form) {
     .forEach((span) => (span.textContent = ""));
   const validate = (selector, condition, message = "Campo obrigatório.") => {
     const element = form.querySelector(selector);
+    if (!element) return;
     const formGroup = element.closest(".form-group");
     if (
       condition &&
       formGroup &&
       getComputedStyle(formGroup).display !== "none"
     ) {
-      formGroup.querySelector(".error-message").textContent = message;
+      const errorSpan = formGroup.querySelector(".error-message");
+      if (errorSpan) errorSpan.textContent = message;
       hasErrors = true;
     }
   };
@@ -312,19 +308,20 @@ async function handleSaveAta(saveButton, form) {
 
   let participantes = "",
     nomeGestor = "";
-  if (tipo === "Reunião Conselho administrativo")
+  if (tipo === "Reunião Conselho administrativo") {
     participantes = Array.from(
       form.querySelectorAll(".participante-check:checked")
     )
       .map((cb) => cb.value)
       .join(", ");
-  else if (tipo === "Reunião com Gestor") {
+  } else if (tipo === "Reunião com Gestor") {
     nomeGestor = form.querySelector(".ata-nome-gestor").value;
     participantes = nomeGestor;
-  } else if (tipo === "Outros")
+  } else if (tipo === "Outros") {
     participantes = form.querySelector(".ata-participantes-input").value;
+  }
 
-  let duracaoFinal;
+  let duracaoFinal = "";
   if (tipo === "Reunião Técnica") {
     const inicio = new Date(
       `1970-01-01T${form.querySelector(".ata-start-time").value}`
@@ -357,21 +354,22 @@ async function handleSaveAta(saveButton, form) {
   try {
     const response = await fetch(WEB_APP_URL, {
       method: "POST",
+      mode: "no-cors", // Importante para evitar erros de CORS com Google Apps Script
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dataToSave),
-      mode: "no-cors",
     });
 
     console.warn(
-      "[ATA] Enviado para Apps Script. Aguardando URL do PDF ser salva separadamente se a integração estiver configurada."
+      "[ATA] Enviado para Apps Script. A resposta não pode ser lida devido à política 'no-cors'."
     );
 
     saveButton.textContent = "Salvando dados...";
 
-    // Salva os dados no Realtime Database
-    const newAtaRef = push(dbRef(getDatabase(), "gestao/atas"));
+    const rtDb = getDatabase();
+    const newAtaRef = push(dbRef(rtDb, "gestao/atas"));
     await set(newAtaRef, dataToSave);
 
-    form.innerHTML = `<div class="alert alert-success"><h2>Ata Salva com Sucesso!</h2><p>O documento foi salvo e o registro guardado.</p></div><br><button class="action-button" style="background-color:#007bff;" id="register-new-ata">Registrar Nova Ata</button>`;
+    form.innerHTML = `<div class="alert alert-success"><h2>Ata Salva com Sucesso!</h2><p>O registro foi guardado no banco de dados e o documento está sendo gerado.</p></div><br><button class="action-button" style="background-color:#007bff;" id="register-new-ata">Registrar Nova Ata</button>`;
     form
       .querySelector("#register-new-ata")
       .addEventListener("click", createNewAtaForm);
