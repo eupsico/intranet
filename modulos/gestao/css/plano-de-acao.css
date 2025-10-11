@@ -7,14 +7,12 @@
     gap: 20px;
     align-items: flex-start;
 }
-
 .kanban-column {
     background-color: var(--cor-fundo);
     border-radius: var(--borda-radius);
     padding: 15px;
     border: 1px solid var(--cor-borda);
 }
-
 .column-header {
     text-align: center;
     color: var(--cor-texto-principal);
@@ -25,17 +23,14 @@
     font-weight: 600;
 }
 
-/* --- Cores das Colunas --- */
+/* Cores das Colunas */
 #coluna-a-fazer { background-color: #cfe2ff; }
 #coluna-em-andamento { background-color: #fff3cd; }
 #coluna-atrasado { background-color: #f8d7da; }
 #coluna-concluido { background-color: #d4edda; }
 
-/* --- Estilos dos Cards --- */
-.cards-container {
-    min-height: 100px;
-}
-
+/* Estilos dos Cards */
+.cards-container { min-height: 100px; }
 .kanban-card {
     background-color: var(--cor-surface);
     border-radius: var(--borda-radius);
@@ -45,23 +40,9 @@
     cursor: pointer;
     transition: all 0.2s ease-in-out;
 }
-
-.kanban-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.kanban-card p {
-    margin: 0 0 8px 0;
-    word-wrap: break-word;
-}
-
-.kanban-card small {
-    color: var(--cor-texto-secundario);
-    font-style: italic;
-    font-size: 0.9em;
-}
-
+.kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.kanban-card p { margin: 0 0 8px 0; word-wrap: break-word; }
+.kanban-card small { color: var(--cor-texto-secundario); font-style: italic; font-size: 0.9em; }
 .card-atividade { border-left: 5px solid var(--cor-secundaria); }
 .card-encaminhamento { border-left: 5px solid var(--cor-alerta); }
 
@@ -74,26 +55,18 @@
     align-items: center;
     gap: 10px;
 }
+.card-actions .status-buttons { display: flex; gap: 8px; }
 
-.card-actions .status-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-/* --- Estilos do Modal --- */
-.modal-overlay {
-    /* ... (estilos do modal permanecem os mesmos, se já estiverem em design-system.css, pode remover daqui) ... */
-}
-/* Ajusta o tamanho máximo do modal para comportar o novo layout */
+/* --- NOVOS ESTILOS MELHORADOS PARA O MODAL --- */
 #update-modal .modal-content {
-    max-width: 800px;
+    max-width: 700px; /* Um pouco mais largo */
 }
 
-/* Título e Origem */
-#update-modal #modal-title {
-    font-size: 1.5em;
-    margin-bottom: 5px;
+/* Adiciona espaçamento interno no corpo do modal */
+#update-modal .modal-body {
+    padding: 20px 30px;
 }
+
 #update-modal #modal-origem {
     font-size: 0.9em;
     color: var(--cor-texto-secundario);
@@ -101,7 +74,6 @@
     margin-bottom: 20px;
 }
 
-/* Histórico de Atualizações */
 #update-modal label {
     font-weight: 600;
     margin-top: 15px;
@@ -114,8 +86,9 @@
     border: 1px solid var(--cor-borda);
     border-radius: var(--borda-radius);
     padding: 15px;
-    max-height: 180px;
+    max-height: 150px;
     overflow-y: auto;
+    margin-bottom: 20px;
 }
 #historico-atualizacoes .entrada-historico {
     padding-bottom: 10px;
@@ -129,12 +102,11 @@
 #historico-atualizacoes p { margin: 0 0 5px 0; }
 #historico-atualizacoes small { color: #777; }
 
-
-/* Formulário de Nova Atualização e Encaminhamento */
+/* Seções de formulário dentro do modal */
 #nova-atualizacao-form,
 #encaminhamento-vinculado-form {
     border-top: 1px dashed var(--cor-borda);
-    margin-top: 20px;
+    margin-top: 25px;
     padding-top: 20px;
 }
 
@@ -142,8 +114,17 @@
 #encaminhamento-vinculado-form .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 0 20px; /* Apenas gap horizontal */
 }
 #encaminhamento-vinculado-form .full-width {
     grid-column: 1 / -1; /* Ocupa a linha inteira */
+}
+#encaminhamento-vinculado-form .form-group {
+    margin-bottom: 10px;
+}
+
+/* Botões dentro das seções do formulário */
+#update-modal .modal-actions {
+    margin-top: 15px;
+    display: flex;
 }
