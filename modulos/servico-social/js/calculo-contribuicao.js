@@ -70,9 +70,7 @@ export async function init(user, userData) {
         index > 0 ? faixasDeContribuicao[index - 1].ateSalarios : 0;
       tableHtml += `
                 <tr>
-                    <td>De ${faixaAnterior.toFixed(
-                      1
-                    )} a ${faixa.ateSalarios.toFixed(1)}</td>
+                    <td>Entre ${faixaAnterior.toFixed} a ${faixa.ateSalarios}</td>
                     <td>${faixa.percentual}%</td>
                     <td id="resultado-individual-${index}">-</td>
                     <td id="resultado-familia-${index}">-</td>
