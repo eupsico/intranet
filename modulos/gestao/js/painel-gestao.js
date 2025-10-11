@@ -1,7 +1,7 @@
 // /modulos/gestao/js/painel-gestao.js
+// VERSÃO CORRIGIDA (Remove chamada duplicada que causa o loop)
 
 // Mapeia os IDs das views (do hash da URL) para os arquivos HTML correspondentes.
-// Garanta que esses arquivos HTML existam na mesma pasta do painel-gestao.html
 const views = {
   "dashboard-reunioes": { html: "dashboard-reunioes.html" },
   "ata-de-reuniao": { html: "ata-de-reuniao.html" },
@@ -11,7 +11,7 @@ const views = {
 
 /**
  * Função de inicialização do Módulo de Gestão.
- * Esta função é EXPORTADA para ser chamada pelo app.js principal após o login.
+ * Chamada pelo app.js principal após o login do usuário.
  * @param {object} user - Objeto do usuário autenticado do Firebase.
  * @param {object} userData - Dados do perfil do usuário do Firestore.
  */
@@ -23,7 +23,8 @@ export function init(user, userData) {
   // Adiciona um listener para o evento de mudança de hash na URL (navegação)
   window.addEventListener("hashchange", handleNavigation);
 
-  // Carrega a view inicial assim que o módulo é iniciado
+  // Carrega a view inicial (ou a view definida no hash da URL)
+  // ESTA é a única chamada necessária para o carregamento inicial.
   handleNavigation();
 }
 
@@ -74,8 +75,6 @@ function buildGestaoSidebarMenu() {
  * Gerencia qual view carregar com base no hash da URL.
  */
 function handleNavigation() {
-  // Pega o ID da view do hash da URL (ex: #dashboard-reunioes -> "dashboard-reunioes")
-  // Se não houver hash, o padrão é "dashboard-reunioes".
   const viewId = window.location.hash.substring(1) || "dashboard-reunioes";
   loadView(viewId);
 }
@@ -88,19 +87,18 @@ async function loadView(viewId) {
   const contentArea = document.getElementById("content-area");
   const sidebarMenu = document.getElementById("sidebar-menu");
 
-  if (!contentArea || !sidebarMenu || !views[viewId]) {
-    console.error(
-      `Erro: View '${viewId}' ou elementos essenciais não encontrados.`
-    );
+  // Verifica se a view solicitada existe no nosso mapa
+  if (!views[viewId]) {
+    console.error(`Erro: View '${viewId}' não reconhecida.`);
     if (contentArea)
-      contentArea.innerHTML = `<div class="alert alert-danger">Página não encontrada ou erro de configuração. Verifique o console.</div>`;
+      contentArea.innerHTML = `<div class="alert alert-danger">Página não encontrada.</div>`;
     return;
   }
 
   // Mostra o spinner de carregamento
   contentArea.innerHTML = '<div class="loading-spinner"></div>';
 
-  // Atualiza a classe 'active' no link do menu correspondente à view atual
+  // Atualiza a classe 'active' no link do menu
   sidebarMenu.querySelectorAll("a[data-view]").forEach((link) => {
     link.classList.toggle("active", link.dataset.view === viewId);
   });
@@ -118,19 +116,16 @@ async function loadView(viewId) {
 
   try {
     const viewConfig = views[viewId];
-    // O path é relativo à localização de painel-gestao.html
     const response = await fetch(`./${viewConfig.html}`);
 
     if (!response.ok) {
-      throw new Error(
-        `Falha ao carregar o arquivo '${viewConfig.html}'. Status: ${response.status}`
-      );
+      throw new Error(`Falha ao carregar o arquivo '${viewConfig.html}'.`);
     }
 
     contentArea.innerHTML = await response.text();
     console.log(`✅ View '${viewId}' carregada com sucesso.`);
   } catch (error) {
     console.error("Erro ao carregar a view:", error);
-    contentArea.innerHTML = `<div class="alert alert-danger">Ocorreu um erro ao carregar esta seção. Por favor, tente novamente.</div>`;
+    contentArea.innerHTML = `<div class="alert alert-danger">Ocorreu um erro ao carregar esta seção.</div>`;
   }
 }
