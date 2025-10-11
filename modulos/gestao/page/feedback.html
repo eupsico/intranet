@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback da Reunião - EuPsico</title>
+    <link rel="stylesheet" href="../../../assets/css/design-system.css">
+    <style>
+        body {
+            font-family: var(--font-family-sans-serif);
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            margin: 20px auto;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .info-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+        }
+        .info-header h2, .info-header p {
+            margin: 0;
+            padding: 0;
+        }
+        .info-header p {
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .action-button {
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .save-btn {
+            background-color: var(--success-color);
+            float: right;
+        }
+        .save-btn:hover {
+            background-color: var(--success-color-dark);
+        }
+        .save-btn:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        .error-message {
+            color: var(--danger-color);
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-top: 4px;
+            display: block;
+            height: 1em;
+        }
+        .message-box {
+            padding: 20px;
+            text-align: center;
+            font-size: 1.1em;
+            border-radius: var(--border-radius);
+        }
+        .message-box.info { background-color: #d1ecf1; color: #0c5460; }
+        .message-box.error { background-color: #f8d7da; color: #721c24; }
+        .message-box.success { background-color: #d4edda; color: #155724; }
+        .feedback-period {
+            text-align: center;
+            background-color: #e9f5ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 25px;
+            border: 1px solid #bce8f1;
+            color: #31708f;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="feedback-container" class="card">
+            <p class="loading-message">Procurando por reuniões abertas para feedback...</p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="../../../assets/js/firebase-init.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const database = firebase.database();
+            const feedbackContainer = document.getElementById('feedback-container');
+
+            async function findMeeting() {
+                try {
+                    // Tenta pegar a chave da reunião a partir do hash da URL (#)
+                    const ataIdFromUrl = window.location.hash.substring(1);
+
+                    const [perguntasSnapshot, profissionaisSnapshot] = await Promise.all([
+                        database.ref('gestao/modelo_feedback/perguntas').once('value'),
+                        database.ref('financeiro/profissionais').orderByChild('eupsico').once('value')
+                    ]);
+
+                    const perguntasModelo = perguntasSnapshot.val();
+                    if (!perguntasModelo) throw new Error("Modelo de perguntas de feedback não encontrado.");
+
+                    const profissionais = profissionaisSnapshot.val();
+                    if (!profissionais) throw new Error("Lista de profissionais não encontrada.");
+
+                    if (ataIdFromUrl) {
+                        // Se uma ID foi passada na URL, carrega o formulário para essa reunião
+                        const ataSnapshot = await database.ref(`gestao/atas/${ataIdFromUrl}`).once('value');
+                        if (ataSnapshot.exists()) {
+                            renderFeedbackForm(ataSnapshot.val(), ataIdFromUrl, perguntasModelo, profissionais);
+                        } else {
+                            throw new Error("A reunião especificada na URL não foi encontrada.");
+                        }
+                    } else {
+                        // Se nenhuma ID foi passada, procura por uma reunião ativa
+                        findActiveMeeting(perguntasModelo, profissionais);
+                    }
+                } catch (err) {
+                    feedbackContainer.innerHTML = `<div class="message-box error"><strong>Erro ao carregar dados:</strong> ${err.message}</div>`;
+                }
+            }
+
+            async function findActiveMeeting(perguntasModelo, profissionais) {
+                const hojeString = new Date().toISOString().split('T')[0];
+                const atasSnapshot = await database.ref('gestao/atas').orderByChild('dataReuniao').startAt(hojeString).once('value');
+                const todasAtas = atasSnapshot.val() || {};
+                const agora = new Date();
+                let meetingFound = false;
+                let proximaReuniaoInfo = null;
+
+                for (const ataId in todasAtas) {
+                    const ata = todasAtas[ataId];
+                    if (ata.tipo !== 'Reunião Técnica' || !ata.dataReuniao || !ata.horaInicio || !ata.duracao) continue;
+
+                    const inicioReuniao = new Date(`${ata.dataReuniao}T${ata.horaInicio}`);
+                    const duracaoMinutos = parseInt(ata.duracao, 10);
+                    if (isNaN(inicioReuniao.getTime()) || isNaN(duracaoMinutos)) continue;
+
+                    const inicioFeedback = new Date(inicioReuniao.getTime() + 30 * 60 * 1000);
+                    const fimReuniao = new Date(inicioReuniao.getTime() + duracaoMinutos * 60 * 1000);
+                    const fimFeedback = new Date(fimReuniao.getTime() + 60 * 60 * 1000);
+
+                    if (agora >= inicioFeedback && agora <= fimFeedback) {
+                        renderFeedbackForm(ata, ataId, perguntasModelo, profissionais, inicioFeedback, fimFeedback);
+                        meetingFound = true;
+                        break;
+                    }
+
+                    if (inicioFeedback > agora && (!proximaReuniaoInfo || inicioFeedback < proximaReuniaoInfo.inicioFeedback)) {
+                        proximaReuniaoInfo = { inicioFeedback, fimFeedback };
+                    }
+                }
+
+                if (!meetingFound) {
+                    if (proximaReuniaoInfo) {
+                        const formatador = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+                        const inicioF = proximaReuniaoInfo.inicioFeedback.toLocaleString('pt-BR', formatador);
+                        const fimF = proximaReuniaoInfo.fimFeedback.toLocaleString('pt-BR', formatador);
+                        feedbackContainer.innerHTML = `<div class="message-box info">Nenhuma reunião aberta para feedback.<br><br>A próxima avaliação inicia em <strong>${inicioF}</strong> e termina em <strong>${fimF}</strong>.</div>`;
+                    } else {
+                        feedbackContainer.innerHTML = `<div class="message-box info">Nenhuma reunião está aberta para feedback no momento.</div>`;
+                    }
+                }
+            }
+
+            function renderFeedbackForm(ata, ataId, perguntasModelo, profissionais, inicioFeedback, fimFeedback) {
+                const professionalOptions = Object.values(profissionais)
+                    .filter(prof => prof && prof.eupsico)
+                    .map(prof => `<option value="${prof.eupsico}">${prof.eupsico}</option>`)
+                    .join('');
+                
+                let formHtml = `
+                    <div class="info-header">
+                        <h2>Feedback da Reunião Técnica</h2>
+                        <p><strong>Tema:</strong> ${ata.pauta || 'N/A'} | <strong>Responsável:</strong> ${ata.responsavelTecnica || 'N/A'}</p>
+                    </div>
+                    <form id="feedback-form">`;
+
+                if (inicioFeedback && fimFeedback) {
+                    const formatador = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+                    formHtml += `<div class="feedback-period">Formulário disponível de <strong>${inicioFeedback.toLocaleString('pt-BR', formatador)}</strong> até <strong>${fimFeedback.toLocaleString('pt-BR', formatador)}</strong>.</div>`;
+                }
+                
+                formHtml += `
+                        <div class="form-group">
+                            <label for="participante-nome">Seu Nome</label>
+                            <select id="participante-nome" required><option value="">Selecione seu nome...</option>${professionalOptions}</select>
+                            <span class="error-message"></span>
+                        </div>`;
+
+                perguntasModelo.forEach(p => {
+                    formHtml += `<div class="form-group"><label>${p.texto}</label>`;
+                    if (p.tipo === 'select') {
+                        formHtml += `<select id="${p.id}" required><option value="">Selecione...</option>${p.opcoes.map(opt => `<option value="${opt}">${opt}</option>`).join('')}</select>`;
+                    } else if (p.tipo === 'textarea') {
+                        formHtml += `<textarea id="${p.id}" rows="3" required></textarea>`;
+                    }
+                    formHtml += '<span class="error-message"></span></div>';
+                });
+
+                formHtml += `<div><button type="submit" class="action-button save-btn">Enviar Feedback</button></div></form>`;
+                feedbackContainer.innerHTML = formHtml;
+                
+                // Desabilitar nomes que já responderam
+                database.ref(`gestao/atas/${ataId}/feedbacks`).once('value', snapshot => {
+                    const nomesQueJaResponderam = Object.values(snapshot.val() || {}).map(fb => fb.nome);
+                    const selectNomes = document.getElementById('participante-nome');
+                    if (nomesQueJaResponderam.length > 0) {
+                        Array.from(selectNomes.options).forEach(option => {
+                            if (nomesQueJaResponderam.includes(option.value)) {
+                                option.disabled = true;
+                                option.textContent += " (Já respondeu)";
+                            }
+                        });
+                    }
+                });
+
+                document.getElementById('feedback-form').addEventListener('submit', (ev) => {
+                    ev.preventDefault();
+                    const feedbackData = { timestamp: new Date().toISOString(), nome: document.getElementById('participante-nome').value };
+                    perguntasModelo.forEach(p => { feedbackData[p.id] = document.getElementById(p.id).value; });
+
+                    const submitBtn = ev.target.querySelector('button[type="submit"]');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Enviando...';
+
+                    database.ref(`gestao/atas/${ataId}/feedbacks`).push(feedbackData)
+                        .then(() => {
+                            feedbackContainer.innerHTML = `<div class="message-box success"><h2>Obrigado!</h2><p>Seu feedback foi enviado com sucesso.</p></div>`;
+                        })
+                        .catch(err => {
+                            alert(`Erro ao enviar: ${err.message}`);
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Enviar Feedback';
+                        });
+                });
+            }
+
+            findMeeting();
+        });
+    </script>
+</body>
+</html>
