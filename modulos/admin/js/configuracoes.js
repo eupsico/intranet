@@ -1,23 +1,24 @@
 // Arquivo: /modulos/admin/js/configuracoes.js
-// Versão: 2.0 (Com gerenciamento de Faixas de Contribuição)
+// Versão: 4.1 (COMPLETO E CORRIGIDO - Departamentos integrados ao 'geral')
 
 import { db, doc, getDoc, setDoc } from "../../../assets/js/firebase-init.js";
 
+// A referência agora é apenas para o documento 'geral'
+const configRef = doc(db, "configuracoesSistema", "geral");
+
 // --- LÓGICA DAS ABAS ---
 function openTab(evt, tabName) {
-  const tabContents = document.querySelectorAll(".tab-content");
-  tabContents.forEach((tab) => (tab.style.display = "none"));
-
-  const tabLinks = document.querySelectorAll(".tab-link");
-  tabLinks.forEach((link) => link.classList.remove("active"));
-
+  document
+    .querySelectorAll(".tab-content")
+    .forEach((tab) => (tab.style.display = "none"));
+  document
+    .querySelectorAll(".tab-link")
+    .forEach((link) => link.classList.remove("active"));
   document.getElementById(tabName).style.display = "block";
   evt.currentTarget.classList.add("active");
 }
 
 // --- LÓGICA DE CARREGAMENTO E SALVAMENTO ---
-const configRef = doc(db, "configuracoesSistema", "geral");
-
 async function loadConfig() {
   const feedbackEl = document.getElementById("save-feedback");
   const spinner = document.getElementById("loading-spinner");
@@ -27,18 +28,19 @@ async function loadConfig() {
     const docSnap = await getDoc(configRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
+      // Função para preencher todos os campos do formulário
       populateForm(data);
-      // --- INÍCIO DA ALTERAÇÃO ---
+      // Função específica para renderizar a tabela de faixas
       renderFaixasTable(data.financeiro?.faixasContribuicao || []);
-      // --- FIM DA ALTERAÇÃO ---
     } else {
-      console.log("Documento de configurações não encontrado!");
+      console.warn(
+        "Documento de configurações não encontrado! Um novo será criado ao salvar."
+      );
       feedbackEl.textContent =
         "Nenhuma configuração salva. Preencha e salve para criar.";
       feedbackEl.style.color = "orange";
-      // --- INÍCIO DA ALTERAÇÃO ---
-      renderFaixasTable([]); // Renderiza a tabela vazia
-      // --- FIM DA ALTERAÇÃO ---
+      // Renderiza a tabela de faixas vazia se não houver dados
+      renderFaixasTable([]);
     }
   } catch (error) {
     console.error("Erro ao carregar configurações:", error);
@@ -51,14 +53,19 @@ async function loadConfig() {
 
 function populateForm(data) {
   const form = document.getElementById("config-form");
-  if (!form) return;
   for (const mapKey in data) {
-    if (mapKey === "financeiro") continue; // Pula o mapa financeiro para não sobrescrever a tabela
+    if (!data.hasOwnProperty(mapKey)) continue;
     const mapData = data[mapKey];
     for (const fieldKey in mapData) {
+      if (!mapData.hasOwnProperty(fieldKey)) continue;
+
+      // Ignora o array de faixas, pois ele é renderizado pela função renderFaixasTable
+      if (fieldKey === "faixasContribuicao") continue;
+
       const fieldName = `${mapKey}.${fieldKey}`;
       const field = form.elements[fieldName];
       if (field) {
+        // Se o valor for um array (como as listas), junta com quebra de linha para preencher a textarea
         if (Array.isArray(mapData[fieldKey])) {
           field.value = mapData[fieldKey].join("\n");
         } else {
@@ -67,14 +74,6 @@ function populateForm(data) {
       }
     }
   }
-  // Preenche os campos de financeiro manualmente, exceto as faixas
-  if (data.financeiro) {
-    const financeiroForm = document.querySelector("#financeiro");
-    financeiroForm.querySelector("#percentualSupervisao").value =
-      data.financeiro.percentualSupervisao || "";
-    financeiroForm.querySelector("#diaLimiteComprovantes").value =
-      data.financeiro.diaLimiteComprovantes || "";
-  }
 }
 
 async function saveConfig() {
@@ -82,14 +81,12 @@ async function saveConfig() {
   const feedbackEl = document.getElementById("save-feedback");
   const spinner = document.getElementById("loading-spinner");
   const saveButton = document.getElementById("save-button");
-  if (!form || !feedbackEl || !spinner || !saveButton) return;
-
   saveButton.disabled = true;
   spinner.style.display = "block";
   feedbackEl.textContent = "";
 
-  const formData = new FormData(form);
   const configObject = {};
+  const formData = new FormData(form);
 
   for (const [key, value] of formData.entries()) {
     const [mapKey, fieldKey] = key.split(".");
@@ -97,7 +94,9 @@ async function saveConfig() {
     if (!configObject[mapKey]) {
       configObject[mapKey] = {};
     }
+
     const element = document.querySelector(`[name="${key}"]`);
+    // Converte o valor das textareas na aba 'listas' de string para array
     if (
       element &&
       element.tagName === "TEXTAREA" &&
@@ -112,32 +111,33 @@ async function saveConfig() {
     }
   }
 
-  // --- INÍCIO DA ALTERAÇÃO ---
-  // Coleta os dados da tabela de faixas e os transforma em um array de objetos
+  // Coleta os dados da tabela de faixas dinamicamente
   const faixas = [];
-  const faixasTbody = document.getElementById("faixas-contribuicao-tbody");
-  faixasTbody.querySelectorAll("tr").forEach((row) => {
-    const ateSalarios = row.querySelector(
-      'input[data-field="ateSalarios"]'
-    ).value;
-    const percentual = row.querySelector(
-      'input[data-field="percentual"]'
-    ).value;
-    if (ateSalarios && percentual) {
-      faixas.push({
-        ateSalarios: parseFloat(ateSalarios),
-        percentual: parseFloat(percentual),
-      });
-    }
-  });
-  // Ordena as faixas pelo número de salários antes de salvar
+  document
+    .getElementById("faixas-contribuicao-tbody")
+    .querySelectorAll("tr")
+    .forEach((row) => {
+      const ateSalarios = row.querySelector(
+        'input[data-field="ateSalarios"]'
+      ).value;
+      const percentual = row.querySelector(
+        'input[data-field="percentual"]'
+      ).value;
+      if (ateSalarios && percentual) {
+        faixas.push({
+          ateSalarios: parseFloat(ateSalarios),
+          percentual: parseFloat(percentual),
+        });
+      }
+    });
+  // Ordena as faixas antes de salvar
   faixas.sort((a, b) => a.ateSalarios - b.ateSalarios);
 
   if (!configObject.financeiro) configObject.financeiro = {};
   configObject.financeiro.faixasContribuicao = faixas;
-  // --- FIM DA ALTERAÇÃO ---
 
   try {
+    // Salva o objeto completo no documento 'geral'
     await setDoc(configRef, configObject, { merge: true });
     feedbackEl.textContent = "Configurações salvas com sucesso!";
     feedbackEl.style.color = "green";
@@ -154,17 +154,13 @@ async function saveConfig() {
   }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
-// Funções para gerenciar a tabela de faixas de contribuição
+// --- FUNÇÕES PARA GERENCIAR A TABELA DE FAIXAS DE CONTRIBUIÇÃO ---
 function renderFaixasTable(faixas = []) {
   const tbody = document.getElementById("faixas-contribuicao-tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
   if (faixas.length > 0) {
-    faixas.forEach((faixa) => {
-      const newRow = createFaixaRow(faixa);
-      tbody.appendChild(newRow);
-    });
+    faixas.forEach((faixa) => tbody.appendChild(createFaixaRow(faixa)));
   }
 }
 
@@ -179,12 +175,11 @@ function createFaixaRow(faixa = {}) {
         }"></td>
         <td><button type="button" class="btn-remover-faixa">-</button></td>
     `;
-  tr.querySelector(".btn-remover-faixa").addEventListener("click", () => {
-    tr.remove();
-  });
+  tr.querySelector(".btn-remover-faixa").addEventListener("click", () =>
+    tr.remove()
+  );
   return tr;
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Função de inicialização do módulo de configurações.
@@ -192,31 +187,25 @@ function createFaixaRow(faixa = {}) {
 export function init() {
   console.log("⚙️ Módulo de Configurações iniciado.");
 
-  const firstTabLink = document.querySelector(".tab-link");
-  if (firstTabLink) {
-    firstTabLink.click();
-  }
+  // Anexa a função de abrir abas ao objeto window para ser acessível pelo HTML
+  window.openTab = openTab;
 
+  // Clica na primeira aba para garantir que o conteúdo seja exibido
+  document.querySelector(".tab-link")?.click();
+
+  // Carrega os dados do Firestore
   loadConfig();
 
-  const saveButton = document.getElementById("save-button");
-  if (saveButton) {
-    saveButton.addEventListener("click", saveConfig);
-    console.log("Listener de clique adicionado ao botão 'Salvar'.");
-  } else {
-    console.error("Botão 'Salvar' não encontrado no DOM.");
-  }
+  // Adiciona o listener ao botão de salvar
+  document.getElementById("save-button")?.addEventListener("click", saveConfig);
 
-  // --- INÍCIO DA ALTERAÇÃO ---
   // Adiciona o listener para o botão "Adicionar Faixa"
-  const addFaixaBtn = document.getElementById("btn-adicionar-faixa");
-  if (addFaixaBtn) {
-    addFaixaBtn.addEventListener("click", () => {
+  document
+    .getElementById("btn-adicionar-faixa")
+    ?.addEventListener("click", () => {
       const tbody = document.getElementById("faixas-contribuicao-tbody");
-      tbody.appendChild(createFaixaRow());
+      if (tbody) {
+        tbody.appendChild(createFaixaRow());
+      }
     });
-  }
-  // --- FIM DA ALTERAÇÃO ---
-
-  window.openTab = openTab;
 }

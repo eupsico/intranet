@@ -1,5 +1,5 @@
 // /modulos/gestao/js/plano-de-acao.js
-// VERSÃO 2.1 (CORRIGIDA - Lendo do Cloud Firestore)
+// VERSÃO 2.2 (Lendo departamentos do documento 'geral')
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -11,8 +11,10 @@ import {
   doc,
   updateDoc,
   arrayUnion,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
+// ... (o resto do arquivo, como `todasAsTarefas`, `currentUser`, etc., permanece o mesmo)
 let todasAsTarefas = [],
   gestoresCache = [],
   departamentosCache = [];
@@ -26,14 +28,36 @@ export async function init(user, userData) {
 }
 
 async function carregarDadosIniciais() {
-  await Promise.all([
-    fetchGestores(),
-    fetchDepartamentos(),
-    fetchAtasEPlanos(),
-  ]);
+  // A ordem é importante: primeiro buscamos as configurações, depois as atas
+  await Promise.all([fetchGestores(), fetchDepartamentos()]);
+  await fetchAtasEPlanos();
+
   await verificarEMoverAtrasadas();
   renderizarQuadroKanban();
 }
+
+// --- ALTERAÇÃO PRINCIPAL AQUI ---
+async function fetchDepartamentos() {
+  if (departamentosCache.length > 0) return;
+  try {
+    const configRef = doc(firestoreDb, "configuracoesSistema", "geral");
+    const docSnap = await getDoc(configRef);
+    if (
+      docSnap.exists() &&
+      docSnap.data().listas &&
+      docSnap.data().listas.departamentos
+    ) {
+      departamentosCache = docSnap.data().listas.departamentos.sort();
+    } else {
+      console.warn(
+        "Nenhuma lista de departamentos encontrada em 'configuracoesSistema/geral/listas/departamentos'."
+      );
+    }
+  } catch (error) {
+    console.error("[PLANO] Erro ao buscar departamentos:", error);
+  }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 async function fetchAtasEPlanos() {
   todasAsTarefas = [];
@@ -76,9 +100,6 @@ async function fetchAtasEPlanos() {
     });
   } catch (error) {
     console.error("[PLANO] Erro ao buscar atas e planos:", error);
-    throw new Error(
-      "Falha ao buscar dados das atas. Verifique as permissões do Firestore."
-    );
   }
 }
 
@@ -100,27 +121,7 @@ async function fetchGestores() {
   }
 }
 
-async function fetchDepartamentos() {
-  if (departamentosCache.length > 0) return;
-  try {
-    const docSnap = await getDocs(
-      collection(firestoreDb, "configuracoesSistema", "geral")
-    );
-    docSnap.forEach((doc) => {
-      if (doc.id === "departamentos" && doc.data().lista) {
-        departamentosCache = doc.data().lista.sort();
-      }
-    });
-    if (departamentosCache.length === 0) {
-      console.warn(
-        "Nenhuma lista de departamentos encontrada em 'configuracoesSistema/geral/departamentos'."
-      );
-    }
-  } catch (error) {
-    console.error("[PLANO] Erro ao buscar departamentos:", error);
-  }
-}
-
+// ... (O restante do arquivo, a partir de verificarEMoverAtrasadas(), permanece exatamente o mesmo)
 async function verificarEMoverAtrasadas() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);

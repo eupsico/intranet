@@ -36,7 +36,6 @@
                 <h4>Faixas de Contribuição (Serviço Social)</h4>
                 <p class="description">Defina as faixas de salário mínimo e os percentuais de contribuição correspondentes.</p>
                 
-    
                 <div class="form-group">
                     <label for="percentualAdicionalFamilia">Percentual Adicional (Família %)</label>
                     <input type="number" id="percentualAdicionalFamilia" name="financeiro.percentualAdicionalFamilia" placeholder="Ex: 40">
@@ -95,6 +94,13 @@
 
             <div id="listas" class="tab-content">
                 <h3>Listas Editáveis</h3>
+
+                <div class="form-group">
+                    <label for="departamentos">Lista de Departamentos (um por linha)</label>
+                    <textarea id="departamentos" name="listas.departamentos" rows="5" placeholder="Recursos Humanos&#10;Financeiro&#10;Marketing"></textarea>
+                </div>
+                <hr>
+                
                 <div class="form-group">
                     <label for="salasPresenciais">Nomes das Salas Presenciais (um por linha)</label>
                     <textarea id="salasPresenciais" name="listas.salasPresenciais" rows="5" placeholder="Sala Leila Tardivo&#10;Sala Freud&#10;Sala Winnicott"></textarea>
@@ -111,7 +117,7 @@
             
             <div id="textos" class="tab-content">
                 <h3>Modelos de Mensagem</h3>
-                <p class="description">Use variáveis como {`{saudacao}`}, {`{p}`}, {`{d}`}, {`{t}`}, etc. para personalizar as mensagens.</p>
+                <p class="description">Use variáveis como `{saudacao}`, `{p}`, `{d}`, `{t}`, etc. para personalizar as mensagens.</p>
                 <hr>
                 <h4>Mensagens Gerais e de Contrato</h4>
                 <div class="form-group">
