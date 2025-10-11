@@ -113,7 +113,7 @@ async function fetchDepartamentos() {
     });
     if (departamentosCache.length === 0) {
       console.warn(
-        "Nenhuma lista de departamentos encontrada em 'configuracoesSistema/departamentos'."
+        "Nenhuma lista de departamentos encontrada em 'configuracoesSistema/geral/departamentos'."
       );
     }
   } catch (error) {
