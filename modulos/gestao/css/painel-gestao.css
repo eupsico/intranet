@@ -34,5 +34,93 @@
   font-size: 1.2rem;
 }
 
-/* Adicione aqui outras regras de CSS necessárias para os elementos
-   dentro das páginas 'dashboard-reunioes.html', 'ata-de-reuniao.html', etc. */
+/* Estilos para o Acordeão de Atas */
+.accordion {
+    margin-bottom: 10px;
+    border-radius: var(--borda-radius);
+    overflow: hidden;
+    box-shadow: var(--sombra-suave);
+    border: 1px solid var(--cor-borda);
+}
+
+.accordion-trigger {
+    background-color: var(--cor-surface);
+    color: var(--cor-primaria);
+    cursor: pointer;
+    padding: 15px 20px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    font-size: 1.1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+
+.accordion-trigger:hover {
+    background-color: var(--cor-fundo);
+}
+
+.accordion-trigger::after {
+    content: '+';
+    font-size: 1.5em;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.accordion-content {
+    background: #f9fafb;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+}
+
+.accordion-content .content-wrapper {
+    padding: 20px;
+}
+
+/* Estilos para os itens dentro do acordeão */
+.ata-item-title {
+    background-color: var(--cor-fundo-box);
+    color: var(--cor-primaria-dark);
+    padding: 8px 15px;
+    margin-top: 15px;
+    border-radius: var(--borda-radius);
+    font-size: 1em;
+    font-weight: bold;
+}
+
+.ata-item-content {
+    padding: 10px 15px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.ata-item-content p, .ata-item-content ul {
+    margin: 5px 0;
+}
+
+.ata-item-content ul {
+    list-style-type: '• ';
+    padding-left: 20px;
+}
+
+/* Container para os botões de ação */
+.action-buttons-container {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--cor-borda);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-button.feedback {
+    background-color: var(--cor-alerta);
+}
+
+.action-button.pdf {
+    background-color: var(--cor-erro);
+}
