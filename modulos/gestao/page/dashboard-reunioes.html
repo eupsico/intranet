@@ -1,0 +1,212 @@
+<style>
+    .reunioes-body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 25px; position: relative; }
+    .reunioes-body::after { content: ""; background: url('https://i.ibb.co/Kj3q3XNk/Nova2.jpg') no-repeat center center; background-size: contain; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; height: 80vh; opacity: 0.08; z-index: -1; }
+    .reunioes-container { max-width: 900px; margin: 0 auto; }
+    .page-header { text-align: center; margin-bottom: 20px; }
+    .page-header img { max-width: 250px; height: auto; }
+    .reunioes-h1 { background-color: #1d70b7; color: white; padding: 20px; border-radius: 8px; margin-top: 0; font-size: 2em; text-align: center; }
+    .reunioes-card { background-color: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; padding: 25px; }
+    .filter-container { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
+    .filter-group { flex: 1; min-width: 250px; }
+    .reunioes-label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+    .reunioes-select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+    .next-meeting-info { flex: 1; min-width: 250px; background-color: #e7f3fe; border: 2px solid #1d70b7; border-radius: 8px; padding: 15px; text-align: center; }
+    .next-meeting-info h3 { margin: 0 0 5px 0; color: #1d70b7; }
+    .next-meeting-info p { margin: 0; }
+    .atas-header { background-color: #04396d; color: white; padding: 12px 20px; border-radius: 8px; margin-top: 30px; margin-bottom: 20px; font-size: 1.5em; }
+    .accordion { margin-bottom: 10px; border-radius: 8px; overflow:hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .accordion-trigger { background-color: #6c757d; color: white; cursor: pointer; padding: 12px 15px; width: 100%; border: none; text-align: left; font-size: 1.1em; }
+    .accordion-content { padding: 10px 20px 20px 20px; background: #fff; border: 1px solid #ddd; border-top: none; max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; }
+    .ata-item-title { background-color: #1d70b7; color: white; padding: 8px 15px; margin-top: 15px; margin-bottom: 8px; border-radius: 5px; font-size: 1.1em; font-weight: bold; }
+    .ata-item-content { padding: 0 5px 5px; margin: 0; line-height: 1.6; }
+    .ata-item-content p, .ata-item-content ul { margin: 5px 0; }
+    .ata-item-content ul { padding-left: 20px; margin-top: 5px; margin-bottom: 10px; }
+    .action-buttons-container { margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ccc; display: flex; gap: 10px; flex-wrap: wrap; }
+    .action-button { border: none; padding: 10px 18px; font-size: 0.9em; font-weight: bold; border-radius: 5px; cursor: pointer; color: white; text-decoration: none; transition: background-color 0.3s; }
+    .action-button.feedback { background-color: #17a2b8; }
+    .action-button.pdf { background-color: #c82333; }
+</style>
+
+<div class="reunioes-body">
+    <div class="page-header">
+        <img src="https://i.ibb.co/JwVcskKb/Saude-Mental.png" alt="Logo Saúde Mental EuPsico">
+    </div>
+
+    <div class="reunioes-container">
+        <h1 class="reunioes-h1">Dashboard de Reuniões</h1>
+        <div class="reunioes-card">
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label class="reunioes-label" for="tipo-filtro">Filtrar por Tipo</label>
+                    <select id="tipo-filtro" class="reunioes-select">
+                        <option value="Todos">Todos os Tipos</option>
+                        <option value="Reunião Conselho administrativo">Reunião Conselho administrativo</option>
+                        <option value="Reunião com Gestor">Reunião com Gestor</option>
+                        <option value="Reunião Técnica">Reunião Técnica</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+                <div class="next-meeting-info" id="proxima-reuniao-info">
+                    <h3>Próxima Reunião Agendada</h3>
+                    <p>Carregando...</p>
+                </div>
+            </div>
+        </div>
+        <h2 class="atas-header">Atas Salvas</h2>
+        <div id="atas-container">Carregando atas...</div>
+    </div>
+</div>
+
+<script>
+    // Garante que o script só rode depois que o HTML for inserido na página
+    (function() {
+        // As credenciais do Firebase já foram inicializadas pelo painel principal,
+        // então só precisamos da referência ao database.
+        const database = firebase.database();
+        let todasAsAtas = [];
+
+        function loadAtas() {
+            const atasContainer = document.getElementById('atas-container');
+            if (!atasContainer) return; // Se o elemento não existe, para a execução
+            atasContainer.innerHTML = 'Carregando atas...';
+            
+            database.ref('gestao/atas').orderByChild('dataReuniao').on('value', snapshot => {
+                todasAsAtas = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        todasAsAtas.push({ key: childSnapshot.key, ...childSnapshot.val() });
+                    });
+                }
+                todasAsAtas.reverse(); // Mostra as mais recentes primeiro
+                filtrarEExibirAtas();
+            }, error => {
+                console.error("Erro ao carregar atas do Firebase:", error);
+                atasContainer.innerHTML = '<div class="reunioes-card"><p style="color: red;">Erro ao carregar atas. Verifique as regras do Firebase e a conexão.</p></div>';
+            });
+        }
+
+        function filtrarEExibirAtas() {
+            const filterType = document.getElementById('tipo-filtro').value;
+            const atasContainer = document.getElementById('atas-container');
+            if (!atasContainer) return;
+
+            const atasFiltradas = filterType === 'Todos' ? todasAsAtas : todasAsAtas.filter(ata => ata.tipo === filterType);
+            
+            if (atasFiltradas.length === 0) {
+                atasContainer.innerHTML = '<div class="reunioes-card"><p>Nenhuma ata encontrada para este filtro.</p></div>';
+            } else {
+                atasContainer.innerHTML = atasFiltradas.map(ata => renderSavedAtaAccordion(ata.key, ata)).join('');
+            }
+            exibirProximaReuniao(atasFiltradas);
+        }
+
+        function exibirProximaReuniao(atasFiltradas) {
+            const infoBox = document.getElementById('proxima-reuniao-info');
+            if (!infoBox) return;
+
+            const agora = new Date();
+            let proximaReuniao = null;
+
+            atasFiltradas.forEach(ata => {
+                if (ata.proximaReuniao) {
+                    const dataProxima = new Date(ata.proximaReuniao);
+                    if (dataProxima > agora && (!proximaReuniao || dataProxima < new Date(proximaReuniao.proximaReuniao))) {
+                        proximaReuniao = ata;
+                    }
+                }
+            });
+
+            if (proximaReuniao) {
+                const data = new Date(proximaReuniao.proximaReuniao);
+                infoBox.innerHTML = `<h3>Próxima Reunião Agendada</h3><p><strong>${proximaReuniao.tipo}</strong> em ${data.toLocaleString('pt-BR')}</p>`;
+            } else {
+                infoBox.innerHTML = `<h3>Próxima Reunião Agendada</h3><p>Nenhuma reunião futura agendada.</p>`;
+            }
+        }
+        
+        // Esta função precisa ser global no escopo do window para ser chamada pelo onclick
+        window.abrirFeedbackReuniao = function(key) {
+            if (!key) {
+                alert("ERRO: A chave (key) da reunião é inválida!");
+                return;
+            }
+            // Abre a página de feedback em uma nova aba, passando a chave da ata na URL
+            const urlFeedback = `feedback.html#${key}`; 
+            window.open(urlFeedback, '_blank');
+        }
+        
+        function renderSavedAtaAccordion(key, data) {
+            const date = data.dataReuniao ? new Date(data.dataReuniao + 'T00:00:00') : null;
+            const formattedDate = date ? date.toLocaleDateString('pt-BR') : 'Data Inválida';
+            const title = `${data.tipo} - ${formattedDate}`;
+            
+            let contentHtml = '';
+            let feedbackButtonHtml = '';
+            
+            const createItem = (title, content) => {
+                if (content && String(content).trim()) {
+                   const formattedContent = String(content).replace(/\n/g, '<br>');
+                   return `<div class="ata-item-title">${title}</div><div class="ata-item-content"><p>${formattedContent}</p></div>`;
+                }
+                return '';
+            };
+            
+            const createList = (title, listData) => {
+                if (!listData || Object.keys(listData).length === 0) return '';
+                const listItems = Object.values(listData).map(item => `<li>${item.descricao} (Responsável: ${item.responsavel}, Prazo: ${new Date(item.prazo).toLocaleDateString('pt-BR', {timeZone: 'UTC'})})</li>`).join('');
+                return `<div class="ata-item-title">${title}</div><div class="ata-item-content"><ul>${listItems}</ul></div>`;
+            };
+
+            const dateTimeInfo = `Data: ${formattedDate}<br>Início: ${data.horaInicio || 'N/A'}<br>Fim: ${data.horaFim || 'N/A'}`;
+            contentHtml += createItem('Data e Horário da Reunião', dateTimeInfo);
+            
+            if (data.tipo === 'Reunião Técnica') {
+                contentHtml += createItem('Tema', data.pauta);
+                contentHtml += createItem('Responsável', data.responsavelTecnica);
+                contentHtml += createItem('Duração', data.duracao ? data.duracao + ' minutos' : '');
+                feedbackButtonHtml = `<button class="action-button feedback" onclick="window.abrirFeedbackReuniao('${key}')">Abrir Feedback</button>`;
+            } else {
+                contentHtml += createItem('Pauta', data.pauta);
+                if (data.participantes) contentHtml += createItem('Participantes', data.participantes);
+                if (data.pontos) contentHtml += createItem('Pontos Discutidos', data.pontos);
+                if (data.decisoes) contentHtml += createItem('Decisões', data.decisoes);
+                if (data.planoDeAcao) contentHtml += createList('Plano de Ação', data.planoDeAcao);
+                if (data.temasProximaReuniao) contentHtml += createItem('Temas p/ Próxima Reunião', data.temasProximaReuniao);
+                if (data.proximaReuniao) contentHtml += createItem('Próxima Reunião', new Date(data.proximaReuniao).toLocaleString('pt-BR'));
+            }
+
+            const pdfButtonHtml = data.pdfUrl ? `<a href="${data.pdfUrl}" target="_blank" class="action-button pdf">Abrir PDF</a>` : '';
+
+            return `<div class="accordion">
+                        <button class="accordion-trigger" data-ata-id="${key}">${title}</button>
+                        <div class="accordion-content">
+                            ${contentHtml}
+                            <div class="action-buttons-container">
+                                ${pdfButtonHtml}
+                                ${feedbackButtonHtml}
+                            </div>
+                        </div>
+                    </div>`;
+        }
+
+        // Inicialização e configuração dos eventos
+        loadAtas();
+        
+        const filtro = document.getElementById('tipo-filtro');
+        if (filtro) {
+            filtro.addEventListener('change', filtrarEExibirAtas);
+        }
+
+        // Delegação de eventos para os acordeões
+        document.getElementById('atas-container').addEventListener('click', e => {
+            if (e.target.classList.contains('accordion-trigger')) {
+                const content = e.target.nextElementSibling;
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            }
+        });
+    })();
+</script>
