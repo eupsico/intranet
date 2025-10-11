@@ -1,5 +1,5 @@
 // Arquivo: assets/js/app.js
-// Versão: 9.1 (Com integração do Painel de Administração)
+// Versão: 9.2 (Com integração do Painel de Gestão)
 
 // 1. Importa os serviços e funções necessários do nosso arquivo de configuração central
 export let currentUserData = {};
@@ -203,7 +203,16 @@ document.addEventListener("DOMContentLoaded", function () {
         // Chama a função 'init' exportada pelo módulo, passando o contexto do usuário
         module.init(user, userData);
       },
-
+      "painel-gestao.html": async () => {
+        const pageTitleContainer = document.getElementById(
+          "page-title-container"
+        );
+        if (pageTitleContainer) {
+          pageTitleContainer.innerHTML = `<h1>Painel de Gestão</h1><p>Registro de atas, plano de ação e dashboards.</p>`;
+        }
+        const module = await import("../../modulos/gestao/js/painel-gestao.js");
+        module.init(user, userData);
+      },
       "painel-financeiro.html": async () => {
         const pageTitleContainer = document.getElementById(
           "page-title-container"
