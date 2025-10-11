@@ -389,6 +389,7 @@ document.addEventListener("DOMContentLoaded", function () {
       supervisao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
       servico_social: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
       trilha_paciente: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>`,
+      gestao: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v9l-4-4h-2a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2Z"/></svg>`,
     };
 
     const areas = {
@@ -459,6 +460,13 @@ document.addEventListener("DOMContentLoaded", function () {
         url: "./modulos/rh/page/rh-painel.html",
         roles: ["admin", "rh"],
         icon: icons.rh,
+      },
+      gestao: {
+        titulo: "Gestão",
+        descricao: "Registro de atas, plano de ação e dashboards de reuniões.",
+        url: "./modulos/gestao/page/painel-gestao.html",
+        roles: ["admin", "gestao"], // Usuários com 'admin' ou 'gestao' poderão ver
+        icon: icons.gestao,
       },
       servico_social: {
         titulo: "Serviço Social",
