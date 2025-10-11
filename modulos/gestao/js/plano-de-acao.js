@@ -104,7 +104,7 @@ async function fetchDepartamentos() {
   if (departamentosCache.length > 0) return;
   try {
     const docSnap = await getDocs(
-      collection(firestoreDb, "configuracoesSistema")
+      collection(firestoreDb, "configuracoesSistema", "geral")
     );
     docSnap.forEach((doc) => {
       if (doc.id === "departamentos" && doc.data().lista) {

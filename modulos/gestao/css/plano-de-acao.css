@@ -84,3 +84,66 @@
 .modal-overlay {
     /* ... (estilos do modal permanecem os mesmos, se já estiverem em design-system.css, pode remover daqui) ... */
 }
+/* Ajusta o tamanho máximo do modal para comportar o novo layout */
+#update-modal .modal-content {
+    max-width: 800px;
+}
+
+/* Título e Origem */
+#update-modal #modal-title {
+    font-size: 1.5em;
+    margin-bottom: 5px;
+}
+#update-modal #modal-origem {
+    font-size: 0.9em;
+    color: var(--cor-texto-secundario);
+    display: block;
+    margin-bottom: 20px;
+}
+
+/* Histórico de Atualizações */
+#update-modal label {
+    font-weight: 600;
+    margin-top: 15px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+#historico-atualizacoes {
+    background-color: var(--cor-fundo);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    padding: 15px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+#historico-atualizacoes .entrada-historico {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+#historico-atualizacoes .entrada-historico:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+#historico-atualizacoes p { margin: 0 0 5px 0; }
+#historico-atualizacoes small { color: #777; }
+
+
+/* Formulário de Nova Atualização e Encaminhamento */
+#nova-atualizacao-form,
+#encaminhamento-vinculado-form {
+    border-top: 1px dashed var(--cor-borda);
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+/* Layout em Grid para os campos de encaminhamento */
+#encaminhamento-vinculado-form .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+#encaminhamento-vinculado-form .full-width {
+    grid-column: 1 / -1; /* Ocupa a linha inteira */
+}
