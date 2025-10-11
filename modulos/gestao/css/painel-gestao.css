@@ -1,29 +1,37 @@
 /* /modulos/gestao/css/painel-gestao.css */
 
+/*
+ * NOTA DE ATUALIZAÇÃO:
+ * Este arquivo está correto. Ele deve conter APENAS estilos que são específicos 
+ * para o CONTEÚDO das páginas do Painel de Gestão (tabelas, cards, formulários, etc.).
+ * O layout geral (cabeçalho, menu, fundo) é controlado pelo design-system.css.
+ */
+
+/* Estilos para os containers de conteúdo, se necessário */
 .reunioes-container,
 .ata-container,
 .plano-container,
 .feedback-container {
-    /* O container principal agora ocupa 100% da área de conteúdo disponível */
-    width: 100%;
-    /* O padding e outras estilizações de layout são herdados do .main-content */
+  width: 100%;
 }
 
-/* Exemplo: Estilização para um card de dashboard específico deste módulo */
+/* Estilização para um card de dashboard específico deste módulo */
 .card-gestao {
-    background-color: var(--neutral-color-white);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 1.5rem;
+  background-color: var(--neutral-color-white);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--neutral-color-medium);
 }
 
 .card-gestao h3 {
-    margin-top: 0;
-    color: var(--primary-color-dark);
-    border-bottom: 1px solid var(--neutral-color-medium);
-    padding-bottom: 0.75rem;
-    margin-bottom: 1rem;
+  margin-top: 0;
+  color: var(--primary-color-dark);
+  border-bottom: 1px solid var(--neutral-color-light);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
 }
 
 /* Adicione aqui outras regras de CSS necessárias para os elementos
