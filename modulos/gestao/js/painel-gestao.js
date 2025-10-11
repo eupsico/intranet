@@ -1,46 +1,44 @@
 // /modulos/gestao/js/painel-gestao.js
 
-// Importa as funções necessárias do Firebase (v9) e do app.js
-import { db } from "../../../assets/js/firebase-init.js";
-import {
-  onValue,
-  ref,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-// Mapeia os IDs das views para os arquivos HTML e JS correspondentes
+// Mapeia os IDs das views (do hash da URL) para os arquivos HTML correspondentes.
+// Garanta que esses arquivos HTML existam na mesma pasta do painel-gestao.html
 const views = {
-  "dashboard-reunioes": { html: "dashboard-reunioes.html", js: null },
-  "ata-de-reuniao": { html: "ata-de-reuniao.html", js: null },
-  "plano-de-acao": { html: "plano-de-acao.html", js: null },
-  "relatorio-feedback": { html: "relatorio-feedback.html", js: null },
+  "dashboard-reunioes": { html: "dashboard-reunioes.html" },
+  "ata-de-reuniao": { html: "ata-de-reuniao.html" },
+  "plano-de-acao": { html: "plano-de-acao.html" },
+  "relatorio-feedback": { html: "relatorio-feedback.html" },
 };
 
 /**
- * Função de inicialização do Painel de Gestão, chamada pelo app.js principal.
+ * Função de inicialização do Módulo de Gestão.
+ * Esta função é EXPORTADA para ser chamada pelo app.js principal após o login.
  * @param {object} user - Objeto do usuário autenticado do Firebase.
  * @param {object} userData - Dados do perfil do usuário do Firestore.
  */
 export function init(user, userData) {
-  console.log("🔹 Painel de Gestão iniciado para:", userData.nome);
+  console.log("🚀 Módulo de Gestão iniciado com sucesso para:", userData.nome);
 
-  // Constrói o menu lateral específico para este painel
   buildGestaoSidebarMenu();
 
-  // Configura o listener de navegação
+  // Adiciona um listener para o evento de mudança de hash na URL (navegação)
   window.addEventListener("hashchange", handleNavigation);
 
-  // Carrega a view inicial (ou a view definida no hash da URL)
+  // Carrega a view inicial assim que o módulo é iniciado
   handleNavigation();
 }
 
 /**
- * Constrói o menu na barra lateral principal.
+ * Constrói e insere o menu específico de Gestão na barra lateral principal.
  */
 function buildGestaoSidebarMenu() {
   const sidebarMenu = document.getElementById("sidebar-menu");
-  if (!sidebarMenu) return;
+  if (!sidebarMenu) {
+    console.error(
+      "Elemento #sidebar-menu não encontrado. O menu não pode ser construído."
+    );
+    return;
+  }
 
-  // Define os itens do menu para o Painel de Gestão
   const menuItems = [
     { id: "dashboard-reunioes", name: "Dashboard", icon: "dashboard" },
     { id: "ata-de-reuniao", name: "Registrar Ata", icon: "edit_document" },
@@ -49,70 +47,90 @@ function buildGestaoSidebarMenu() {
   ];
 
   let menuHtml = `
-        <li>
-            <a href="../../../index.html" class="back-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                <span>Voltar à Intranet</span>
-            </a>
-        </li>
-        <li class="menu-separator"></li>
+    <li>
+        <a href="../../../index.html" class="back-link">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Voltar à Intranet</span>
+        </a>
+    </li>
+    <li class="menu-separator"></li>
     `;
 
   menuItems.forEach((item) => {
     menuHtml += `
-            <li>
-                <a href="#${item.id}" data-view="${item.id}">
-                    <span class="material-symbols-outlined">${item.icon}</span>
-                    <span>${item.name}</span>
-                </a>
-            </li>
-        `;
+      <li>
+          <a href="#${item.id}" data-view="${item.id}">
+              <span class="material-symbols-outlined">${item.icon}</span>
+              <span>${item.name}</span>
+          </a>
+      </li>
+    `;
   });
 
   sidebarMenu.innerHTML = menuHtml;
 }
 
 /**
- * Gerencia a navegação e o carregamento da view com base no hash da URL.
+ * Gerencia qual view carregar com base no hash da URL.
  */
 function handleNavigation() {
+  // Pega o ID da view do hash da URL (ex: #dashboard-reunioes -> "dashboard-reunioes")
+  // Se não houver hash, o padrão é "dashboard-reunioes".
   const viewId = window.location.hash.substring(1) || "dashboard-reunioes";
   loadView(viewId);
 }
 
 /**
- * Carrega o conteúdo HTML e executa o JS de uma sub-página.
- * @param {string} viewId O ID da view a ser carregada.
+ * Carrega o conteúdo HTML de uma sub-página na área de conteúdo principal.
+ * @param {string} viewId - O ID da view a ser carregada.
  */
 async function loadView(viewId) {
   const contentArea = document.getElementById("content-area");
   const sidebarMenu = document.getElementById("sidebar-menu");
+
   if (!contentArea || !sidebarMenu || !views[viewId]) {
-    console.error(`Área de conteúdo ou view '${viewId}' não encontrada.`);
-    contentArea.innerHTML = `<p class="alert alert-danger">Página não encontrada.</p>`;
+    console.error(
+      `Erro: View '${viewId}' ou elementos essenciais não encontrados.`
+    );
+    if (contentArea)
+      contentArea.innerHTML = `<div class="alert alert-danger">Página não encontrada ou erro de configuração. Verifique o console.</div>`;
     return;
   }
 
-  // Atualiza o item ativo no menu lateral
+  // Mostra o spinner de carregamento
+  contentArea.innerHTML = '<div class="loading-spinner"></div>';
+
+  // Atualiza a classe 'active' no link do menu correspondente à view atual
   sidebarMenu.querySelectorAll("a[data-view]").forEach((link) => {
     link.classList.toggle("active", link.dataset.view === viewId);
   });
 
-  contentArea.innerHTML = '<div class="loading-spinner"></div>';
+  // Atualiza o título principal da página
+  const pageTitle = document.querySelector("#page-title-container");
+  if (pageTitle) {
+    const menuItem = sidebarMenu.querySelector(
+      `a[data-view="${viewId}"] span:not(.material-symbols-outlined)`
+    );
+    if (menuItem) {
+      pageTitle.textContent = menuItem.textContent;
+    }
+  }
 
   try {
     const viewConfig = views[viewId];
+    // O path é relativo à localização de painel-gestao.html
     const response = await fetch(`./${viewConfig.html}`);
-    if (!response.ok) {
-      throw new Error(`Não foi possível carregar ${viewConfig.html}`);
-    }
-    contentArea.innerHTML = await response.text();
 
-    // Se houver um script associado, ele será executado a partir do HTML carregado
-    // (Isso é feito automaticamente pelo navegador ao inserir o <script> no innerHTML)
-    console.log(`View '${viewId}' carregada com sucesso.`);
+    if (!response.ok) {
+      throw new Error(
+        `Falha ao carregar o arquivo '${viewConfig.html}'. Status: ${response.status}`
+      );
+    }
+
+    contentArea.innerHTML = await response.text();
+    console.log(`✅ View '${viewId}' carregada com sucesso.`);
   } catch (error) {
     console.error("Erro ao carregar a view:", error);
-    contentArea.innerHTML = `<div class="alert alert-danger">Ocorreu um erro ao carregar esta seção.</div>`;
+    contentArea.innerHTML = `<div class="alert alert-danger">Ocorreu um erro ao carregar esta seção. Por favor, tente novamente.</div>`;
   }
 }
