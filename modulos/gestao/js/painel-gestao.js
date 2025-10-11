@@ -1,15 +1,18 @@
 // /modulos/gestao/js/painel-gestao.js
-// VERSÃO 3.0 (CORRIGIDA - Com importação dinâmica de módulos)
+// VERSÃO 3.1 (Com integração do Dashboard)
 
 // Mapeia os IDs das views para seus arquivos HTML e JS correspondentes
 const views = {
-  "dashboard-reunioes": { html: "dashboard-reunioes.html", js: null }, // Dashboard não tem JS próprio
+  "dashboard-reunioes": {
+    html: "dashboard-reunioes.html",
+    js: "../js/dashboard-reunioes.js",
+  },
   "ata-de-reuniao": {
     html: "ata-de-reuniao.html",
     js: "../js/ata-de-reuniao.js",
   },
-  "plano-de-acao": { html: "plano-de-acao.html", js: null }, // Adicione o JS se necessário
-  "relatorio-feedback": { html: "relatorio-feedback.html", js: null }, // Adicione o JS se necessário
+  "plano-de-acao": { html: "plano-de-acao.html", js: null },
+  "relatorio-feedback": { html: "relatorio-feedback.html", js: null },
 };
 
 // Funções globais da aplicação (usuário e dados do usuário)
@@ -82,16 +85,12 @@ async function loadView(viewId) {
     contentArea.innerHTML = await response.text();
     console.log(`✅ View HTML '${viewId}' carregada.`);
 
-    // **A MUDANÇA CRÍTICA ESTÁ AQUI**
-    // Se a view tem um arquivo JS associado, importa e executa a função 'init' dele.
     if (viewConfig.js) {
       console.log(`[PAINEL] Importando módulo JS: ${viewConfig.js}`);
       const module = await import(viewConfig.js);
       if (module && typeof module.init === "function") {
         console.log(`[PAINEL] Executando init() de ${viewId}...`);
         module.init(appUser, appUserData);
-      } else {
-        console.warn(`Módulo ${viewConfig.js} não possui uma função init().`);
       }
     }
   } catch (error) {
