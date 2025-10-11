@@ -1,77 +1,48 @@
 // /modulos/gestao/js/ata-de-reuniao.js
-// VERSÃO 4.1 (COMPLETA E CORRIGIDA)
+// VERSÃO 5.0 (CORRIGIDA - Salvando no Cloud Firestore)
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
-import {
-  getDatabase,
-  ref as dbRef,
-  push,
-  set,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import {
   collection,
   query,
   where,
   getDocs,
   orderBy,
+  addDoc,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 let atividadesPlanoAcao = [];
-let gestoresCache = []; // Cache para armazenar a lista de gestores e evitar múltiplas buscas
+let gestoresCache = [];
 const WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbyqUqnwTJX1yh3i5h8CNJJ0r0u0MqI6Pvbte0lnuyVKStS7UR28czQWyQzUhp8X3pIaaQ/exec";
 
-/**
- * Função de inicialização do módulo, EXPORTADA para ser chamada pelo painel-gestao.js.
- */
 export async function init(user, userData) {
   console.log("[ATA] Módulo de Registro de Ata iniciado.");
-  // Busca os gestores uma vez e armazena em cache
   await fetchGestores();
-  // Cria o formulário
   createNewAtaForm();
 }
 
-/**
- * Busca usuários com a função 'gestor' no Firestore e armazena em cache.
- */
 async function fetchGestores() {
-  if (gestoresCache.length > 0) return; // Usa o cache se já foi preenchido
-
+  if (gestoresCache.length > 0) return;
   try {
-    const usuariosRef = collection(firestoreDb, "usuarios");
     const q = query(
-      usuariosRef,
+      collection(firestoreDb, "usuarios"),
       where("funcoes", "array-contains", "gestor"),
       orderBy("nome")
     );
     const snapshot = await getDocs(q);
-
     if (!snapshot.empty) {
       gestoresCache = snapshot.docs.map((doc) => doc.data().nome);
-      console.log("[ATA] Gestores encontrados:", gestoresCache);
-    } else {
-      console.warn(
-        "[ATA] Nenhum usuário com a função 'gestor' foi encontrado."
-      );
     }
   } catch (error) {
     console.error("[ATA] Erro ao buscar gestores:", error);
   }
 }
 
-/**
- * Gera o HTML do formulário e o insere no container.
- */
 function createNewAtaForm() {
   atividadesPlanoAcao = [];
   const container = document.getElementById("new-ata-card-container");
-  if (!container) {
-    console.error(
-      "[ATA] Erro: Container #new-ata-card-container não encontrado."
-    );
-    return;
-  }
+  if (!container) return;
 
   container.innerHTML = `
         <div class="form-group"><label class="form-title-label">Tipo de Reunião</label><select class="form-control ata-tipo"><option value="" disabled selected>Selecione...</option><option value="Reunião Conselho administrativo">Reunião Conselho administrativo</option><option value="Reunião com Gestor">Reunião com Gestor</option><option value="Reunião Técnica">Reunião Técnica</option><option value="Outros">Outros</option></select><span class="error-message"></span></div>
@@ -81,7 +52,6 @@ function createNewAtaForm() {
             <div class="form-group"><label class="form-title-label">Hora de Início</label><input type="time" class="form-control ata-start-time"><span class="error-message"></span></div>
             <div class="form-group"><label class="form-title-label">Hora de Fim</label><input type="time" class="form-control ata-end-time"><span class="error-message"></span></div>
         </div>
-        <div class="form-group tecnica-field duracao-field-container" style="display: none;"><label class="form-title-label">Duração (minutos)</label><input type="number" class="form-control ata-duracao"><span class="error-message"></span></div>
         <div class="form-group tecnica-field" style="display: none;"><label class="form-title-label">Responsável</label><input type="text" class="form-control ata-responsavel-tecnica"><span class="error-message"></span></div>
         <div class="form-group participantes-field" style="display: none;"><label class="form-title-label">Participantes</label><div class="participantes-checkbox-container" style="display: none;"></div><input type="text" class="form-control ata-participantes-input" style="display: none;" placeholder="Nomes separados por vírgula"><span class="error-message"></span></div>
         <div class="form-group"><label class="form-title-label" id="pauta-label">Tema da Reunião</label><textarea class="form-control ata-pauta" rows="3"></textarea><span class="error-message"></span></div>
@@ -93,24 +63,18 @@ function createNewAtaForm() {
         <div id="form-status-message" class="status-message"></div>
         <div class="button-bar"><button type="button" class="action-button save-btn">Salvar Ata</button></div>
     `;
-
   populateGestorFields();
   setupEventListeners(container);
 }
 
-/**
- * Usa a lista de gestores em cache para preencher os campos relevantes.
- */
 function populateGestorFields() {
   const container = document.getElementById("new-ata-card-container");
   if (!container || gestoresCache.length === 0) return;
-
   const gestorSelect = container.querySelector(".ata-nome-gestor");
   const responsavelSelect = container.querySelector("#plano-responsavel");
   const checkboxContainer = container.querySelector(
     ".participantes-checkbox-container"
   );
-
   const optionsHtml = gestoresCache
     .map((name) => `<option value="${name}">${name}</option>`)
     .join("");
@@ -120,15 +84,11 @@ function populateGestorFields() {
         `<div><label><input type="checkbox" class="participante-check" value="${name}"> ${name}</label></div>`
     )
     .join("");
-
   gestorSelect.innerHTML += optionsHtml;
   responsavelSelect.innerHTML += optionsHtml;
   checkboxContainer.innerHTML = checkboxesHtml;
 }
 
-/**
- * Renderiza a lista de atividades do plano de ação.
- */
 function renderPlanoAcaoList() {
   const lista = document.getElementById("lista-atividades");
   if (!lista) return;
@@ -142,16 +102,11 @@ function renderPlanoAcaoList() {
     .join("");
 }
 
-/**
- * Configura todos os event listeners do formulário.
- * @param {HTMLElement} container - O elemento que contém o formulário.
- */
 function setupEventListeners(container) {
   container.addEventListener("change", (e) => {
     if (e.target.classList.contains("ata-tipo")) {
       const tipo = e.target.value;
       const pautaLabel = container.querySelector("#pauta-label");
-
       container
         .querySelectorAll(
           ".tecnica-field, .gestao-field, .gestor-select-field, .participantes-field"
@@ -167,8 +122,6 @@ function setupEventListeners(container) {
         container
           .querySelectorAll(".tecnica-field")
           .forEach((el) => (el.style.display = "block"));
-        container.querySelector(".duracao-field-container").style.display =
-          "none";
         pautaLabel.textContent = "Tema da Reunião";
       } else {
         container
@@ -192,18 +145,15 @@ function setupEventListeners(container) {
         }
       }
     }
-
     if (e.target.classList.contains("ata-nome-gestor")) {
       const nomeGestorSelecionado = e.target.value;
-      const responsavelPlanoAcao =
-        container.querySelector("#plano-responsavel");
-      responsavelPlanoAcao.value = nomeGestorSelecionado || "";
+      container.querySelector("#plano-responsavel").value =
+        nomeGestorSelecionado || "";
     }
   });
 
   container.addEventListener("click", async (e) => {
     if (e.target.id === "add-activity") {
-      const errorSpan = container.querySelector("#activity-error-feedback");
       const responsavel = container.querySelector("#plano-responsavel").value;
       const descricao = container.querySelector("#plano-descricao").value;
       const prazo = container.querySelector("#plano-prazo").value;
@@ -213,13 +163,15 @@ function setupEventListeners(container) {
           descricao,
           prazo,
           status: "A Fazer",
+          historicoAtualizacoes: [],
         });
         renderPlanoAcaoList();
         container.querySelector("#plano-descricao").value = "";
         container.querySelector("#plano-prazo").value = "";
-        errorSpan.textContent = "";
+        container.querySelector("#activity-error-feedback").textContent = "";
       } else {
-        errorSpan.textContent = "Preencha todos os campos da atividade.";
+        container.querySelector("#activity-error-feedback").textContent =
+          "Preencha todos os campos da atividade.";
       }
     }
     if (e.target.classList.contains("remove-activity-btn")) {
@@ -233,11 +185,6 @@ function setupEventListeners(container) {
   });
 }
 
-/**
- * Valida o formulário, coleta os dados e envia para o Firebase e Google Apps Script.
- * @param {HTMLButtonElement} saveButton - O botão de salvar.
- * @param {HTMLElement} form - O container do formulário.
- */
 async function handleSaveAta(saveButton, form) {
   const originalButtonText = saveButton.textContent;
   const statusBox = form.querySelector("#form-status-message");
@@ -268,7 +215,6 @@ async function handleSaveAta(saveButton, form) {
   validate(".ata-start-time", !form.querySelector(".ata-start-time").value);
   validate(".ata-end-time", !form.querySelector(".ata-end-time").value);
   validate(".ata-pauta", !form.querySelector(".ata-pauta").value);
-
   if (tipo === "Reunião Técnica") {
     validate(
       ".ata-responsavel-tecnica",
@@ -308,20 +254,19 @@ async function handleSaveAta(saveButton, form) {
 
   let participantes = "",
     nomeGestor = "";
-  if (tipo === "Reunião Conselho administrativo") {
+  if (tipo === "Reunião Conselho administrativo")
     participantes = Array.from(
       form.querySelectorAll(".participante-check:checked")
     )
       .map((cb) => cb.value)
       .join(", ");
-  } else if (tipo === "Reunião com Gestor") {
+  else if (tipo === "Reunião com Gestor") {
     nomeGestor = form.querySelector(".ata-nome-gestor").value;
     participantes = nomeGestor;
-  } else if (tipo === "Outros") {
+  } else if (tipo === "Outros")
     participantes = form.querySelector(".ata-participantes-input").value;
-  }
 
-  let duracaoFinal = "";
+  let duracaoFinal;
   if (tipo === "Reunião Técnica") {
     const inicio = new Date(
       `1970-01-01T${form.querySelector(".ata-start-time").value}`
@@ -330,8 +275,6 @@ async function handleSaveAta(saveButton, form) {
       `1970-01-01T${form.querySelector(".ata-end-time").value}`
     );
     duracaoFinal = (fim - inicio) / 60000 + 60;
-  } else {
-    duracaoFinal = form.querySelector(".ata-duracao").value;
   }
 
   const dataToSave = {
@@ -341,7 +284,7 @@ async function handleSaveAta(saveButton, form) {
     dataReuniao: form.querySelector(".ata-date").value,
     horaInicio: form.querySelector(".ata-start-time").value,
     horaFim: form.querySelector(".ata-end-time").value,
-    duracao: duracaoFinal,
+    duracao: duracaoFinal || null,
     pauta: form.querySelector(".ata-pauta").value,
     responsavelTecnica: form.querySelector(".ata-responsavel-tecnica").value,
     pontos: form.querySelector(".ata-pontos").value,
@@ -349,32 +292,31 @@ async function handleSaveAta(saveButton, form) {
     planoDeAcao: atividadesPlanoAcao,
     temasProximaReuniao: form.querySelector(".ata-temas-proxima").value,
     proximaReuniao: form.querySelector(".ata-proxima-reuniao").value,
+    encaminhamentos: [], // Inicializa o campo de encaminhamentos
   };
 
   try {
     const response = await fetch(WEB_APP_URL, {
       method: "POST",
-      mode: "no-cors", // Importante para evitar erros de CORS com Google Apps Script
+      mode: "no-cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dataToSave),
     });
 
-    console.warn(
-      "[ATA] Enviado para Apps Script. A resposta não pode ser lida devido à política 'no-cors'."
-    );
-
+    console.warn("[ATA] Enviado para Apps Script.");
     saveButton.textContent = "Salvando dados...";
 
-    const rtDb = getDatabase();
-    const newAtaRef = push(dbRef(rtDb, "gestao/atas"));
-    await set(newAtaRef, dataToSave);
+    // --- ALTERAÇÃO PRINCIPAL: SALVANDO NO FIRESTORE ---
+    const atasCollectionRef = collection(firestoreDb, "gestao_atas");
+    await addDoc(atasCollectionRef, dataToSave);
 
     form.innerHTML = `<div class="alert alert-success"><h2>Ata Salva com Sucesso!</h2><p>O registro foi guardado no banco de dados e o documento está sendo gerado.</p></div><br><button class="action-button" style="background-color:#007bff;" id="register-new-ata">Registrar Nova Ata</button>`;
     form
       .querySelector("#register-new-ata")
       .addEventListener("click", createNewAtaForm);
   } catch (error) {
-    statusBox.textContent = "Falha ao salvar: " + error.message;
+    console.error("Erro ao salvar ata:", error);
+    statusBox.textContent = "Falha ao salvar a ata: " + error.message;
     statusBox.className = "alert alert-danger";
     statusBox.style.display = "block";
     saveButton.textContent = originalButtonText;
