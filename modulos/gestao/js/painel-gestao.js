@@ -1,82 +1,110 @@
 document.addEventListener("DOMContentLoaded", function () {
+  // --- Elementos do DOM ---
   const contentArea = document.getElementById("content-area");
   const menuItems = document.querySelectorAll(".menu-item");
-  const userNameDisplay = document.getElementById("user-name");
+  const menuToggleButton = document.getElementById("menu-toggle");
+  const greetingDisplay = document.getElementById("greeting");
+  const userPhotoDisplay = document.getElementById("user-photo");
 
-  // Função para carregar dinamicamente as páginas internas do módulo
+  // --- Funções ---
+
+  /**
+   * Carrega dinamicamente o conteúdo de uma página HTML na área principal.
+   * @param {string} pageName O nome do arquivo HTML (sem a extensão).
+   */
   function loadPage(pageName) {
-    // Exibe um feedback de carregamento para o usuário
-    contentArea.innerHTML =
-      '<div class="loading-feedback"><h1>Carregando...</h1></div>';
-
+    contentArea.innerHTML = "<h1>Carregando...</h1>";
     fetch(`${pageName}.html`)
       .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            `A página '${pageName}.html' não foi encontrada. Verifique o nome do arquivo.`
-          );
-        }
+        if (!response.ok)
+          throw new Error(`A página '${pageName}.html' não foi encontrada.`);
         return response.text();
       })
       .then((html) => {
         contentArea.innerHTML = html;
-
-        // É crucial re-executar os scripts da página que foi carregada.
-        // Esta abordagem encontra todos os scripts no HTML injetado e cria novos
-        // elementos de script para que o navegador os execute.
+        // Re-executa os scripts da página carregada
         Array.from(contentArea.querySelectorAll("script")).forEach(
           (oldScript) => {
             const newScript = document.createElement("script");
-            // Copia todos os atributos (como src, type, etc.)
-            Array.from(oldScript.attributes).forEach((attr) => {
-              newScript.setAttribute(attr.name, attr.value);
-            });
-            // Copia o conteúdo de scripts inline
+            Array.from(oldScript.attributes).forEach((attr) =>
+              newScript.setAttribute(attr.name, attr.value)
+            );
             newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-            // Substitui o script antigo pelo novo para acionar a execução
             oldScript.parentNode.replaceChild(newScript, oldScript);
           }
         );
       })
       .catch((error) => {
         console.error("Erro ao carregar a página:", error);
-        contentArea.innerHTML = `<div class="error-feedback"><h1>Erro ao Carregar</h1><p>${error.message}</p></div>`;
+        contentArea.innerHTML = `<h1 style="color:red;">Erro ao carregar: ${error.message}</h1>`;
       });
   }
+
+  /**
+   * Define a saudação (Bom dia, Boa tarde, Boa noite) com base na hora atual.
+   * @param {string} userName O primeiro nome do usuário.
+   */
+  function setGreeting(userName) {
+    const hour = new Date().getHours();
+    let greetingText = "Olá";
+    if (hour >= 5 && hour < 12) {
+      greetingText = "Bom dia";
+    } else if (hour >= 12 && hour < 18) {
+      greetingText = "Boa tarde";
+    } else {
+      greetingText = "Boa noite";
+    }
+    greetingDisplay.textContent = `${greetingText}, ${userName}!`;
+  }
+
+  // --- Lógica de Inicialização ---
 
   // Monitora o estado de autenticação do usuário
   firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-      // Se o usuário está logado, busca seu nome no Realtime Database
+      // Se logado, busca os dados do usuário no Realtime Database
       database
         .ref("users/" + user.uid)
         .once("value")
         .then((snapshot) => {
           const userData = snapshot.val();
-          // Exibe o nome do usuário ou o email como fallback
-          userNameDisplay.textContent =
-            userData && userData.nome ? userData.nome : user.email;
+          if (userData) {
+            const firstName = userData.nome
+              ? userData.nome.split(" ")[0]
+              : "Usuário";
+            setGreeting(firstName);
+
+            // Atualiza a foto do usuário, se existir
+            if (userData.photoURL) {
+              userPhotoDisplay.src = userData.photoURL;
+            }
+          } else {
+            setGreeting("Usuário"); // Fallback
+          }
         });
-      // Carrega a página inicial padrão do módulo (dashboard)
+      // Carrega a página inicial padrão
       loadPage("dashboard-reunioes");
     } else {
-      // Se não houver usuário, redireciona para a página de login
+      // Se não estiver logado, redireciona para a página de login
       window.location.href = "../../../index.html";
     }
   });
 
+  // --- Event Listeners ---
+
   // Adiciona o evento de clique para cada item do menu
   menuItems.forEach((item) => {
     item.addEventListener("click", function (e) {
-      e.preventDefault(); // Impede o comportamento padrão do link
-
-      // Remove a classe 'active' de todos os itens
+      e.preventDefault();
       menuItems.forEach((i) => i.classList.remove("active"));
-      // Adiciona a classe 'active' apenas ao item que foi clicado
       this.classList.add("active");
-
       const pageName = this.getAttribute("data-page");
       loadPage(pageName);
     });
+  });
+
+  // Adiciona o evento de clique para o botão "hambúrguer"
+  menuToggleButton.addEventListener("click", () => {
+    document.body.classList.toggle("sidebar-collapsed");
   });
 });
