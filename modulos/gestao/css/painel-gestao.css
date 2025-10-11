@@ -1,9 +1,10 @@
 body {
     display: flex;
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     height: 100vh;
     background-color: #f4f4f9;
+    overflow: hidden; /* Evita barras de rolagem no body */
 }
 
 .sidebar {
@@ -14,6 +15,7 @@ body {
     flex-direction: column;
     padding: 20px;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    flex-shrink: 0; /* Impede que o sidebar encolha */
 }
 
 .user-info {
@@ -35,7 +37,7 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    flex-grow: 1;
+    flex-grow: 1; /* Ocupa o espaço restante */
 }
 
 .menu-item a {
@@ -44,7 +46,7 @@ body {
     display: block;
     padding: 15px 20px;
     border-radius: 5px;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s ease;
 }
 
 .menu-item a:hover {
@@ -65,6 +67,8 @@ body {
     border-radius: 5px;
     text-align: center;
     font-weight: bold;
+    margin-top: 20px; /* Adiciona espaço acima do botão */
+    transition: background-color 0.3s ease;
 }
 
 #logout-button:hover {
@@ -73,6 +77,7 @@ body {
 
 .main-content {
     flex-grow: 1;
-    padding: 1px; /* Evita que o margin do primeiro filho vaze */
-    overflow-y: auto; /* Permite scroll se o conteúdo for maior */
+    overflow-y: auto; /* Permite scroll apenas no conteúdo principal */
+    height: 100vh;
+    padding: 1px; /* Hack para evitar colapso de margens */
 }
