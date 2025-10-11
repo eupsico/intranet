@@ -1,5 +1,5 @@
 // Arquivo: /modulos/servico-social/js/calculo-contribuicao.js
-// Versão: 3.1 (Integrado com Percentual Familiar Configurável)
+// Versão: 3.2 (Corrigida a formatação da exibição das faixas)
 
 import { db, doc, getDoc } from "../../../assets/js/firebase-init.js";
 
@@ -9,11 +9,8 @@ export async function init(user, userData) {
   if (!rendaInput || !tableContainer) return;
 
   let faixasDeContribuicao = [];
-  let percentualFamiliar = 1.4; // Valor padrão de 40%
+  let percentualFamiliar = 1.4;
 
-  /**
-   * Carrega as faixas de contribuição e o percentual familiar do Firestore.
-   */
   async function carregarFaixas() {
     tableContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
@@ -48,11 +45,20 @@ export async function init(user, userData) {
     }
   }
 
+  // --- INÍCIO DA ALTERAÇÃO ---
   /**
-   * Constrói a tabela de resultados dinamicamente.
+   * Formata um número para exibição, removendo o '.0' de inteiros.
+   * Ex: 1.5 -> "1.5", 3.0 -> "3"
    */
+  function formatarNumeroFaixa(numero) {
+    if (numero % 1 === 0) {
+      return numero.toFixed(0); // Se for inteiro, mostra sem casas decimais
+    }
+    return numero.toString(); // Se tiver decimal, mostra como está
+  }
+
   function construirTabela() {
-    const adicionalFormatado = (percentualFamiliar - 1) * 100;
+    const adicionalFormatado = ((percentualFamiliar - 1) * 100).toFixed(0);
     let tableHtml = `
             <table class="tabela-calculo">
                 <thead>
@@ -68,9 +74,12 @@ export async function init(user, userData) {
     faixasDeContribuicao.forEach((faixa, index) => {
       const faixaAnterior =
         index > 0 ? faixasDeContribuicao[index - 1].ateSalarios : 0;
+      // Usa a nova função de formatação
       tableHtml += `
                 <tr>
-                    <td>Entre ${faixaAnterior.toFixed} a ${faixa.ateSalarios}</td>
+                    <td>De ${formatarNumeroFaixa(
+                      faixaAnterior
+                    )} a ${formatarNumeroFaixa(faixa.ateSalarios)}</td>
                     <td>${faixa.percentual}%</td>
                     <td id="resultado-individual-${index}">-</td>
                     <td id="resultado-familia-${index}">-</td>
@@ -80,6 +89,7 @@ export async function init(user, userData) {
     tableHtml += "</tbody></table>";
     tableContainer.innerHTML = tableHtml;
   }
+  // --- FIM DA ALTERAÇÃO ---
 
   const formatarMoeda = (valor) =>
     valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -95,9 +105,6 @@ export async function init(user, userData) {
     return valorInteiro;
   }
 
-  /**
-   * Recalcula os valores com base na renda e nas faixas carregadas.
-   */
   function atualizarResultados() {
     const renda = parseFloat(rendaInput.value) || 0;
     if (faixasDeContribuicao.length === 0) return;
@@ -106,13 +113,9 @@ export async function init(user, userData) {
       const valorCalculado = renda * (faixa.percentual / 100);
       const valorIndividualArredondado =
         arredondarValorContribuicao(valorCalculado);
-
-      // --- INÍCIO DA ALTERAÇÃO ---
-      // Usa o 'percentualFamiliar' carregado do Firestore
       const valorFamiliaArredondado = arredondarValorContribuicao(
         valorIndividualArredondado * percentualFamiliar
       );
-      // --- FIM DA ALTERAÇÃO ---
 
       const resultadoIndividualEl = document.getElementById(
         `resultado-individual-${index}`
