@@ -1,5 +1,5 @@
 // /modulos/gestao/js/painel-gestao.js
-// VERSÃO 3.3 (Com integração de Relatórios)
+// VERSÃO 3.4 (Corrigido o problema do ícone do menu)
 
 const views = {
   "dashboard-reunioes": {
@@ -17,7 +17,6 @@ const views = {
   },
 };
 
-// ... O restante do arquivo painel-gestao.js permanece exatamente o mesmo ...
 let appUser, appUserData;
 
 export function init(user, userData) {
@@ -36,7 +35,7 @@ function buildGestaoSidebarMenu() {
 
   const menuItems = [
     { id: "dashboard-reunioes", name: "Dashboard", icon: "dashboard" },
-    { id: "ata-de-reuniao", name: "Registrar Ata", icon: "edit_document" },
+    { id: "ata-de-reuniao", name: "Registar Ata", icon: "edit_document" },
     { id: "plano-de-acao", name: "Plano de Ação", icon: "task_alt" },
     { id: "relatorio-feedback", name: "Relatórios", icon: "analytics" },
   ];
@@ -52,10 +51,12 @@ function buildGestaoSidebarMenu() {
   `;
 
   menuItems.forEach((item) => {
+    // --- CORREÇÃO APLICADA AQUI ---
+    // A tag do ícone foi alterada de <span> para <i> para não ser escondida pelo CSS global.
     menuHtml += `
       <li>
           <a href="#${item.id}" data-view="${item.id}">
-              <span class="material-symbols-outlined">${item.icon}</span>
+              <i class="material-symbols-outlined">${item.icon}</i>
               <span>${item.name}</span>
           </a>
       </li>
@@ -88,16 +89,16 @@ async function loadView(viewId) {
     console.log(`✅ View HTML '${viewId}' carregada.`);
 
     if (viewConfig.js) {
-      console.log(`[PAINEL] Importando módulo JS: ${viewConfig.js}`);
+      console.log(`[PAINEL] A importar módulo JS: ${viewConfig.js}`);
       const module = await import(viewConfig.js);
       if (module && typeof module.init === "function") {
-        console.log(`[PAINEL] Executando init() de ${viewId}...`);
+        console.log(`[PAINEL] A executar init() de ${viewId}...`);
         module.init(appUser, appUserData);
       }
     }
   } catch (error) {
     console.error("Erro ao carregar a view:", error);
-    contentArea.innerHTML = `<div class="alert alert-danger">Ocorreu um erro ao carregar esta seção.</div>`;
+    contentArea.innerHTML = `<div class="alert alert-danger">Ocorreu um erro ao carregar esta secção.</div>`;
   }
 }
 
@@ -111,9 +112,7 @@ function updateActiveMenu(viewId) {
 
   const pageTitle = document.querySelector("#page-title-container");
   if (pageTitle) {
-    const menuItem = sidebarMenu.querySelector(
-      `a[data-view="${viewId}"] span:not(.material-symbols-outlined)`
-    );
+    const menuItem = sidebarMenu.querySelector(`a[data-view="${viewId}"] span`);
     if (menuItem) {
       pageTitle.textContent = menuItem.textContent;
     }
