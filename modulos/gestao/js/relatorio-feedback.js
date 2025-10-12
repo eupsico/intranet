@@ -189,20 +189,23 @@ function renderizarFeedbacksDetalhados(atas) {
 function setupEventListeners() {
   const viewContainer = document.querySelector(".view-container");
   viewContainer.addEventListener("click", (e) => {
-    if (e.target.matches(".tab-link")) {
-      const tabName = e.target.dataset.tab;
+    const tabButton = e.target.closest(".tab-link");
+    if (tabButton) {
+      const tabName = tabButton.dataset.tab;
       document
         .querySelectorAll(".tab-content, .tab-link")
         .forEach((el) => el.classList.remove("active"));
       document.getElementById(tabName).classList.add("active");
-      e.target.classList.add("active");
+      tabButton.classList.add("active");
     }
+
     if (e.target.matches(".accordion-trigger")) {
       const content = e.target.nextElementSibling;
       content.style.maxHeight = content.style.maxHeight
         ? null
         : content.scrollHeight + "px";
     }
+
     if (e.target.matches(".export-btn[data-ata-id]")) {
       const ataId = e.target.dataset.ataId;
       const filename = e.target.dataset.filename;
