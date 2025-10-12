@@ -1,5 +1,5 @@
 // /modulos/gestao/js/ata-de-reuniao.js
-// VERSÃO 2.1 (CORRIGIDO - Filtra a lista de reuniões para registo)
+// VERSÃO 2.1 (Confirmado - Filtra corretamente a lista de reuniões para registo)
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -38,11 +38,10 @@ async function fetchGestores() {
 
 async function carregarReunioesAgendadas() {
   const container = document.getElementById("lista-reunioes-agendadas");
-  container.innerHTML = '<div class="loading-spinner"></div>'; // Mostra o spinner
+  container.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    // --- CORREÇÃO APLICADA AQUI ---
-    // A query agora filtra para incluir apenas os tipos de reunião desejados.
+    // A query filtra para incluir APENAS reuniões de gestão
     const q = query(
       collection(firestoreDb, "gestao_atas"),
       where("status", "==", "Agendada"),
@@ -52,7 +51,6 @@ async function carregarReunioesAgendadas() {
       ]),
       orderBy("dataReuniao", "desc")
     );
-    // --- FIM DA CORREÇÃO ---
 
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
@@ -79,8 +77,7 @@ async function carregarReunioesAgendadas() {
       li.addEventListener("click", async () => {
         container.style.display = "none";
         const docId = li.dataset.id;
-        const docRef = doc(firestoreDb, "gestao_atas", docId);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDoc(doc(firestoreDb, "gestao_atas", docId));
         renderizarFormularioAta(docSnap.data(), docId);
       });
     });
@@ -151,13 +148,15 @@ async function salvarAta(e, docId) {
 
   const participantes = Array.from(
     document.querySelectorAll(".participante-check:checked")
-  ).map((cb) => cb.value);
+  )
+    .map((cb) => cb.value)
+    .join(", ");
 
   const dadosUpdate = {
     pontos: document.getElementById("ata-pontos").value,
     decisoes: document.getElementById("ata-decisoes").value,
     temasProximaReuniao: document.getElementById("ata-temas-proxima").value,
-    participantes: participantes.join(", "),
+    participantes: participantes,
     status: "Concluída",
   };
 
