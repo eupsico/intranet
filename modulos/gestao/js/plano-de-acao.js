@@ -1,5 +1,5 @@
 // /modulos/gestao/js/plano-de-acao.js
-// VERSÃO 2.2 (Lendo departamentos do documento 'geral')
+// VERSÃO 2.3 (CORRIGIDO - Lógica do Modal Unificada)
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -14,7 +14,6 @@ import {
   getDoc,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// ... (o resto do arquivo, como `todasAsTarefas`, `currentUser`, etc., permanece o mesmo)
 let todasAsTarefas = [],
   gestoresCache = [],
   departamentosCache = [];
@@ -28,36 +27,13 @@ export async function init(user, userData) {
 }
 
 async function carregarDadosIniciais() {
-  // A ordem é importante: primeiro buscamos as configurações, depois as atas
-  await Promise.all([fetchGestores(), fetchDepartamentos()]);
-  await fetchAtasEPlanos();
-
-  await verificarEMoverAtrasadas();
+  await Promise.all([
+    fetchGestores(),
+    fetchDepartamentos(),
+    fetchAtasEPlanos(),
+  ]);
   renderizarQuadroKanban();
 }
-
-// --- ALTERAÇÃO PRINCIPAL AQUI ---
-async function fetchDepartamentos() {
-  if (departamentosCache.length > 0) return;
-  try {
-    const configRef = doc(firestoreDb, "configuracoesSistema", "geral");
-    const docSnap = await getDoc(configRef);
-    if (
-      docSnap.exists() &&
-      docSnap.data().listas &&
-      docSnap.data().listas.departamentos
-    ) {
-      departamentosCache = docSnap.data().listas.departamentos.sort();
-    } else {
-      console.warn(
-        "Nenhuma lista de departamentos encontrada em 'configuracoesSistema/geral/listas/departamentos'."
-      );
-    }
-  } catch (error) {
-    console.error("[PLANO] Erro ao buscar departamentos:", error);
-  }
-}
-// --- FIM DA ALTERAÇÃO ---
 
 async function fetchAtasEPlanos() {
   todasAsTarefas = [];
@@ -121,25 +97,20 @@ async function fetchGestores() {
   }
 }
 
-// ... (O restante do arquivo, a partir de verificarEMoverAtrasadas(), permanece exatamente o mesmo)
-async function verificarEMoverAtrasadas() {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-
-  for (const item of todasAsTarefas) {
+async function fetchDepartamentos() {
+  if (departamentosCache.length > 0) return;
+  try {
+    const configRef = doc(firestoreDb, "configuracoesSistema", "geral");
+    const docSnap = await getDoc(configRef);
     if (
-      item.prazo &&
-      item.status !== "Concluído" &&
-      item.status !== "Atrasado"
+      docSnap.exists() &&
+      docSnap.data().listas &&
+      docSnap.data().listas.departamentos
     ) {
-      const prazo = new Date(item.prazo + "T00:00:00");
-      if (prazo < hoje) {
-        item.status = "Atrasado";
-        console.warn(
-          `[PLANO] Item ${item.ataId}/${item.itemIndex} está atrasado. O status será atualizado no próximo salvamento.`
-        );
-      }
+      departamentosCache = docSnap.data().listas.departamentos.sort();
     }
+  } catch (error) {
+    console.error("[PLANO] Erro ao buscar departamentos:", error);
   }
 }
 
@@ -158,15 +129,15 @@ function renderizarQuadroKanban() {
 
   if (todasAsTarefas.length === 0) {
     colunas["A Fazer"].innerHTML =
-      "<p style='padding: 10px; text-align: center;'>Nenhuma tarefa encontrada.</p>";
+      "<p style='text-align: center; padding: 20px;'>Nenhuma tarefa encontrada.</p>";
+  } else {
+    todasAsTarefas.forEach((item) => {
+      const status = item.status || "A Fazer";
+      if (colunas[status]) {
+        colunas[status].innerHTML += criarCardHtml(item);
+      }
+    });
   }
-
-  todasAsTarefas.forEach((item) => {
-    const status = item.status || "A Fazer";
-    if (colunas[status]) {
-      colunas[status].innerHTML += criarCardHtml(item);
-    }
-  });
 }
 
 function criarCardHtml(item) {
@@ -233,12 +204,24 @@ function setupEventListeners() {
 
   const modal = document.getElementById("update-modal");
   if (modal) {
-    document.getElementById("btn-salvar-nova-atualizacao").onclick =
-      handleSalvarAtualizacao;
-    document.getElementById("btn-save-encaminhamento").onclick =
-      handleSalvarEncaminhamento;
-    document.getElementById("btn-cancel-update").onclick = () =>
-      (modal.style.display = "none");
+    const btnFecharTopo = document.getElementById("btn-cancel-update");
+    const btnFecharRodape = document.getElementById("btn-fechar-modal-rodape");
+    const btnSalvarGeral = document.getElementById("btn-salvar-geral");
+
+    btnFecharTopo.addEventListener(
+      "click",
+      () => (modal.style.display = "none")
+    );
+    btnFecharRodape.addEventListener(
+      "click",
+      () => (modal.style.display = "none")
+    );
+
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Garante que o listener seja removido e recriado para não duplicar
+    const novoBtnSalvarGeral = btnSalvarGeral.cloneNode(true);
+    btnSalvarGeral.parentNode.replaceChild(novoBtnSalvarGeral, btnSalvarGeral);
+    novoBtnSalvarGeral.addEventListener("click", handleSalvarGeral);
 
     document.getElementById("modal-necessita-encaminhar").onchange = (e) => {
       document.getElementById("encaminhamento-vinculado-form").style.display = e
@@ -246,12 +229,45 @@ function setupEventListeners() {
         ? "block"
         : "none";
     };
-
     document.getElementById("modal-enc-gestor").onchange = (e) => {
       const gestor = gestoresCache.find((g) => g.nome === e.target.value);
       document.getElementById("modal-enc-departamento").value =
         gestor?.departamento || "";
     };
+  }
+}
+
+async function handleSalvarGeral() {
+  const necessitaEncaminhar = document.getElementById(
+    "modal-necessita-encaminhar"
+  ).checked;
+  const saveButton = document.getElementById("btn-salvar-geral");
+  saveButton.disabled = true;
+  saveButton.textContent = "Salvando...";
+
+  try {
+    // Se houver texto ou mudança de status, salva a atualização
+    const textoAtualizacao = document
+      .getElementById("modal-nova-atualizacao")
+      .value.trim();
+    const novoStatus =
+      document.getElementById("update-modal").dataset.novoStatus;
+    if (textoAtualizacao || novoStatus) {
+      await handleSalvarAtualizacao();
+    }
+
+    if (necessitaEncaminhar) {
+      await handleSalvarEncaminhamento();
+    }
+
+    document.getElementById("update-modal").style.display = "none";
+    await carregarDadosIniciais();
+  } catch (error) {
+    console.error("Erro no salvamento geral:", error);
+    alert(`Ocorreu um erro: ${error.message}`);
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = "Salvar Alterações";
   }
 }
 
@@ -266,51 +282,41 @@ async function handleSalvarAtualizacao() {
   ).value;
 
   if (novoStatus && !textoAtualizacao.trim()) {
-    alert("Por favor, descreva a atualização para mover o card.");
-    return;
+    throw new Error(
+      "Por favor, descreva a atualização para poder mover o card."
+    );
   }
 
   const ataRef = doc(firestoreDb, "gestao_atas", ataId);
 
-  try {
-    const docSnap = await getDoc(ataRef);
-    if (!docSnap.exists()) throw new Error("Documento da ata não encontrado.");
+  const docSnap = await getDoc(ataRef);
+  if (!docSnap.exists()) throw new Error("Documento da ata não encontrado.");
 
-    const ataData = docSnap.data();
-    const fieldToUpdate =
-      type === "atividade" ? "planoDeAcao" : "encaminhamentos";
-    const arrayToUpdate = ataData[fieldToUpdate]
-      ? [...ataData[fieldToUpdate]]
-      : [];
+  const ataData = docSnap.data();
+  const fieldToUpdate =
+    type === "atividade" ? "planoDeAcao" : "encaminhamentos";
+  const arrayToUpdate = ataData[fieldToUpdate]
+    ? [...ataData[fieldToUpdate]]
+    : [];
 
-    if (itemIndex < 0 || itemIndex >= arrayToUpdate.length) {
-      throw new Error("Índice do item a ser atualizado é inválido.");
-    }
+  const itemToUpdate = arrayToUpdate[itemIndex];
+  if (!itemToUpdate) throw new Error("Item específico não encontrado na ata.");
 
-    const itemToUpdate = arrayToUpdate[itemIndex];
-
-    if (textoAtualizacao.trim()) {
-      if (!itemToUpdate.historicoAtualizacoes) {
-        itemToUpdate.historicoAtualizacoes = [];
-      }
-      itemToUpdate.historicoAtualizacoes.push({
-        texto: textoAtualizacao,
-        data: new Date().toISOString(),
-        responsavel: currentUser?.nome || "Usuário",
-      });
-    }
-
-    if (novoStatus) {
-      itemToUpdate.status = novoStatus;
-    }
-
-    await updateDoc(ataRef, { [fieldToUpdate]: arrayToUpdate });
-    modal.style.display = "none";
-    await carregarDadosIniciais();
-  } catch (error) {
-    console.error("Erro ao salvar atualização:", error);
-    alert("Ocorreu um erro ao salvar a atualização.");
+  if (textoAtualizacao.trim()) {
+    if (!itemToUpdate.historicoAtualizacoes)
+      itemToUpdate.historicoAtualizacoes = [];
+    itemToUpdate.historicoAtualizacoes.push({
+      texto: textoAtualizacao,
+      data: new Date().toISOString(),
+      responsavel: currentUser?.nome || "Usuário",
+    });
   }
+
+  if (novoStatus) {
+    itemToUpdate.status = novoStatus;
+  }
+
+  await updateDoc(ataRef, { [fieldToUpdate]: arrayToUpdate });
 }
 
 async function handleSalvarEncaminhamento() {
@@ -328,23 +334,13 @@ async function handleSalvarEncaminhamento() {
   };
 
   if (Object.values(novoEncaminhamento).some((v) => !v)) {
-    alert("Preencha todos os campos do encaminhamento.");
-    return;
+    throw new Error("Preencha todos os campos do novo encaminhamento.");
   }
 
-  try {
-    const ataRef = doc(firestoreDb, "gestao_atas", ataId);
-    await updateDoc(ataRef, {
-      encaminhamentos: arrayUnion(novoEncaminhamento),
-    });
-
-    alert("Novo encaminhamento salvo!");
-    modal.style.display = "none";
-    await carregarDadosIniciais();
-  } catch (error) {
-    console.error("Erro ao salvar encaminhamento:", error);
-    alert("Ocorreu um erro ao salvar o encaminhamento.");
-  }
+  const ataRef = doc(firestoreDb, "gestao_atas", ataId);
+  await updateDoc(ataRef, {
+    encaminhamentos: arrayUnion(novoEncaminhamento),
+  });
 }
 
 function abrirModalAtualizacao(item, novoStatus = null) {
