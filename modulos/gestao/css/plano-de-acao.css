@@ -98,6 +98,10 @@
     margin-top: 25px;
     padding-top: 20px;
 }
+#nova-atualizacao-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
 #encaminhamento-vinculado-form .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
