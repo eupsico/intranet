@@ -1,4 +1,6 @@
 // /modulos/gestao/js/ata-de-reuniao.js
+// VERSÃO 2.1 (CORRIGIDO - Filtra a lista de reuniões para registo)
+
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
   collection,
@@ -7,6 +9,7 @@ import {
   getDocs,
   orderBy,
   doc,
+  getDoc,
   updateDoc,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
@@ -35,16 +38,26 @@ async function fetchGestores() {
 
 async function carregarReunioesAgendadas() {
   const container = document.getElementById("lista-reunioes-agendadas");
+  container.innerHTML = '<div class="loading-spinner"></div>'; // Mostra o spinner
+
   try {
+    // --- CORREÇÃO APLICADA AQUI ---
+    // A query agora filtra para incluir apenas os tipos de reunião desejados.
     const q = query(
       collection(firestoreDb, "gestao_atas"),
       where("status", "==", "Agendada"),
+      where("tipo", "in", [
+        "Reunião Conselho administrativo",
+        "Reunião com Gestor",
+      ]),
       orderBy("dataReuniao", "desc")
     );
+    // --- FIM DA CORREÇÃO ---
+
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
       container.innerHTML =
-        '<h3>Nenhuma reunião agendada pendente de ata.</h3><p>Para criar uma ata, primeiro agende a reunião na aba "Agendar Reunião".</p>';
+        '<h3>Nenhuma reunião de gestão pendente de ata.</h3><p>Para criar uma ata, primeiro agende a reunião na aba "Agendar Reunião".</p>';
       return;
     }
 
@@ -82,14 +95,6 @@ function renderizarFormularioAta(data, docId) {
   const container = document.getElementById("form-ata-container");
   container.style.display = "block";
 
-  const gestorOptions = gestoresCache
-    .map(
-      (nome) =>
-        `<option value="${nome}" ${
-          data.nomeGestor === nome ? "selected" : ""
-        }>${nome}</option>`
-    )
-    .join("");
   const participantesCheckboxes = gestoresCache
     .map(
       (nome) =>
@@ -107,12 +112,6 @@ function renderizarFormularioAta(data, docId) {
   }</p>
             <hr>
             
-            <div class="form-group gestor-select-field" style="display: ${
-              data.tipo === "Reunião com Gestor" ? "block" : "none"
-            };">
-                <label>Nome do Gestor</label>
-                <select class="form-control ata-nome-gestor" disabled>${gestorOptions}</select>
-            </div>
             <div class="form-group participantes-field" style="display: ${
               data.tipo === "Reunião Conselho administrativo" ? "block" : "none"
             };">
@@ -169,10 +168,9 @@ async function salvarAta(e, docId) {
     document.getElementById("form-ata-container").innerHTML = `
             <div class="alert alert-success">
                 <h2>Ata Registada com Sucesso!</h2>
-                <p>Pode agora fechar esta aba ou selecionar outra reunião para registar.</p>
+                <p>Pode agora selecionar outra reunião para registar.</p>
             </div>`;
 
-    // Recarrega a lista de reuniões agendadas
     document.getElementById("lista-reunioes-agendadas").style.display = "block";
     carregarReunioesAgendadas();
   } catch (error) {
