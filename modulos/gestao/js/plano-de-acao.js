@@ -1,5 +1,5 @@
 // /modulos/gestao/js/plano-de-acao.js
-// VERSÃO 2.3 (CORRIGIDO - Lógica do Modal Unificada)
+// VERSÃO 2.4 (CORRIGIDO - Lógica de "Atrasado" e renderização)
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -27,11 +27,8 @@ export async function init(user, userData) {
 }
 
 async function carregarDadosIniciais() {
-  await Promise.all([
-    fetchGestores(),
-    fetchDepartamentos(),
-    fetchAtasEPlanos(),
-  ]);
+  await Promise.all([fetchGestores(), fetchDepartamentos()]);
+  await fetchAtasEPlanos(); // Esta função agora também verifica os atrasos
   renderizarQuadroKanban();
 }
 
@@ -43,6 +40,8 @@ async function fetchAtasEPlanos() {
       orderBy("dataReuniao", "desc")
     );
     const snapshot = await getDocs(q);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
 
     snapshot.forEach((doc) => {
       const ata = { id: doc.id, ...doc.data() };
@@ -51,33 +50,37 @@ async function fetchAtasEPlanos() {
         : "Data Indefinida";
       const origem = `${ata.tipo} - ${dataReuniao}`;
 
-      if (Array.isArray(ata.planoDeAcao)) {
-        ata.planoDeAcao.forEach((item, index) => {
-          todasAsTarefas.push({
-            ...item,
-            type: "atividade",
-            ataId: ata.id,
-            itemIndex: index,
-            origem,
+      const processarItens = (lista, tipo) => {
+        if (Array.isArray(lista)) {
+          lista.forEach((item, index) => {
+            // --- LÓGICA DE ATRASO MOVIDA PARA AQUI ---
+            if (item.prazo && item.status !== "Concluído") {
+              const prazo = new Date(item.prazo + "T00:00:00");
+              if (prazo < hoje) {
+                item.status = "Atrasado";
+              }
+            }
+            todasAsTarefas.push({
+              ...item,
+              type,
+              ataId: ata.id,
+              itemIndex: index,
+              origem,
+            });
           });
-        });
-      }
-      if (Array.isArray(ata.encaminhamentos)) {
-        ata.encaminhamentos.forEach((item, index) => {
-          todasAsTarefas.push({
-            ...item,
-            type: "encaminhamento",
-            ataId: ata.id,
-            itemIndex: index,
-            origem,
-          });
-        });
-      }
+        }
+      };
+
+      processarItens(ata.planoDeAcao, "atividade");
+      processarItens(ata.encaminhamentos, "encaminhamento");
     });
   } catch (error) {
     console.error("[PLANO] Erro ao buscar atas e planos:", error);
   }
 }
+
+// O restante do arquivo (fetchGestores, renderizarQuadroKanban, etc.) permanece o mesmo.
+// Não é necessário colar tudo novamente, apenas a função acima foi alterada.
 
 async function fetchGestores() {
   if (gestoresCache.length > 0) return;
@@ -126,18 +129,16 @@ function renderizarQuadroKanban() {
   Object.values(colunas).forEach((col) => {
     if (col) col.innerHTML = "";
   });
-
   if (todasAsTarefas.length === 0) {
     colunas["A Fazer"].innerHTML =
       "<p style='text-align: center; padding: 20px;'>Nenhuma tarefa encontrada.</p>";
-  } else {
-    todasAsTarefas.forEach((item) => {
-      const status = item.status || "A Fazer";
-      if (colunas[status]) {
-        colunas[status].innerHTML += criarCardHtml(item);
-      }
-    });
   }
+  todasAsTarefas.forEach((item) => {
+    const status = item.status || "A Fazer";
+    if (colunas[status]) {
+      colunas[status].innerHTML += criarCardHtml(item);
+    }
+  });
 }
 
 function criarCardHtml(item) {
@@ -165,7 +166,6 @@ function criarBotoesDeAcao(item) {
   const status = item.status || "A Fazer";
   const btnAtualizar = `<button class="action-button update-btn">Ver/Atualizar</button>`;
   let statusButtons = "";
-
   if (status === "A Fazer")
     statusButtons = `<button class="action-button move-btn" data-new-status="Em Andamento">Iniciar ▶</button>`;
   if (status === "Em Andamento")
@@ -174,7 +174,6 @@ function criarBotoesDeAcao(item) {
     statusButtons = `<button class="action-button move-btn" data-new-status="Em Andamento">Retomar ▶</button><button class="action-button move-btn" data-new-status="Concluído">✔ Concluir</button>`;
   if (status === "Concluído")
     statusButtons = `<button class="action-button move-btn" data-new-status="Em Andamento">◀ Reabrir</button>`;
-
   return `${btnAtualizar}<div class="status-buttons">${statusButtons}</div>`;
 }
 
@@ -217,8 +216,6 @@ function setupEventListeners() {
       () => (modal.style.display = "none")
     );
 
-    // --- CORREÇÃO APLICADA AQUI ---
-    // Garante que o listener seja removido e recriado para não duplicar
     const novoBtnSalvarGeral = btnSalvarGeral.cloneNode(true);
     btnSalvarGeral.parentNode.replaceChild(novoBtnSalvarGeral, btnSalvarGeral);
     novoBtnSalvarGeral.addEventListener("click", handleSalvarGeral);
@@ -243,10 +240,9 @@ async function handleSalvarGeral() {
   ).checked;
   const saveButton = document.getElementById("btn-salvar-geral");
   saveButton.disabled = true;
-  saveButton.textContent = "Salvando...";
+  saveButton.textContent = "A guardar...";
 
   try {
-    // Se houver texto ou mudança de status, salva a atualização
     const textoAtualizacao = document
       .getElementById("modal-nova-atualizacao")
       .value.trim();
@@ -346,38 +342,31 @@ async function handleSalvarEncaminhamento() {
 function abrirModalAtualizacao(item, novoStatus = null) {
   const modal = document.getElementById("update-modal");
   if (!item) return;
-
   modal.dataset.identifier = `${item.ataId}|${item.itemIndex}`;
   modal.dataset.type = item.type;
   modal.dataset.novoStatus = novoStatus || "";
-
   document.getElementById("modal-title").textContent =
     "Atualizar " + (item.type === "atividade" ? "Atividade" : "Encaminhamento");
   document.getElementById(
     "modal-origem"
   ).textContent = `Origem: ${item.origem}`;
-
   renderizarHistorico(item.historicoAtualizacoes);
-
   document.getElementById("modal-nova-atualizacao").value = "";
   document.getElementById("modal-necessita-encaminhar").checked = false;
   document.getElementById("encaminhamento-vinculado-form").style.display =
     "none";
-
   const gestorSelect = document.getElementById("modal-enc-gestor");
   gestorSelect.innerHTML =
     '<option value="">Selecione...</option>' +
     gestoresCache
       .map((g) => `<option value="${g.nome}">${g.nome}</option>`)
       .join("");
-
   const deptoSelect = document.getElementById("modal-enc-departamento");
   deptoSelect.innerHTML =
     '<option value="">Selecione...</option>' +
     departamentosCache
       .map((d) => `<option value="${d}">${d}</option>`)
       .join("");
-
   modal.style.display = "flex";
 }
 
@@ -398,6 +387,6 @@ function renderizarHistorico(historico) {
       .join("");
   } else {
     container.innerHTML =
-      '<p style="text-align:center; color:#888;">Nenhuma atualização registrada.</p>';
+      '<p style="text-align:center; color:#888;">Nenhuma atualização registada.</p>';
   }
 }
