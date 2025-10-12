@@ -16,6 +16,7 @@
             <button class="tab-link" onclick="openTab(event, 'agendamentos')">Agendamentos</button>
             <button class="tab-link" onclick="openTab(event, 'listas')">Listas</button>
             <button class="tab-link" onclick="openTab(event, 'textos')">Modelos de Mensagem</button>
+            <button class="tab-link" onclick="openTab(event, 'feedback')">Feedback</button>
         </div>
 
         <form id="config-form">
@@ -30,18 +31,14 @@
                     <label for="diaLimiteComprovantes">Dia Limite para Envio de Comprovantes</label>
                     <input type="number" id="diaLimiteComprovantes" name="financeiro.diaLimiteComprovantes" placeholder="Ex: 10">
                 </div>
-                
                 <hr>
-
                 <h4>Faixas de Contribuição (Serviço Social)</h4>
                 <p class="description">Defina as faixas de salário mínimo e os percentuais de contribuição correspondentes.</p>
-                
                 <div class="form-group">
                     <label for="percentualAdicionalFamilia">Percentual Adicional (Família %)</label>
                     <input type="number" id="percentualAdicionalFamilia" name="financeiro.percentualAdicionalFamilia" placeholder="Ex: 40">
                     <p class="description">Percentual a ser acrescido no valor de contribuição para atendimentos familiares.</p>
                 </div>
-
                 <div class="faixas-table-container">
                     <table class="faixas-table">
                         <thead>
@@ -51,8 +48,7 @@
                                 <th>Ação</th>
                             </tr>
                         </thead>
-                        <tbody id="faixas-contribuicao-tbody">
-                        </tbody>
+                        <tbody id="faixas-contribuicao-tbody"></tbody>
                     </table>
                     <button type="button" id="btn-adicionar-faixa" class="btn-adicionar-faixa">+ Adicionar Faixa</button>
                 </div>
@@ -94,13 +90,11 @@
 
             <div id="listas" class="tab-content">
                 <h3>Listas Editáveis</h3>
-
                 <div class="form-group">
                     <label for="departamentos">Lista de Departamentos (um por linha)</label>
                     <textarea id="departamentos" name="listas.departamentos" rows="5" placeholder="Recursos Humanos&#10;Financeiro&#10;Marketing"></textarea>
                 </div>
                 <hr>
-                
                 <div class="form-group">
                     <label for="salasPresenciais">Nomes das Salas Presenciais (um por linha)</label>
                     <textarea id="salasPresenciais" name="listas.salasPresenciais" rows="5" placeholder="Sala Leila Tardivo&#10;Sala Freud&#10;Sala Winnicott"></textarea>
@@ -109,7 +103,7 @@
                     <label for="profissoes">Lista de Profissões (uma por linha)</label>
                     <textarea id="profissoes" name="listas.profissoes" rows="5" placeholder="Psicólogo(a)&#10;Assistente Social&#10;Médico(a)"></textarea>
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="conselhos">Lista de Conselhos Profissionais (um por linha)</label>
                     <textarea id="conselhos" name="listas.conselhos" rows="5" placeholder="CRP&#10;CRM&#10;CRESS"></textarea>
                 </div>
@@ -147,6 +141,27 @@
                     <textarea id="msgPrimeiroPagamento" name="textos.primeiroPagamento" rows="6"></textarea>
                 </div>
             </div>
+
+            <div id="feedback" class="tab-content">
+                <h3>Modelo de Perguntas para Feedback</h3>
+                <p class="description">Defina as perguntas que aparecerão no formulário de feedback das reuniões técnicas.</p>
+                <div class="faixas-table-container">
+                    <table class="faixas-table">
+                        <thead>
+                            <tr>
+                                <th>ID (sem espaços/acentos)</th>
+                                <th>Texto da Pergunta</th>
+                                <th>Tipo (select ou textarea)</th>
+                                <th>Opções (separadas por vírgula)</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="perguntas-feedback-tbody"></tbody>
+                    </table>
+                    <button type="button" id="btn-adicionar-pergunta" class="btn-adicionar-faixa">+ Adicionar Pergunta</button>
+                </div>
+            </div>
+
         </form>
         
         <div class="actions">
