@@ -53,11 +53,12 @@ async function fetchAtasEPlanos() {
       const processarItens = (lista, tipo) => {
         if (Array.isArray(lista)) {
           lista.forEach((item, index) => {
-            // --- LÓGICA DE ATRASO MOVIDA PARA AQUI ---
+            // --- CORREÇÃO APLICADA AQUI ---
+            // A lógica de verificação de atraso está agora aqui.
             if (item.prazo && item.status !== "Concluído") {
               const prazo = new Date(item.prazo + "T00:00:00");
               if (prazo < hoje) {
-                item.status = "Atrasado";
+                item.status = "Atrasado"; // Corrige o status antes de renderizar
               }
             }
             todasAsTarefas.push({
@@ -78,9 +79,6 @@ async function fetchAtasEPlanos() {
     console.error("[PLANO] Erro ao buscar atas e planos:", error);
   }
 }
-
-// O restante do arquivo (fetchGestores, renderizarQuadroKanban, etc.) permanece o mesmo.
-// Não é necessário colar tudo novamente, apenas a função acima foi alterada.
 
 async function fetchGestores() {
   if (gestoresCache.length > 0) return;
