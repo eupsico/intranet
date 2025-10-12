@@ -1,5 +1,5 @@
 // /modulos/gestao/js/plano-de-acao.js
-// VERSÃO 2.4 (CORRIGIDO - Lógica de "Atrasado" e renderização)
+// VERSÃO 2.2 (CORRIGIDO - Erro "type is not defined")
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -27,8 +27,11 @@ export async function init(user, userData) {
 }
 
 async function carregarDadosIniciais() {
-  await Promise.all([fetchGestores(), fetchDepartamentos()]);
-  await fetchAtasEPlanos(); // Esta função agora também verifica os atrasos
+  await Promise.all([
+    fetchGestores(),
+    fetchDepartamentos(),
+    fetchAtasEPlanos(),
+  ]);
   renderizarQuadroKanban();
 }
 
@@ -40,8 +43,6 @@ async function fetchAtasEPlanos() {
       orderBy("dataReuniao", "desc")
     );
     const snapshot = await getDocs(q);
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
 
     snapshot.forEach((doc) => {
       const ata = { id: doc.id, ...doc.data() };
@@ -50,20 +51,22 @@ async function fetchAtasEPlanos() {
         : "Data Indefinida";
       const origem = `${ata.tipo} - ${dataReuniao}`;
 
+      // --- CORREÇÃO APLICADA AQUI ---
       const processarItens = (lista, tipo) => {
+        // 'tipo' agora é um parâmetro da função
         if (Array.isArray(lista)) {
           lista.forEach((item, index) => {
-            // --- CORREÇÃO APLICADA AQUI ---
-            // A lógica de verificação de atraso está agora aqui.
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
             if (item.prazo && item.status !== "Concluído") {
               const prazo = new Date(item.prazo + "T00:00:00");
               if (prazo < hoje) {
-                item.status = "Atrasado"; // Corrige o status antes de renderizar
+                item.status = "Atrasado";
               }
             }
             todasAsTarefas.push({
               ...item,
-              type,
+              type: tipo,
               ataId: ata.id,
               itemIndex: index,
               origem,
@@ -71,12 +74,17 @@ async function fetchAtasEPlanos() {
           });
         }
       };
+      // --- FIM DA CORREÇÃO ---
 
       processarItens(ata.planoDeAcao, "atividade");
       processarItens(ata.encaminhamentos, "encaminhamento");
     });
   } catch (error) {
     console.error("[PLANO] Erro ao buscar atas e planos:", error);
+    // Lança o erro para ser apanhado pelo bloco superior e exibir uma mensagem ao utilizador.
+    throw new Error(
+      "Falha ao buscar dados das atas. Verifique as permissões do Firestore."
+    );
   }
 }
 
@@ -109,6 +117,10 @@ async function fetchDepartamentos() {
       docSnap.data().listas.departamentos
     ) {
       departamentosCache = docSnap.data().listas.departamentos.sort();
+    } else {
+      console.warn(
+        "Nenhuma lista de departamentos encontrada em 'configuracoesSistema/geral/listas/departamentos'."
+      );
     }
   } catch (error) {
     console.error("[PLANO] Erro ao buscar departamentos:", error);
@@ -127,10 +139,12 @@ function renderizarQuadroKanban() {
   Object.values(colunas).forEach((col) => {
     if (col) col.innerHTML = "";
   });
+
   if (todasAsTarefas.length === 0) {
     colunas["A Fazer"].innerHTML =
-      "<p style='text-align: center; padding: 20px;'>Nenhuma tarefa encontrada.</p>";
+      "<p style='padding: 10px; text-align: center;'>Nenhuma tarefa encontrada.</p>";
   }
+
   todasAsTarefas.forEach((item) => {
     const status = item.status || "A Fazer";
     if (colunas[status]) {
@@ -164,6 +178,7 @@ function criarBotoesDeAcao(item) {
   const status = item.status || "A Fazer";
   const btnAtualizar = `<button class="action-button update-btn">Ver/Atualizar</button>`;
   let statusButtons = "";
+
   if (status === "A Fazer")
     statusButtons = `<button class="action-button move-btn" data-new-status="Em Andamento">Iniciar ▶</button>`;
   if (status === "Em Andamento")
@@ -172,6 +187,7 @@ function criarBotoesDeAcao(item) {
     statusButtons = `<button class="action-button move-btn" data-new-status="Em Andamento">Retomar ▶</button><button class="action-button move-btn" data-new-status="Concluído">✔ Concluir</button>`;
   if (status === "Concluído")
     statusButtons = `<button class="action-button move-btn" data-new-status="Em Andamento">◀ Reabrir</button>`;
+
   return `${btnAtualizar}<div class="status-buttons">${statusButtons}</div>`;
 }
 
@@ -224,6 +240,7 @@ function setupEventListeners() {
         ? "block"
         : "none";
     };
+
     document.getElementById("modal-enc-gestor").onchange = (e) => {
       const gestor = gestoresCache.find((g) => g.nome === e.target.value);
       document.getElementById("modal-enc-departamento").value =
@@ -293,12 +310,16 @@ async function handleSalvarAtualizacao() {
     ? [...ataData[fieldToUpdate]]
     : [];
 
+  if (itemIndex < 0 || itemIndex >= arrayToUpdate.length) {
+    throw new Error("Índice do item a ser atualizado é inválido.");
+  }
+
   const itemToUpdate = arrayToUpdate[itemIndex];
-  if (!itemToUpdate) throw new Error("Item específico não encontrado na ata.");
 
   if (textoAtualizacao.trim()) {
-    if (!itemToUpdate.historicoAtualizacoes)
+    if (!itemToUpdate.historicoAtualizacoes) {
       itemToUpdate.historicoAtualizacoes = [];
+    }
     itemToUpdate.historicoAtualizacoes.push({
       texto: textoAtualizacao,
       data: new Date().toISOString(),
@@ -340,31 +361,38 @@ async function handleSalvarEncaminhamento() {
 function abrirModalAtualizacao(item, novoStatus = null) {
   const modal = document.getElementById("update-modal");
   if (!item) return;
+
   modal.dataset.identifier = `${item.ataId}|${item.itemIndex}`;
   modal.dataset.type = item.type;
   modal.dataset.novoStatus = novoStatus || "";
+
   document.getElementById("modal-title").textContent =
     "Atualizar " + (item.type === "atividade" ? "Atividade" : "Encaminhamento");
   document.getElementById(
     "modal-origem"
   ).textContent = `Origem: ${item.origem}`;
+
   renderizarHistorico(item.historicoAtualizacoes);
+
   document.getElementById("modal-nova-atualizacao").value = "";
   document.getElementById("modal-necessita-encaminhar").checked = false;
   document.getElementById("encaminhamento-vinculado-form").style.display =
     "none";
+
   const gestorSelect = document.getElementById("modal-enc-gestor");
   gestorSelect.innerHTML =
     '<option value="">Selecione...</option>' +
     gestoresCache
       .map((g) => `<option value="${g.nome}">${g.nome}</option>`)
       .join("");
+
   const deptoSelect = document.getElementById("modal-enc-departamento");
   deptoSelect.innerHTML =
     '<option value="">Selecione...</option>' +
     departamentosCache
       .map((d) => `<option value="${d}">${d}</option>`)
       .join("");
+
   modal.style.display = "flex";
 }
 
