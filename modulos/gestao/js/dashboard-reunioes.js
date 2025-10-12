@@ -1,5 +1,5 @@
 // /modulos/gestao/js/dashboard-reunioes.js
-// VERSÃO 2.1 (Layout do Acordeão Melhorado)
+// VERSÃO 2.3 (CORRIGIDO - Lógica de "Próxima Reunião")
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -44,51 +44,69 @@ function filtrarEExibirAtas() {
   const atasContainer = document.getElementById("atas-container");
   if (!atasContainer) return;
 
+  // Agora filtra para mostrar apenas as atas concluídas
+  const atasConcluidas = todasAsAtas.filter(
+    (ata) => ata.status === "Concluída"
+  );
   const atasFiltradas =
     filterType === "Todos"
-      ? todasAsAtas
-      : todasAsAtas.filter((ata) => ata.tipo === filterType);
+      ? atasConcluidas
+      : atasConcluidas.filter((ata) => ata.tipo === filterType);
 
   if (atasFiltradas.length === 0) {
     atasContainer.innerHTML =
-      '<div class="card"><p>Nenhuma ata encontrada para este filtro.</p></div>';
+      '<div class="card"><p>Nenhuma ata registada encontrada para este filtro.</p></div>';
   } else {
     atasContainer.innerHTML = atasFiltradas
       .map((ata) => renderSavedAtaAccordion(ata.id, ata))
       .join("");
   }
-  exibirProximaReuniao(atasFiltradas);
+
+  // Passa a lista completa de atas (incluindo as agendadas) para a função de próxima reunião
+  exibirProximaReuniao(todasAsAtas);
 }
 
-function exibirProximaReuniao(atasFiltradas) {
+// --- INÍCIO DA CORREÇÃO ---
+function exibirProximaReuniao(listaDeTodasAsAtas) {
   const infoBox = document.getElementById("proxima-reuniao-info");
   if (!infoBox) return;
 
   const agora = new Date();
   let proximaReuniao = null;
 
-  atasFiltradas.forEach((ata) => {
-    if (ata.proximaReuniao) {
-      const dataProxima = new Date(ata.proximaReuniao);
-      if (
-        dataProxima > agora &&
-        (!proximaReuniao ||
-          dataProxima < new Date(proximaReuniao.proximaReuniao))
-      ) {
-        proximaReuniao = ata;
-      }
-    }
-  });
+  // Procura na lista por reuniões com status "Agendada" que ainda não aconteceram
+  const reunioesAgendadas = listaDeTodasAsAtas.filter(
+    (ata) =>
+      ata.status === "Agendada" &&
+      new Date(`${ata.dataReuniao}T${ata.horaInicio}`) > agora
+  );
+
+  // Se encontrar reuniões agendadas, pega a mais próxima
+  if (reunioesAgendadas.length > 0) {
+    // Ordena para garantir que a mais próxima venha primeiro
+    reunioesAgendadas.sort(
+      (a, b) =>
+        new Date(`${a.dataReuniao}T${a.horaInicio}`) -
+        new Date(`${b.dataReuniao}T${b.horaInicio}`)
+    );
+    proximaReuniao = reunioesAgendadas[0];
+  }
 
   if (proximaReuniao) {
-    const data = new Date(proximaReuniao.proximaReuniao);
+    const data = new Date(
+      `${proximaReuniao.dataReuniao}T${proximaReuniao.horaInicio}`
+    );
     infoBox.innerHTML = `<h3>Próxima Reunião</h3><p><strong>${
       proximaReuniao.tipo
-    }</strong> em ${data.toLocaleString("pt-BR")}</p>`;
+    }</strong> em ${data.toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    })}</p>`;
   } else {
     infoBox.innerHTML = `<h3>Próxima Reunião</h3><p>Nenhuma reunião futura agendada.</p>`;
   }
 }
+// --- FIM DA CORREÇÃO ---
 
 function renderSavedAtaAccordion(id, data) {
   const date = data.dataReuniao
@@ -127,11 +145,7 @@ function renderSavedAtaAccordion(id, data) {
 
   if (data.tipo === "Reunião Técnica") {
     contentHtml += createItem("Tema", data.pauta);
-    contentHtml += createItem("Responsável", data.responsavelTecnica);
-    contentHtml += createItem(
-      "Duração",
-      data.duracao ? `${data.duracao} minutos` : ""
-    );
+    contentHtml += createItem("Facilitador", data.responsavelTecnica);
   } else {
     contentHtml += createItem("Pauta", data.pauta);
     contentHtml += createItem("Participantes", data.participantes);
@@ -142,12 +156,6 @@ function renderSavedAtaAccordion(id, data) {
       "Temas p/ Próxima Reunião",
       data.temasProximaReuniao
     );
-    contentHtml += createItem(
-      "Próxima Reunião",
-      data.proximaReuniao
-        ? new Date(data.proximaReuniao).toLocaleString("pt-BR")
-        : ""
-    );
   }
 
   const pdfButtonHtml = data.pdfUrl
@@ -155,7 +163,7 @@ function renderSavedAtaAccordion(id, data) {
     : "";
   const feedbackButtonHtml =
     data.tipo === "Reunião Técnica"
-      ? `<button class="action-button feedback" data-key="${id}">Abrir Feedback</button>`
+      ? `<a href="./feedback.html#${id}" target="_blank" class="action-button feedback">Dar Feedback</a>`
       : "";
 
   return `<div class="accordion">
@@ -173,29 +181,26 @@ function renderSavedAtaAccordion(id, data) {
 }
 
 function setupEventListeners() {
-  const tipoFiltro = document.getElementById("tipo-filtro");
-  if (tipoFiltro) tipoFiltro.addEventListener("change", filtrarEExibirAtas);
-
   const contentArea = document.querySelector(".main-content");
-  contentArea.addEventListener("click", (e) => {
-    if (e.target.classList.contains("accordion-trigger")) {
-      const content = e.target.nextElementSibling;
-      if (content.style.maxHeight) {
-        content.style.maxHeight = null;
-      } else {
-        // Fecha outros acordeões abertos para uma melhor experiência
-        document
-          .querySelectorAll(".accordion-content")
-          .forEach((c) => (c.style.maxHeight = null));
-        content.style.maxHeight = content.scrollHeight + "px";
+  document
+    .getElementById("tipo-filtro")
+    ?.addEventListener("change", filtrarEExibirAtas);
+
+  // Garante que o listener de clique só seja adicionado uma vez
+  if (!contentArea.dataset.listenerAttached) {
+    contentArea.addEventListener("click", (e) => {
+      if (e.target.classList.contains("accordion-trigger")) {
+        const content = e.target.nextElementSibling;
+        if (content.style.maxHeight) {
+          content.style.maxHeight = null;
+        } else {
+          document
+            .querySelectorAll(".accordion-content")
+            .forEach((c) => (c.style.maxHeight = null));
+          content.style.maxHeight = content.scrollHeight + "px";
+        }
       }
-    }
-    if (e.target.classList.contains("feedback")) {
-      const key = e.target.dataset.key;
-      if (key) {
-        const urlFeedback = `./feedback.html#${key}`;
-        window.open(urlFeedback, "_blank");
-      }
-    }
-  });
+    });
+    contentArea.dataset.listenerAttached = "true";
+  }
 }
