@@ -1,9 +1,11 @@
 // /modulos/gestao/js/feedback.js
-import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
+// VERSÃO 2.0 (CORRIGIDO - Utiliza o utilizador logado)
+
+import { db as firestoreDb, auth } from "../../../assets/js/firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import {
   collection,
   query,
-  where,
   getDocs,
   orderBy,
   doc,
@@ -14,49 +16,90 @@ import {
 
 const feedbackContainer = document.getElementById("feedback-container");
 
-async function findMeetingAndRender() {
+/**
+ * Função principal que inicia a verificação de autenticação.
+ */
+function initializePage() {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // Se o utilizador estiver logado, busca os seus dados no Firestore
+      try {
+        const userDocRef = doc(firestoreDb, "usuarios", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // Com os dados do utilizador, procura a reunião e renderiza o formulário
+          await findMeetingAndRender(userData);
+        } else {
+          throw new Error(
+            "Perfil de utilizador não encontrado na base de dados."
+          );
+        }
+      } catch (error) {
+        feedbackContainer.innerHTML = `<div class="message-box alert alert-danger"><strong>Erro:</strong> ${error.message}</div>`;
+      }
+    } else {
+      // Se o utilizador não estiver logado, exibe uma mensagem de erro.
+      feedbackContainer.innerHTML = `<div class="message-box alert alert-danger"><strong>Acesso Negado.</strong><p>É preciso estar autenticado para enviar feedback. Por favor, feche esta página e aceda através do botão na intranet.</p></div>`;
+    }
+  });
+}
+
+/**
+ * Encontra a reunião pelo ID na URL e prepara para renderizar o formulário.
+ * @param {object} userData - Os dados do utilizador logado.
+ */
+async function findMeetingAndRender(userData) {
   try {
     const ataId = window.location.hash.substring(1);
     if (!ataId) {
       throw new Error("ID da reunião não fornecido na URL.");
     }
 
-    const [ataDoc, perguntasDoc, profissionaisSnapshot] = await Promise.all([
+    const [ataDoc, perguntasDoc] = await Promise.all([
       getDoc(doc(firestoreDb, "gestao_atas", ataId)),
       getDoc(doc(firestoreDb, "configuracoesSistema", "modelo_feedback")),
-      getDocs(query(collection(firestoreDb, "usuarios"), orderBy("nome"))),
     ]);
 
     if (!ataDoc.exists()) throw new Error("Ata da reunião não encontrada.");
     if (!perguntasDoc.exists())
-      throw new Error("Modelo de perguntas de feedback não encontrado.");
+      throw new Error(
+        "Modelo de perguntas de feedback não foi configurado no painel de administração."
+      );
 
     const ata = ataDoc.data();
     const perguntasModelo = perguntasDoc.data().perguntas;
-    const profissionais = profissionaisSnapshot.docs.map(
-      (doc) => doc.data().nome
-    );
 
-    // Lógica de tempo (pode ser ajustada conforme necessário)
-    const inicioReuniao = new Date(`${ata.dataReuniao}T${ata.horaInicio}`);
-    const agora = new Date();
+    // Verifica se o utilizador já respondeu
+    const jaRespondeu = ata.feedbacks?.some((fb) => fb.nome === userData.nome);
 
-    // Permite feedback a qualquer momento após o início da reunião (pode ser ajustado)
-    if (agora < inicioReuniao) {
-      feedbackContainer.innerHTML = `<div class="message-box alert alert-info">O feedback para esta reunião ainda não está disponível.</div>`;
+    if (jaRespondeu) {
+      const headerHtml = `
+                <div class="info-header">
+                    <h2>Feedback da Reunião Técnica</h2>
+                    <p><strong>Tema:</strong> ${ata.pauta || "N/A"}</p>
+                </div>`;
+      feedbackContainer.innerHTML =
+        headerHtml +
+        `<div class="message-box alert alert-info"><h2>Feedback já enviado</h2><p>Você já enviou o feedback para esta reunião. Obrigado!</p></div>`;
+      feedbackContainer.classList.remove("loading");
     } else {
-      renderFeedbackForm(ata, ataId, perguntasModelo, profissionais);
+      renderFeedbackForm(ata, ataId, perguntasModelo, userData);
     }
   } catch (err) {
     feedbackContainer.innerHTML = `<div class="message-box alert alert-danger"><strong>Erro:</strong> ${err.message}</div>`;
   }
 }
 
-function renderFeedbackForm(ata, ataId, perguntasModelo, profissionais) {
-  const professionalOptions = profissionais
-    .map((nome) => `<option value="${nome}">${nome}</option>`)
-    .join("");
-
+/**
+ * Renderiza o formulário de feedback na página.
+ * @param {object} ata - Os dados da ata da reunião.
+ * @param {string} ataId - O ID do documento da ata.
+ * @param {Array} perguntasModelo - O array com as perguntas a serem feitas.
+ * @param {object} loggedInUser - Os dados do utilizador logado.
+ */
+function renderFeedbackForm(ata, ataId, perguntasModelo, loggedInUser) {
   let formHtml = `
         <div class="info-header">
             <h2>Feedback da Reunião Técnica</h2>
@@ -68,12 +111,10 @@ function renderFeedbackForm(ata, ataId, perguntasModelo, profissionais) {
         </div>
         <form id="feedback-form">
             <div class="form-group">
-                <label for="participante-nome">Seu Nome</label>
-                <select id="participante-nome" class="form-control" required>
-                    <option value="">Selecione seu nome...</option>
-                    ${professionalOptions}
-                </select>
-                <span class="error-message"></span>
+                <label for="participante-nome">Nome do participante</label>
+                <input type="text" id="participante-nome" class="form-control" value="${
+                  loggedInUser.nome
+                }" disabled>
             </div>`;
 
   perguntasModelo.forEach((p) => {
@@ -85,7 +126,7 @@ function renderFeedbackForm(ata, ataId, perguntasModelo, profissionais) {
         .map((opt) => `<option value="${opt}">${opt}</option>`)
         .join("")}</select>`;
     } else if (p.tipo === "textarea") {
-      formHtml += `<textarea id="${p.id}" class="form-control" rows="3" required></textarea>`;
+      formHtml += `<textarea id="${p.id}" class="form-control" rows="3"></textarea>`;
     }
     formHtml += '<span class="error-message"></span></div>';
   });
@@ -94,18 +135,6 @@ function renderFeedbackForm(ata, ataId, perguntasModelo, profissionais) {
   feedbackContainer.innerHTML = formHtml;
   feedbackContainer.classList.remove("loading");
 
-  // Desabilitar nomes que já responderam
-  if (ata.feedbacks && Array.isArray(ata.feedbacks)) {
-    const nomesQueJaResponderam = ata.feedbacks.map((fb) => fb.nome);
-    document.querySelectorAll("#participante-nome option").forEach((option) => {
-      if (nomesQueJaResponderam.includes(option.value)) {
-        option.disabled = true;
-        option.textContent += " (Já respondeu)";
-      }
-    });
-  }
-
-  // Adicionar listener de submit
   document
     .getElementById("feedback-form")
     .addEventListener("submit", async (e) => {
@@ -115,10 +144,17 @@ function renderFeedbackForm(ata, ataId, perguntasModelo, profissionais) {
       submitBtn.textContent = "A enviar...";
 
       try {
-        const feedbackData = { timestamp: new Date().toISOString() };
-        feedbackData.nome = document.getElementById("participante-nome").value;
+        const feedbackData = {
+          timestamp: new Date().toISOString(),
+          nome: loggedInUser.nome, // Usa o nome do utilizador logado
+        };
+
         perguntasModelo.forEach((p) => {
-          feedbackData[p.id] = document.getElementById(p.id).value;
+          const element = document.getElementById(p.id);
+          if (element.required && !element.value) {
+            throw new Error(`O campo "${p.texto}" é obrigatório.`);
+          }
+          feedbackData[p.id] = element.value;
         });
 
         const ataRef = doc(firestoreDb, "gestao_atas", ataId);
@@ -135,5 +171,5 @@ function renderFeedbackForm(ata, ataId, perguntasModelo, profissionais) {
     });
 }
 
-// Inicia o processo quando a página carrega
-findMeetingAndRender();
+// Inicia o processo quando a página é carregada
+initializePage();
