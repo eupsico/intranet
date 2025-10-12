@@ -1,5 +1,5 @@
 // /modulos/gestao/js/painel-gestao.js
-// VERSÃO 3.2 (Com integração do Plano de Ação)
+// VERSÃO 3.3 (Com integração de Relatórios)
 
 const views = {
   "dashboard-reunioes": {
@@ -11,9 +11,13 @@ const views = {
     js: "../js/ata-de-reuniao.js",
   },
   "plano-de-acao": { html: "plano-de-acao.html", js: "../js/plano-de-acao.js" },
-  "relatorio-feedback": { html: "relatorio-feedback.html", js: null },
+  "relatorio-feedback": {
+    html: "relatorio-feedback.html",
+    js: "../js/relatorio-feedback.js",
+  },
 };
 
+// ... O restante do arquivo painel-gestao.js permanece exatamente o mesmo ...
 let appUser, appUserData;
 
 export function init(user, userData) {
