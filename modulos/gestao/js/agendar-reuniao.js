@@ -1,4 +1,6 @@
 // /modulos/gestao/js/agendar-reuniao.js
+// VERSÃO 1.2 (CORRIGIDO - Reintroduz a Reunião Técnica no agendamento)
+
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
   collection,
@@ -50,9 +52,9 @@ function renderizarFormularioAgendamento() {
         </form>
     `;
 
-  const tipoReuniaoSelect = document.getElementById("tipo-reuniao");
-  tipoReuniaoSelect.addEventListener("change", renderizarCamposDinamicos);
-
+  document
+    .getElementById("tipo-reuniao")
+    .addEventListener("change", renderizarCamposDinamicos);
   document
     .getElementById("form-agendamento")
     .addEventListener("submit", salvarAgendamento);
@@ -98,17 +100,21 @@ async function salvarAgendamento(e) {
   feedbackEl.className = "status-message";
 
   const tipo = document.getElementById("tipo-reuniao").value;
-  const dataReuniao = document.getElementById("data-reuniao").value;
-  const horaInicio = document.getElementById("hora-inicio").value;
-  const horaFim = document.getElementById("hora-fim").value;
 
   const dadosAgendamento = {
-    tipo,
-    dataReuniao,
-    horaInicio,
-    horaFim,
+    tipo: tipo,
+    dataReuniao: document.getElementById("data-reuniao").value,
+    horaInicio: document.getElementById("hora-inicio").value,
+    horaFim: document.getElementById("hora-fim").value,
     status: "Agendada",
     createdAt: serverTimestamp(),
+    // Inicializa campos que serão preenchidos depois para consistência
+    pontos: "",
+    decisoes: "",
+    participantes: "",
+    planoDeAcao: [],
+    encaminhamentos: [],
+    feedbacks: [],
   };
 
   if (tipo === "Reunião Técnica") {
