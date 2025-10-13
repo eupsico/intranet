@@ -28,11 +28,10 @@ export async function render(cardId, cardData, currentUserData) {
   element.innerHTML = `
         <h3 class="form-section-title">Confirmação do Agendamento</h3>
         <div class="confirmation-box">
-            <p style="margin-bottom: 15px;">A triagem será realizada na modalidade <strong>${tipoTriagem}</strong>.</p>
-            
-            <strong>Paciente:</strong> ${
-              cardData.nomeCompleto || "não informado"
-            }
+            A triagem será realizada na modalidade <strong>${tipoTriagem}</strong>.
+           <strong>Paciente:</strong> ${
+             cardData.nomeCompleto || "não informado"
+           }
             <strong>CPF:</strong> ${cardData.cpf || "não informado"}
             <strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}
             <strong>Telefone:</strong> ${
