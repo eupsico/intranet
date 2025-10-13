@@ -30,11 +30,12 @@ export async function render(cardId, cardData, currentUserData) {
   element.innerHTML = `
     <h3 class="form-section-title">Confirmação de Dados</h3>
     <div class="confirmation-box" id="confirmation-text">
-        <strong>Nome:</strong> ${cardData.nomeCompleto}<br>
-        <strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}<br>
-        <strong>Telefone:</strong> ${cardData.telefoneCelular}<br>
-        <strong>CPF:</strong> ${cardData.cpf}<br>
-        <strong>E-mail:</strong> ${cardData.email}<br>
+    *Preciso que você me confirme se os dados do paciente estão corretos:*
+        <strong>Nome:</strong> ${cardData.nomeCompleto}
+        <strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}
+        <strong>Telefone:</strong> ${cardData.telefoneCelular}
+        <strong>CPF:</strong> ${cardData.cpf}
+        <strong>E-mail:</strong> ${cardData.email}
         ${responsavelInfo}
     </div>
     <p>Copie o texto acima e envie para o paciente para confirmação.</p>
