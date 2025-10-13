@@ -550,7 +550,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 
       for (
         let minutos = inicioEmMinutos;
-        minutos < fimEmMinutos;
+        minutos <= fimEmMinutos;
         minutos += 30
       ) {
         const hAtual = Math.floor(minutos / 60);
