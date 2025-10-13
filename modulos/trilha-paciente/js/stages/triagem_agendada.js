@@ -26,22 +26,18 @@ export async function render(cardId, cardData, currentUserData) {
   const tipoTriagem = cardData.tipoTriagem || "não definido";
 
   element.innerHTML = `
-        <h3 class="form-section-title">Confirmação do Agendamento</h3>
-        <div class="confirmation-box">
-            A triagem será realizada na modalidade <strong>${tipoTriagem}</strong>.
-           <strong>Paciente:</strong> ${
-             cardData.nomeCompleto || "não informado"
-           }
-            <strong>CPF:</strong> ${cardData.cpf || "não informado"}
-            <strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}
-            <strong>Telefone:</strong> ${
-              cardData.telefoneCelular || "não informado"
-            }
-            <strong>E-mail:</strong> ${cardData.email || "não informado"}
-            <strong>Assistente Social:</strong> ${
-              cardData.assistenteSocialNome || "não informado"
-            }
-            <strong>Data e Horário:</strong> ${dataTriagemFormatada} às ${
+<h3 class="form-section-title">Confirmação do Agendamento</h3>
+<div class="confirmation-box">
+A triagem será realizada na modalidade <strong>${tipoTriagem}</strong>.
+<strong>Paciente:</strong> ${cardData.nomeCompleto || "não informado"}
+<strong>CPF:</strong> ${cardData.cpf || "não informado"}
+<strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}
+<strong>Telefone:</strong> ${cardData.telefoneCelular || "não informado"}
+<strong>E-mail:</strong> ${cardData.email || "não informado"}
+<strong>Assistente Social:</strong> ${
+    cardData.assistenteSocialNome || "não informado"
+  }
+<strong>Data e Horário:</strong> ${dataTriagemFormatada} às ${
     cardData.horaTriagem || "não informado"
   }
         </div>
