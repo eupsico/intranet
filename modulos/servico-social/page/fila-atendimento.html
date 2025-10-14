@@ -49,6 +49,18 @@
                             <option value="Indiferente">Indiferente</option>
                         </select>
                     </div>
+                    <hr>
+                    <p><strong>Ampliar disponibilidade:</strong></p>
+                    <div class="form-group">
+                        <p>Quanto maior a disponibilidade, mais rápido o paciente é chamado para o atendimento.</p>
+                        <label for="ampliar-disponibilidade">Deseja ampliar a disponibilidade?</label>
+                        <select id="ampliar-disponibilidade" name="ampliar-disponibilidade" class="form-control">
+                            <option value="nao">Não</option>
+                            <option value="sim">Sim</option>
+                        </select>
+                    </div>
+                    <div id="nova-disponibilidade-container" class="conditional-fields" style="display: none;">
+                        </div>
                     <div class="form-group">
                         <label for="queixa-paciente">Queixa principal do paciente (resumo):</label>
                         <textarea id="queixa-paciente" name="queixa-paciente" rows="4" class="form-control"></textarea>

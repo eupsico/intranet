@@ -226,6 +226,22 @@ export function init(user, userData, trilhaId) {
             document.getElementById("preferencia-genero").value,
           queixaPrincipal: document.getElementById("queixa-paciente").value,
         };
+
+        const ampliarDisponibilidade = document.getElementById(
+          "ampliar-disponibilidade"
+        ).value;
+        if (ampliarDisponibilidade === "sim") {
+          dadosParaSalvar.disponibilidadeGeral = Array.from(
+            document.querySelectorAll(
+              '#nova-disponibilidade-container input[name="horario"]:checked'
+            )
+          ).map((cb) => cb.parentElement.textContent.trim());
+          dadosParaSalvar.disponibilidadeEspecifica = Array.from(
+            document.querySelectorAll(
+              '#nova-disponibilidade-container input[name="horario-especifico"]:checked'
+            )
+          ).map((cb) => cb.value);
+        }
       } else if (status === "desistiu") {
         dadosParaSalvar = {
           ...dadosParaSalvar,
@@ -252,6 +268,86 @@ export function init(user, userData, trilhaId) {
       saveButton.textContent = "Salvar Triagem";
     }
   });
+
+  const ampliarDisponibilidadeSelect = document.getElementById(
+    "ampliar-disponibilidade"
+  );
+  const novaDisponibilidadeContainer = document.getElementById(
+    "nova-disponibilidade-container"
+  );
+
+  ampliarDisponibilidadeSelect.addEventListener("change", () => {
+    if (ampliarDisponibilidadeSelect.value === "sim") {
+      novaDisponibilidadeContainer.style.display = "block";
+      novaDisponibilidadeContainer.innerHTML = `
+        <h3 class="form-section-title">Nova Disponibilidade de Horário</h3>
+        <div class="form-group">
+            <label>Opção de horário(s) para atendimento:</label>
+            <div class="horarios-options-container">
+                <div><label><input type="checkbox" name="horario" value="manha-semana"> Manhã (Durante a semana)</label></div>
+                <div><label><input type="checkbox" name="horario" value="tarde-semana"> Tarde (Durante a semana)</label></div>
+                <div><label><input type="checkbox" name="horario" value="noite-semana"> Noite (Durante a semana)</label></div>
+                <div><label><input type="checkbox" name="horario" value="manha-sabado"> Manhã (Sábado)</label></div>
+            </div>
+        </div>
+        <div id="horarios-especificos-container">
+            <div id="container-manha-semana" class="horario-detalhe-container" style="display:none;"></div>
+            <div id="container-tarde-semana" class="horario-detalhe-container" style="display:none;"></div>
+            <div id="container-noite-semana" class="horario-detalhe-container" style="display:none;"></div>
+            <div id="container-manha-sabado" class="horario-detalhe-container" style="display:none;"></div>
+        </div>
+      `;
+      // Add event listeners for the new checkboxes
+      novaDisponibilidadeContainer
+        .querySelectorAll('input[name="horario"]')
+        .forEach((checkbox) => {
+          checkbox.addEventListener("change", (e) => {
+            const periodo = e.target.value;
+            const container = novaDisponibilidadeContainer.querySelector(
+              `#container-${periodo}`
+            );
+            if (e.target.checked) {
+              gerarHorarios(periodo, container);
+              container.style.display = "block";
+            } else {
+              container.innerHTML = "";
+              container.style.display = "none";
+            }
+          });
+        });
+    } else {
+      novaDisponibilidadeContainer.style.display = "none";
+      novaDisponibilidadeContainer.innerHTML = "";
+    }
+  });
+
+  function gerarHorarios(periodo, container) {
+    let horarios = [],
+      label = "";
+    switch (periodo) {
+      case "manha-semana":
+        label = "Manhã (Seg-Sex):";
+        for (let i = 8; i < 12; i++) horarios.push(`${i}:00`);
+        break;
+      case "tarde-semana":
+        label = "Tarde (Seg-Sex):";
+        for (let i = 12; i < 18; i++) horarios.push(`${i}:00`);
+        break;
+      case "noite-semana":
+        label = "Noite (Seg-Sex):";
+        for (let i = 18; i < 21; i++) horarios.push(`${i}:00`);
+        break;
+      case "manha-sabado":
+        label = "Manhã (Sábado):";
+        for (let i = 8; i < 13; i++) horarios.push(`${i}:00`);
+        break;
+    }
+    let html = `<label>${label}</label><div class="horario-detalhe-grid">`;
+    horarios.forEach((hora) => {
+      html += `<div><label><input type="checkbox" name="horario-especifico" value="${periodo}_${hora}"> ${hora}</label></div>`;
+    });
+    container.innerHTML = html + `</div>`;
+  }
 
   carregarDadosPaciente();
 }
