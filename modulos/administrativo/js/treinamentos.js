@@ -22,54 +22,43 @@ export function init(db, user, userData) {
 
   console.log("📚 Módulo de Treinamentos (Visualização) iniciado.");
 
-  // O restante do código é executado dentro da função 'init'
-  const tabs = document.querySelectorAll(".tab-link");
-  const contents = document.querySelectorAll(".tab-content");
-
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((item) => item.classList.remove("active"));
-      contents.forEach((item) => item.classList.remove("active"));
-      tab.classList.add("active");
-      document.getElementById(tab.dataset.tab).classList.add("active");
-    });
-  });
-
-  document.getElementById("btn-voltar").addEventListener("click", () => {
-    window.location.hash = "#grade"; // Volta para a view padrão do painel
-  });
+  // Lógica de abas e botão voltar foi removida
 
   async function carregarTreinamentos() {
+    const container = document.getElementById("videos-container");
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading-spinner"></div>'; // Mostra carregando
+
     try {
-      // Caminho corrigido para o documento no Firestore
       const docRef = doc(db, "configuracoesSistema", "treinamentos");
       const docSnap = await getDoc(docRef);
 
+      let todosOsVideos = [];
       if (docSnap.exists()) {
         const data = docSnap.data();
-        renderizarVideos("integracao", data.integracao || []);
-        renderizarVideos("geral", data.geral || []);
-        renderizarVideos("administrativo", data.administrativo || []);
-      } else {
-        console.log("Nenhum documento de treinamentos encontrado!");
-        // Exibe mensagem em todas as abas
-        renderizarVideos("integracao", []);
-        renderizarVideos("geral", []);
-        renderizarVideos("administrativo", []);
+        // Junta todos os vídeos de todas as categorias em um único array
+        todosOsVideos = [
+          ...(data.integracao || []),
+          ...(data.geral || []),
+          ...(data.administrativo || []),
+        ];
       }
+
+      renderizarVideos(todosOsVideos);
     } catch (error) {
       console.error("Erro ao carregar treinamentos:", error);
+      container.innerHTML = "<p>Ocorreu um erro ao carregar os vídeos.</p>";
     }
   }
 
-  function renderizarVideos(categoria, videos) {
-    const container = document.getElementById(`${categoria}-videos`);
-    if (!container) return;
-    container.innerHTML = "";
+  function renderizarVideos(videos) {
+    const container = document.getElementById("videos-container");
+    container.innerHTML = ""; // Limpa o spinner
 
     if (videos.length === 0) {
       container.innerHTML =
-        "<p>Nenhum vídeo cadastrado para esta categoria.</p>";
+        "<p>Nenhum vídeo de treinamento cadastrado no momento.</p>";
       return;
     }
 
@@ -78,14 +67,16 @@ export function init(db, user, userData) {
       if (videoId) {
         const videoElement = document.createElement("div");
         videoElement.classList.add("video-item");
+        // Adicionado o Título (h3) ao HTML
         videoElement.innerHTML = `
-                  <div class="video-embed">
-                      <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                  </div>
-                  <div class="video-description">
-                      <p>${video.descricao.replace(/\n/g, "<br>")}</p>
-                  </div>
-              `;
+            <h3>${video.title || "Vídeo sem Título"}</h3>
+            <div class="video-embed">
+                <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="video-description">
+                <p>${video.descricao.replace(/\n/g, "<br>")}</p>
+            </div>
+          `;
         container.appendChild(videoElement);
       }
     });
