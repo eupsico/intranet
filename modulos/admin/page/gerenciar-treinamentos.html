@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Treinamentos - Painel Administrativo</title>
+    <link rel="stylesheet" href="../css/painel-admin.css">
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1>Gerenciar Treinamentos</h1>
+            <p>Adicione, edite ou remova os vídeos de treinamento.</p>
+        </header>
+
+        <nav class="tabs-nav">
+            <button class="tab-link active" data-tab="integracao">Integração</button>
+            <button class="tab-link" data-tab="geral">Geral</button>
+            <button class="tab-link" data-tab="administrativo">Administrativo</button>
+        </nav>
+
+        <main id="management-content">
+            <div id="integracao" class="tab-content active">
+                <h2>Vídeos de Integração</h2>
+                <button class="btn-primary btn-add-video" data-category="integracao">Adicionar Vídeo</button>
+                <div class="videos-list" id="integracao-videos-list"></div>
+            </div>
+            <div id="geral" class="tab-content">
+                <h2>Vídeos Gerais</h2>
+                <button class="btn-primary btn-add-video" data-category="geral">Adicionar Vídeo</button>
+                <div class="videos-list" id="geral-videos-list"></div>
+            </div>
+            <div id="administrativo" class="tab-content">
+                <h2>Vídeos do Setor Administrativo</h2>
+                <button class="btn-primary btn-add-video" data-category="administrativo">Adicionar Vídeo</button>
+                <div class="videos-list" id="administrativo-videos-list"></div>
+            </div>
+        </main>
+
+        <button id="btn-voltar" class="btn-secondary">Voltar ao Painel</button>
+    </div>
+
+    <div id="video-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="modal-title">Adicionar Vídeo</h2>
+            <form id="video-form">
+                <input type="hidden" id="video-category" name="video-category">
+                <input type="hidden" id="video-id" name="video-id">
+                <div class="form-group">
+                    <label for="video-link">Link do Vídeo (YouTube):</label>
+                    <input type="url" id="video-link" placeholder="https://www.youtube.com/watch?v=..." required>
+                </div>
+                <div class="form-group">
+                    <label for="video-description">Descrição:</label>
+                    <textarea id="video-description" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="../js/gerenciar-treinamentos.js"></script>
+</body>
+</html>

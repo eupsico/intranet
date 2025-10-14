@@ -29,6 +29,11 @@ function buildAdminSidebarMenu() {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
     },
     {
+      id: "gerenciar-treinamentos",
+      name: "Gerenciar Treinamentos",
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>',
+    },
+    {
       id: "configuracoes",
       name: "Configurações",
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
@@ -78,8 +83,11 @@ async function loadView(viewId) {
       case "dashboard":
         htmlPath = "./dashboard-admin.html";
         break;
-      case "agendamentos-supervisao": // Adicionado o novo caso
+      case "agendamentos-supervisao":
         htmlPath = "./agendamentos-supervisao.html";
+        break;
+      case "gerenciar-treinamentos":
+        htmlPath = "./gerenciar-treinamentos.html";
         break;
       case "configuracoes":
         htmlPath = "./configuracoes.html";
@@ -98,9 +106,11 @@ async function loadView(viewId) {
       renderDisponibilidadeServicoSocial();
       renderGerenciamentoUsuarios();
     } else if (viewId === "agendamentos-supervisao") {
-      // Adicionado o novo caso
       const agendamentosModule = await import("./agendamentos-supervisao.js");
       if (agendamentosModule.init) agendamentosModule.init();
+    } else if (viewId === "gerenciar-treinamentos") {
+      const treinamentosModule = await import("./gerenciar-treinamentos.js");
+      if (treinamentosModule.init) treinamentosModule.init();
     } else if (viewId === "configuracoes") {
       const configModule = await import("./configuracoes.js");
       if (configModule.init) configModule.init();
@@ -201,17 +211,17 @@ async function renderGerenciamentoUsuarios() {
     const usuarios = result.data.sort((a, b) => a.nome.localeCompare(b.nome));
 
     let tableHtml = `
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Email</th>
-                            <th>Perfil</th>
-                            <th class="text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Perfil</th>
+                                <th class="text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
     usuarios.forEach((user) => {
       tableHtml += `
