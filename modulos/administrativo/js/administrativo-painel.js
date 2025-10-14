@@ -1,6 +1,5 @@
 // Arquivo: /modulos/administrativo/js/administrativo-painel.js
-// Versão: 2.0 (CORRIGIDO)
-// Descrição: Corrige o nome e caminho da view 'gestao_agendas'.
+// Versão: 2.1 (Adicionado menu e rota para Treinamentos)
 
 export function initadministrativoPanel(user, db, userData) {
   const contentArea = document.getElementById("content-area");
@@ -98,6 +97,12 @@ export function initadministrativoPanel(user, db, userData) {
       icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m10.5 14 2 2 4-4"/></svg>`,
     },
     {
+      id: "treinamentos",
+      name: "Treinamentos",
+      roles: ["admin", "gestor", "assistente"],
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`,
+    },
+    {
       id: "lancamentos",
       name: "Adicionar Lançamento",
       module: "financeiro",
@@ -121,12 +126,12 @@ export function initadministrativoPanel(user, db, userData) {
       const hasPermission = view.roles.some((role) => userRoles.includes(role));
       if (hasPermission) {
         sidebarMenu.innerHTML += `
-                    <li>
-                        <a href="#${view.id}" data-view="${view.id}">
-                            ${view.icon}
-                            <span>${view.name}</span>
-                        </a>
-                    </li>`;
+                        <li>
+                            <a href="#${view.id}" data-view="${view.id}">
+                                ${view.icon}
+                                <span>${view.name}</span>
+                            </a>
+                        </li>`;
       }
     });
   }
@@ -150,7 +155,6 @@ export function initadministrativoPanel(user, db, userData) {
         jsPath = `../../${view.module}/js/${viewId}.js`;
         cssPath = `../../${view.module}/css/${viewId}.css`;
       } else {
-        // ### CORREÇÃO APLICADA AQUI ###
         htmlPath = `./${viewId}.html`;
         jsPath = `../js/${viewId}.js`;
         cssPath = `../css/${viewId}.css`;
@@ -164,7 +168,6 @@ export function initadministrativoPanel(user, db, userData) {
 
       contentArea.innerHTML = await response.text();
 
-      // Lógica de CSS (sem alterações)
       document
         .querySelectorAll("link[data-dynamic-style]")
         .forEach((el) => el.remove());
