@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Treinamentos - Painel Administrativo</title>
+    <link rel="stylesheet" href="../../../assets/css/design-system.css"> 
     <link rel="stylesheet" href="../css/administrativo.css">
     <link rel="stylesheet" href="../css/treinamentos.css">
 </head>
@@ -14,32 +15,12 @@
             <p>Vídeos e materiais para capacitação da equipe.</p>
         </header>
 
-        <nav class="tabs-nav">
-            <button class="tab-link active" data-tab="integracao">Integração</button>
-            <button class="tab-link" data-tab="geral">Geral</button>
-            <button class="tab-link" data-tab="administrativo">Administrativo</button>
-        </nav>
-
         <main id="trainings-content">
-            <div id="integracao" class="tab-content active">
-                <h2>Treinamentos de Integração</h2>
-                <div class="videos-container" id="integracao-videos">
-                    </div>
-            </div>
-            <div id="geral" class="tab-content">
-                <h2>Treinamentos Gerais</h2>
-                <div class="videos-container" id="geral-videos">
-                    </div>
-            </div>
-            <div id="administrativo" class="tab-content">
-                <h2>Treinamentos para o Setor Administrativo</h2>
-                <div class="videos-container" id="administrativo-videos">
-                    </div>
-            </div>
+            <div id="videos-container" class="videos-container">
+                </div>
         </main>
         
-        <button id="btn-voltar" class="btn-secondary">Voltar ao Painel</button>
-    </div>
+        </div>
     <script type="module" src="../js/treinamentos.js"></script>
 </body>
 </html>
