@@ -34,6 +34,11 @@ function buildAdminSidebarMenu() {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>',
     },
     {
+      id: "importar-pacientes",
+      name: "Importar Pacientes",
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>',
+    },
+    {
       id: "configuracoes",
       name: "Configurações",
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
@@ -89,6 +94,9 @@ async function loadView(viewId) {
       case "gerenciar-treinamentos":
         htmlPath = "./gerenciar-treinamentos.html";
         break;
+      case "importar-pacientes": // Novo caso
+        htmlPath = "./importar-pacientes.html";
+        break;
       case "configuracoes":
         htmlPath = "./configuracoes.html";
         break;
@@ -102,18 +110,25 @@ async function loadView(viewId) {
     if (!response.ok) throw new Error(`Não foi possível carregar ${htmlPath}`);
     contentArea.innerHTML = await response.text();
 
+    // Passa os dados do usuário para o módulo init
+    const { user, userData } = window.app.currentUser;
+
     if (viewId === "dashboard" || !viewId) {
       renderDisponibilidadeServicoSocial();
       renderGerenciamentoUsuarios();
     } else if (viewId === "agendamentos-supervisao") {
       const agendamentosModule = await import("./agendamentos-supervisao.js");
-      if (agendamentosModule.init) agendamentosModule.init();
+      if (agendamentosModule.init) agendamentosModule.init(user, userData);
     } else if (viewId === "gerenciar-treinamentos") {
       const treinamentosModule = await import("./gerenciar-treinamentos.js");
-      if (treinamentosModule.init) treinamentosModule.init();
+      if (treinamentosModule.init) treinamentosModule.init(user, userData);
+    } else if (viewId === "importar-pacientes") {
+      // Novo bloco
+      const importarModule = await import("./importar-pacientes.js");
+      if (importarModule.init) importarModule.init(user, userData);
     } else if (viewId === "configuracoes") {
       const configModule = await import("./configuracoes.js");
-      if (configModule.init) configModule.init();
+      if (configModule.init) configModule.init(user, userData);
     }
   } catch (error) {
     console.error("Erro ao carregar a view:", error);
@@ -122,6 +137,7 @@ async function loadView(viewId) {
 }
 
 // --- Funções de Renderização do Dashboard (ATUALIZADAS) ---
+// ... (o resto do seu arquivo permanece inalterado)
 
 async function renderDisponibilidadeServicoSocial() {
   const container = document.getElementById("disponibilidade-admin-container");
@@ -142,7 +158,6 @@ async function renderDisponibilidadeServicoSocial() {
       return;
     }
 
-    // --- INÍCIO DA CORREÇÃO ---
     let html = '<div class="disponibilidade-list">';
     disponibilidades.forEach((assistente) => {
       html += `<div class="assistente-item">`;
@@ -194,7 +209,6 @@ async function renderDisponibilidadeServicoSocial() {
       html += `</div>`;
     });
     container.innerHTML = html + "</div>";
-    // --- FIM DA CORREÇÃO ---
   } catch (error) {
     console.error("Erro ao carregar disponibilidade:", error);
     container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar os dados de disponibilidade.</div>`;
