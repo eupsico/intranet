@@ -1,14 +1,21 @@
 import { db, doc, getDoc, setDoc } from "../../../assets/js/firebase-init.js";
-import { autenticarEObterDadosUsuario } from "../../../assets/js/app.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const user = await autenticarEObterDadosUsuario();
-  if (!user || !user.data.isSuperAdmin) {
+// A função agora é exportada e recebe 'user' e 'userData' como parâmetros
+export function init(user, userData) {
+  // A verificação de permissão usa o 'userData' recebido
+  if (!userData || !userData.isSuperAdmin) {
     console.error("Acesso negado. O usuário não é um super administrador.");
-    window.location.hash = "#login";
+    // Apenas oculta o conteúdo, pois o app.js já trata o redirecionamento
+    const container = document.querySelector(".container");
+    if (container)
+      container.innerHTML =
+        "<h2>Acesso Negado</h2><p>Você não tem permissão para ver esta página.</p>";
     return;
   }
 
+  console.log("🚀 Módulo de Gerenciar Treinamentos iniciado.");
+
+  // O restante do código permanece dentro da função init
   const tabs = document.querySelectorAll(".tab-link");
   const contents = document.querySelectorAll(".tab-content");
   const modal = document.getElementById("video-modal");
@@ -27,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("btn-voltar").addEventListener("click", () => {
-    window.location.hash = "#painel-admin";
+    window.location.hash = "#dashboard"; // Volta para o dashboard do admin
   });
 
   document.querySelectorAll(".btn-add-video").forEach((button) => {
@@ -50,7 +57,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function carregarTreinamentos() {
     try {
-      const docRef = doc(db, "configuracoes", "treinamentos");
+      // Corrigido para o caminho correto das configurações
+      const docRef = doc(db, "configuracoesSistema", "treinamentos");
       const docSnap = await getDoc(docRef);
       treinamentosData = docSnap.exists()
         ? docSnap.data()
@@ -72,17 +80,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       videos.forEach((video, index) => {
         const item = document.createElement("div");
-        item.classList.add("video-list-item");
+        item.classList.add("video-list-item"); // Adicione uma classe para estilização se necessário
         item.innerHTML = `
-                    <div class="video-info">
-                        <strong>Link:</strong> <a href="${video.link}" target="_blank">${video.link}</a>
-                        <p><strong>Descrição:</strong> ${video.descricao}</p>
-                    </div>
-                    <div class="video-actions">
-                        <button class="btn-secondary btn-edit-video" data-category="${category}" data-id="${index}">Editar</button>
-                        <button class="btn-danger btn-delete-video" data-category="${category}" data-id="${index}">Excluir</button>
-                    </div>
-                `;
+                      <div class="video-info">
+                          <strong>Link:</strong> <a href="${video.link}" target="_blank" rel="noopener noreferrer">${video.link}</a>
+                          <p><strong>Descrição:</strong> ${video.descricao}</p>
+                      </div>
+                      <div class="video-actions">
+                          <button class="action-button secondary btn-edit-video" data-category="${category}" data-id="${index}">Editar</button>
+                          <button class="action-button danger btn-delete-video" data-category="${category}" data-id="${index}">Excluir</button>
+                      </div>
+                  `;
         container.appendChild(item);
       });
     });
@@ -114,7 +122,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("video-category").value = category;
     const modalTitle = document.getElementById("modal-title");
 
-    if (id !== null) {
+    if (
+      id !== null &&
+      treinamentosData[category] &&
+      treinamentosData[category][id]
+    ) {
       modalTitle.textContent = "Editar Vídeo";
       const video = treinamentosData[category][id];
       document.getElementById("video-id").value = id;
@@ -141,10 +153,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const video = { link, descricao };
 
     if (id) {
-      // Editando
       treinamentosData[category][id] = video;
     } else {
-      // Adicionando
       if (!treinamentosData[category]) treinamentosData[category] = [];
       treinamentosData[category].push(video);
     }
@@ -156,8 +166,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function salvarTreinamentosNoFirebase() {
     try {
-      const docRef = doc(db, "configuracoes", "treinamentos");
-      await setDoc(docRef, treinamentosData);
+      const docRef = doc(db, "configuracoesSistema", "treinamentos");
+      await setDoc(docRef, treinamentosData, { merge: true }); // Usar merge para não apagar outras categorias
       console.log("Treinamentos salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar treinamentos:", error);
@@ -165,5 +175,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  await carregarTreinamentos();
-});
+  carregarTreinamentos();
+}
