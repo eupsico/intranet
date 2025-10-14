@@ -89,6 +89,5 @@ export function init(db, user, userData) {
     const matches = url.match(regex);
     return matches ? matches[1] : null;
   }
-
   carregarTreinamentos();
 }
