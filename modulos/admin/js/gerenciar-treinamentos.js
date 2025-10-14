@@ -3,7 +3,13 @@ import { db, doc, getDoc, setDoc } from "../../../assets/js/firebase-init.js";
 // A função agora é exportada e recebe 'user' e 'userData' como parâmetros
 export function init(user, userData) {
   // A verificação de permissão usa o 'userData' recebido
-  if (!userData || !userData.isAdmin) {
+  if (
+    !userData ||
+    !(
+      userData.funcoes &&
+      userData.funcoes.some((role) => ["admin"].includes(role))
+    )
+  ) {
     console.error("Acesso negado. O usuário não é um super administrador.");
     // Apenas oculta o conteúdo, pois o app.js já trata o redirecionamento
     const container = document.querySelector(".container");
