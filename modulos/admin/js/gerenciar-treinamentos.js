@@ -1,18 +1,21 @@
 import { db, doc, getDoc, setDoc } from "../../../assets/js/firebase-init.js";
 
-// A função init agora recebe os dados do usuário, mas não faz mais a verificação de permissão.
 export function init(user, userData) {
   console.log("🚀 Módulo de Gerenciar Treinamentos iniciado.");
 
-  // O código restante é executado diretamente, sem o bloco 'if' de verificação.
   const tabs = document.querySelectorAll(".tab-link");
   const contents = document.querySelectorAll(".tab-content");
   const modal = document.getElementById("video-modal");
-  const closeModal = document.querySelector(".close-button");
   const videoForm = document.getElementById("video-form");
+
+  // Botões para fechar o modal
+  const closeModalBtn = document.querySelector(".close-modal-btn");
+  const cancelModalBtn = document.getElementById("modal-cancel-btn");
+  const modalOverlay = document.querySelector(".modal-overlay");
 
   let treinamentosData = {};
 
+  // --- LÓGICA DAS ABAS ---
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       tabs.forEach((item) => item.classList.remove("active"));
@@ -22,23 +25,49 @@ export function init(user, userData) {
     });
   });
 
-  document.getElementById("btn-voltar").addEventListener("click", () => {
-    window.location.hash = "#dashboard"; // Volta para o dashboard do admin
-  });
+  // --- LÓGICA DO MODAL ---
+  const openModal = (category, id = null) => {
+    videoForm.reset();
+    document.getElementById("video-category").value = category;
+    const modalTitle = document.getElementById("modal-title");
 
-  document.querySelectorAll(".btn-add-video").forEach((button) => {
+    if (
+      id !== null &&
+      treinamentosData[category] &&
+      treinamentosData[category][id]
+    ) {
+      modalTitle.textContent = "Editar Vídeo";
+      const video = treinamentosData[category][id];
+      document.getElementById("video-id").value = id;
+      document.getElementById("video-title").value = video.title || ""; // Carrega o novo campo
+      document.getElementById("video-link").value = video.link;
+      document.getElementById("video-description").value = video.descricao;
+    } else {
+      modalTitle.textContent = "Adicionar Vídeo";
+      document.getElementById("video-id").value = "";
+    }
+    modal.style.display = "flex";
+  };
+
+  const closeModalFunction = () => {
+    modal.style.display = "none";
+  };
+
+  document.querySelectorAll(".add-video-btn").forEach((button) => {
     button.addEventListener("click", (e) =>
       openModal(e.target.dataset.category)
     );
   });
 
-  closeModal.onclick = () => (modal.style.display = "none");
-  window.onclick = (event) => {
-    if (event.target == modal) {
-      modal.style.display = "none";
+  closeModalBtn.addEventListener("click", closeModalFunction);
+  cancelModalBtn.addEventListener("click", closeModalFunction);
+  modalOverlay.addEventListener("click", (e) => {
+    if (e.target === modalOverlay) {
+      closeModalFunction();
     }
-  };
+  });
 
+  // --- LÓGICA DE DADOS ---
   videoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     await salvarVideo();
@@ -63,22 +92,26 @@ export function init(user, userData) {
       container.innerHTML = "";
       const videos = treinamentosData[category] || [];
       if (videos.length === 0) {
-        container.innerHTML = "<p>Nenhum vídeo cadastrado.</p>";
+        container.innerHTML = "<p>Nenhum vídeo cadastrado nesta categoria.</p>";
         return;
       }
       videos.forEach((video, index) => {
         const item = document.createElement("div");
         item.classList.add("video-list-item");
+        // Mostra o Título na lista
         item.innerHTML = `
-                      <div class="video-info">
-                          <strong>Link:</strong> <a href="${video.link}" target="_blank" rel="noopener noreferrer">${video.link}</a>
-                          <p><strong>Descrição:</strong> ${video.descricao}</p>
-                      </div>
-                      <div class="video-actions">
-                          <button class="action-button secondary btn-edit-video" data-category="${category}" data-id="${index}">Editar</button>
-                          <button class="action-button danger btn-delete-video" data-category="${category}" data-id="${index}">Excluir</button>
-                      </div>
-                  `;
+          <div class="video-info">
+              <strong>${video.title || "Vídeo sem título"}</strong>
+              <p>${video.descricao}</p>
+              <a href="${
+                video.link
+              }" target="_blank" rel="noopener noreferrer">${video.link}</a>
+          </div>
+          <div class="video-actions">
+              <button class="action-button secondary btn-edit-video" data-category="${category}" data-id="${index}">Editar</button>
+              <button class="action-button danger btn-delete-video" data-category="${category}" data-id="${index}">Excluir</button>
+          </div>
+        `;
         container.appendChild(item);
       });
     });
@@ -105,40 +138,19 @@ export function init(user, userData) {
     });
   }
 
-  function openModal(category, id = null) {
-    videoForm.reset();
-    document.getElementById("video-category").value = category;
-    const modalTitle = document.getElementById("modal-title");
-
-    if (
-      id !== null &&
-      treinamentosData[category] &&
-      treinamentosData[category][id]
-    ) {
-      modalTitle.textContent = "Editar Vídeo";
-      const video = treinamentosData[category][id];
-      document.getElementById("video-id").value = id;
-      document.getElementById("video-link").value = video.link;
-      document.getElementById("video-description").value = video.descricao;
-    } else {
-      modalTitle.textContent = "Adicionar Vídeo";
-      document.getElementById("video-id").value = "";
-    }
-    modal.style.display = "block";
-  }
-
   async function salvarVideo() {
     const category = document.getElementById("video-category").value;
     const id = document.getElementById("video-id").value;
+    const title = document.getElementById("video-title").value.trim(); // Pega o valor do título
     const link = document.getElementById("video-link").value.trim();
     const descricao = document.getElementById("video-description").value.trim();
 
-    if (!link || !descricao) {
+    if (!title || !link || !descricao) {
       alert("Por favor, preencha todos os campos.");
       return;
     }
 
-    const video = { link, descricao };
+    const video = { title, link, descricao }; // Salva o título
 
     if (id) {
       treinamentosData[category][id] = video;
@@ -149,7 +161,7 @@ export function init(user, userData) {
 
     await salvarTreinamentosNoFirebase();
     renderizarListasDeVideos();
-    modal.style.display = "none";
+    closeModalFunction();
   }
 
   async function salvarTreinamentosNoFirebase() {
