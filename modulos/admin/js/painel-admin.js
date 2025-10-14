@@ -3,12 +3,18 @@ import {
   httpsCallable,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
 
+// Variáveis para armazenar os dados do usuário no escopo do módulo
+let currentUser, currentUserData;
+
 // Função de entrada do módulo, chamada pelo app.js
 export function init(user, userData) {
   console.log("🔹 Painel de Administração iniciado para:", userData.nome);
-  // As funções de navegação agora são chamadas dentro do handleNavigation
+
+  // Armazena os dados do usuário para serem usados por outras funções no módulo
+  currentUser = user;
+  currentUserData = userData;
+
   handleNavigation();
-  // Adiciona o listener para futuras mudanças no hash (navegação interna)
   window.addEventListener("hashchange", handleNavigation);
 }
 
@@ -94,7 +100,7 @@ async function loadView(viewId) {
       case "gerenciar-treinamentos":
         htmlPath = "./gerenciar-treinamentos.html";
         break;
-      case "importar-pacientes": // Novo caso
+      case "importar-pacientes":
         htmlPath = "./importar-pacientes.html";
         break;
       case "configuracoes":
@@ -110,25 +116,24 @@ async function loadView(viewId) {
     if (!response.ok) throw new Error(`Não foi possível carregar ${htmlPath}`);
     contentArea.innerHTML = await response.text();
 
-    // Passa os dados do usuário para o módulo init
-    const { user, userData } = window.app.currentUser;
-
     if (viewId === "dashboard" || !viewId) {
       renderDisponibilidadeServicoSocial();
       renderGerenciamentoUsuarios();
     } else if (viewId === "agendamentos-supervisao") {
       const agendamentosModule = await import("./agendamentos-supervisao.js");
-      if (agendamentosModule.init) agendamentosModule.init(user, userData);
+      if (agendamentosModule.init)
+        agendamentosModule.init(currentUser, currentUserData);
     } else if (viewId === "gerenciar-treinamentos") {
       const treinamentosModule = await import("./gerenciar-treinamentos.js");
-      if (treinamentosModule.init) treinamentosModule.init(user, userData);
+      if (treinamentosModule.init)
+        treinamentosModule.init(currentUser, currentUserData);
     } else if (viewId === "importar-pacientes") {
-      // Novo bloco
       const importarModule = await import("./importar-pacientes.js");
-      if (importarModule.init) importarModule.init(user, userData);
+      if (importarModule.init)
+        importarModule.init(currentUser, currentUserData);
     } else if (viewId === "configuracoes") {
       const configModule = await import("./configuracoes.js");
-      if (configModule.init) configModule.init(user, userData);
+      if (configModule.init) configModule.init(currentUser, currentUserData);
     }
   } catch (error) {
     console.error("Erro ao carregar a view:", error);
@@ -137,7 +142,6 @@ async function loadView(viewId) {
 }
 
 // --- Funções de Renderização do Dashboard (ATUALIZADAS) ---
-// ... (o resto do seu arquivo permanece inalterado)
 
 async function renderDisponibilidadeServicoSocial() {
   const container = document.getElementById("disponibilidade-admin-container");
@@ -158,6 +162,7 @@ async function renderDisponibilidadeServicoSocial() {
       return;
     }
 
+    // --- INÍCIO DA CORREÇÃO ---
     let html = '<div class="disponibilidade-list">';
     disponibilidades.forEach((assistente) => {
       html += `<div class="assistente-item">`;
@@ -209,6 +214,7 @@ async function renderDisponibilidadeServicoSocial() {
       html += `</div>`;
     });
     container.innerHTML = html + "</div>";
+    // --- FIM DA CORREÇÃO ---
   } catch (error) {
     console.error("Erro ao carregar disponibilidade:", error);
     container.innerHTML = `<div class="alert alert-danger">Não foi possível carregar os dados de disponibilidade.</div>`;
