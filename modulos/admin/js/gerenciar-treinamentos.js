@@ -2,20 +2,14 @@ import { db, doc, getDoc, setDoc } from "../../../assets/js/firebase-init.js";
 
 // A função agora é exportada e recebe 'user' e 'userData' como parâmetros
 export function init(user, userData) {
-  // A verificação de permissão usa o 'userData' recebido
-  if (
-    !userData ||
-    !(
-      userData.funcoes &&
-      userData.funcoes.some((role) => ["admin"].includes(role))
-    )
-  ) {
-    console.error("Acesso negado. O usuário não é um super administrador.");
-    // Apenas oculta o conteúdo, pois o app.js já trata o redirecionamento
+  // CORREÇÃO: A verificação agora checa se 'funcoes' contém 'admin'
+  if (!userData || !userData.funcoes || !userData.funcoes.includes("admin")) {
+    console.error("Acesso negado. O usuário não tem a função 'admin'.");
     const container = document.querySelector(".container");
-    if (container)
+    if (container) {
       container.innerHTML =
         "<h2>Acesso Negado</h2><p>Você não tem permissão para ver esta página.</p>";
+    }
     return;
   }
 
@@ -63,7 +57,6 @@ export function init(user, userData) {
 
   async function carregarTreinamentos() {
     try {
-      // Corrigido para o caminho correto das configurações
       const docRef = doc(db, "configuracoesSistema", "treinamentos");
       const docSnap = await getDoc(docRef);
       treinamentosData = docSnap.exists()
@@ -86,7 +79,7 @@ export function init(user, userData) {
       }
       videos.forEach((video, index) => {
         const item = document.createElement("div");
-        item.classList.add("video-list-item"); // Adicione uma classe para estilização se necessário
+        item.classList.add("video-list-item");
         item.innerHTML = `
                       <div class="video-info">
                           <strong>Link:</strong> <a href="${video.link}" target="_blank" rel="noopener noreferrer">${video.link}</a>
@@ -173,7 +166,7 @@ export function init(user, userData) {
   async function salvarTreinamentosNoFirebase() {
     try {
       const docRef = doc(db, "configuracoesSistema", "treinamentos");
-      await setDoc(docRef, treinamentosData, { merge: true }); // Usar merge para não apagar outras categorias
+      await setDoc(docRef, treinamentosData, { merge: true });
       console.log("Treinamentos salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar treinamentos:", error);
