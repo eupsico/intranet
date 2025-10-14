@@ -1087,3 +1087,154 @@ exports.getTodosUsuarios = onCall({ cors: true }, async (request) => {
     throw new HttpsError("internal", "Não foi possível listar os usuários.");
   }
 });
+// ==============================================================================
+// DESCRIÇÃO: Processa uma planilha de pacientes e os cria na trilha.
+// ==============================================================================
+exports.importarPacientesBatch = onCall(async (request) => {
+  // 1. Validação de Autenticação e Permissão
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
+  }
+  const adminUid = request.auth.uid;
+  try {
+    const adminUserDoc = await db.collection("usuarios").doc(adminUid).get();
+    if (
+      !adminUserDoc.exists ||
+      !adminUserDoc.data().funcoes?.includes("admin")
+    ) {
+      throw new HttpsError(
+        "permission-denied",
+        "Você não tem permissão para executar esta importação."
+      );
+    }
+
+    // 2. Validação dos Dados de Entrada
+    const { pacientes, fila } = request.data;
+    if (!Array.isArray(pacientes) || pacientes.length === 0 || !fila) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Dados inválidos. É necessário uma lista de pacientes e uma fila de destino."
+      );
+    }
+
+    logger.info(
+      `Iniciando importação de ${pacientes.length} pacientes para a fila ${fila} por ${adminUid}.`
+    );
+
+    const resultados = {
+      sucesso: 0,
+      erros: 0,
+      total: pacientes.length,
+      mensagensErro: [],
+    };
+
+    // 3. Processamento em Lote
+    // Usaremos promessas para verificar todos os CPFs em paralelo antes de escrever
+    const verificacoesCpf = pacientes.map((paciente, index) => {
+      const cpf = paciente.cpf ? String(paciente.cpf).replace(/\D/g, "") : null;
+      if (!cpf) {
+        resultados.erros++;
+        resultados.mensagensErro.push(
+          `Linha ${index + 2}: CPF ausente ou inválido.`
+        );
+        return Promise.resolve(null); // Retorna uma promessa resolvida para não quebrar o lote
+      }
+      return db
+        .collection("trilhaPaciente")
+        .where("cpf", "==", cpf)
+        .limit(1)
+        .get()
+        .then((snapshot) => ({ snapshot, paciente, cpf, index }));
+    });
+
+    const resultadosVerificacao = await Promise.all(verificacoesCpf);
+
+    const batch = db.batch();
+    const agora = FieldValue.serverTimestamp();
+
+    for (const result of resultadosVerificacao) {
+      if (result === null) continue; // Pula os que já tiveram erro de CPF ausente
+
+      const { snapshot, paciente, cpf, index } = result;
+
+      // Validações adicionais
+      if (!paciente.nomeCompleto) {
+        resultados.erros++;
+        resultados.mensagensErro.push(
+          `Linha ${index + 2}: O campo 'nomeCompleto' é obrigatório.`
+        );
+        continue;
+      }
+      if (!snapshot.empty) {
+        resultados.erros++;
+        resultados.mensagensErro.push(
+          `Linha ${index + 2}: CPF ${cpf} já cadastrado no sistema.`
+        );
+        continue;
+      }
+
+      // 4. Montagem do Objeto do Paciente
+      const novoCardRef = db.collection("trilhaPaciente").doc(); // Gera uma nova referência de documento
+      const cardData = {
+        // Dados da Ficha de Inscrição
+        nomeCompleto: paciente.nomeCompleto,
+        cpf: cpf,
+        dataNascimento: paciente.dataNascimento || null,
+        telefoneCelular: paciente.telefoneCelular || "",
+        email: paciente.email || "",
+        rua: paciente.rua || "",
+        numeroCasa: paciente.numeroCasa || "",
+        bairro: paciente.bairro || "",
+        cidade: paciente.cidade || "",
+        cep: paciente.cep || "",
+        complemento: paciente.complemento || "",
+        responsavel: {
+          nome: paciente.nomeResponsavel || "",
+          contato: paciente.contatoResponsavel || "",
+          cpf: paciente.cpfResponsavel || "",
+        },
+        rendaMensal: paciente.rendaMensal || "",
+        rendaFamiliar: paciente.rendaFamiliar || "",
+        casaPropria: paciente.casaPropria || "",
+        pessoasMoradia: Number(paciente.pessoasMoradia) || 0,
+        motivoBusca: paciente.motivoBusca || "",
+        disponibilidadeGeral: (paciente.disponibilidadeGeral || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        comoConheceu: paciente.comoConheceu || "",
+
+        // Dados da Trilha
+        filaDeOrigem: fila, // Fila selecionada no formulário
+        status: "inscricao_documentos", // Status inicial padrão
+        timestamp: agora,
+        lastUpdate: agora,
+        lastUpdatedBy: `Importação em Lote por ${adminUid}`,
+        importadoEmLote: true, // Flag para identificar pacientes importados
+      };
+
+      batch.set(novoCardRef, cardData);
+      resultados.sucesso++;
+    }
+
+    // 5. Commit do Lote e Retorno
+    if (resultados.sucesso > 0) {
+      await batch.commit();
+    }
+
+    logger.info(
+      `Importação concluída: ${resultados.sucesso} sucessos, ${resultados.erros} erros.`
+    );
+    return resultados;
+  } catch (error) {
+    logger.error("Erro geral na função importarPacientesBatch:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError(
+      "internal",
+      "Ocorreu um erro inesperado no servidor.",
+      error.message
+    );
+  }
+});
