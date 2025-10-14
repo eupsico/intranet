@@ -1091,7 +1091,6 @@ exports.getTodosUsuarios = onCall({ cors: true }, async (request) => {
 // DESCRIÇÃO: Processa uma planilha de pacientes e os cria na trilha.
 // ==============================================================================
 exports.importarPacientesBatch = onCall(async (request) => {
-  // 1. Validação de Autenticação e Permissão
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
@@ -1108,7 +1107,6 @@ exports.importarPacientesBatch = onCall(async (request) => {
       );
     }
 
-    // 2. Validação dos Dados de Entrada
     const { pacientes, fila } = request.data;
     if (!Array.isArray(pacientes) || pacientes.length === 0 || !fila) {
       throw new HttpsError(
@@ -1128,7 +1126,6 @@ exports.importarPacientesBatch = onCall(async (request) => {
       mensagensErro: [],
     };
 
-    // 3. Processamento em Lote
     const verificacoesCpf = pacientes.map((paciente, index) => {
       const cpf = paciente.cpf ? String(paciente.cpf).replace(/\D/g, "") : null;
       if (!cpf) {
@@ -1153,7 +1150,6 @@ exports.importarPacientesBatch = onCall(async (request) => {
 
     for (const result of resultadosVerificacao) {
       if (result === null) continue;
-
       const { snapshot, paciente, cpf, index } = result;
 
       if (!paciente.nomeCompleto) {
@@ -1171,16 +1167,54 @@ exports.importarPacientesBatch = onCall(async (request) => {
         continue;
       }
 
-      // 4. Montagem do Objeto do Paciente (COM A LÓGICA DE STATUS)
       const novoCardRef = db.collection("trilhaPaciente").doc();
-
-      // *** ALTERAÇÃO APLICADA AQUI ***
-      // Define o status a partir da planilha, ou usa o padrão se estiver em branco.
       const statusInicial = paciente.status || "inscricao_documentos";
 
+      // --- LÓGICA DE DADOS CONDICIONAIS ---
+      let dadosAdicionais = {};
+
+      if (
+        statusInicial === "encaminhar_para_plantao" ||
+        statusInicial === "encaminhar_para_pb"
+      ) {
+        dadosAdicionais = {
+          valorContribuicao: paciente.valorContribuicao || null,
+          assistenteSocialTriagem: {
+            nome:
+              paciente.assistenteSocialTriagemNome ||
+              "Não informado na importação",
+            uid: null, // UID não disponível na importação
+          },
+        };
+      }
+
+      if (statusInicial === "em_atendimento_pb") {
+        // Para pacientes já em atendimento, criamos a estrutura 'atendimentosPB'
+        dadosAdicionais = {
+          atendimentosPB: [
+            {
+              atendimentoId: `imp_${novoCardRef.id}`, // ID único para o atendimento importado
+              profissionalNome:
+                paciente.profissionalNome || "Não informado na importação",
+              profissionalId: null, // UID não disponível
+              modalidade: paciente.atendimentoModalidade || "Não informada",
+              statusAtendimento: "ativo",
+              dataInicio: agora,
+            },
+          ],
+        };
+      }
+
+      // --- FIM DA LÓGICA CONDICIONAL ---
+
       const cardData = {
+        // Dados Base
         nomeCompleto: paciente.nomeCompleto,
         cpf: cpf,
+        status: statusInicial,
+        filaDeOrigem: fila,
+
+        // Dados da Ficha
         dataNascimento: paciente.dataNascimento || null,
         telefoneCelular: paciente.telefoneCelular || "",
         email: paciente.email || "",
@@ -1189,37 +1223,26 @@ exports.importarPacientesBatch = onCall(async (request) => {
         bairro: paciente.bairro || "",
         cidade: paciente.cidade || "",
         cep: paciente.cep || "",
-        complemento: paciente.complemento || "",
-        responsavel: {
-          nome: paciente.nomeResponsavel || "",
-          contato: paciente.contatoResponsavel || "",
-          cpf: paciente.cpfResponsavel || "",
-        },
-        rendaMensal: paciente.rendaMensal || "",
-        rendaFamiliar: paciente.rendaFamiliar || "",
-        casaPropria: paciente.casaPropria || "",
-        pessoasMoradia: Number(paciente.pessoasMoradia) || 0,
         motivoBusca: paciente.motivoBusca || "",
         disponibilidadeGeral: (paciente.disponibilidadeGeral || "")
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-        comoConheceu: paciente.comoConheceu || "",
 
         // Dados da Trilha
-        filaDeOrigem: fila,
-        status: statusInicial, // <<< USA O STATUS DEFINIDO
         timestamp: agora,
         lastUpdate: agora,
         lastUpdatedBy: `Importação em Lote por ${adminUid}`,
         importadoEmLote: true,
+
+        // Incorpora os dados adicionais baseados no status
+        ...dadosAdicionais,
       };
 
       batch.set(novoCardRef, cardData);
       resultados.sucesso++;
     }
 
-    // 5. Commit do Lote e Retorno
     if (resultados.sucesso > 0) {
       await batch.commit();
     }
@@ -1230,9 +1253,7 @@ exports.importarPacientesBatch = onCall(async (request) => {
     return resultados;
   } catch (error) {
     logger.error("Erro geral na função importarPacientesBatch:", error);
-    if (error instanceof HttpsError) {
-      throw error;
-    }
+    if (error instanceof HttpsError) throw error;
     throw new HttpsError(
       "internal",
       "Ocorreu um erro inesperado no servidor.",
