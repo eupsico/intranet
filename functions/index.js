@@ -1129,7 +1129,6 @@ exports.importarPacientesBatch = onCall(async (request) => {
     };
 
     // 3. Processamento em Lote
-    // Usaremos promessas para verificar todos os CPFs em paralelo antes de escrever
     const verificacoesCpf = pacientes.map((paciente, index) => {
       const cpf = paciente.cpf ? String(paciente.cpf).replace(/\D/g, "") : null;
       if (!cpf) {
@@ -1137,7 +1136,7 @@ exports.importarPacientesBatch = onCall(async (request) => {
         resultados.mensagensErro.push(
           `Linha ${index + 2}: CPF ausente ou inválido.`
         );
-        return Promise.resolve(null); // Retorna uma promessa resolvida para não quebrar o lote
+        return Promise.resolve(null);
       }
       return db
         .collection("trilhaPaciente")
@@ -1153,11 +1152,10 @@ exports.importarPacientesBatch = onCall(async (request) => {
     const agora = FieldValue.serverTimestamp();
 
     for (const result of resultadosVerificacao) {
-      if (result === null) continue; // Pula os que já tiveram erro de CPF ausente
+      if (result === null) continue;
 
       const { snapshot, paciente, cpf, index } = result;
 
-      // Validações adicionais
       if (!paciente.nomeCompleto) {
         resultados.erros++;
         resultados.mensagensErro.push(
@@ -1173,10 +1171,14 @@ exports.importarPacientesBatch = onCall(async (request) => {
         continue;
       }
 
-      // 4. Montagem do Objeto do Paciente
-      const novoCardRef = db.collection("trilhaPaciente").doc(); // Gera uma nova referência de documento
+      // 4. Montagem do Objeto do Paciente (COM A LÓGICA DE STATUS)
+      const novoCardRef = db.collection("trilhaPaciente").doc();
+
+      // *** ALTERAÇÃO APLICADA AQUI ***
+      // Define o status a partir da planilha, ou usa o padrão se estiver em branco.
+      const statusInicial = paciente.status || "inscricao_documentos";
+
       const cardData = {
-        // Dados da Ficha de Inscrição
         nomeCompleto: paciente.nomeCompleto,
         cpf: cpf,
         dataNascimento: paciente.dataNascimento || null,
@@ -1205,12 +1207,12 @@ exports.importarPacientesBatch = onCall(async (request) => {
         comoConheceu: paciente.comoConheceu || "",
 
         // Dados da Trilha
-        filaDeOrigem: fila, // Fila selecionada no formulário
-        status: "inscricao_documentos", // Status inicial padrão
+        filaDeOrigem: fila,
+        status: statusInicial, // <<< USA O STATUS DEFINIDO
         timestamp: agora,
         lastUpdate: agora,
         lastUpdatedBy: `Importação em Lote por ${adminUid}`,
-        importadoEmLote: true, // Flag para identificar pacientes importados
+        importadoEmLote: true,
       };
 
       batch.set(novoCardRef, cardData);
