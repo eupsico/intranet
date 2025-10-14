@@ -1,21 +1,10 @@
 import { db, doc, getDoc, setDoc } from "../../../assets/js/firebase-init.js";
 
-// A função agora é exportada e recebe 'user' e 'userData' como parâmetros
+// A função init agora recebe os dados do usuário, mas não faz mais a verificação de permissão.
 export function init(user, userData) {
-  // CORREÇÃO: A verificação agora checa se 'funcoes' contém 'admin'
-  if (!userData || !userData.funcoes || !userData.funcoes.includes("admin")) {
-    console.error("Acesso negado. O usuário não tem a função 'admin'.");
-    const container = document.querySelector(".container");
-    if (container) {
-      container.innerHTML =
-        "<h2>Acesso Negado</h2><p>Você não tem permissão para ver esta página.</p>";
-    }
-    return;
-  }
-
   console.log("🚀 Módulo de Gerenciar Treinamentos iniciado.");
 
-  // O restante do código permanece dentro da função init
+  // O código restante é executado diretamente, sem o bloco 'if' de verificação.
   const tabs = document.querySelectorAll(".tab-link");
   const contents = document.querySelectorAll(".tab-content");
   const modal = document.getElementById("video-modal");
