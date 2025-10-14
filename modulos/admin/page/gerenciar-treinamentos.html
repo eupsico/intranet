@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Treinamentos - Painel Administrativo</title>
-    <link rel="stylesheet" href="../css/painel-admin.css">
     <link rel="stylesheet" href="../../../assets/css/design-system.css">
     <link rel="stylesheet" href="../../administrativo/css/treinamentos.css">
 </head>
@@ -23,15 +22,15 @@
 
         <main id="management-content">
             <div id="integracao" class="tab-content active">
-                <button class="action-button" data-category="integracao">Adicionar Vídeo de Integração</button>
+                <button class="action-button add-video-btn" data-category="integracao">Adicionar Vídeo de Integração</button>
                 <div class="videos-list" id="integracao-videos-list"></div>
             </div>
             <div id="geral" class="tab-content">
-                <button class="action-button" data-category="geral">Adicionar Vídeo Geral</button>
+                <button class="action-button add-video-btn" data-category="geral">Adicionar Vídeo Geral</button>
                 <div class="videos-list" id="geral-videos-list"></div>
             </div>
             <div id="administrativo" class="tab-content">
-                <button class="action-button" data-category="administrativo">Adicionar Vídeo Administrativo</button>
+                <button class="action-button add-video-btn" data-category="administrativo">Adicionar Vídeo Administrativo</button>
                 <div class="videos-list" id="administrativo-videos-list"></div>
             </div>
         </main>
@@ -40,7 +39,7 @@
     <div id="video-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modal-title">Adicionar Vídeo</h2>
+                <h2 id="modal-title" class="modal-title-text">Adicionar Vídeo</h2>
                 <button class="close-modal-btn">&times;</button>
             </div>
             <div class="modal-body">
@@ -48,8 +47,8 @@
                     <input type="hidden" id="video-category" name="video-category">
                     <input type="hidden" id="video-id" name="video-id">
                     <div class="form-group">
-                        <label for="video-link">Título do Vídeo:</label>
-                        <input type="text" id="video-title" class="form-control" placeholder="Ex: Como usar o sistema" required>
+                        <label for="video-title">Título do Vídeo:</label>
+                        <input type="text" id="video-title" class="form-control" placeholder="Ex: Boas-vindas ao novo voluntário" required>
                     </div>
                     <div class="form-group">
                         <label for="video-link">Link do Vídeo (YouTube):</label>
@@ -57,7 +56,7 @@
                     </div>
                     <div class="form-group">
                         <label for="video-description">Descrição:</label>
-                        <textarea id="video-description" class="form-control" rows="4" required></textarea>
+                        <textarea id="video-description" class="form-control" rows="4" placeholder="Uma breve descrição sobre o conteúdo do vídeo." required></textarea>
                     </div>
                 </form>
             </div>
