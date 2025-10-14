@@ -22,8 +22,6 @@ export function init(db, user, userData) {
 
   console.log("📚 Módulo de Treinamentos (Visualização) iniciado.");
 
-  // Lógica de abas e botão voltar foi removida
-
   async function carregarTreinamentos() {
     const container = document.getElementById("videos-container");
     if (!container) return;
@@ -37,7 +35,6 @@ export function init(db, user, userData) {
       let todosOsVideos = [];
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Junta todos os vídeos de todas as categorias em um único array
         todosOsVideos = [
           ...(data.integracao || []),
           ...(data.geral || []),
@@ -65,20 +62,51 @@ export function init(db, user, userData) {
     videos.forEach((video) => {
       const videoId = extrairVideoId(video.link);
       if (videoId) {
-        const videoElement = document.createElement("div");
-        videoElement.classList.add("video-item");
-        // Adicionado o Título (h3) ao HTML
-        videoElement.innerHTML = `
-            <h3>${video.title || "Vídeo sem Título"}</h3>
-            <div class="video-embed">
-                <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
+        const accordionItem = document.createElement("div");
+        accordionItem.classList.add("accordion-item");
+
+        // Estrutura do acordeão: título clicável e conteúdo oculto
+        accordionItem.innerHTML = `
+          <button class="accordion-header">
+            ${video.title || "Vídeo sem Título"}
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
             <div class="video-description">
                 <p>${video.descricao.replace(/\n/g, "<br>")}</p>
             </div>
-          `;
-        container.appendChild(videoElement);
+            <div class="video-embed">
+                <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          </div>
+        `;
+        container.appendChild(accordionItem);
       }
+    });
+
+    // Adiciona os eventos de clique DEPOIS que todos os itens foram criados
+    setupAccordion();
+  }
+
+  // NOVA FUNÇÃO para controlar a lógica do acordeão
+  function setupAccordion() {
+    const accordionHeaders = document.querySelectorAll(".accordion-header");
+    accordionHeaders.forEach((header) => {
+      header.addEventListener("click", () => {
+        const content = header.nextElementSibling;
+        const icon = header.querySelector(".accordion-icon");
+
+        // Alterna a classe 'active' para mostrar/esconder o conteúdo
+        header.classList.toggle("active");
+
+        if (content.style.maxHeight) {
+          content.style.maxHeight = null;
+          icon.textContent = "+";
+        } else {
+          content.style.maxHeight = content.scrollHeight + "px";
+          icon.textContent = "-";
+        }
+      });
     });
   }
 
@@ -89,5 +117,6 @@ export function init(db, user, userData) {
     const matches = url.match(regex);
     return matches ? matches[1] : null;
   }
+
   carregarTreinamentos();
 }
