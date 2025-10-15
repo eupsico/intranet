@@ -476,7 +476,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     });
 
     const minimoHorasAntecedencia =
-      Number(configuracoes.agendamentos?.minimoHorasAntecedencia) || 6;
+      Number(configuracoes.agendamentos?.minimoHorasAntecedencia) || 24;
     const quantidadeDiasBusca =
       Number(configuracoes.agendamentos?.quantidadeDiasBusca) || 7;
     const dataFim = new Date(hoje);
