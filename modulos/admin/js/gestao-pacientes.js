@@ -167,8 +167,8 @@ export function init(user, userData) {
 
   // NOVA FUNÇÃO PARA GERAR O FORMULÁRIO ESTRUTURADO
   function gerarFormularioEdicao(paciente) {
+    // Função auxiliar para pegar valores aninhados de forma segura
     const p = (path, defaultValue = "") => {
-      // Garante que o caminho não tente acessar propriedades de 'undefined'
       return (
         path.split(".").reduce((acc, part) => acc && acc[part], paciente) ||
         defaultValue
@@ -250,14 +250,15 @@ export function init(user, userData) {
                 </div>
 
                 <div class="form-section">
-                    <h3>Atendimentos (PB)</h3>
+                    <h3>Atendimentos (PB) - Edição Avançada</h3>
                     <div class="form-group form-group-full">
-                        <label>Atendimentos PB (JSON) - Edição avançada</label>
+                        <label>Atendimentos (JSON)</label>
                         <textarea id="edit-atendimentosPB" class="form-control" rows="6">${JSON.stringify(
                           p("atendimentosPB", []),
                           null,
                           2
                         )}</textarea>
+                        <small>Edite aqui para adicionar ou remover atendimentos. Cuidado com a formatação.</small>
                     </div>
                 </div>
             </form>
@@ -301,7 +302,7 @@ export function init(user, userData) {
       lastUpdatedBy: currentUserData.nome || "Admin",
     };
 
-    // Processa os campos JSON separadamente
+    // Processa os campos JSON separadamente com segurança
     try {
       const atendimentosPBText = document.getElementById(
         "edit-atendimentosPB"
@@ -309,7 +310,7 @@ export function init(user, userData) {
       updatedData.atendimentosPB = JSON.parse(atendimentosPBText);
     } catch (err) {
       alert(
-        `Erro de formatação no campo 'Atendimentos PB (JSON)'. Verifique a estrutura dos dados.`
+        `Erro de formatação no campo 'Atendimentos PB (JSON)'. Verifique a estrutura dos dados (chaves, vírgulas, aspas).`
       );
       return;
     }
@@ -321,14 +322,15 @@ export function init(user, userData) {
       const docRef = doc(db, "trilhaPaciente", currentEditingId);
       await updateDoc(docRef, updatedData);
 
-      const index = allPacientes.findIndex((p) => p.id === currentEditingId);
-      if (index > -1) {
-        // Para uma atualização local mais simples, buscamos os dados completos novamente
-        const updatedDoc = await getDoc(docRef);
-        if (updatedDoc.exists()) {
+      // Para garantir consistência, recarregamos o paciente do banco
+      const updatedDoc = await getDoc(docRef);
+      if (updatedDoc.exists()) {
+        const index = allPacientes.findIndex((p) => p.id === currentEditingId);
+        if (index > -1) {
           allPacientes[index] = { id: updatedDoc.id, ...updatedDoc.data() };
         }
       }
+
       renderizarLista();
       closeModalFunction();
     } catch (error) {
