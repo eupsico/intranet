@@ -1170,42 +1170,49 @@ exports.importarPacientesBatch = onCall(async (request) => {
       const novoCardRef = db.collection("trilhaPaciente").doc();
       const statusInicial = paciente.status || "inscricao_documentos";
 
-      // --- LÓGICA DE DADOS CONDICIONAIS ---
-      let dadosAdicionais = {};
+      // --- INÍCIO DA LÓGICA AVANÇADA DE DADOS ---
+      const dadosAdicionais = {};
 
-      if (
-        statusInicial === "encaminhar_para_plantao" ||
-        statusInicial === "encaminhar_para_pb"
-      ) {
-        dadosAdicionais = {
-          valorContribuicao: paciente.valorContribuicao || null,
-          assistenteSocialTriagem: {
-            nome:
-              paciente.assistenteSocialTriagemNome ||
-              "Não informado na importação",
-            uid: null, // UID não disponível na importação
-          },
-        };
+      // 1. Processa campos JSON (atendimentosPB e plantaoInfo)
+      try {
+        if (paciente.atendimentosPB_JSON) {
+          // Tenta converter o texto JSON em um objeto/array
+          const atendimentos = JSON.parse(paciente.atendimentosPB_JSON);
+          // Adiciona um ID único para cada atendimento importado
+          atendimentos.forEach((at) => {
+            at.atendimentoId = `imp_${novoCardRef.id}_${Math.random()
+              .toString(36)
+              .substr(2, 9)}`;
+            at.dataInicio = agora; // Define a data de início como o momento da importação
+          });
+          dadosAdicionais.atendimentosPB = atendimentos;
+        }
+        if (paciente.plantaoInfo_JSON) {
+          dadosAdicionais.plantaoInfo = JSON.parse(paciente.plantaoInfo_JSON);
+        }
+      } catch (e) {
+        resultados.erros++;
+        resultados.mensagensErro.push(
+          `Linha ${
+            index + 2
+          }: Erro de formatação no JSON. Verifique as aspas e a estrutura. (${
+            e.message
+          })`
+        );
+        continue; // Pula para o próximo paciente
       }
 
-      if (statusInicial === "em_atendimento_pb") {
-        // Para pacientes já em atendimento, criamos a estrutura 'atendimentosPB'
-        dadosAdicionais = {
-          atendimentosPB: [
-            {
-              atendimentoId: `imp_${novoCardRef.id}`, // ID único para o atendimento importado
-              profissionalNome:
-                paciente.profissionalNome || "Não informado na importação",
-              profissionalId: null, // UID não disponível
-              modalidade: paciente.atendimentoModalidade || "Não informada",
-              statusAtendimento: "ativo",
-              dataInicio: agora,
-            },
-          ],
-        };
+      // 2. Processa a lista de IDs de profissionais
+      if (paciente.profissionaisPB_ids) {
+        dadosAdicionais.profissionaisPB_ids = (
+          paciente.profissionaisPB_ids || ""
+        )
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
       }
 
-      // --- FIM DA LÓGICA CONDICIONAL ---
+      // --- FIM DA LÓGICA AVANÇADA ---
 
       const cardData = {
         // Dados Base
@@ -1214,20 +1221,11 @@ exports.importarPacientesBatch = onCall(async (request) => {
         status: statusInicial,
         filaDeOrigem: fila,
 
-        // Dados da Ficha
+        // Dados da Ficha (exemplo, adicione outros campos conforme necessário)
         dataNascimento: paciente.dataNascimento || null,
         telefoneCelular: paciente.telefoneCelular || "",
         email: paciente.email || "",
-        rua: paciente.rua || "",
-        numeroCasa: paciente.numeroCasa || "",
-        bairro: paciente.bairro || "",
-        cidade: paciente.cidade || "",
-        cep: paciente.cep || "",
         motivoBusca: paciente.motivoBusca || "",
-        disponibilidadeGeral: (paciente.disponibilidadeGeral || "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
 
         // Dados da Trilha
         timestamp: agora,
@@ -1235,7 +1233,7 @@ exports.importarPacientesBatch = onCall(async (request) => {
         lastUpdatedBy: `Importação em Lote por ${adminUid}`,
         importadoEmLote: true,
 
-        // Incorpora os dados adicionais baseados no status
+        // Incorpora os dados adicionais complexos
         ...dadosAdicionais,
       };
 
