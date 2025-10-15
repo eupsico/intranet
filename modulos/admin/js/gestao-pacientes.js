@@ -29,7 +29,9 @@ const ALL_STATUS = {
 };
 
 export function init(user, userData) {
-  console.log("🚀 Módulo de Gestão de Pacientes v2.0 iniciado.");
+  console.log(
+    "🚀 Módulo de Gestão de Pacientes v3.0 (Formulário Completo) iniciado."
+  );
 
   const searchInput = document.getElementById("search-input");
   const statusFilter = document.getElementById("status-filter");
@@ -43,9 +45,8 @@ export function init(user, userData) {
 
   let allPacientes = [];
   let currentEditingId = null;
-  let currentUserData = userData; // Armazena os dados do admin logado
+  let currentUserData = userData;
 
-  // --- CARREGAMENTO E RENDERIZAÇÃO DA LISTA ---
   async function carregarPacientes() {
     listContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
@@ -88,7 +89,7 @@ export function init(user, userData) {
       html += `
                 <div class="paciente-card">
                     <div class="paciente-info">
-                        <h4>${p.nomeCompleto}</h4>
+                        <h4>${p.nomeCompleto || "Paciente sem nome"}</h4>
                         <p><strong>CPF:</strong> ${p.cpf || "Não informado"}</p>
                         <p><strong>Status:</strong> <span class="status-badge status-${
                           p.status || "default"
@@ -124,25 +125,27 @@ export function init(user, userData) {
     });
   }
 
-  // --- EVENTOS ---
   searchInput.addEventListener("input", renderizarLista);
   statusFilter.addEventListener("change", renderizarLista);
 
   function addEventListenersAcoes() {
-    document.querySelectorAll(".btn-edit").forEach((btn) => {
-      btn.addEventListener("click", () => abrirModalEdicao(btn.dataset.id));
-    });
-    document.querySelectorAll(".btn-delete").forEach((btn) => {
-      btn.addEventListener("click", () =>
-        deletarPaciente(
-          btn.dataset.id,
-          btn.closest(".paciente-card").querySelector("h4").textContent
+    document
+      .querySelectorAll(".btn-edit")
+      .forEach((btn) =>
+        btn.addEventListener("click", () => abrirModalEdicao(btn.dataset.id))
+      );
+    document
+      .querySelectorAll(".btn-delete")
+      .forEach((btn) =>
+        btn.addEventListener("click", () =>
+          deletarPaciente(
+            btn.dataset.id,
+            btn.closest(".paciente-card").querySelector("h4").textContent
+          )
         )
       );
-    });
   }
 
-  // --- LÓGICA DO MODAL DE EDIÇÃO ---
   const closeModalFunction = () => (modal.style.display = "none");
   closeModalBtn.addEventListener("click", closeModalFunction);
   cancelModalBtn.addEventListener("click", closeModalFunction);
@@ -165,164 +168,201 @@ export function init(user, userData) {
     }
   }
 
-  // NOVA FUNÇÃO PARA GERAR O FORMULÁRIO ESTRUTURADO
   function gerarFormularioEdicao(paciente) {
-    // Função auxiliar para pegar valores aninhados de forma segura
-    const p = (path, defaultValue = "") => {
-      return (
-        path.split(".").reduce((acc, part) => acc && acc[part], paciente) ||
-        defaultValue
-      );
-    };
+    const p = (path, defaultValue = "") =>
+      path.split(".").reduce((acc, part) => acc && acc[part], paciente) ||
+      defaultValue;
+    const ativoPB =
+      paciente.atendimentosPB?.find((at) => at.statusAtendimento === "ativo") ||
+      {};
 
-    let statusOptions = "";
-    for (const key in ALL_STATUS) {
-      statusOptions += `<option value="${key}" ${
-        p("status") === key ? "selected" : ""
-      }>${ALL_STATUS[key]}</option>`;
-    }
+    let statusOptions = Object.keys(ALL_STATUS)
+      .map(
+        (key) =>
+          `<option value="${key}" ${p("status") === key ? "selected" : ""}>${
+            ALL_STATUS[key]
+          }</option>`
+      )
+      .join("");
 
     modalBody.innerHTML = `
             <form id="edit-paciente-form" class="edit-form">
                 <div class="form-section">
                     <h3>Status e Movimentação</h3>
-                    <div class="form-group form-group-full">
-                        <label for="edit-status">Status (Mover Paciente)</label>
-                        <select id="edit-status" class="form-control">${statusOptions}</select>
-                    </div>
+                    <div class="form-group form-group-full"><label for="edit-status">Status (Mover Paciente)</label><select id="edit-status" class="form-control">${statusOptions}</select></div>
                 </div>
 
                 <div class="form-section">
-                    <h3>Dados Pessoais</h3>
-                    <div class="form-group"><label>Nome Completo</label><input type="text" id="edit-nomeCompleto" class="form-control" value="${p(
+                    <h3>Dados de Inscrição</h3>
+                    <div class="form-group"><label>Nome Completo</label><input type="text" id="edit-nomeCompleto" value="${p(
                       "nomeCompleto"
                     )}"></div>
-                    <div class="form-group"><label>CPF</label><input type="text" id="edit-cpf" class="form-control" value="${p(
+                    <div class="form-group"><label>CPF</label><input type="text" id="edit-cpf" value="${p(
                       "cpf"
                     )}"></div>
-                    <div class="form-group"><label>Data de Nascimento</label><input type="date" id="edit-dataNascimento" class="form-control" value="${p(
+                    <div class="form-group"><label>Data de Nasc.</label><input type="date" id="edit-dataNascimento" value="${p(
                       "dataNascimento"
                     )}"></div>
-                    <div class="form-group"><label>Email</label><input type="email" id="edit-email" class="form-control" value="${p(
+                    <div class="form-group"><label>Email</label><input type="email" id="edit-email" value="${p(
                       "email"
                     )}"></div>
-                    <div class="form-group"><label>Telefone</label><input type="tel" id="edit-telefoneCelular" class="form-control" value="${p(
+                    <div class="form-group"><label>Telefone</label><input type="tel" id="edit-telefoneCelular" value="${p(
                       "telefoneCelular"
                     )}"></div>
+                    <div class="form-group"><label>Como Conheceu</label><input type="text" id="edit-comoConheceu" value="${p(
+                      "comoConheceu"
+                    )}"></div>
+                    <div class="form-group form-group-full"><label>Motivo da Busca</label><textarea id="edit-motivoBusca" rows="3">${p(
+                      "motivoBusca"
+                    )}</textarea></div>
                 </div>
 
                 <div class="form-section">
-                    <h3>Endereço</h3>
-                    <div class="form-group"><label>Rua</label><input type="text" id="edit-rua" class="form-control" value="${p(
-                      "rua"
+                    <h3>Dados da Triagem</h3>
+                    <div class="form-group"><label>Queixa Principal</label><input type="text" id="edit-queixaPrincipal" value="${p(
+                      "queixaPrincipal"
                     )}"></div>
-                    <div class="form-group"><label>Número</label><input type="text" id="edit-numeroCasa" class="form-control" value="${p(
-                      "numeroCasa"
-                    )}"></div>
-                    <div class="form-group"><label>Bairro</label><input type="text" id="edit-bairro" class="form-control" value="${p(
-                      "bairro"
-                    )}"></div>
-                    <div class="form-group"><label>Cidade</label><input type="text" id="edit-cidade" class="form-control" value="${p(
-                      "cidade"
-                    )}"></div>
-                    <div class="form-group"><label>CEP</label><input type="text" id="edit-cep" class="form-control" value="${p(
-                      "cep"
-                    )}"></div>
-                </div>
-                
-                <div class="form-section">
-                    <h3>Triagem e Plantão</h3>
-                    <div class="form-group"><label>Valor Contribuição</label><input type="text" id="edit-valorContribuicao" class="form-control" value="${p(
+                    <div class="form-group"><label>Valor Contribuição</label><input type="text" id="edit-valorContribuicao" value="${p(
                       "valorContribuicao"
                     )}"></div>
-                    <div class="form-group"><label>Nome Assistente Social (Triagem)</label><input type="text" id="edit-assistenteSocialTriagemNome" class="form-control" value="${p(
+                    <div class="form-group"><label>Critérios do Valor</label><textarea id="edit-criteriosValor" rows="2">${p(
+                      "criteriosValor"
+                    )}</textarea></div>
+                    <div class="form-group"><label>Assistente Social</label><input type="text" id="edit-assistenteSocialTriagemNome" value="${p(
                       "assistenteSocialTriagem.nome"
                     )}"></div>
-                    <div class="form-group"><label>Data Agendamento Plantão</label><input type="date" id="edit-plantaoData" class="form-control" value="${p(
-                      "plantaoInfo.data"
+                    <div class="form-group"><label>Modalidade</label><input type="text" id="edit-modalidadeAtendimento" value="${p(
+                      "modalidadeAtendimento"
                     )}"></div>
-                    <div class="form-group"><label>Hora Agendamento Plantão</label><input type="time" id="edit-plantaoHora" class="form-control" value="${p(
-                      "plantaoInfo.hora"
-                    )}"></div>
-                    <div class="form-group form-group-full"><label>Profissional do Plantão</label><input type="text" id="edit-plantaoProfissional" class="form-control" value="${p(
-                      "plantaoInfo.profissionalNome"
+                    <div class="form-group"><label>Preferência Gênero</label><input type="text" id="edit-preferenciaAtendimento" value="${p(
+                      "preferenciaAtendimento"
                     )}"></div>
                 </div>
 
                 <div class="form-section">
-                    <h3>Atendimentos (PB) - Edição Avançada</h3>
+                    <h3>Informações do Plantão</h3>
+                    <div class="form-group"><label>Profissional</label><input type="text" id="edit-plantaoProfissionalNome" value="${p(
+                      "plantaoInfo.profissionalNome"
+                    )}"></div>
+                    <div class="form-group"><label>Data 1ª Sessão</label><input type="date" id="edit-plantaoDataSessao" value="${p(
+                      "plantaoInfo.dataPrimeiraSessao"
+                    )}"></div>
+                    <div class="form-group"><label>Hora 1ª Sessão</label><input type="time" id="edit-plantaoHoraSessao" value="${p(
+                      "plantaoInfo.horaPrimeiraSessao"
+                    )}"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Atendimento Ativo (PB)</h3>
+                    <div class="form-group"><label>Profissional</label><input type="text" id="edit-pb-profissionalNome" value="${
+                      ativoPB.profissionalNome || ""
+                    }"></div>
+                    <div class="form-group"><label>Dia da Semana</label><input type="text" id="edit-pb-diaSemana" value="${p(
+                      "horarioSessao.diaSemana",
+                      "",
+                      ativoPB
+                    )}"></div>
+                    <div class="form-group"><label>Horário</label><input type="time" id="edit-pb-horario" value="${p(
+                      "horarioSessao.horario",
+                      "",
+                      ativoPB
+                    )}"></div>
+                    <div class="form-group"><label>Data de Início</label><input type="date" id="edit-pb-dataInicio" value="${p(
+                      "horarioSessao.dataInicio",
+                      "",
+                      ativoPB
+                    )}"></div>
                     <div class="form-group form-group-full">
-                        <label>Atendimentos (JSON)</label>
-                        <textarea id="edit-atendimentosPB" class="form-control" rows="6">${JSON.stringify(
+                        <label>Atendimentos (JSON - Edição Avançada)</label>
+                        <textarea id="edit-atendimentosPB" rows="6">${JSON.stringify(
                           p("atendimentosPB", []),
                           null,
                           2
                         )}</textarea>
-                        <small>Edite aqui para adicionar ou remover atendimentos. Cuidado com a formatação.</small>
+                        <small>Para adicionar um novo atendimento ou editar múltiplos, modifique o texto JSON acima com cuidado.</small>
                     </div>
                 </div>
             </form>
         `;
   }
 
-  // NOVA LÓGICA DE SALVAMENTO
+  // LÓGICA DE SALVAMENTO ATUALIZADA
   saveModalBtn.addEventListener("click", async (e) => {
     e.preventDefault();
-
-    // Mapeamento dos campos aninhados
-    const updatedData = {
-      nomeCompleto: document.getElementById("edit-nomeCompleto").value,
-      cpf: document.getElementById("edit-cpf").value,
-      dataNascimento: document.getElementById("edit-dataNascimento").value,
-      email: document.getElementById("edit-email").value,
-      telefoneCelular: document.getElementById("edit-telefoneCelular").value,
-      rua: document.getElementById("edit-rua").value,
-      numeroCasa: document.getElementById("edit-numeroCasa").value,
-      bairro: document.getElementById("edit-bairro").value,
-      cidade: document.getElementById("edit-cidade").value,
-      cep: document.getElementById("edit-cep").value,
-      valorContribuicao: document.getElementById("edit-valorContribuicao")
-        .value,
-      status: document.getElementById("edit-status").value,
-
-      // Campos aninhados (nested objects)
-      assistenteSocialTriagem: {
-        nome:
-          document.getElementById("edit-assistenteSocialTriagemNome").value ||
-          null,
-      },
-      plantaoInfo: {
-        data: document.getElementById("edit-plantaoData").value || null,
-        hora: document.getElementById("edit-plantaoHora").value || null,
-        profissionalNome:
-          document.getElementById("edit-plantaoProfissional").value || null,
-      },
-
-      lastUpdate: serverTimestamp(),
-      lastUpdatedBy: currentUserData.nome || "Admin",
-    };
-
-    // Processa os campos JSON separadamente com segurança
-    try {
-      const atendimentosPBText = document.getElementById(
-        "edit-atendimentosPB"
-      ).value;
-      updatedData.atendimentosPB = JSON.parse(atendimentosPBText);
-    } catch (err) {
-      alert(
-        `Erro de formatação no campo 'Atendimentos PB (JSON)'. Verifique a estrutura dos dados (chaves, vírgulas, aspas).`
-      );
-      return;
-    }
-
     saveModalBtn.disabled = true;
     saveModalBtn.textContent = "Salvando...";
 
     try {
+      const get = (id) => document.getElementById(id).value;
+
+      const updatedData = {
+        nomeCompleto: get("edit-nomeCompleto"),
+        cpf: get("edit-cpf"),
+        dataNascimento: get("edit-dataNascimento"),
+        email: get("edit-email"),
+        telefoneCelular: get("edit-telefoneCelular"),
+        comoConheceu: get("edit-comoConheceu"),
+        motivoBusca: get("edit-motivoBusca"),
+        rua: get("edit-rua"),
+        numeroCasa: get("edit-numeroCasa"),
+        bairro: get("edit-bairro"),
+        cidade: get("edit-cidade"),
+        cep: get("edit-cep"),
+        queixaPrincipal: get("edit-queixaPrincipal"),
+        valorContribuicao: get("edit-valorContribuicao"),
+        criteriosValor: get("edit-criteriosValor"),
+        modalidadeAtendimento: get("edit-modalidadeAtendimento"),
+        preferenciaAtendimento: get("edit-preferenciaAtendimento"),
+        status: get("edit-status"),
+        lastUpdate: serverTimestamp(),
+        lastUpdatedBy: currentUserData.nome || "Admin",
+      };
+
+      // Campos aninhados
+      updatedData["assistenteSocialTriagem.nome"] = get(
+        "edit-assistenteSocialTriagemNome"
+      );
+      updatedData["plantaoInfo.profissionalNome"] = get(
+        "edit-plantaoProfissionalNome"
+      );
+      updatedData["plantaoInfo.dataPrimeiraSessao"] = get(
+        "edit-plantaoDataSessao"
+      );
+      updatedData["plantaoInfo.horaPrimeiraSessao"] = get(
+        "edit-plantaoHoraSessao"
+      );
+
+      // Atualização do Atendimento PB Ativo
       const docRef = doc(db, "trilhaPaciente", currentEditingId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        let currentAtendimentos = docSnap.data().atendimentosPB || [];
+        const ativoIndex = currentAtendimentos.findIndex(
+          (at) => at.statusAtendimento === "ativo"
+        );
+
+        if (ativoIndex > -1) {
+          currentAtendimentos[ativoIndex] = {
+            ...currentAtendimentos[ativoIndex],
+            profissionalNome: get("edit-pb-profissionalNome"),
+            horarioSessao: {
+              ...(currentAtendimentos[ativoIndex].horarioSessao || {}),
+              diaSemana: get("edit-pb-diaSemana"),
+              horario: get("edit-pb-horario"),
+              dataInicio: get("edit-pb-dataInicio"),
+            },
+          };
+          updatedData.atendimentosPB = currentAtendimentos;
+        } else {
+          // Se não houver atendimento ativo, tenta ler do campo JSON avançado
+          updatedData.atendimentosPB = JSON.parse(
+            document.getElementById("edit-atendimentosPB").value
+          );
+        }
+      }
+
       await updateDoc(docRef, updatedData);
 
-      // Para garantir consistência, recarregamos o paciente do banco
       const updatedDoc = await getDoc(docRef);
       if (updatedDoc.exists()) {
         const index = allPacientes.findIndex((p) => p.id === currentEditingId);
@@ -335,7 +375,9 @@ export function init(user, userData) {
       closeModalFunction();
     } catch (error) {
       console.error("Erro ao salvar alterações:", error);
-      alert("Falha ao salvar. Verifique o console para mais detalhes.");
+      alert(
+        `Falha ao salvar. Verifique o console para mais detalhes. Erro: ${error.message}`
+      );
     } finally {
       saveModalBtn.disabled = false;
       saveModalBtn.textContent = "Salvar Alterações";
@@ -360,6 +402,5 @@ export function init(user, userData) {
     }
   }
 
-  // --- INICIALIZAÇÃO ---
   carregarPacientes();
 }
