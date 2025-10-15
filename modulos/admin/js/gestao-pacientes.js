@@ -43,6 +43,7 @@ export function init(user, userData) {
 
   let allPacientes = [];
   let currentEditingId = null;
+  let currentUserData = userData; // Armazena os dados do admin logado
 
   // --- CARREGAMENTO E RENDERIZAÇÃO DA LISTA ---
   async function carregarPacientes() {
@@ -72,7 +73,7 @@ export function init(user, userData) {
     const filteredPacientes = allPacientes.filter((p) => {
       const matchSearch =
         searchTerm === "" ||
-        p.nomeCompleto.toLowerCase().includes(searchTerm) ||
+        (p.nomeCompleto && p.nomeCompleto.toLowerCase().includes(searchTerm)) ||
         (p.cpf && p.cpf.includes(searchTerm));
       const matchStatus = status === "" || p.status === status;
       return matchSearch && matchStatus;
@@ -166,9 +167,13 @@ export function init(user, userData) {
 
   // NOVA FUNÇÃO PARA GERAR O FORMULÁRIO ESTRUTURADO
   function gerarFormularioEdicao(paciente) {
-    const p = (path, defaultValue = "") =>
-      path.split(".").reduce((acc, part) => acc && acc[part], paciente) ||
-      defaultValue;
+    const p = (path, defaultValue = "") => {
+      // Garante que o caminho não tente acessar propriedades de 'undefined'
+      return (
+        path.split(".").reduce((acc, part) => acc && acc[part], paciente) ||
+        defaultValue
+      );
+    };
 
     let statusOptions = "";
     for (const key in ALL_STATUS) {
@@ -230,23 +235,30 @@ export function init(user, userData) {
                     <div class="form-group"><label>Valor Contribuição</label><input type="text" id="edit-valorContribuicao" class="form-control" value="${p(
                       "valorContribuicao"
                     )}"></div>
-                    <div class="form-group"><label>Nome Assistente Social</label><input type="text" id="edit-assistenteSocialTriagemNome" class="form-control" value="${p(
+                    <div class="form-group"><label>Nome Assistente Social (Triagem)</label><input type="text" id="edit-assistenteSocialTriagemNome" class="form-control" value="${p(
                       "assistenteSocialTriagem.nome"
                     )}"></div>
-                    <div class="form-group form-group-full"><label>Informações do Plantão (JSON)</label><textarea id="edit-plantaoInfo" class="form-control" rows="4">${JSON.stringify(
-                      p("plantaoInfo", {}),
-                      null,
-                      2
-                    )}</textarea></div>
+                    <div class="form-group"><label>Data Agendamento Plantão</label><input type="date" id="edit-plantaoData" class="form-control" value="${p(
+                      "plantaoInfo.data"
+                    )}"></div>
+                    <div class="form-group"><label>Hora Agendamento Plantão</label><input type="time" id="edit-plantaoHora" class="form-control" value="${p(
+                      "plantaoInfo.hora"
+                    )}"></div>
+                    <div class="form-group form-group-full"><label>Profissional do Plantão</label><input type="text" id="edit-plantaoProfissional" class="form-control" value="${p(
+                      "plantaoInfo.profissionalNome"
+                    )}"></div>
                 </div>
 
                 <div class="form-section">
                     <h3>Atendimentos (PB)</h3>
-                    <div class="form-group form-group-full"><label>Atendimentos PB (JSON)</label><textarea id="edit-atendimentosPB" class="form-control" rows="6">${JSON.stringify(
-                      p("atendimentosPB", []),
-                      null,
-                      2
-                    )}</textarea></div>
+                    <div class="form-group form-group-full">
+                        <label>Atendimentos PB (JSON) - Edição avançada</label>
+                        <textarea id="edit-atendimentosPB" class="form-control" rows="6">${JSON.stringify(
+                          p("atendimentosPB", []),
+                          null,
+                          2
+                        )}</textarea>
+                    </div>
                 </div>
             </form>
         `;
@@ -256,46 +268,48 @@ export function init(user, userData) {
   saveModalBtn.addEventListener("click", async (e) => {
     e.preventDefault();
 
+    // Mapeamento dos campos aninhados
     const updatedData = {
-      // Seção Pessoal
       nomeCompleto: document.getElementById("edit-nomeCompleto").value,
       cpf: document.getElementById("edit-cpf").value,
       dataNascimento: document.getElementById("edit-dataNascimento").value,
       email: document.getElementById("edit-email").value,
       telefoneCelular: document.getElementById("edit-telefoneCelular").value,
-
-      // Seção Endereço
       rua: document.getElementById("edit-rua").value,
       numeroCasa: document.getElementById("edit-numeroCasa").value,
       bairro: document.getElementById("edit-bairro").value,
       cidade: document.getElementById("edit-cidade").value,
       cep: document.getElementById("edit-cep").value,
-
-      // Seção Triagem e Plantão
       valorContribuicao: document.getElementById("edit-valorContribuicao")
         .value,
-      "assistenteSocialTriagem.nome": document.getElementById(
-        "edit-assistenteSocialTriagemNome"
-      ).value, // Usando dot notation para campos aninhados
-
-      // Status (Movimentação)
       status: document.getElementById("edit-status").value,
+
+      // Campos aninhados (nested objects)
+      assistenteSocialTriagem: {
+        nome:
+          document.getElementById("edit-assistenteSocialTriagemNome").value ||
+          null,
+      },
+      plantaoInfo: {
+        data: document.getElementById("edit-plantaoData").value || null,
+        hora: document.getElementById("edit-plantaoHora").value || null,
+        profissionalNome:
+          document.getElementById("edit-plantaoProfissional").value || null,
+      },
 
       lastUpdate: serverTimestamp(),
       lastUpdatedBy: currentUserData.nome || "Admin",
     };
 
-    // Processa os campos JSON com segurança
+    // Processa os campos JSON separadamente
     try {
-      updatedData.plantaoInfo = JSON.parse(
-        document.getElementById("edit-plantaoInfo").value
-      );
-      updatedData.atendimentosPB = JSON.parse(
-        document.getElementById("edit-atendimentosPB").value
-      );
+      const atendimentosPBText = document.getElementById(
+        "edit-atendimentosPB"
+      ).value;
+      updatedData.atendimentosPB = JSON.parse(atendimentosPBText);
     } catch (err) {
       alert(
-        `Erro de formatação em um dos campos JSON. Verifique a estrutura dos dados nos campos 'Informações do Plantão' ou 'Atendimentos PB'.`
+        `Erro de formatação no campo 'Atendimentos PB (JSON)'. Verifique a estrutura dos dados.`
       );
       return;
     }
@@ -309,8 +323,11 @@ export function init(user, userData) {
 
       const index = allPacientes.findIndex((p) => p.id === currentEditingId);
       if (index > -1) {
-        // Atualiza os dados locais com o que foi enviado para o banco
-        allPacientes[index] = { ...allPacientes[index], ...updatedData };
+        // Para uma atualização local mais simples, buscamos os dados completos novamente
+        const updatedDoc = await getDoc(docRef);
+        if (updatedDoc.exists()) {
+          allPacientes[index] = { id: updatedDoc.id, ...updatedDoc.data() };
+        }
       }
       renderizarLista();
       closeModalFunction();
