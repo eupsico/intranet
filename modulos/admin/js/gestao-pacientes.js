@@ -194,92 +194,86 @@ export function init(user, userData) {
 
                 <div class="form-section">
                     <h3>Dados de Inscrição</h3>
-                    <div class="form-group"><label>Nome Completo</label><input type="text" id="edit-nomeCompleto" value="${p(
+                    <div class="form-group"><label>Nome Completo</label><input type="text" id="edit-nomeCompleto" class="form-control" value="${p(
                       "nomeCompleto"
                     )}"></div>
-                    <div class="form-group"><label>CPF</label><input type="text" id="edit-cpf" value="${p(
+                    <div class="form-group"><label>CPF</label><input type="text" id="edit-cpf" class="form-control" value="${p(
                       "cpf"
                     )}"></div>
-                    <div class="form-group"><label>Data de Nasc.</label><input type="date" id="edit-dataNascimento" value="${p(
+                    <div class="form-group"><label>Data de Nasc.</label><input type="date" id="edit-dataNascimento" class="form-control" value="${p(
                       "dataNascimento"
                     )}"></div>
-                    <div class="form-group"><label>Email</label><input type="email" id="edit-email" value="${p(
+                    <div class="form-group"><label>Email</label><input type="email" id="edit-email" class="form-control" value="${p(
                       "email"
                     )}"></div>
-                    <div class="form-group"><label>Telefone</label><input type="tel" id="edit-telefoneCelular" value="${p(
+                    <div class="form-group"><label>Telefone</label><input type="tel" id="edit-telefoneCelular" class="form-control" value="${p(
                       "telefoneCelular"
                     )}"></div>
-                    <div class="form-group"><label>Como Conheceu</label><input type="text" id="edit-comoConheceu" value="${p(
+                    <div class="form-group"><label>Como Conheceu</label><input type="text" id="edit-comoConheceu" class="form-control" value="${p(
                       "comoConheceu"
                     )}"></div>
-                    <div class="form-group form-group-full"><label>Motivo da Busca</label><textarea id="edit-motivoBusca" rows="3">${p(
+                    <div class="form-group form-group-full"><label>Motivo da Busca</label><textarea id="edit-motivoBusca" class="form-control" rows="3">${p(
                       "motivoBusca"
                     )}</textarea></div>
                 </div>
 
                 <div class="form-section">
                     <h3>Dados da Triagem</h3>
-                    <div class="form-group"><label>Queixa Principal</label><input type="text" id="edit-queixaPrincipal" value="${p(
+                    <div class="form-group"><label>Queixa Principal</label><input type="text" id="edit-queixaPrincipal" class="form-control" value="${p(
                       "queixaPrincipal"
                     )}"></div>
-                    <div class="form-group"><label>Valor Contribuição</label><input type="text" id="edit-valorContribuicao" value="${p(
+                    <div class="form-group"><label>Valor Contribuição</label><input type="text" id="edit-valorContribuicao" class="form-control" value="${p(
                       "valorContribuicao"
                     )}"></div>
-                    <div class="form-group"><label>Critérios do Valor</label><textarea id="edit-criteriosValor" rows="2">${p(
+                    <div class="form-group"><label>Critérios do Valor</label><textarea id="edit-criteriosValor" class="form-control" rows="2">${p(
                       "criteriosValor"
                     )}</textarea></div>
-                    <div class="form-group"><label>Assistente Social</label><input type="text" id="edit-assistenteSocialTriagemNome" value="${p(
+                    <div class="form-group"><label>Assistente Social</label><input type="text" id="edit-assistenteSocialTriagemNome" class="form-control" value="${p(
                       "assistenteSocialTriagem.nome"
                     )}"></div>
-                    <div class="form-group"><label>Modalidade</label><input type="text" id="edit-modalidadeAtendimento" value="${p(
+                    <div class="form-group"><label>Modalidade</label><input type="text" id="edit-modalidadeAtendimento" class="form-control" value="${p(
                       "modalidadeAtendimento"
                     )}"></div>
-                    <div class="form-group"><label>Preferência Gênero</label><input type="text" id="edit-preferenciaAtendimento" value="${p(
+                    <div class="form-group"><label>Preferência Gênero</label><input type="text" id="edit-preferenciaAtendimento" class="form-control" value="${p(
                       "preferenciaAtendimento"
                     )}"></div>
                 </div>
 
                 <div class="form-section">
                     <h3>Informações do Plantão</h3>
-                    <div class="form-group"><label>Profissional</label><input type="text" id="edit-plantaoProfissionalNome" value="${p(
+                    <div class="form-group"><label>Profissional</label><input type="text" id="edit-plantaoProfissionalNome" class="form-control" value="${p(
                       "plantaoInfo.profissionalNome"
                     )}"></div>
-                    <div class="form-group"><label>Data 1ª Sessão</label><input type="date" id="edit-plantaoDataSessao" value="${p(
+                    <div class="form-group"><label>Data 1ª Sessão</label><input type="date" id="edit-plantaoDataSessao" class="form-control" value="${p(
                       "plantaoInfo.dataPrimeiraSessao"
                     )}"></div>
-                    <div class="form-group"><label>Hora 1ª Sessão</label><input type="time" id="edit-plantaoHoraSessao" value="${p(
+                    <div class="form-group"><label>Hora 1ª Sessão</label><input type="time" id="edit-plantaoHoraSessao" class="form-control" value="${p(
                       "plantaoInfo.horaPrimeiraSessao"
                     )}"></div>
                 </div>
 
                 <div class="form-section">
                     <h3>Atendimento Ativo (PB)</h3>
-                    <div class="form-group"><label>Profissional</label><input type="text" id="edit-pb-profissionalNome" value="${
+                    <div class="form-group"><label>Profissional</label><input type="text" id="edit-pb-profissionalNome" class="form-control" value="${
                       ativoPB.profissionalNome || ""
                     }"></div>
-                    <div class="form-group"><label>Dia da Semana</label><input type="text" id="edit-pb-diaSemana" value="${p(
-                      "horarioSessao.diaSemana",
-                      "",
-                      ativoPB
-                    )}"></div>
-                    <div class="form-group"><label>Horário</label><input type="time" id="edit-pb-horario" value="${p(
-                      "horarioSessao.horario",
-                      "",
-                      ativoPB
-                    )}"></div>
-                    <div class="form-group"><label>Data de Início</label><input type="date" id="edit-pb-dataInicio" value="${p(
-                      "horarioSessao.dataInicio",
-                      "",
-                      ativoPB
-                    )}"></div>
+                    <div class="form-group"><label>Dia da Semana</label><input type="text" id="edit-pb-diaSemana" class="form-control" value="${
+                      ativoPB.horarioSessao?.diaSemana || ""
+                    }"></div>
+                    <div class="form-group"><label>Horário</label><input type="time" id="edit-pb-horario" class="form-control" value="${
+                      ativoPB.horarioSessao?.horario || ""
+                    }"></div>
+                    <div class="form-group"><label>Data de Início</label><input type="date" id="edit-pb-dataInicio" class="form-control" value="${
+                      ativoPB.horarioSessao?.dataInicio || ""
+                    }"></div>
                     <div class="form-group form-group-full">
                         <label>Atendimentos (JSON - Edição Avançada)</label>
-                        <textarea id="edit-atendimentosPB" rows="6">${JSON.stringify(
+                        <textarea id="edit-atendimentosPB" class="form-control" rows="6">${JSON.stringify(
                           p("atendimentosPB", []),
                           null,
                           2
                         )}</textarea>
-                        <small>Para adicionar um novo atendimento ou editar múltiplos, modifique o texto JSON acima com cuidado.</small>
+                        <small>Para adicionar/remover múltiplos atendimentos, modifique o JSON acima com cuidado.</small>
                     </div>
                 </div>
             </form>
@@ -294,6 +288,13 @@ export function init(user, userData) {
 
     try {
       const get = (id) => document.getElementById(id).value;
+
+      const docRef = doc(db, "trilhaPaciente", currentEditingId);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists())
+        throw new Error("Paciente não encontrado para salvar.");
+
+      let originalData = docSnap.data();
 
       const updatedData = {
         nomeCompleto: get("edit-nomeCompleto"),
@@ -314,52 +315,44 @@ export function init(user, userData) {
         modalidadeAtendimento: get("edit-modalidadeAtendimento"),
         preferenciaAtendimento: get("edit-preferenciaAtendimento"),
         status: get("edit-status"),
+
+        assistenteSocialTriagem: {
+          ...(originalData.assistenteSocialTriagem || {}),
+          nome: get("edit-assistenteSocialTriagemNome"),
+        },
+        plantaoInfo: {
+          ...(originalData.plantaoInfo || {}),
+          profissionalNome: get("edit-plantaoProfissionalNome"),
+          dataPrimeiraSessao: get("edit-plantaoDataSessao"),
+          horaPrimeiraSessao: get("edit-plantaoHoraSessao"),
+        },
+
         lastUpdate: serverTimestamp(),
         lastUpdatedBy: currentUserData.nome || "Admin",
       };
 
-      // Campos aninhados
-      updatedData["assistenteSocialTriagem.nome"] = get(
-        "edit-assistenteSocialTriagemNome"
+      let atendimentosPB = JSON.parse(
+        document.getElementById("edit-atendimentosPB").value
       );
-      updatedData["plantaoInfo.profissionalNome"] = get(
-        "edit-plantaoProfissionalNome"
-      );
-      updatedData["plantaoInfo.dataPrimeiraSessao"] = get(
-        "edit-plantaoDataSessao"
-      );
-      updatedData["plantaoInfo.horaPrimeiraSessao"] = get(
-        "edit-plantaoHoraSessao"
+      const ativoIndex = atendimentosPB.findIndex(
+        (at) => at.statusAtendimento === "ativo"
       );
 
-      // Atualização do Atendimento PB Ativo
-      const docRef = doc(db, "trilhaPaciente", currentEditingId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        let currentAtendimentos = docSnap.data().atendimentosPB || [];
-        const ativoIndex = currentAtendimentos.findIndex(
-          (at) => at.statusAtendimento === "ativo"
-        );
-
-        if (ativoIndex > -1) {
-          currentAtendimentos[ativoIndex] = {
-            ...currentAtendimentos[ativoIndex],
-            profissionalNome: get("edit-pb-profissionalNome"),
-            horarioSessao: {
-              ...(currentAtendimentos[ativoIndex].horarioSessao || {}),
-              diaSemana: get("edit-pb-diaSemana"),
-              horario: get("edit-pb-horario"),
-              dataInicio: get("edit-pb-dataInicio"),
-            },
-          };
-          updatedData.atendimentosPB = currentAtendimentos;
-        } else {
-          // Se não houver atendimento ativo, tenta ler do campo JSON avançado
-          updatedData.atendimentosPB = JSON.parse(
-            document.getElementById("edit-atendimentosPB").value
-          );
-        }
+      if (ativoIndex > -1) {
+        const horarioSessaoOriginal =
+          atendimentosPB[ativoIndex].horarioSessao || {};
+        atendimentosPB[ativoIndex] = {
+          ...atendimentosPB[ativoIndex],
+          profissionalNome: get("edit-pb-profissionalNome"),
+          horarioSessao: {
+            ...horarioSessaoOriginal,
+            diaSemana: get("edit-pb-diaSemana"),
+            horario: get("edit-pb-horario"),
+            dataInicio: get("edit-pb-dataInicio"),
+          },
+        };
       }
+      updatedData.atendimentosPB = atendimentosPB;
 
       await updateDoc(docRef, updatedData);
 
