@@ -467,22 +467,35 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     hoje.setHours(0, 0, 0, 0);
     const dataInicio = hoje.toISOString().split("T")[0];
 
-    const configuracoesSnapshot = await db
+    // --- CORREÇÃO APLICADA AQUI ---
+    const configGeralDoc = await db
       .collection("configuracoesSistema")
+      .doc("geral")
       .get();
-    const configuracoes = {};
-    configuracoesSnapshot.forEach((doc) => {
-      configuracoes[doc.id] = doc.data().valor;
-    });
 
-    const minimoHorasAntecedencia =
-      Number(configuracoes.agendamentos?.minimoHorasAntecedencia) || 24;
-    const quantidadeDiasBusca =
-      Number(configuracoes.agendamentos?.quantidadeDiasBusca) || 7;
+    let minimoHorasAntecedencia = 24; // Valor padrão
+    let quantidadeDiasBusca = 7; // Valor padrão
+
+    if (configGeralDoc.exists) {
+      const configData = configGeralDoc.data();
+      // Acessa o mapa 'agendamentos' dentro do documento 'geral'
+      minimoHorasAntecedencia =
+        Number(configData.agendamentos?.minimoHorasAntecedencia) || 24;
+      quantidadeDiasBusca =
+        Number(configData.agendamentos?.quantidadeDiasBusca) || 7;
+    } else {
+      logger.warn(
+        "Documento 'configuracoesSistema/geral' não encontrado. Usando valores padrão (24h/7d)."
+      );
+    }
+    // --- FIM DA CORREÇÃO ---
+
     const dataFim = new Date(hoje);
     dataFim.setDate(hoje.getDate() + quantidadeDiasBusca);
     const dataFimISO = dataFim.toISOString().split("T")[0];
-    logger.info(`Buscando agendas de ${dataInicio} a ${dataFimISO}.`);
+    logger.info(
+      `Buscando agendas de ${dataInicio} a ${dataFimISO} com ${minimoHorasAntecedencia}h de antecedência.`
+    );
 
     const agendamentosSnapshot = await db
       .collection("trilhaPaciente")
@@ -550,7 +563,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 
       for (
         let minutos = inicioEmMinutos;
-        minutos <= fimEmMinutos;
+        minutos < fimEmMinutos; // Alterado para '<' para não criar slot na hora exata de término
         minutos += 30
       ) {
         const hAtual = Math.floor(minutos / 60);
@@ -559,7 +572,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
           mAtual
         ).padStart(2, "0")}`;
         const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00`);
-        const diffMs = dataHoraSlot - agora;
+
+        // Garante que o timezone não afete o cálculo
+        const diffMs = dataHoraSlot.getTime() - agora.getTime();
         const diffHoras = diffMs / (1000 * 60 * 60);
 
         if (diffHoras >= minimoHorasAntecedencia) {
