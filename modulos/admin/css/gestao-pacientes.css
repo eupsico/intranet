@@ -71,12 +71,13 @@
     background-color: #6c757d; /* Cor padrão */
 }
 
-/* Cores específicas por status (adicione mais conforme necessário) */
+/* Cores específicas por status */
 .status-inscricao_documentos { background-color: #007bff; }
 .status-triagem_agendada { background-color: #17a2b8; }
-.status-encaminhar_para_plantao { background-color: #ffc107; color: #333; }
-.status-em_atendimento_pb { background-color: #28a745; }
-.status-alta { background-color: #a9a9a9; }
+.status-encaminhar_para_plantao, .status-encaminhar_para_pb { background-color: #ffc107; color: #333; }
+.status-em_atendimento_plantao, .status-em_atendimento_pb { background-color: #28a745; }
+.status-aguardando_info_horarios, .status-cadastrar_horario_psicomanager { background-color: #fd7e14; }
+.status-alta { background-color: #6c757d; }
 .status-desistencia { background-color: #dc3545; }
 
 
@@ -131,17 +132,32 @@
     font-size: 0.9rem;
 }
 
-.edit-form .form-control {
+/* Usa a classe .form-control para consistência */
+.edit-form input[type="text"],
+.edit-form input[type="date"],
+.edit-form input[type="time"],
+.edit-form input[type="email"],
+.edit-form input[type="tel"],
+.edit-form select,
+.edit-form textarea {
     width: 100%;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    background-color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
 }
 
-.edit-form textarea.form-control {
-    min-height: 100px;
+.edit-form textarea {
+    min-height: 80px;
+}
+
+/* Estilo específico para o JSON de edição avançada */
+.edit-form textarea#edit-atendimentosPB {
     font-family: monospace;
     font-size: 0.85rem;
+    background-color: #f8f9fa;
 }
 
 .edit-form small {
