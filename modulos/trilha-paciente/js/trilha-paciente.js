@@ -1,5 +1,5 @@
 // Arquivo: /modulos/trilha-paciente/js/trilha-paciente.js
-// Versão: 10.2 (CORRIGIDO: Restaura a aparência dos cards e o comportamento do modal flutuante)
+// Versão: 10.3 (Adiciona Logs de Depuração para contagem)
 
 import {
   db,
@@ -61,12 +61,11 @@ export async function init(db, authUser, authData, container, columnFilter) {
 
     container.innerHTML = html;
 
-    // Protege cada etapa de inicialização
     try {
       setupColumns?.();
       setupAllModalControls?.();
       setupEventListeners?.();
-      await loadAndRenderCards?.(); // se for async
+      await loadAndRenderCards?.();
     } catch (innerError) {
       console.error("Erro ao configurar componentes do Kanban:", innerError);
       container.innerHTML = `<div class="error-message">Erro ao configurar o Kanban.</div>`;
@@ -96,14 +95,82 @@ function setupColumns() {
     .join("");
 }
 
+function loadAndRenderCards() {
+  const trilhaRef = collection(db, "trilhaPaciente");
+
+  // --- LOG DE DEPURAÇÃO ADICIONADO AQUI ---
+  console.log(
+    "[DEBUG] Iniciando busca no Firestore com o filtro de status:",
+    currentColumnFilter
+  );
+
+  const q = query(trilhaRef, where("status", "in", currentColumnFilter));
+
+  unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      // --- LOG DE DEPURAÇÃO ADICIONADO AQUI ---
+      console.log(
+        `[DEBUG] Firestore retornou ${snapshot.size} paciente(s) para esta visão.`
+      );
+
+      document
+        .querySelectorAll(".kanban-cards-container")
+        .forEach((c) => (c.innerHTML = ""));
+      allCardsData = {};
+
+      const statusCounts = {};
+      currentColumnFilter.forEach((status) => (statusCounts[status] = 0)); // Inicializa a contagem para todas as colunas da visão
+
+      snapshot.forEach((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        allCardsData[data.id] = data;
+
+        // --- LOG DE DEPURAÇÃO ADICIONADO AQUI ---
+        if (!currentColumnFilter.includes(data.status)) {
+          console.warn(
+            "[DEBUG] Paciente retornado com status inesperado:",
+            data.status,
+            `(ID: ${data.id})`
+          );
+        }
+
+        // Incrementa a contagem para o status do paciente atual
+        if (statusCounts.hasOwnProperty(data.status)) {
+          statusCounts[data.status]++;
+        }
+
+        const cardElement = createCardElement(data);
+        const container = document.getElementById(`cards-${data.status}`);
+        if (container) {
+          container.appendChild(cardElement);
+        }
+      });
+
+      // --- LÓGICA DE CONTAGEM ATUALIZADA ---
+      // A função updateColumnCounts foi movida para dentro do snapshot
+      // para garantir que ela use a contagem mais recente.
+      console.log("[DEBUG] Contagem final por status:", statusCounts);
+      for (const statusKey in statusCounts) {
+        const countEl = document.getElementById(`count-${statusKey}`);
+        if (countEl) {
+          countEl.textContent = statusCounts[statusKey];
+        }
+      }
+    },
+    (error) => {
+      console.error("Erro ao buscar cards em tempo real:", error);
+    }
+  );
+}
+
+// O restante do arquivo (createCardElement, setupAllModalControls, etc.) permanece o mesmo.
+// ... cole o resto do seu arquivo original aqui ...
 function setupAllModalControls() {
-  // Configuração para o 'card-modal'
   const cardModal = document.getElementById("card-modal");
   if (cardModal) {
-    // Verificação adicionada
     const closeModalBtn = document.getElementById("close-modal-btn");
     if (closeModalBtn) {
-      // Verificação adicionada
       closeModalBtn.addEventListener(
         "click",
         () => (cardModal.style.display = "none")
@@ -112,7 +179,6 @@ function setupAllModalControls() {
 
     const modalCancelBtn = document.getElementById("modal-cancel-btn");
     if (modalCancelBtn) {
-      // Verificação adicionada
       modalCancelBtn.addEventListener(
         "click",
         () => (cardModal.style.display = "none")
@@ -124,15 +190,12 @@ function setupAllModalControls() {
     });
   }
 
-  // Configuração para o 'move-card-modal'
   const moveModal = document.getElementById("move-card-modal");
   if (moveModal) {
-    // Verificação adicionada
     const closeMoveCardModalBtn = document.getElementById(
       "close-move-card-modal-btn"
     );
     if (closeMoveCardModalBtn) {
-      // Verificação adicionada
       closeMoveCardModalBtn.addEventListener(
         "click",
         () => (moveModal.style.display = "none")
@@ -141,7 +204,6 @@ function setupAllModalControls() {
 
     const cancelMoveBtn = document.getElementById("cancel-move-btn");
     if (cancelMoveBtn) {
-      // Verificação adicionada
       cancelMoveBtn.addEventListener(
         "click",
         () => (moveModal.style.display = "none")
@@ -154,7 +216,6 @@ function setupAllModalControls() {
 
     const confirmMoveBtn = document.getElementById("confirm-move-btn");
     if (confirmMoveBtn) {
-      // Verificação adicionada
       confirmMoveBtn.addEventListener("click", confirmMove);
     }
   }
@@ -172,37 +233,6 @@ function setupEventListeners() {
   });
 }
 
-function loadAndRenderCards() {
-  const trilhaRef = collection(db, "trilhaPaciente");
-  const q = query(trilhaRef, where("status", "in", currentColumnFilter));
-
-  unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      document
-        .querySelectorAll(".kanban-cards-container")
-        .forEach((c) => (c.innerHTML = ""));
-      allCardsData = {};
-
-      snapshot.forEach((doc) => {
-        const data = { id: doc.id, ...doc.data() };
-        allCardsData[data.id] = data;
-
-        const cardElement = createCardElement(data);
-        const container = document.getElementById(`cards-${data.status}`);
-        if (container) {
-          container.appendChild(cardElement);
-        }
-      });
-
-      updateColumnCounts();
-    },
-    (error) => {
-      console.error("Erro ao buscar cards em tempo real:", error);
-    }
-  );
-}
-
 function createCardElement(cardData) {
   const card = document.createElement("div");
   card.className = "kanban-card";
@@ -214,30 +244,20 @@ function createCardElement(cardData) {
     : "Não disponível";
 
   card.innerHTML = `
-    <p class="card-patient-name">${
-      cardData.nomeCompleto || "Nome não informado"
-    }</p>
-    <div class="card-details">
-        <p><strong>Status:</strong> ${
-          COLUMNS_CONFIG[cardData.status] || cardData.status
-        }</p>
-        <p><strong>Assistente:</strong> ${
-          cardData.assistenteSocialNome || "Não atribuído"
-        }</p>
-        <p><strong>Última Atualização:</strong> ${formattedDate}</p>
-    </div>
-    `;
+    <p class="card-patient-name">${
+    cardData.nomeCompleto || "Nome não informado"
+  }</p>
+    <div class="card-details">
+        <p><strong>Status:</strong> ${
+    COLUMNS_CONFIG[cardData.status] || cardData.status
+  }</p>
+        <p><strong>Assistente:</strong> ${
+    cardData.assistenteSocialNome || "Não atribuído"
+  }</p>
+        <p><strong>Última Atualização:</strong> ${formattedDate}</p>
+    </div>
+    `;
   return card;
-}
-
-function updateColumnCounts() {
-  currentColumnFilter.forEach((statusKey) => {
-    const countEl = document.getElementById(`count-${statusKey}`);
-    const container = document.getElementById(`cards-${statusKey}`);
-    if (countEl && container) {
-      countEl.textContent = container.children.length;
-    }
-  });
 }
 
 function openMoveModal(cardId, cardData) {
