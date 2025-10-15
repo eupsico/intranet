@@ -28,6 +28,21 @@ const ALL_STATUS = {
   alta: "Alta",
 };
 
+// --- INÍCIO DA ALTERAÇÃO 1: Função para calcular a idade ---
+function calcularIdade(dataNascimento) {
+  if (!dataNascimento || !dataNascimento.includes("-")) return null;
+  const hoje = new Date();
+  // Garante que a data seja interpretada corretamente como UTC para evitar problemas de fuso horário
+  const nascimento = new Date(dataNascimento + "T00:00:00Z");
+  let idade = hoje.getUTCFullYear() - nascimento.getUTCFullYear();
+  const m = hoje.getUTCMonth() - nascimento.getUTCMonth();
+  if (m < 0 || (m === 0 && hoje.getUTCDate() < nascimento.getUTCDate())) {
+    idade--;
+  }
+  return idade;
+}
+// --- FIM DA ALTERAÇÃO 1 ---
+
 export function init(user, userData) {
   console.log(
     "🚀 Módulo de Gestão de Pacientes v3.0 (Formulário Completo) iniciado."
@@ -168,6 +183,7 @@ export function init(user, userData) {
     }
   }
 
+  // --- INÍCIO DA ALTERAÇÃO 2: Gerar o formulário condicionalmente ---
   function gerarFormularioEdicao(paciente) {
     const p = (path, defaultValue = "") =>
       path.split(".").reduce((acc, part) => acc && acc[part], paciente) ||
@@ -185,6 +201,29 @@ export function init(user, userData) {
       )
       .join("");
 
+    // Calcula a idade e gera o HTML do responsável, se necessário
+    const idade = calcularIdade(paciente.dataNascimento);
+    let htmlResponsavel = "";
+    if (idade !== null && idade < 18) {
+      htmlResponsavel = `
+            <div class="form-section">
+                <h3>Dados do Responsável (Menor de Idade)</h3>
+                <div class="form-group"><label>Nome do Responsável</label><input type="text" id="edit-responsavelNome" class="form-control" value="${p(
+                  "responsavel.nome",
+                  ""
+                )}"></div>
+                <div class="form-group"><label>CPF do Responsável</label><input type="text" id="edit-responsavelCpf" class="form-control" value="${p(
+                  "responsavel.cpf",
+                  ""
+                )}"></div>
+                <div class="form-group"><label>Telefone do Responsável</label><input type="tel" id="edit-responsavelTelefone" class="form-control" value="${p(
+                  "responsavel.telefone",
+                  ""
+                )}"></div>
+            </div>
+            `;
+    }
+
     modalBody.innerHTML = `
             <form id="edit-paciente-form" class="edit-form">
                 <div class="form-section">
@@ -200,9 +239,9 @@ export function init(user, userData) {
                     <div class="form-group"><label>CPF</label><input type="text" id="edit-cpf" class="form-control" value="${p(
                       "cpf"
                     )}"></div>
-                    <div class="form-group"><label>Data de Nasc.</label><input type="date" id="edit-dataNascimento" class="form-control" value="${p(
-                      "dataNascimento"
-                    )}"></div>
+                    <div class="form-group"><label>Data de Nasc.</label><input type="date" id="edit-dataNascimento" class="form-control" value="${
+                      p("dataNascimento").split("T")[0] // Garante o formato AAAA-MM-DD
+                    }"></div>
                     <div class="form-group"><label>Email</label><input type="email" id="edit-email" class="form-control" value="${p(
                       "email"
                     )}"></div>
@@ -216,6 +255,8 @@ export function init(user, userData) {
                       "motivoBusca"
                     )}</textarea></div>
                 </div>
+                
+                ${htmlResponsavel}
 
                 <div class="form-section">
                     <h3>Dados da Triagem</h3>
@@ -244,9 +285,9 @@ export function init(user, userData) {
                     <div class="form-group"><label>Profissional</label><input type="text" id="edit-plantaoProfissionalNome" class="form-control" value="${p(
                       "plantaoInfo.profissionalNome"
                     )}"></div>
-                    <div class="form-group"><label>Data 1ª Sessão</label><input type="date" id="edit-plantaoDataSessao" class="form-control" value="${p(
-                      "plantaoInfo.dataPrimeiraSessao"
-                    )}"></div>
+                    <div class="form-group"><label>Data 1ª Sessão</label><input type="date" id="edit-plantaoDataSessao" class="form-control" value="${
+                      p("plantaoInfo.dataPrimeiraSessao").split("T")[0]
+                    }"></div>
                     <div class="form-group"><label>Hora 1ª Sessão</label><input type="time" id="edit-plantaoHoraSessao" class="form-control" value="${p(
                       "plantaoInfo.horaPrimeiraSessao"
                     )}"></div>
@@ -264,7 +305,7 @@ export function init(user, userData) {
                       ativoPB.horarioSessao?.horario || ""
                     }"></div>
                     <div class="form-group"><label>Data de Início</label><input type="date" id="edit-pb-dataInicio" class="form-control" value="${
-                      ativoPB.horarioSessao?.dataInicio || ""
+                      (ativoPB.horarioSessao?.dataInicio || "").split("T")[0]
                     }"></div>
                     <div class="form-group form-group-full">
                         <label>Atendimentos (JSON - Edição Avançada)</label>
@@ -279,15 +320,19 @@ export function init(user, userData) {
             </form>
         `;
   }
+  // --- FIM DA ALTERAÇÃO 2 ---
 
-  // LÓGICA DE SALVAMENTO ATUALIZADA
+  // --- INÍCIO DA ALTERAÇÃO 3: Salvar os dados do responsável ---
   saveModalBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     saveModalBtn.disabled = true;
     saveModalBtn.textContent = "Salvando...";
 
     try {
-      const get = (id) => document.getElementById(id).value;
+      const get = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value : null; // Função get mais segura
+      };
 
       const docRef = doc(db, "trilhaPaciente", currentEditingId);
       const docSnap = await getDoc(docRef);
@@ -296,9 +341,6 @@ export function init(user, userData) {
 
       let originalData = docSnap.data();
 
-      // ---- CORREÇÃO APLICADA AQUI ----
-      // As linhas de endereço (rua, numeroCasa, bairro, etc.) foram removidas
-      // pois os campos não existem no formulário HTML, o que causava o erro.
       const updatedData = {
         nomeCompleto: get("edit-nomeCompleto"),
         cpf: get("edit-cpf"),
@@ -313,7 +355,6 @@ export function init(user, userData) {
         modalidadeAtendimento: get("edit-modalidadeAtendimento"),
         preferenciaAtendimento: get("edit-preferenciaAtendimento"),
         status: get("edit-status"),
-
         assistenteSocialTriagem: {
           ...(originalData.assistenteSocialTriagem || {}),
           nome: get("edit-assistenteSocialTriagemNome"),
@@ -324,10 +365,22 @@ export function init(user, userData) {
           dataPrimeiraSessao: get("edit-plantaoDataSessao"),
           horaPrimeiraSessao: get("edit-plantaoHoraSessao"),
         },
-
         lastUpdate: serverTimestamp(),
         lastUpdatedBy: currentUserData.nome || "Admin",
       };
+
+      // Adiciona os dados do responsável se for menor de idade
+      const idade = calcularIdade(updatedData.dataNascimento);
+      if (idade !== null && idade < 18) {
+        updatedData.responsavel = {
+          nome: get("edit-responsavelNome"),
+          cpf: get("edit-responsavelCpf"),
+          telefone: get("edit-responsavelTelefone"),
+        };
+      } else {
+        // Opcional: remove os dados do responsável se a pessoa não for mais menor
+        updatedData.responsavel = originalData.responsavel || null;
+      }
 
       let atendimentosPB = JSON.parse(
         document.getElementById("edit-atendimentosPB").value
@@ -374,6 +427,7 @@ export function init(user, userData) {
       saveModalBtn.textContent = "Salvar Alterações";
     }
   });
+  // --- FIM DA ALTERAÇÃO 3 ---
 
   async function deletarPaciente(pacienteId, nome) {
     if (
