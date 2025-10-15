@@ -296,6 +296,9 @@ export function init(user, userData) {
 
       let originalData = docSnap.data();
 
+      // ---- CORREÇÃO APLICADA AQUI ----
+      // As linhas de endereço (rua, numeroCasa, bairro, etc.) foram removidas
+      // pois os campos não existem no formulário HTML, o que causava o erro.
       const updatedData = {
         nomeCompleto: get("edit-nomeCompleto"),
         cpf: get("edit-cpf"),
@@ -304,11 +307,6 @@ export function init(user, userData) {
         telefoneCelular: get("edit-telefoneCelular"),
         comoConheceu: get("edit-comoConheceu"),
         motivoBusca: get("edit-motivoBusca"),
-        rua: get("edit-rua"),
-        numeroCasa: get("edit-numeroCasa"),
-        bairro: get("edit-bairro"),
-        cidade: get("edit-cidade"),
-        cep: get("edit-cep"),
         queixaPrincipal: get("edit-queixaPrincipal"),
         valorContribuicao: get("edit-valorContribuicao"),
         criteriosValor: get("edit-criteriosValor"),
