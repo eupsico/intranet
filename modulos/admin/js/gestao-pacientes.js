@@ -8,14 +8,28 @@ import {
   getDoc,
   updateDoc,
   deleteDoc,
+  serverTimestamp,
 } from "../../../assets/js/firebase-init.js";
-import {
-  getFunctions,
-  httpsCallable,
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-functions.js";
+
+// Lista completa de status para o dropdown de mover paciente
+const ALL_STATUS = {
+  inscricao_documentos: "Inscrição e Documentos",
+  triagem_agendada: "Triagem Agendada",
+  encaminhar_para_plantao: "Encaminhar para Plantão",
+  em_atendimento_plantao: "Em Atendimento (Plantão)",
+  agendamento_confirmado_plantao: "Agendamento Confirmado (Plantão)",
+  encaminhar_para_pb: "Encaminhar para PB",
+  aguardando_info_horarios: "Aguardando Info Horários",
+  cadastrar_horario_psicomanager: "Cadastrar Horário Psicomanager",
+  em_atendimento_pb: "Em Atendimento (PB)",
+  pacientes_parcerias: "Pacientes Parcerias",
+  grupos: "Grupos",
+  desistencia: "Desistência",
+  alta: "Alta",
+};
 
 export function init(user, userData) {
-  console.log("🚀 Módulo de Gestão de Pacientes iniciado.");
+  console.log("🚀 Módulo de Gestão de Pacientes v2.0 iniciado.");
 
   const searchInput = document.getElementById("search-input");
   const statusFilter = document.getElementById("status-filter");
@@ -27,11 +41,10 @@ export function init(user, userData) {
   const cancelModalBtn = document.getElementById("modal-cancel-btn");
   const saveModalBtn = document.getElementById("modal-save-btn");
 
-  let allPacientes = []; // Armazena todos os pacientes para filtrar no cliente
+  let allPacientes = [];
   let currentEditingId = null;
 
-  // --- CARREGAMENTO E RENDERIZAÇÃO ---
-
+  // --- CARREGAMENTO E RENDERIZAÇÃO DA LISTA ---
   async function carregarPacientes() {
     listContainer.innerHTML = '<div class="loading-spinner"></div>';
     try {
@@ -40,12 +53,10 @@ export function init(user, userData) {
         orderBy("nomeCompleto")
       );
       const querySnapshot = await getDocs(q);
-
       allPacientes = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
       popularFiltroStatus();
       renderizarLista();
     } catch (error) {
@@ -58,7 +69,6 @@ export function init(user, userData) {
   function renderizarLista() {
     const searchTerm = searchInput.value.toLowerCase();
     const status = statusFilter.value;
-
     const filteredPacientes = allPacientes.filter((p) => {
       const matchSearch =
         searchTerm === "" ||
@@ -67,13 +77,11 @@ export function init(user, userData) {
       const matchStatus = status === "" || p.status === status;
       return matchSearch && matchStatus;
     });
-
     if (filteredPacientes.length === 0) {
       listContainer.innerHTML =
         "<p>Nenhum paciente encontrado com os filtros aplicados.</p>";
       return;
     }
-
     let html = '<div class="pacientes-list">';
     filteredPacientes.forEach((p) => {
       html += `
@@ -83,7 +91,9 @@ export function init(user, userData) {
                         <p><strong>CPF:</strong> ${p.cpf || "Não informado"}</p>
                         <p><strong>Status:</strong> <span class="status-badge status-${
                           p.status || "default"
-                        }">${p.status || "Não definido"}</span></p>
+                        }">${
+        ALL_STATUS[p.status] || p.status || "Não definido"
+      }</span></p>
                     </div>
                     <div class="paciente-actions">
                         <button class="action-button secondary btn-edit" data-id="${
@@ -93,8 +103,7 @@ export function init(user, userData) {
                           p.id
                         }">Excluir</button>
                     </div>
-                </div>
-            `;
+                </div>`;
     });
     html += "</div>";
     listContainer.innerHTML = html;
@@ -108,12 +117,13 @@ export function init(user, userData) {
     statuses.sort();
     statusFilter.innerHTML = '<option value="">Todos os Status</option>';
     statuses.forEach((s) => {
-      statusFilter.innerHTML += `<option value="${s}">${s}</option>`;
+      statusFilter.innerHTML += `<option value="${s}">${
+        ALL_STATUS[s] || s
+      }</option>`;
     });
   }
 
   // --- EVENTOS ---
-
   searchInput.addEventListener("input", renderizarLista);
   statusFilter.addEventListener("change", renderizarLista);
 
@@ -132,7 +142,6 @@ export function init(user, userData) {
   }
 
   // --- LÓGICA DO MODAL DE EDIÇÃO ---
-
   const closeModalFunction = () => (modal.style.display = "none");
   closeModalBtn.addEventListener("click", closeModalFunction);
   cancelModalBtn.addEventListener("click", closeModalFunction);
@@ -142,14 +151,10 @@ export function init(user, userData) {
     modalTitle.textContent = "Carregando dados do paciente...";
     modalBody.innerHTML = '<div class="loading-spinner"></div>';
     modal.style.display = "flex";
-
     try {
       const docRef = doc(db, "trilhaPaciente", pacienteId);
       const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists()) {
-        throw new Error("Paciente não encontrado.");
-      }
+      if (!docSnap.exists()) throw new Error("Paciente não encontrado.");
       const paciente = docSnap.data();
       modalTitle.textContent = `Editando: ${paciente.nomeCompleto}`;
       gerarFormularioEdicao(paciente);
@@ -159,87 +164,140 @@ export function init(user, userData) {
     }
   }
 
+  // NOVA FUNÇÃO PARA GERAR O FORMULÁRIO ESTRUTURADO
   function gerarFormularioEdicao(paciente) {
-    let formHtml = `<form id="edit-paciente-form" class="edit-form">`;
-    // Itera sobre todas as chaves do objeto do paciente para criar os campos
-    for (const key in paciente) {
-      if (Object.hasOwnProperty.call(paciente, key)) {
-        const value = paciente[key];
-        let inputHtml = "";
-        // Lida com diferentes tipos de dados
-        if (typeof value === "string" || typeof value === "number") {
-          inputHtml = `<input type="text" id="edit-${key}" class="form-control" value="${value}">`;
-        } else if (typeof value === "boolean") {
-          inputHtml = `<select id="edit-${key}" class="form-control"><option value="true" ${
-            value ? "selected" : ""
-          }>Sim</option><option value="false" ${
-            !value ? "selected" : ""
-          }>Não</option></select>`;
-        } else if (Array.isArray(value)) {
-          inputHtml = `<textarea id="edit-${key}" class="form-control" rows="3">${value.join(
-            ", "
-          )}</textarea>`;
-        } else if (
-          typeof value === "object" &&
-          value !== null &&
-          !value.toDate
-        ) {
-          // Objeto simples (como 'responsavel')
-          inputHtml = `<textarea id="edit-${key}" class="form-control" rows="4">${JSON.stringify(
-            value,
-            null,
-            2
-          )}</textarea>`;
-        } else {
-          // Para Timestamps e outros tipos, apenas mostra como texto não editável
-          inputHtml = `<input type="text" id="edit-${key}" class="form-control" value="${
-            value.toDate ? value.toDate().toLocaleString("pt-BR") : value
-          }" disabled>`;
-        }
+    const p = (path, defaultValue = "") =>
+      path.split(".").reduce((acc, part) => acc && acc[part], paciente) ||
+      defaultValue;
 
-        formHtml += `
-                    <div class="form-group">
-                        <label for="edit-${key}">${key}</label>
-                        ${inputHtml}
-                    </div>
-                `;
-      }
+    let statusOptions = "";
+    for (const key in ALL_STATUS) {
+      statusOptions += `<option value="${key}" ${
+        p("status") === key ? "selected" : ""
+      }>${ALL_STATUS[key]}</option>`;
     }
-    formHtml += `</form>`;
-    modalBody.innerHTML = formHtml;
+
+    modalBody.innerHTML = `
+            <form id="edit-paciente-form" class="edit-form">
+                <div class="form-section">
+                    <h3>Status e Movimentação</h3>
+                    <div class="form-group form-group-full">
+                        <label for="edit-status">Status (Mover Paciente)</label>
+                        <select id="edit-status" class="form-control">${statusOptions}</select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Dados Pessoais</h3>
+                    <div class="form-group"><label>Nome Completo</label><input type="text" id="edit-nomeCompleto" class="form-control" value="${p(
+                      "nomeCompleto"
+                    )}"></div>
+                    <div class="form-group"><label>CPF</label><input type="text" id="edit-cpf" class="form-control" value="${p(
+                      "cpf"
+                    )}"></div>
+                    <div class="form-group"><label>Data de Nascimento</label><input type="date" id="edit-dataNascimento" class="form-control" value="${p(
+                      "dataNascimento"
+                    )}"></div>
+                    <div class="form-group"><label>Email</label><input type="email" id="edit-email" class="form-control" value="${p(
+                      "email"
+                    )}"></div>
+                    <div class="form-group"><label>Telefone</label><input type="tel" id="edit-telefoneCelular" class="form-control" value="${p(
+                      "telefoneCelular"
+                    )}"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Endereço</h3>
+                    <div class="form-group"><label>Rua</label><input type="text" id="edit-rua" class="form-control" value="${p(
+                      "rua"
+                    )}"></div>
+                    <div class="form-group"><label>Número</label><input type="text" id="edit-numeroCasa" class="form-control" value="${p(
+                      "numeroCasa"
+                    )}"></div>
+                    <div class="form-group"><label>Bairro</label><input type="text" id="edit-bairro" class="form-control" value="${p(
+                      "bairro"
+                    )}"></div>
+                    <div class="form-group"><label>Cidade</label><input type="text" id="edit-cidade" class="form-control" value="${p(
+                      "cidade"
+                    )}"></div>
+                    <div class="form-group"><label>CEP</label><input type="text" id="edit-cep" class="form-control" value="${p(
+                      "cep"
+                    )}"></div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Triagem e Plantão</h3>
+                    <div class="form-group"><label>Valor Contribuição</label><input type="text" id="edit-valorContribuicao" class="form-control" value="${p(
+                      "valorContribuicao"
+                    )}"></div>
+                    <div class="form-group"><label>Nome Assistente Social</label><input type="text" id="edit-assistenteSocialTriagemNome" class="form-control" value="${p(
+                      "assistenteSocialTriagem.nome"
+                    )}"></div>
+                    <div class="form-group form-group-full"><label>Informações do Plantão (JSON)</label><textarea id="edit-plantaoInfo" class="form-control" rows="4">${JSON.stringify(
+                      p("plantaoInfo", {}),
+                      null,
+                      2
+                    )}</textarea></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Atendimentos (PB)</h3>
+                    <div class="form-group form-group-full"><label>Atendimentos PB (JSON)</label><textarea id="edit-atendimentosPB" class="form-control" rows="6">${JSON.stringify(
+                      p("atendimentosPB", []),
+                      null,
+                      2
+                    )}</textarea></div>
+                </div>
+            </form>
+        `;
   }
 
+  // NOVA LÓGICA DE SALVAMENTO
   saveModalBtn.addEventListener("click", async (e) => {
     e.preventDefault();
-    const form = document.getElementById("edit-paciente-form");
-    if (!form) return;
 
-    const updatedData = {};
-    const formElements = form.elements;
+    const updatedData = {
+      // Seção Pessoal
+      nomeCompleto: document.getElementById("edit-nomeCompleto").value,
+      cpf: document.getElementById("edit-cpf").value,
+      dataNascimento: document.getElementById("edit-dataNascimento").value,
+      email: document.getElementById("edit-email").value,
+      telefoneCelular: document.getElementById("edit-telefoneCelular").value,
 
-    for (const element of formElements) {
-      const key = element.id.replace("edit-", "");
-      let value = element.value;
+      // Seção Endereço
+      rua: document.getElementById("edit-rua").value,
+      numeroCasa: document.getElementById("edit-numeroCasa").value,
+      bairro: document.getElementById("edit-bairro").value,
+      cidade: document.getElementById("edit-cidade").value,
+      cep: document.getElementById("edit-cep").value,
 
-      // Tenta converter de volta para os tipos originais
-      try {
-        if (
-          element.tagName === "TEXTAREA" &&
-          (key === "atendimentosPB" ||
-            key === "plantaoInfo" ||
-            key === "responsavel")
-        ) {
-          value = JSON.parse(value); // Converte JSON de volta para objeto
-        } else if (element.tagName === "TEXTAREA") {
-          value = value.split(",").map((s) => s.trim()); // Converte texto em array
-        }
-      } catch (err) {
-        alert(
-          `Erro de formatação no campo ${key}. Verifique se o JSON é válido.`
-        );
-        return;
-      }
-      updatedData[key] = value;
+      // Seção Triagem e Plantão
+      valorContribuicao: document.getElementById("edit-valorContribuicao")
+        .value,
+      "assistenteSocialTriagem.nome": document.getElementById(
+        "edit-assistenteSocialTriagemNome"
+      ).value, // Usando dot notation para campos aninhados
+
+      // Status (Movimentação)
+      status: document.getElementById("edit-status").value,
+
+      lastUpdate: serverTimestamp(),
+      lastUpdatedBy: currentUserData.nome || "Admin",
+    };
+
+    // Processa os campos JSON com segurança
+    try {
+      updatedData.plantaoInfo = JSON.parse(
+        document.getElementById("edit-plantaoInfo").value
+      );
+      updatedData.atendimentosPB = JSON.parse(
+        document.getElementById("edit-atendimentosPB").value
+      );
+    } catch (err) {
+      alert(
+        `Erro de formatação em um dos campos JSON. Verifique a estrutura dos dados nos campos 'Informações do Plantão' ou 'Atendimentos PB'.`
+      );
+      return;
     }
 
     saveModalBtn.disabled = true;
@@ -249,9 +307,9 @@ export function init(user, userData) {
       const docRef = doc(db, "trilhaPaciente", currentEditingId);
       await updateDoc(docRef, updatedData);
 
-      // Atualiza a lista local para refletir a mudança
       const index = allPacientes.findIndex((p) => p.id === currentEditingId);
       if (index > -1) {
+        // Atualiza os dados locais com o que foi enviado para o banco
         allPacientes[index] = { ...allPacientes[index], ...updatedData };
       }
       renderizarLista();
@@ -273,7 +331,6 @@ export function init(user, userData) {
     ) {
       try {
         await deleteDoc(doc(db, "trilhaPaciente", pacienteId));
-        // Remove da lista local e renderiza novamente
         allPacientes = allPacientes.filter((p) => p.id !== pacienteId);
         renderizarLista();
         alert("Paciente excluído com sucesso.");
