@@ -15,8 +15,8 @@ import {
 let allProfessionals = [];
 let unsubscribeTentativas;
 
-// Função para formatar a exibição da disponibilidade
-function formatAvailability(availabilityArray) {
+// Função para formatar a exibição da disponibilidade do PACIENTE
+function formatPatientAvailability(availabilityArray) {
   if (!availabilityArray || availabilityArray.length === 0) return "N/A";
 
   const translations = {
@@ -25,16 +25,44 @@ function formatAvailability(availabilityArray) {
     "noite-semana": "Noite (Semana)",
     "manha-sabado": "Manhã (Sábado)",
   };
-
   const formatted = availabilityArray
     .map((slot) => {
       const [period, time] = slot.split("_");
-      const translatedPeriod = translations[period] || period;
-      return `<li>${translatedPeriod} - ${time}</li>`;
+      return `<li>${translations[period] || period} - ${time}</li>`;
     })
     .join("");
-
   return `<ul class="availability-list">${formatted}</ul>`;
+}
+
+// Função para formatar a exibição da disponibilidade do PROFISSIONAL (MATCH)
+function formatProfMatchAvailability(slots) {
+  if (!slots || slots.length === 0) return "N/A";
+  const formatted = slots
+    .map((slot) => {
+      const [dia, hora] = slot.split("_");
+      return `<li>${dia.charAt(0).toUpperCase() + dia.slice(1)} - ${hora}</li>`;
+    })
+    .join("");
+  return `<ul class="availability-list">${formatted}</ul>`;
+}
+
+// NOVA Função para formatar a exibição da disponibilidade GERAL do PROFISSIONAL
+function formatProfGeneralAvailability(horarios) {
+  if (!horarios || horarios.length === 0) return "Nenhum horário cadastrado";
+
+  const groupedByDay = horarios.reduce((acc, slot) => {
+    const dia = slot.dia.charAt(0).toUpperCase() + slot.dia.slice(1);
+    if (!acc[dia]) acc[dia] = [];
+    acc[dia].push(`${slot.horario}h`);
+    return acc;
+  }, {});
+
+  let html = '<ul class="availability-list">';
+  for (const dia in groupedByDay) {
+    html += `<li><strong>${dia}:</strong> ${groupedByDay[dia].join(", ")}</li>`;
+  }
+  html += "</ul>";
+  return html;
 }
 
 export function init(dbInstance, user, userData) {
@@ -43,10 +71,16 @@ export function init(dbInstance, user, userData) {
   const resultadosDiv = document.getElementById("resultados-compatibilidade");
   const compatibilidadeBody = document.getElementById("compatibilidade-tbody");
   const tentativasBody = document.getElementById("tentativas-tbody");
+  const disponibilidadeGeralBody = document.getElementById(
+    "disponibilidade-geral-tbody"
+  ); // Nova Tabela
   const nenhumCompativelMsg = document.getElementById(
     "nenhum-paciente-compativel"
   );
   const nenhumaTentativaMsg = document.getElementById("nenhuma-tentativa");
+  const nenhumProfissionalDispMsg = document.getElementById(
+    "nenhum-profissional-disponibilidade"
+  ); // Nova Mensagem
 
   const tabsContainer = document.getElementById("cruzamento-tabs");
   tabsContainer.addEventListener("click", (e) => {
@@ -55,12 +89,14 @@ export function init(dbInstance, user, userData) {
       document
         .querySelectorAll(".tab-link")
         .forEach((btn) => btn.classList.remove("active"));
-      document
-        .querySelectorAll(".tab-content")
-        .forEach((content) => (content.style.display = "none")); // Oculta todos
+      document.querySelectorAll(".tab-content").forEach((content) => {
+        content.style.display = "none";
+        content.classList.remove("active");
+      });
       e.target.classList.add("active");
-      document.getElementById(tabId).style.display = "block";
-      document.getElementById(tabId).classList.add("active");
+      const activeTab = document.getElementById(tabId);
+      activeTab.style.display = "block";
+      activeTab.classList.add("active");
     }
   });
 
@@ -77,21 +113,52 @@ export function init(dbInstance, user, userData) {
       querySnapshot.forEach((doc) => {
         allProfessionals.push({ id: doc.id, ...doc.data() });
       });
-
       allProfessionals.sort((a, b) => a.nome.localeCompare(b.nome));
 
       let optionsHtml = '<option value="">Selecione um profissional</option>';
       allProfessionals.forEach((prof) => {
-        if (prof.horarios && prof.horarios.length > 0) {
-          optionsHtml += `<option value="${prof.id}">${prof.nome}</option>`;
-        }
+        optionsHtml += `<option value="${prof.id}">${prof.nome}</option>`;
       });
       profissionalSelect.innerHTML = optionsHtml;
+
+      // Chamar a nova função para renderizar a terceira aba
+      renderAllProfessionalsAvailability();
     } catch (error) {
       console.error("Erro ao carregar profissionais:", error);
       profissionalSelect.innerHTML =
         '<option value="">Erro ao carregar</option>';
     }
+  }
+
+  // NOVA função para renderizar a terceira aba
+  function renderAllProfessionalsAvailability() {
+    const professionalsWithAvailability = allProfessionals.filter(
+      (p) => p.horarios && p.horarios.length > 0
+    );
+
+    if (professionalsWithAvailability.length === 0) {
+      nenhumProfissionalDispMsg.style.display = "block";
+      disponibilidadeGeralBody.innerHTML = "";
+      return;
+    }
+
+    let rowsHtml = "";
+    professionalsWithAvailability.forEach((prof) => {
+      // Agrupar modalidades para exibição
+      const modalidades = [...new Set(prof.horarios.map((h) => h.modalidade))];
+      const modalidadesHtml = modalidades
+        .map((m) => `<span class="modalidade-badge ${m}">${m}</span>`)
+        .join(" ");
+
+      rowsHtml += `
+                <tr>
+                    <td>${prof.nome}</td>
+                    <td>${formatProfGeneralAvailability(prof.horarios)}</td>
+                    <td>${modalidadesHtml}</td>
+                </tr>
+            `;
+    });
+    disponibilidadeGeralBody.innerHTML = rowsHtml;
   }
 
   async function findCompatiblePatients() {
@@ -124,7 +191,7 @@ export function init(dbInstance, user, userData) {
         const patientAvailability = patient.disponibilidadeEspecifica || [];
         const patientModalidade = patient.modalidadeAtendimento || "Qualquer";
 
-        let commonSlots = [];
+        let commonSlots = new Set();
 
         professionalAvailability.forEach((profSlot) => {
           if (profSlot.status !== "disponivel") return;
@@ -143,16 +210,16 @@ export function init(dbInstance, user, userData) {
               profSlot.horario === horaNum &&
               checkPeriodMatch(periodo, profSlot.dia)
             ) {
-              commonSlots.push(patientSlot);
+              commonSlots.add(patientSlot);
             }
           });
         });
 
-        if (commonSlots.length > 0) {
-          // Mapear slots comuns para o formato do profissional para exibição
+        if (commonSlots.size > 0) {
+          const commonSlotsArray = Array.from(commonSlots);
           const profCommonSlots = professionalAvailability
             .filter((profSlot) =>
-              commonSlots.some((pSlot) => {
+              commonSlotsArray.some((pSlot) => {
                 const [period, hora] = pSlot.split("_");
                 return (
                   profSlot.horario === parseInt(hora.split(":")[0], 10) &&
@@ -160,12 +227,12 @@ export function init(dbInstance, user, userData) {
                 );
               })
             )
-            .map((s) => `${s.dia.toLowerCase()}_${s.horario}:00`); // Formato aproximado para visualização
+            .map((s) => `${s.dia.toLowerCase()}_${s.horario}:00`);
 
           compatiblePatients.push({
             ...patient,
-            matchingPatientSlots: [...new Set(commonSlots)], // Remove duplicados
-            matchingProfSlots: [...new Set(profCommonSlots)], // Remove duplicados
+            matchingPatientSlots: commonSlotsArray,
+            matchingProfSlots: [...new Set(profCommonSlots)],
           });
         }
       });
@@ -196,20 +263,6 @@ export function init(dbInstance, user, userData) {
     }
   }
 
-  // Função para formatar horários do profissional para exibição
-  function formatProfAvailability(slots) {
-    if (!slots || slots.length === 0) return "N/A";
-    const formatted = slots
-      .map((slot) => {
-        const [dia, hora] = slot.split("_");
-        return `<li>${
-          dia.charAt(0).toUpperCase() + dia.slice(1)
-        } - ${hora}</li>`;
-      })
-      .join("");
-    return `<ul class="availability-list">${formatted}</ul>`;
-  }
-
   function renderCompatibilityTable(patients) {
     if (patients.length === 0) {
       nenhumCompativelMsg.style.display = "block";
@@ -225,8 +278,10 @@ export function init(dbInstance, user, userData) {
                 <tr data-patient-id="${patient.id}">
                     <td>${patient.nomeCompleto}</td>
                     <td>${patient.telefoneCelular || "N/A"}</td>
-                    <td>${formatAvailability(patient.matchingPatientSlots)}</td>
-                    <td>${formatProfAvailability(
+                    <td>${formatPatientAvailability(
+                      patient.matchingPatientSlots
+                    )}</td>
+                    <td>${formatProfMatchAvailability(
                       patient.matchingProfSlots
                     )}</td>
                     <td>${fila}</td>
