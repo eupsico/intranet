@@ -9,10 +9,33 @@ import {
   onSnapshot,
   serverTimestamp,
   addDoc,
+  getDoc,
 } from "../../../assets/js/firebase-init.js";
 
 let allProfessionals = [];
 let unsubscribeTentativas;
+
+// Função para formatar a exibição da disponibilidade
+function formatAvailability(availabilityArray) {
+  if (!availabilityArray || availabilityArray.length === 0) return "N/A";
+
+  const translations = {
+    "manha-semana": "Manhã (Semana)",
+    "tarde-semana": "Tarde (Semana)",
+    "noite-semana": "Noite (Semana)",
+    "manha-sabado": "Manhã (Sábado)",
+  };
+
+  const formatted = availabilityArray
+    .map((slot) => {
+      const [period, time] = slot.split("_");
+      const translatedPeriod = translations[period] || period;
+      return `<li>${translatedPeriod} - ${time}</li>`;
+    })
+    .join("");
+
+  return `<ul class="availability-list">${formatted}</ul>`;
+}
 
 export function init(dbInstance, user, userData) {
   const profissionalSelect = document.getElementById("profissional-select");
@@ -34,8 +57,9 @@ export function init(dbInstance, user, userData) {
         .forEach((btn) => btn.classList.remove("active"));
       document
         .querySelectorAll(".tab-content")
-        .forEach((content) => content.classList.remove("active"));
+        .forEach((content) => (content.style.display = "none")); // Oculta todos
       e.target.classList.add("active");
+      document.getElementById(tabId).style.display = "block";
       document.getElementById(tabId).classList.add("active");
     }
   });
@@ -100,28 +124,49 @@ export function init(dbInstance, user, userData) {
         const patientAvailability = patient.disponibilidadeEspecifica || [];
         const patientModalidade = patient.modalidadeAtendimento || "Qualquer";
 
-        const isCompatible = professionalAvailability.some((profSlot) => {
-          if (profSlot.status !== "disponivel") return false;
+        let commonSlots = [];
+
+        professionalAvailability.forEach((profSlot) => {
+          if (profSlot.status !== "disponivel") return;
 
           const modalityMatch =
             patientModalidade === "Qualquer" ||
             profSlot.modalidade === "ambas" ||
             profSlot.modalidade.toLowerCase() ===
               patientModalidade.toLowerCase();
-          if (!modalityMatch) return false;
+          if (!modalityMatch) return;
 
-          return patientAvailability.some((patientSlot) => {
+          patientAvailability.forEach((patientSlot) => {
             const [periodo, hora] = patientSlot.split("_");
             const horaNum = parseInt(hora.split(":")[0], 10);
-            return (
+            if (
               profSlot.horario === horaNum &&
               checkPeriodMatch(periodo, profSlot.dia)
-            );
+            ) {
+              commonSlots.push(patientSlot);
+            }
           });
         });
 
-        if (isCompatible) {
-          compatiblePatients.push(patient);
+        if (commonSlots.length > 0) {
+          // Mapear slots comuns para o formato do profissional para exibição
+          const profCommonSlots = professionalAvailability
+            .filter((profSlot) =>
+              commonSlots.some((pSlot) => {
+                const [period, hora] = pSlot.split("_");
+                return (
+                  profSlot.horario === parseInt(hora.split(":")[0], 10) &&
+                  checkPeriodMatch(period, profSlot.dia)
+                );
+              })
+            )
+            .map((s) => `${s.dia.toLowerCase()}_${s.horario}:00`); // Formato aproximado para visualização
+
+          compatiblePatients.push({
+            ...patient,
+            matchingPatientSlots: [...new Set(commonSlots)], // Remove duplicados
+            matchingProfSlots: [...new Set(profCommonSlots)], // Remove duplicados
+          });
         }
       });
 
@@ -136,21 +181,33 @@ export function init(dbInstance, user, userData) {
   }
 
   function checkPeriodMatch(periodo, diaSemana) {
-    const isWeekend =
-      diaSemana.toLowerCase() === "sabado" ||
-      diaSemana.toLowerCase() === "domingo";
+    const dia = diaSemana.toLowerCase();
     switch (periodo) {
       case "manha-semana":
-        return !isWeekend;
+        return dia !== "sabado" && dia !== "domingo";
       case "tarde-semana":
-        return !isWeekend;
+        return dia !== "sabado" && dia !== "domingo";
       case "noite-semana":
-        return !isWeekend;
+        return dia !== "sabado" && dia !== "domingo";
       case "manha-sabado":
-        return isWeekend;
+        return dia === "sabado";
       default:
         return false;
     }
+  }
+
+  // Função para formatar horários do profissional para exibição
+  function formatProfAvailability(slots) {
+    if (!slots || slots.length === 0) return "N/A";
+    const formatted = slots
+      .map((slot) => {
+        const [dia, hora] = slot.split("_");
+        return `<li>${
+          dia.charAt(0).toUpperCase() + dia.slice(1)
+        } - ${hora}</li>`;
+      })
+      .join("");
+    return `<ul class="availability-list">${formatted}</ul>`;
   }
 
   function renderCompatibilityTable(patients) {
@@ -168,9 +225,13 @@ export function init(dbInstance, user, userData) {
                 <tr data-patient-id="${patient.id}">
                     <td>${patient.nomeCompleto}</td>
                     <td>${patient.telefoneCelular || "N/A"}</td>
+                    <td>${formatAvailability(patient.matchingPatientSlots)}</td>
+                    <td>${formatProfAvailability(
+                      patient.matchingProfSlots
+                    )}</td>
                     <td>${fila}</td>
                     <td>
-                        <button class="action-button btn-iniciar-tentativa">Iniciar Tentativa</button>
+                        <button class="btn btn-sm btn-primary action-button btn-iniciar-tentativa">Iniciar Tentativa</button>
                     </td>
                 </tr>
             `;
@@ -247,9 +308,11 @@ export function init(dbInstance, user, userData) {
 
     try {
       const patientDocRef = doc(db, "trilhaPaciente", patientId);
+      const professionalDocRef = doc(db, "usuarios", professionalId);
+
       const [patientDocSnap, professionalDocSnap] = await Promise.all([
         getDoc(patientDocRef),
-        getDoc(doc(db, "usuarios", professionalId)),
+        getDoc(professionalDocRef),
       ]);
 
       if (!patientDocSnap.exists() || !professionalDocSnap.exists()) {
