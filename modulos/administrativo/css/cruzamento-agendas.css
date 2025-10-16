@@ -1,43 +1,49 @@
-.cruzamento-agendas .form-select,
-.cruzamento-agendas .btn {
-    height: calc(2.25rem + 2px); /* Alinha altura dos inputs e botão */
+.cruzamento-agendas-view .form-select,
+.cruzamento-agendas-view .btn {
+    height: calc(2.25rem + 8px);
 }
 
-.calendario-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
+.cruzamento-agendas-view .table .action-button {
+    padding: 6px 12px;
+    font-size: 0.9em;
 }
 
-.dia-coluna {
-    border: 1px solid #e0e0e0;
-    border-radius: 0.5rem;
-    background-color: #f9f9f9;
+.cruzamento-agendas-view .status-select {
+    min-width: 200px;
 }
 
-.dia-header {
-    background-color: #f0f2f5;
-    padding: 0.5rem;
-    font-weight: 600;
-    text-align: center;
-    border-bottom: 1px solid #e0e0e0;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
+.cruzamento-agendas-view .tabs-container {
+    border-bottom: 2px solid var(--cor-borda);
+    margin-bottom: 20px;
 }
 
-.horarios-lista {
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.horario-comum {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-    padding: 0.5rem;
-    border-radius: 0.25rem;
-    text-align: center;
+.cruzamento-agendas-view .tab-link {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
     font-weight: 500;
+    color: var(--cor-texto-secundario);
+}
+
+.cruzamento-agendas-view .tab-link.active {
+    border-bottom-color: var(--cor-primaria);
+    color: var(--cor-primaria);
+    font-weight: 600;
+}
+
+.cruzamento-agendas-view .tab-content {
+    display: none;
+}
+
+.cruzamento-agendas-view .tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
