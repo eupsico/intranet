@@ -1,0 +1,41 @@
+<div class="container-fluid cruzamento-agendas">
+    <h2 class="mb-4">Cruzamento de Agendas</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtros de Disponibilidade</h5>
+        </div>
+        <div class="card-body">
+            <p>Selecione um profissional e um paciente para encontrar horários compatíveis.</p>
+            <div class="row g-3 align-items-end mb-4">
+                <div class="col-md-5">
+                    <label for="profissional-select" class="form-label">Profissional</label>
+                    <select id="profissional-select" class="form-select"></select>
+                </div>
+                <div class="col-md-5">
+                    <label for="paciente-select" class="form-label">Paciente</label>
+                    <select id="paciente-select" class="form-select"></select>
+                </div>
+                <div class="col-md-2">
+                    <button id="buscar-horarios-btn" class="btn btn-primary w-100">Buscar</button>
+                </div>
+            </div>
+
+            <div id="loading-spinner" class="text-center my-5" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-2">Cruzando agendas...</p>
+            </div>
+
+            <div id="resultado-cruzamento" style="display: none;">
+                <h5 class="mb-3">Horários Compatíveis</h5>
+                <div id="calendario-resultado" class="calendario-grid">
+                    </div>
+                 <div id="nenhum-horario-comum" class="alert alert-info" style="display: none;">
+                    Nenhum horário compatível encontrado entre o profissional e o paciente selecionados.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
