@@ -4,6 +4,7 @@
     <div class="tabs-container" id="cruzamento-tabs">
         <button class="tab-link active" data-tab="compatibilidade">Compatibilidade</button>
         <button class="tab-link" data-tab="tentativas">Tentativas de Agendamento</button>
+        <button class="tab-link" data-tab="disponibilidade-geral">Disponibilidade Geral</button>
     </div>
 
     <div id="compatibilidade" class="tab-content active">
@@ -41,8 +42,7 @@
                                     <th scope="col">Ação</th>
                                 </tr>
                             </thead>
-                            <tbody id="compatibilidade-tbody">
-                                </tbody>
+                            <tbody id="compatibilidade-tbody"></tbody>
                         </table>
                     </div>
                     <div id="nenhum-paciente-compativel" class="alert alert-info mt-3" style="display: none;">
@@ -55,7 +55,7 @@
 
     <div id="tentativas" class="tab-content" style="display: none;">
         <div class="card shadow-sm">
-            <div class="card-header bg-light">
+             <div class="card-header bg-light">
                 <h5 class="mb-0">Acompanhamento de Tentativas</h5>
             </div>
             <div class="card-body">
@@ -70,12 +70,38 @@
                                 <th scope="col">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="tentativas-tbody">
-                            </tbody>
+                        <tbody id="tentativas-tbody"></tbody>
                     </table>
                 </div>
                  <div id="nenhuma-tentativa" class="alert alert-info mt-3">
                     Nenhum paciente em processo de agendamento no momento.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="disponibilidade-geral" class="tab-content" style="display: none;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Disponibilidade Geral dos Profissionais</h5>
+            </div>
+            <div class="card-body">
+                <p>Lista de todos os profissionais que atendem e suas disponibilidades cadastradas.</p>
+                 <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Profissional</th>
+                                <th scope="col">Disponibilidade Cadastrada</th>
+                                <th scope="col">Modalidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="disponibilidade-geral-tbody">
+                             </tbody>
+                    </table>
+                </div>
+                <div id="nenhum-profissional-disponibilidade" class="alert alert-info mt-3" style="display: none;">
+                    Nenhum profissional com disponibilidade cadastrada foi encontrado.
                 </div>
             </div>
         </div>
