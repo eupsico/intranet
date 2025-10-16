@@ -48,6 +48,7 @@
     padding: 0;
     margin: 0;
     font-size: 0.85em;
+    max-width: 400px; /* Evita que a célula fique muito larga */
 }
 
 .availability-list li {
@@ -56,7 +57,33 @@
     padding: 2px 6px;
     border-radius: 4px;
     margin: 2px;
+    border: 1px solid #dee2e6;
 }
+
+.modalidade-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+    border-radius: 12px;
+    text-transform: capitalize;
+}
+
+.modalidade-badge.online {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.modalidade-badge.presencial {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.modalidade-badge.ambas {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
