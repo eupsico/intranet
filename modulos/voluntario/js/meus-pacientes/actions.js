@@ -11,7 +11,7 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const margin = 40; // <-- AJUSTE AQUI: Aumentado de 15 para 20
+    const margin = 10; // <-- AJUSTE AQUI: Aumentado de 15 para 20
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const usableWidth = pageWidth - margin * 2;
