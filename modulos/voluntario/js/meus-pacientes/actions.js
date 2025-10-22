@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO CORRIGIDA (Corrige erro em formatCurrency e ajusta margens) ---
+// --- VERSÃO CORRIGIDA (Corrige margem de itens de lista) ---
 
 // (A função handleEnviarContrato foi removida daqui em versões anteriores)
 
@@ -11,7 +11,7 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const margin = 10; // <-- AJUSTE AQUI: Aumentado de 15 para 20
+    const margin = 20; // Mantido em 20 (como ajustado anteriormente)
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const usableWidth = pageWidth - margin * 2;
@@ -66,7 +66,19 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       const cleanText = text.replace(/\s+/g, " ").trim();
       if (!cleanText) return; // Pula se estiver vazio após limpar
 
-      const lines = doc.splitTextToSize(cleanText, usableWidth);
+      // --- INÍCIO DA CORREÇÃO (Ajuste de largura para lista) ---
+      let textMargin = margin;
+      let currentUsableWidth = usableWidth;
+
+      if (isListItem) {
+        const indent = 4; // Espaço da indentação
+        textMargin = margin + indent; // Define a margem para o texto do item
+        currentUsableWidth = usableWidth - indent; // Reduz a largura útil para o texto do item
+      }
+
+      const lines = doc.splitTextToSize(cleanText, currentUsableWidth); // Usa a largura útil corrigida
+      // --- FIM DA CORREÇÃO ---
+
       const textHeight = doc.getTextDimensions(lines).h;
 
       // Verifica se precisa adicionar nova página ANTES de adicionar o texto
@@ -77,10 +89,10 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
 
       // Adiciona marcador para itens de lista
       if (isListItem) {
-        doc.text("•", margin, cursorY); // Marcador
-        doc.text(lines, margin + 4, cursorY, { align: align }); // Texto indentado
+        doc.text("•", margin, cursorY); // Marcador (na margem principal)
+        doc.text(lines, textMargin, cursorY, { align: align }); // Texto (na margem indentada)
       } else {
-        doc.text(lines, margin, cursorY, { align: align });
+        doc.text(lines, textMargin, cursorY, { align: align }); // Texto normal (textMargin = margin)
       }
 
       cursorY += textHeight + spaceAfter;
