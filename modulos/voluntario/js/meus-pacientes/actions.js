@@ -159,6 +159,7 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       // 2. Converte para string PRIMEIRO
       const stringValue = String(value);
       try {
+        stringValue;
         // 3. Tenta limpar e converter (agora stringValue é garantido ser string)
         const numericString = stringValue
           .replace(/[^\d,]/g, "")
