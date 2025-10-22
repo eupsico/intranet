@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO CORRIGIDA (Aumenta buffer de segurança e força maxWidth) ---
+// --- VERSÃO CORRIGIDA (Buffer de segurança de 10mm e correção da caixa) ---
 
 // (A função handleEnviarContrato foi removida daqui em versões anteriores)
 
@@ -16,8 +16,9 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     const pageHeight = doc.internal.pageSize.getHeight();
 
     // --- INÍCIO DA CORREÇÃO (Buffer de Segurança Aumentado) ---
-    const safetyBuffer = 5; // Aumentado de 3 para 5mm
-    const usableWidth = pageWidth - margin * 2 - safetyBuffer; // Largura útil reduzida
+    // Removemos o safetyBuffer e subtraímos 10mm fixos além das margens.
+    // (210mm - 40mm de margem - 10mm de buffer = 160mm de largura útil)
+    const usableWidth = pageWidth - margin * 2 - 10;
     // --- FIM DA CORREÇÃO ---
 
     let cursorY = 15; // Início do conteúdo abaixo do topo
@@ -72,12 +73,12 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       if (!cleanText) return; // Pula se estiver vazio após limpar
 
       let textMargin = margin;
-      let currentUsableWidth = usableWidth; // Agora é 165mm (210 - 40 - 5)
+      let currentUsableWidth = usableWidth; // Agora é 160mm
 
       if (isListItem) {
         const indent = 4; // Espaço da indentação
         textMargin = margin + indent; // 24
-        currentUsableWidth = usableWidth - indent; // 161
+        currentUsableWidth = usableWidth - indent; // 156
       }
 
       const lines = doc.splitTextToSize(cleanText, currentUsableWidth);
@@ -89,7 +90,7 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
         cursorY = margin + 10; // Adiciona margem superior na nova página
       }
 
-      // --- INÍCIO DA CORREÇÃO (Adiciona maxWidth na renderização) ---
+      // (Mantém a correção anterior de forçar o maxWidth)
       const textOptions = {
         align: align,
         maxWidth: currentUsableWidth, // Força a largura máxima na renderização
@@ -102,7 +103,6 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       } else {
         doc.text(lines, textMargin, cursorY, textOptions); // Texto normal (textMargin = margin)
       }
-      // --- FIM DA CORREÇÃO ---
 
       cursorY += textHeight + spaceAfter;
     };
@@ -237,13 +237,18 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       // Desenha o retângulo em volta dos dados adicionados
       // A altura é calculada pela diferença entre a posição atual e a inicial
       doc.setDrawColor(180, 180, 180); // Cor cinza claro para a borda
+
+      // --- INÍCIO DA CORREÇÃO (Largura da Caixa) ---
+      // A largura da caixa deve ser a nova usableWidth (160) + 4mm de padding (2mm de cada lado)
       doc.rect(
         margin - 2,
         boxStartY - 4,
-        usableWidth + 4 + safetyBuffer, // <-- AJUSTE: Recalcula largura da caixa
+        usableWidth + 4, // Corrigido: 160 + 4 = 164mm
         cursorY - boxStartY,
         "S"
       );
+      // --- FIM DA CORREÇÃO ---
+
       cursorY += 5; // Espaço após a caixa
     };
 
