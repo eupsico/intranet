@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO CORRIGIDA (Margens Simétricas de 20mm) ---
+// --- VERSÃO CORRIGIDA (Opção 1: Alinhamento à Esquerda e Margens Simétricas) ---
 
 // (A função handleEnviarContrato foi removida daqui em versões anteriores)
 
@@ -15,11 +15,11 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // --- INÍCIO DA CORREÇÃO (Margens Simétricas) ---
+    // --- INÍCIO DA CORREÇÃO 1 (Margens Simétricas) ---
     // Removemos o buffer de -10 para que a largura útil use apenas as margens.
     // (210mm - 40mm de margem = 170mm de largura útil)
     const usableWidth = pageWidth - margin * 2;
-    // --- FIM DA CORREÇÃO ---
+    // --- FIM DA CORREÇÃO 1 ---
 
     let cursorY = 15; // Início do conteúdo abaixo do topo
 
@@ -60,7 +60,10 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
         style = "normal",
         spaceBefore = 0,
         spaceAfter = 5, // Espaço padrão após parágrafos
-        align = "justify", // Justificar por padrão
+        // --- INÍCIO DA CORREÇÃO 2 (Bug do Justify) ---
+        // Alterado de "justify" para "left" para evitar o estouro da margem.
+        align = "left",
+        // --- FIM DA CORREÇÃO 2 ---
         isListItem = false,
       } = options;
 
@@ -166,7 +169,8 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
           // Verifica se o pai é <ol> para numeração (simplificado aqui como bullet)
           addTextSection(text, { size: 10, spaceAfter: 2, isListItem: true });
         } else if (tagName === "p") {
-          addTextSection(text, { size: 10, spaceAfter: 5 }); // Parágrafo padrão
+          // Parágrafos agora usarão o alinhamento padrão (left) definido na função
+          addTextSection(text, { size: 10, spaceAfter: 5 });
         }
         // Ignora tags não mapeadas (como <ul>, <ol> em si)
       });
