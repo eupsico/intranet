@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO CORRIGIDA (Adiciona buffer de segurança para justificar) ---
+// --- VERSÃO CORRIGIDA (Aumenta buffer de segurança e força maxWidth) ---
 
 // (A função handleEnviarContrato foi removida daqui em versões anteriores)
 
@@ -15,8 +15,8 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // --- INÍCIO DA CORREÇÃO (Buffer de Segurança) ---
-    const safetyBuffer = 3; // Buffer de segurança de 3mm para evitar cortes no justificado
+    // --- INÍCIO DA CORREÇÃO (Buffer de Segurança Aumentado) ---
+    const safetyBuffer = 5; // Aumentado de 3 para 5mm
     const usableWidth = pageWidth - margin * 2 - safetyBuffer; // Largura útil reduzida
     // --- FIM DA CORREÇÃO ---
 
@@ -71,18 +71,16 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       const cleanText = text.replace(/\s+/g, " ").trim();
       if (!cleanText) return; // Pula se estiver vazio após limpar
 
-      // (Lógica de indentação da versão anterior mantida)
       let textMargin = margin;
-      let currentUsableWidth = usableWidth; // Agora já inclui o safetyBuffer
+      let currentUsableWidth = usableWidth; // Agora é 165mm (210 - 40 - 5)
 
       if (isListItem) {
         const indent = 4; // Espaço da indentação
-        textMargin = margin + indent; // Define a margem para o texto do item
-        currentUsableWidth = usableWidth - indent; // Reduz a largura útil (que já tem buffer)
+        textMargin = margin + indent; // 24
+        currentUsableWidth = usableWidth - indent; // 161
       }
 
-      const lines = doc.splitTextToSize(cleanText, currentUsableWidth); // Usa a largura útil corrigida
-
+      const lines = doc.splitTextToSize(cleanText, currentUsableWidth);
       const textHeight = doc.getTextDimensions(lines).h;
 
       // Verifica se precisa adicionar nova página ANTES de adicionar o texto
@@ -91,13 +89,20 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
         cursorY = margin + 10; // Adiciona margem superior na nova página
       }
 
+      // --- INÍCIO DA CORREÇÃO (Adiciona maxWidth na renderização) ---
+      const textOptions = {
+        align: align,
+        maxWidth: currentUsableWidth, // Força a largura máxima na renderização
+      };
+
       // Adiciona marcador para itens de lista
       if (isListItem) {
         doc.text("•", margin, cursorY); // Marcador (na margem principal)
-        doc.text(lines, textMargin, cursorY, { align: align }); // Texto (na margem indentada)
+        doc.text(lines, textMargin, cursorY, textOptions); // Texto (na margem indentada)
       } else {
-        doc.text(lines, textMargin, cursorY, { align: align }); // Texto normal (textMargin = margin)
+        doc.text(lines, textMargin, cursorY, textOptions); // Texto normal (textMargin = margin)
       }
+      // --- FIM DA CORREÇÃO ---
 
       cursorY += textHeight + spaceAfter;
     };
@@ -235,7 +240,7 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       doc.rect(
         margin - 2,
         boxStartY - 4,
-        usableWidth + 4 + safetyBuffer, // <-- AJUSTE: Adiciona o buffer de volta para o retângulo
+        usableWidth + 4 + safetyBuffer, // <-- AJUSTE: Recalcula largura da caixa
         cursorY - boxStartY,
         "S"
       );
