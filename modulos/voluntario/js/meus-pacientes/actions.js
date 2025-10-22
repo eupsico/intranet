@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO CORRIGIDA (Buffer de segurança de 10mm e correção da caixa) ---
+// --- VERSÃO CORRIGIDA (Margens Simétricas de 20mm) ---
 
 // (A função handleEnviarContrato foi removida daqui em versões anteriores)
 
@@ -15,10 +15,10 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // --- INÍCIO DA CORREÇÃO (Buffer de Segurança Aumentado) ---
-    // Removemos o safetyBuffer e subtraímos 10mm fixos além das margens.
-    // (210mm - 40mm de margem - 10mm de buffer = 160mm de largura útil)
-    const usableWidth = pageWidth - margin * 2 - 10;
+    // --- INÍCIO DA CORREÇÃO (Margens Simétricas) ---
+    // Removemos o buffer de -10 para que a largura útil use apenas as margens.
+    // (210mm - 40mm de margem = 170mm de largura útil)
+    const usableWidth = pageWidth - margin * 2;
     // --- FIM DA CORREÇÃO ---
 
     let cursorY = 15; // Início do conteúdo abaixo do topo
@@ -73,12 +73,12 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       if (!cleanText) return; // Pula se estiver vazio após limpar
 
       let textMargin = margin;
-      let currentUsableWidth = usableWidth; // Agora é 160mm
+      let currentUsableWidth = usableWidth; // Agora é 170mm
 
       if (isListItem) {
         const indent = 4; // Espaço da indentação
         textMargin = margin + indent; // 24
-        currentUsableWidth = usableWidth - indent; // 156
+        currentUsableWidth = usableWidth - indent; // 166
       }
 
       const lines = doc.splitTextToSize(cleanText, currentUsableWidth);
@@ -239,11 +239,11 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       doc.setDrawColor(180, 180, 180); // Cor cinza claro para a borda
 
       // --- INÍCIO DA CORREÇÃO (Largura da Caixa) ---
-      // A largura da caixa deve ser a nova usableWidth (160) + 4mm de padding (2mm de cada lado)
+      // A largura da caixa deve ser a nova usableWidth (170) + 4mm de padding (2mm de cada lado)
       doc.rect(
         margin - 2,
         boxStartY - 4,
-        usableWidth + 4, // Corrigido: 160 + 4 = 164mm
+        usableWidth + 4, // Corrigido: 170 + 4 = 174mm
         cursorY - boxStartY,
         "S"
       );
