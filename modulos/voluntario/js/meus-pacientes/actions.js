@@ -1,5 +1,7 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
+// --- VERSÃO REESCRITA (Método html2pdf.js - COM JUSTIFICATIVA CORRIGIDA) ---
 
+// Função interna para carregar imagem como Base64
 const loadImageAsBase64 = async (url) => {
   try {
     const response = await fetch(url);
@@ -186,6 +188,13 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
         width: 170mm; /* 210mm - 20mm (esq) - 20mm (dir) */
         display: block;
       }
+
+      /* --- INÍCIO DA CORREÇÃO (FORÇAR JUSTIFICATIVA) --- */
+      #contract-content p,
+      #contract-content li {
+        text-align: justify !important;
+      }
+      /* --- FIM DA CORREÇÃO --- */
       
       /* Adiciona a Marca D'água */
       body::after {
