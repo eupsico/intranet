@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO CORRIGIDA (Corrige margem de itens de lista) ---
+// --- VERSÃO CORRIGIDA (Adiciona buffer de segurança para justificar) ---
 
 // (A função handleEnviarContrato foi removida daqui em versões anteriores)
 
@@ -11,10 +11,15 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const margin = 20; // Mantido em 20 (como ajustado anteriormente)
+    const margin = 20; // Mantido em 20
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const usableWidth = pageWidth - margin * 2;
+
+    // --- INÍCIO DA CORREÇÃO (Buffer de Segurança) ---
+    const safetyBuffer = 3; // Buffer de segurança de 3mm para evitar cortes no justificado
+    const usableWidth = pageWidth - margin * 2 - safetyBuffer; // Largura útil reduzida
+    // --- FIM DA CORREÇÃO ---
+
     let cursorY = 15; // Início do conteúdo abaixo do topo
 
     // Função interna para carregar imagem como Base64
@@ -66,18 +71,17 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       const cleanText = text.replace(/\s+/g, " ").trim();
       if (!cleanText) return; // Pula se estiver vazio após limpar
 
-      // --- INÍCIO DA CORREÇÃO (Ajuste de largura para lista) ---
+      // (Lógica de indentação da versão anterior mantida)
       let textMargin = margin;
-      let currentUsableWidth = usableWidth;
+      let currentUsableWidth = usableWidth; // Agora já inclui o safetyBuffer
 
       if (isListItem) {
         const indent = 4; // Espaço da indentação
         textMargin = margin + indent; // Define a margem para o texto do item
-        currentUsableWidth = usableWidth - indent; // Reduz a largura útil para o texto do item
+        currentUsableWidth = usableWidth - indent; // Reduz a largura útil (que já tem buffer)
       }
 
       const lines = doc.splitTextToSize(cleanText, currentUsableWidth); // Usa a largura útil corrigida
-      // --- FIM DA CORREÇÃO ---
 
       const textHeight = doc.getTextDimensions(lines).h;
 
@@ -231,7 +235,7 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       doc.rect(
         margin - 2,
         boxStartY - 4,
-        usableWidth + 4,
+        usableWidth + 4 + safetyBuffer, // <-- AJUSTE: Adiciona o buffer de volta para o retângulo
         cursorY - boxStartY,
         "S"
       );
