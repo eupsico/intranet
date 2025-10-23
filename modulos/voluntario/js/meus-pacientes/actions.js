@@ -161,8 +161,30 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       thankYouSection.remove();
     }
 
+    // --- INÍCIO DA CORREÇÃO (MANIPULAR VISIBILIDADE) ---
+    // 6.5. Manipula a visibilidade dos elementos
+    // Esconde o loading (que é o padrão no HTML)
+    const loadingDiv = htmlDoc.getElementById("contract-loading");
+    if (loadingDiv) {
+      loadingDiv.classList.add("hidden");
+    }
+
+    // Mostra o conteúdo principal
+    const contentDiv = htmlDoc.getElementById("contract-content");
+    if (contentDiv) {
+      contentDiv.classList.remove("hidden");
+    }
+
+    // 6.6. Remove o script interno do HTML
+    // Isso previne que ele tente rodar ou cause erros
+    const internalScript = htmlDoc.querySelector('script[type="module"]');
+    if (internalScript) {
+      internalScript.remove();
+    }
+    // --- FIM DA CORREÇÃO ---
+
     // 7. Injeta Estilos CSS para impressão (Margens, Tamanho A4, Marca D'água)
-    // O CSS de justificação foi REMOVIDO daqui.
+    // (O CSS de justificação está no arquivo .html, conforme Passo 3)
     const style = htmlDoc.createElement("style");
     style.textContent = `
       /* Reseta o body do HTML para impressão */
