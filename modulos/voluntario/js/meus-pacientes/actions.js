@@ -1,5 +1,5 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO HÍBRIDA (html2canvas + jsPDF) ---
+// --- VERSÃO HÍBRIDA (html2canvas + jsPDF - CORREÇÃO PASSO 7) ---
 
 // (A função handleEnviarContrato foi removida daqui em versões anteriores)
 
@@ -71,13 +71,20 @@ const formatDate = (dateString) => {
 
 export async function gerarPdfContrato(pacienteData, meuAtendimento) {
   // 1. Verifica se as bibliotecas jsPDF (original) e html2pdf (para canvas) estão carregadas
-  if (!window.jspdf || !window.jspdf.jsPDF || typeof html2pdf === "undefined") {
-    console.error("Bibliotecas jsPDF ou html2pdf não carregadas.");
+  // --- INÍCIO DA CORREÇÃO (Passo 7) ---
+  if (
+    !window.jspdf ||
+    !window.jspdf.jsPDF ||
+    typeof html2pdf === "undefined" ||
+    typeof html2canvas === "undefined" // Adiciona a verificação do html2canvas
+  ) {
+    console.error("Bibliotecas jsPDF, html2pdf ou html2canvas não carregadas.");
     alert(
       "Erro ao gerar PDF: Bibliotecas essenciais não foram encontradas. Verifique o console."
     );
     return;
   }
+  // --- FIM DA CORREÇÃO (Passo 7) ---
 
   try {
     // Mostra um feedback de carregamento
@@ -205,12 +212,15 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     tempContainer.style.width = "170mm"; // Força a largura para a renderização do texto justificado
     document.body.appendChild(tempContainer);
 
-    const canvas = await html2pdf.html2canvas(elementToPrint, {
+    // --- INÍCIO DA CORREÇÃO (Passo 7) ---
+    // Removemos 'html2pdf.' - (Esta era a linha 208)
+    const canvas = await html2canvas(elementToPrint, {
       scale: 2, // Alta resolução
       useCORS: true,
       logging: true,
       width: contentWidthPx, // Força a largura da "foto"
     });
+    // --- FIM DA CORREÇÃO (Passo 7) ---
 
     // Remove o elemento temporário
     document.body.removeChild(tempContainer);
