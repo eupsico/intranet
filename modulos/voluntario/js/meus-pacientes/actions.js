@@ -1,5 +1,4 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-// --- VERSÃO REESCRITA (Método html2pdf.js - COM JUSTIFICATIVA CORRIGIDA) ---
 
 // Função interna para carregar imagem como Base64
 const loadImageAsBase64 = async (url) => {
@@ -163,6 +162,7 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     }
 
     // 7. Injeta Estilos CSS para impressão (Margens, Tamanho A4, Marca D'água)
+    // O CSS de justificação foi REMOVIDO daqui.
     const style = htmlDoc.createElement("style");
     style.textContent = `
       /* Reseta o body do HTML para impressão */
@@ -188,13 +188,6 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
         width: 170mm; /* 210mm - 20mm (esq) - 20mm (dir) */
         display: block;
       }
-
-      /* --- INÍCIO DA CORREÇÃO (FORÇAR JUSTIFICATIVA) --- */
-      #contract-content p,
-      #contract-content li {
-        text-align: justify !important;
-      }
-      /* --- FIM DA CORREÇÃO --- */
       
       /* Adiciona a Marca D'água */
       body::after {
