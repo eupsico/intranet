@@ -1,5 +1,4 @@
 // Arquivo: /modulos/voluntario/js/meus-pacientes/actions.js
-
 // Função interna para carregar imagem como Base64
 const loadImageAsBase64 = async (url) => {
   try {
@@ -118,11 +117,6 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
         pacienteData.responsavel.nome;
     }
 
-    // Cláusula de Menor de Idade (lógica do HTML original)
-    // A lógica original do contrato-terapeutico.html já cuida disso,
-    // mas vamos garantir que a seção apareça se for menor.
-    // (O ideal é que a lógica de idade já esteja no HTML, mas podemos forçar)
-
     // Dados da Sessão
     htmlDoc.getElementById("data-dia-sessao").textContent =
       horarioInfo.diaSemana || "A definir";
@@ -161,71 +155,60 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       thankYouSection.remove();
     }
 
-    // --- INÍCIO DA CORREÇÃO (MANIPULAR VISIBILIDADE) ---
-    // 6.5. Manipula a visibilidade dos elementos
-    // Esconde o loading (que é o padrão no HTML)
+    // 6.5. Manipula a visibilidade dos elementos (Correção do Passo 4)
     const loadingDiv = htmlDoc.getElementById("contract-loading");
     if (loadingDiv) {
       loadingDiv.classList.add("hidden");
     }
-
-    // Mostra o conteúdo principal
     const contentDiv = htmlDoc.getElementById("contract-content");
     if (contentDiv) {
       contentDiv.classList.remove("hidden");
     }
-
-    // 6.6. Remove o script interno do HTML
-    // Isso previne que ele tente rodar ou cause erros
     const internalScript = htmlDoc.querySelector('script[type="module"]');
     if (internalScript) {
       internalScript.remove();
     }
-    // --- FIM DA CORREÇÃO ---
 
-    // 7. Injeta Estilos CSS para impressão (Margens, Tamanho A4, Marca D'água)
-    // (O CSS de justificação está no arquivo .html, conforme Passo 3)
+    // --- INÍCIO DA CORREÇÃO (Passo 5: CSS de Margem e Marca D'água) ---
+
+    // 7. Injeta Estilos CSS para impressão (Marca D'água e Reset)
     const style = htmlDoc.createElement("style");
     style.textContent = `
       /* Reseta o body do HTML para impressão */
       body {
-        margin: 0;
-        padding: 0;
-        background-color: #fff;
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #fff !important;
       }
-      /* Define o container principal com o tamanho A4 e margens */
+      
+      /* Remove estilos do container que conflitam com o PDF */
       .contract-container {
-        width: 210mm; /* Largura A4 */
-        min-height: 297mm; /* Altura A4 */
-        padding: 20mm; /* Margens de 20mm (Top, Right, Bottom, Left) */
-        box-sizing: border-box; /* Garante que padding seja incluído na largura/altura */
-        box-shadow: none;
-        border: none;
-        margin: 0;
-        border-radius: 0;
-        page-break-after: always; /* Garante quebras de página corretas */
-      }
-      /* Garante que o conteúdo dentro do container ocupe o espaço */
-      #contract-content {
-        width: 170mm; /* 210mm - 20mm (esq) - 20mm (dir) */
-        display: block;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        
+        /* Define a posição relativa para a marca d'água */
+        position: relative !important;
+        z-index: 1 !important;
       }
       
       /* Adiciona a Marca D'água */
-      body::after {
-        content: "";
-        background-image: url('${logoBase64}');
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: 90mm; /* Tamanho da logo (90mm) */
-        opacity: 0.1;
-        position: fixed; /* Posição fixa para aparecer em todas as páginas */
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 100%;
-        height: 100%;
-        z-index: -1;
+      /* Aplicamos no container para garantir que seja "fotografado" */
+      .contract-container::after {
+        content: "" !important;
+        background-image: url('${logoBase64}') !important;
+        background-repeat: no-repeat !important;
+        background-position: center center !important;
+        background-size: 90mm !important; /* Tamanho da logo (90mm) */
+        opacity: 0.1 !important;
+        position: fixed !important; /* Posição fixa para aparecer em todas as páginas */
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: -1 !important;
       }
       
       /* Oculta elementos desnecessários da UI do contrato.html */
@@ -241,11 +224,11 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     htmlDoc.head.appendChild(style);
 
     // 8. Define o elemento que será convertido
-    // Usamos o 'contract-container' que agora tem as dimensões A4
-    const elementToPrint = htmlDoc.querySelector(".contract-container");
+    // AGORA vamos usar o 'contract-content' (o recheio)
+    const elementToPrint = htmlDoc.querySelector("#contract-content");
 
     if (!elementToPrint) {
-      throw new Error("Elemento '.contract-container' não encontrado no HTML.");
+      throw new Error("Elemento '#contract-content' não encontrado no HTML.");
     }
 
     // 9. Configura e chama o html2pdf
@@ -254,7 +237,9 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
     ).replace(/ /g, "_")}.pdf`;
 
     const options = {
-      margin: 0, // A margem já está no CSS (padding: 20mm)
+      // AQUI ESTÁ A CORREÇÃO DA MARGEM:
+      margin: 20, // 20mm de margem (Top, Right, Bottom, Left)
+
       filename: fileName,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -270,6 +255,8 @@ export async function gerarPdfContrato(pacienteData, meuAtendimento) {
       // Tenta evitar quebras de página ruins
       pagebreak: { mode: ["avoid-all", "css", "legacy"] },
     };
+
+    // --- FIM DA CORREÇÃO (Passo 5) ---
 
     // Gera o PDF
     await html2pdf().from(elementToPrint).set(options).save();
