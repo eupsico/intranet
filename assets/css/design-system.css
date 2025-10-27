@@ -603,6 +603,7 @@ table tbody tr:hover {
 .form-group input[type="email"]:focus,
 .form-group input[type="number"]:focus,
 .form-group input[type="date"]:focus,
+.form-group input[type="telefone-celular"],
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
