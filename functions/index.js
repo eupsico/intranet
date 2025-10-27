@@ -467,7 +467,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     hoje.setHours(0, 0, 0, 0);
     const dataInicio = hoje.toISOString().split("T")[0];
 
-    // --- Busca de Configurações ---
+    // --- CORREÇÃO APLICADA AQUI ---
     const configGeralDoc = await db
       .collection("configuracoesSistema")
       .doc("geral")
@@ -488,6 +488,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         "Documento 'configuracoesSistema/geral' não encontrado. Usando valores padrão (24h/7d)."
       );
     }
+    // --- FIM DA CORREÇÃO ---
 
     const dataFim = new Date(hoje);
     dataFim.setDate(hoje.getDate() + quantidadeDiasBusca);
@@ -496,7 +497,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       `Buscando agendas de ${dataInicio} a ${dataFimISO} com ${minimoHorasAntecedencia}h de antecedência.`
     );
 
-    // --- Busca Horários Ocupados ---
     const agendamentosSnapshot = await db
       .collection("trilhaPaciente")
       .where("status", "==", "triagem_agendada")
@@ -517,7 +517,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     });
     logger.info(`Encontrados ${horariosOcupados.size} horários já ocupados.`);
 
-    // --- Busca Configuração de Agendas Disponíveis ---
     const configSnapshot = await db
       .collection("agendaConfigurada")
       .where("tipo", "==", "triagem")
@@ -537,18 +536,14 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 
     const slotsPotenciais = [];
     diasConfigurados.forEach((diaConfig) => {
-      // Verifica a presença de campos obrigatórios para criar o slot
       if (
         !diaConfig.inicio ||
         !diaConfig.fim ||
         typeof diaConfig.inicio !== "string" ||
-        typeof diaConfig.fim !== "string" ||
-        !diaConfig.assistenteId ||
-        !diaConfig.assistenteNome ||
-        !diaConfig.modalidade
+        typeof diaConfig.fim !== "string"
       ) {
         logger.warn(
-          `Documento ${diaConfig.id} ignorado por ter dados de início/fim ou assistente inválidos/ausentes.`
+          `Documento ${diaConfig.id} ignorado por ter dados de início/fim inválidos ou ausentes.`
         );
         return;
       }
@@ -556,7 +551,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       const [hInicio, mInicio] = diaConfig.inicio.split(":").map(Number);
       const [hFim, mFim] = diaConfig.fim.split(":").map(Number);
 
-      // 🛑 CORREÇÃO DO TYPO AQUI: hFFim corrigido para hFim
       if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim) || isNaN(mFim)) {
         logger.warn(
           `Documento ${diaConfig.id} ignorado por ter formato de hora inválido.`
@@ -569,7 +563,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 
       for (
         let minutos = inicioEmMinutos;
-        minutos < fimEmMinutos; // O '<' é importante para não criar slot na hora exata de término
+        minutos < fimEmMinutos; // Alterado para '<' para não criar slot na hora exata de término
         minutos += 30
       ) {
         const hAtual = Math.floor(minutos / 60);
@@ -577,19 +571,9 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
           mAtual
         ).padStart(2, "0")}`;
+        const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00`);
 
-        // Força UTC (Zulu) para evitar erros de timezone no cálculo de diferença
-        const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00.000Z`);
-
-        // Checa se a data é válida
-        if (isNaN(dataHoraSlot.getTime())) {
-          logger.error(
-            `❌ Data/Hora inválida no slot. Documento ID: ${diaConfig.id} - Data: ${diaConfig.data} - Hora: ${horaSlot}`
-          );
-          continue;
-        }
-
-        // Cálculo de antecedência em horas
+        // Garante que o timezone não afete o cálculo
         const diffMs = dataHoraSlot.getTime() - agora.getTime();
         const diffHoras = diffMs / (1000 * 60 * 60);
 
