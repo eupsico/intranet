@@ -74,11 +74,18 @@ async function handleCpfBlur(event) {
   const cpf = cpfInput.value.replace(/\D/g, "");
   const cpfError = document.getElementById("cpf-error");
 
-  resetFormState();
+  resetFormState(); // Sempre reseta o estado do formulário primeiro
+
   cpfError.style.display = "none";
 
   if (!validarCPF(cpf)) {
-    if (cpf.length > 0) cpfError.style.display = "block";
+    if (cpf.length > 0) {
+      cpfError.style.display = "block"; // --- NOVO: Bloqueia o avanço e notifica o usuário ---
+      document.getElementById("form-body").classList.add("hidden-section"); // Garante que a próxima seção esteja oculta
+      alert(
+        "Por favor, digite o CPF correto para continuar o preenchimento da ficha."
+      ); // ----------------------------------------------------
+    }
     return;
   }
 
