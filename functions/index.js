@@ -551,7 +551,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
       const [hInicio, mInicio] = diaConfig.inicio.split(":").map(Number);
       const [hFim, mFim] = diaConfig.fim.split(":").map(Number);
 
-      if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFim) || isNaN(mFim)) {
+      if (isNaN(hInicio) || isNaN(mInicio) || isNaN(hFFim) || isNaN(mFim)) {
         logger.warn(
           `Documento ${diaConfig.id} ignorado por ter formato de hora inválido.`
         );
@@ -563,7 +563,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 
       for (
         let minutos = inicioEmMinutos;
-        minutos < fimEmMinutos; // Alterado para '<' para não criar slot na hora exata de término
+        minutos < fimEmMinutos; // O '<' é importante para não criar slot na hora exata de término
         minutos += 30
       ) {
         const hAtual = Math.floor(minutos / 60);
@@ -571,7 +571,18 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         const horaSlot = `${String(hAtual).padStart(2, "0")}:${String(
           mAtual
         ).padStart(2, "0")}`;
-        const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00`);
+
+        // 💡 MELHORIA CRÍTICA: Adiciona 'Z' para forçar a interpretação como UTC,
+        // garantindo consistência no cálculo de antecedência com 'agora'.
+        const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00.000Z`);
+
+        // 💡 VERIFICAÇÃO CRÍTICA: Checa se a data é válida (evita falha por 'Invalid Date')
+        if (isNaN(dataHoraSlot.getTime())) {
+          logger.error(
+            `❌ Data/Hora inválida no slot. Documento ID: ${diaConfig.id} - Data: ${diaConfig.data} - Hora: ${horaSlot}`
+          );
+          continue;
+        }
 
         // Garante que o timezone não afete o cálculo
         const diffMs = dataHoraSlot.getTime() - agora.getTime();
@@ -599,6 +610,8 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     return { horarios: slotsPotenciais };
   } catch (error) {
     logger.error("❌ Erro crítico ao buscar horários públicos:", error);
+    // Nota: O erro que gerou a mensagem específica anterior foi suprimido.
+    // Manter o throw HttpsError para comunicação segura com o cliente.
     throw new HttpsError("internal", "Erro ao buscar horários públicos.", {
       originalError: error.message,
     });
