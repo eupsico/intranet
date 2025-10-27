@@ -16,12 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const cpfFeedback = document.getElementById("cpf-feedback");
 
   let horarioSelecionado = null;
-  let pacienteExistenteId = null; // Função utilitária para converter a string YYYY-MM-DD para um objeto Date no fuso horário local // Isso ajuda a evitar o problema de fuso horário que pode levar a um dia incorreto.
-
-  function parseDateForLocale(dateString) {
-    // Usa o construtor de data com a sintaxe YYYY/MM/DD para forçar o fuso horário local
-    return new Date(dateString.replace(/-/g, "/"));
-  }
+  let pacienteExistenteId = null;
 
   function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, "");
@@ -55,21 +50,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       renderizarHorarios(horarios);
     } catch (error) {
-      console.error("Erro ao carregar horários:", error); // Extrai a mensagem de erro do FirebaseError, se disponível
-      const errorMessage = error.message || "Detalhes do erro não disponíveis.";
-      horariosContainer.innerHTML = `<p style="color: red;"><strong>Erro ao carregar horários:</strong> ${errorMessage}</p><p>Verifique se a Cloud Function está configurada corretamente e tente recarregar a página.</p>`;
+      console.error("Erro ao carregar horários:", error);
+      horariosContainer.innerHTML = `<p style="color: red;"><strong>Erro ao carregar horários:</strong> ${error.message}</p><p>Tente recarregar a página.</p>`;
     }
   }
 
   function renderizarHorarios(horarios) {
     const horariosAgrupados = horarios.reduce((acc, horario) => {
       const modalidade = horario.modalidade || "Online";
-      const dateObj = parseDateForLocale(horario.data);
-      const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
+      const dataFormatada = new Date(
+        horario.data + "T03:00:00"
+      ).toLocaleDateString("pt-BR", {
         weekday: "long",
         day: "2-digit",
         month: "long",
-      }).format(dateObj);
+      });
 
       if (!acc[modalidade]) acc[modalidade] = {};
       if (!acc[modalidade][dataFormatada]) acc[modalidade][dataFormatada] = [];
@@ -134,8 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!validarCPF(cpf)) {
       cpfFeedback.textContent = "CPF inválido.";
       cpfFeedback.className = "error";
-      nomeInput.disabled = true;
-      telefoneInput.disabled = true;
       return;
     }
 
@@ -154,14 +147,10 @@ document.addEventListener("DOMContentLoaded", () => {
         cpfFeedback.textContent = "Paciente encontrado.";
         cpfFeedback.className = "success";
         pacienteExistenteId = data.docId;
-        nomeInput.disabled = true; // Mantém desabilitado se já for paciente
-        telefoneInput.disabled = true; // Mantém desabilitado se já for paciente
       } else {
         cpfFeedback.textContent =
           "CPF não encontrado. Preencha os dados para novo cadastro.";
         cpfFeedback.className = "warning"; // Um aviso em vez de erro
-        nomeInput.value = "";
-        telefoneInput.value = "";
         nomeInput.disabled = false; // Habilita para novo cadastro
         telefoneInput.disabled = false; // Habilita para novo cadastro
         pacienteExistenteId = null;
@@ -170,8 +159,6 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Erro ao buscar paciente:", error);
       cpfFeedback.textContent = "Erro ao buscar. Tente novamente.";
       cpfFeedback.className = "error";
-      nomeInput.disabled = true;
-      telefoneInput.disabled = true;
     }
   }
 
@@ -183,17 +170,13 @@ document.addEventListener("DOMContentLoaded", () => {
     agendamentoButton.textContent = "Agendando...";
 
     try {
-      const cpf = cpfInput.value.replace(/\D/g, ""); // Usa o valor do campo se não estiver desabilitado, senão o valor preenchido (se for paciente existente)
-      const nome = nomeInput.disabled
-        ? nomeInput.value.trim()
-        : nomeInput.value.trim();
-      const telefone = telefoneInput.disabled
-        ? telefoneInput.value.trim()
-        : telefoneInput.value.trim();
+      const cpf = cpfInput.value.replace(/\D/g, "");
+      const nome = nomeInput.value.trim();
+      const telefone = telefoneInput.value.trim();
 
-      if (!validarCPF(cpf) || nome.length < 2 || telefone.length < 8) {
+      if (!validarCPF(cpf) || !nome || !telefone) {
         throw new Error(
-          "Por favor, preencha todos os campos obrigatórios com dados válidos (CPF, Nome e Telefone)."
+          "Por favor, preencha todos os campos obrigatórios com dados válidos."
         );
       }
       if (!horarioSelecionado?.assistenteId) {
@@ -209,10 +192,10 @@ document.addEventListener("DOMContentLoaded", () => {
         data: horarioSelecionado.data,
         hora: horarioSelecionado.hora,
         nomeCompleto: nome,
-        telefone: telefone, // Inclui o ID do paciente existente, se houver, para que a Cloud Function possa atualizar
-        pacienteExistenteId: pacienteExistenteId,
-      }; // Usa a sintaxe v9 para chamar a Cloud Function
+        telefone: telefone,
+      };
 
+      // Usa a sintaxe v9 para chamar a Cloud Function
       const agendarTriagem = httpsCallable(functions, "agendarTriagemPublico");
       const result = await agendarTriagem(payload);
 
@@ -237,21 +220,21 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("confirm-paciente-nome").textContent = nomePaciente;
     document.getElementById("confirm-assistente").textContent =
       horarioSelecionado.assistenteNome;
-    const dateObj = parseDateForLocale(horarioSelecionado.data);
-
-    document.getElementById("confirm-data").textContent =
-      new Intl.DateTimeFormat("pt-BR", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }).format(dateObj);
+    document.getElementById("confirm-data").textContent = new Date(
+      horarioSelecionado.data + "T03:00:00"
+    ).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
     document.getElementById("confirm-horario").textContent =
       horarioSelecionado.hora;
 
     agendamentoSection.style.display = "none";
     confirmacaoSection.style.display = "block";
-  } // Configuração dos Event Listeners
+  }
 
+  // Configuração dos Event Listeners
   cpfInput.addEventListener("blur", buscarPacientePorCPF);
   modal
     .querySelector(".close-modal-btn")
