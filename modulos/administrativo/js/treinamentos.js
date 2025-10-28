@@ -1,25 +1,7 @@
 import { db, doc, getDoc } from "../../../assets/js/firebase-init.js";
 
 // A função é exportada e recebe os dados do usuário, seguindo o padrão do painel
-export function init(db, user, userData) {
-  // A verificação de permissão usa os dados já recebidos
-  if (
-    !userData ||
-    !(
-      userData.funcoes &&
-      userData.funcoes.some((role) =>
-        ["admin", "gestor", "assistente"].includes(role)
-      )
-    )
-  ) {
-    console.error("Acesso negado. O usuário não tem a permissão necessária.");
-    const container = document.querySelector(".container");
-    if (container)
-      container.innerHTML =
-        "<h2>Acesso Negado</h2><p>Você não tem permissão para ver esta página.</p>";
-    return;
-  }
-
+export function init(user, userData) {
   console.log("📚 Módulo de Treinamentos (Visualização) iniciado.");
 
   async function carregarTreinamentos() {
@@ -34,11 +16,11 @@ export function init(db, user, userData) {
 
       let todosOsVideos = [];
       if (docSnap.exists()) {
-        const data = docSnap.data();
+        const data = docSnap.data(); // Garante que cada item seja tratado como array ou array vazio
         todosOsVideos = [
-          ...(data.integracao || []),
-          ...(data.geral || []),
-          ...(data.administrativo || []),
+          ...(Array.isArray(data.integracao) ? data.integracao : []),
+          ...(Array.isArray(data.geral) ? data.geral : []),
+          ...(Array.isArray(data.administrativo) ? data.administrativo : []),
         ];
       }
 
@@ -47,6 +29,24 @@ export function init(db, user, userData) {
       console.error("Erro ao carregar treinamentos:", error);
       container.innerHTML = "<p>Ocorreu um erro ao carregar os vídeos.</p>";
     }
+  }
+  /**
+   * Converte um link de visualização padrão do Google Drive para um link de incorporação (embed).
+   * Isso permite que o vídeo seja exibido em um iframe sem a interface completa do Drive,
+   * geralmente impedindo o download fácil.
+   * @param {string} url - Link do Google Drive (ex: https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing)
+   * @returns {string | null} O link de embed, ou null se não for um link do Drive reconhecido.
+   */
+
+  function converterLinkDriveParaEmbed(url) {
+    if (!url) return null;
+    const regex = /file\/d\/([a-zA-Z0-9_-]+)\//;
+    const matches = url.match(regex);
+    if (matches && matches[1]) {
+      const fileId = matches[1]; // Formato ideal para incorporar no iframe
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+    return null;
   }
 
   function renderizarVideos(videos) {
@@ -60,43 +60,63 @@ export function init(db, user, userData) {
     }
 
     videos.forEach((video) => {
-      const videoId = extrairVideoId(video.link);
-      if (videoId) {
-        const accordionItem = document.createElement("div");
-        accordionItem.classList.add("accordion-item");
+      const youtubeId = extrairVideoId(video.link);
+      const driveEmbedLink = converterLinkDriveParaEmbed(video.link); // Determina qual URL de incorporação usar
 
-        // Estrutura do acordeão: título clicável e conteúdo oculto
-        accordionItem.innerHTML = `
-          <button class="accordion-header">
-            ${video.title || "Vídeo sem Título"}
-            <span class="accordion-icon">+</span>
-          </button>
-          <div class="accordion-content">
-            <div class="video-description">
-                <p>${video.descricao.replace(/\n/g, "<br>")}</p>
-            </div>
-            <div class="video-embed">
-                <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
-          </div>
-        `;
-        container.appendChild(accordionItem);
+      let embedUrl = null;
+      if (youtubeId) {
+        embedUrl = `https://www.youtube.com/embed/${youtubeId}`;
+      } else if (driveEmbedLink) {
+        embedUrl = driveEmbedLink;
+      } // Se não for YouTube nem Drive, exibe um aviso e não renderiza.
+
+      if (!embedUrl) {
+        console.warn(
+          "Link de vídeo inválido ou não suportado para incorporação:",
+          video.link
+        );
+        return;
       }
-    });
 
-    // Adiciona os eventos de clique DEPOIS que todos os itens foram criados
+      // Se chegamos aqui, temos um embedUrl (YouTube ou Drive)
+      const accordionItem = document.createElement("div");
+      accordionItem.classList.add("accordion-item"); // Conteúdo com o iframe
+
+      const contentBody = `
+    <div class="video-description">
+      <p>${video.descricao.replace(/\n/g, "<br>")}</p>
+    </div>
+    <div class="video-embed">
+      <iframe src="${embedUrl}" 
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen>
+      </iframe>
+    </div>
+   `;
+
+      accordionItem.innerHTML = `
+    <button class="accordion-header">
+     ${video.title || "Vídeo sem Título"}
+     <span class="accordion-icon">+</span>
+    </button>
+    <div class="accordion-content">
+     ${contentBody}
+    </div>
+   `;
+      container.appendChild(accordionItem);
+    }); // Adiciona os eventos de clique DEPOIS que todos os itens foram criados
+
     setupAccordion();
-  }
+  } // FUNÇÃO para controlar a lógica do acordeão (sem alterações)
 
-  // NOVA FUNÇÃO para controlar a lógica do acordeão
   function setupAccordion() {
     const accordionHeaders = document.querySelectorAll(".accordion-header");
     accordionHeaders.forEach((header) => {
       header.addEventListener("click", () => {
         const content = header.nextElementSibling;
-        const icon = header.querySelector(".accordion-icon");
+        const icon = header.querySelector(".accordion-icon"); // Alterna a classe 'active' para mostrar/esconder o conteúdo
 
-        // Alterna a classe 'active' para mostrar/esconder o conteúdo
         header.classList.toggle("active");
 
         if (content.style.maxHeight) {
@@ -111,7 +131,7 @@ export function init(db, user, userData) {
   }
 
   function extrairVideoId(url) {
-    if (!url) return null;
+    if (!url) return null; // Esta regex é específica para YouTube.
     const regex =
       /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const matches = url.match(regex);
