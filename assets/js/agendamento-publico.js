@@ -122,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function buscarPacientePorCPF() {
     const cpf = cpfInput.value.replace(/\D/g, "");
+    console.log("🔍 Buscando CPF:", cpf); // Debug
 
     cpfFeedback.textContent = "Verificando...";
     cpfFeedback.className = "";
@@ -147,7 +148,9 @@ document.addEventListener("DOMContentLoaded", () => {
         cpfFeedback.textContent = "Paciente encontrado.";
         cpfFeedback.className = "success";
         pacienteExistenteId = data.docId;
+        console.log("✅ Paciente encontrado:", data); // Debug
       } else {
+        console.log("❌ Paciente não encontrado"); // Debug
         cpfFeedback.textContent =
           "CPF não encontrado. Preencha os dados para novo cadastro.";
         cpfFeedback.className = "warning"; // Um aviso em vez de erro
