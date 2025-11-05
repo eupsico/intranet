@@ -46,6 +46,23 @@
     .btn-enviar:hover {
       background: linear-gradient(135deg, #5568d3 0%, #6a3c8f 100%);
     }
+    .info-candidato {
+      background: #f0f8ff;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #0078d4;
+    }
+    .tipo-pergunta-badge {
+      display: inline-block;
+      background: #e8f4f8;
+      color: #0078d4;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-left: 10px;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -55,11 +72,21 @@
     <!-- CARREGAMENTO -->
     <div id="carregamento" class="text-center">
       <i class="fas fa-spinner fa-spin fa-3x mb-3" style="color: #667eea;"></i>
-      <p>Carregando teste...</p>
+      <p>Validando acesso e carregando teste...</p>
     </div>
 
     <!-- CONTEÚDO DO TESTE -->
     <div id="conteudo-teste" style="display: none;">
+      <!-- ✅ NOVO: Informações do candidato -->
+      <div class="info-candidato">
+        <p class="mb-1">
+          <strong>📋 Candidato(a):</strong> <span id="info-candidato-nome">-</span>
+        </p>
+        <p class="mb-0">
+          <strong>⏱️ Prazo:</strong> <span id="info-candidato-prazo">-</span>
+        </p>
+      </div>
+
       <div class="alert alert-info">
         <h4 id="titulo-teste"></h4>
         <p id="texto-teste"></p>
@@ -88,133 +115,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <script>
-    // ============================================
-    // INICIALIZAÇÃO FIREBASE
-    // ============================================
-    
-    const firebaseConfig = {
-      apiKey: "AIzaSyBXy_4yVPqyiuVJLv3kT-wXGaajgC3UJ10",
-      authDomain: "eupsico-desenvolvimento.firebaseapp.com",
-      projectId: "eupsico-desenvolvimento",
-      storageBucket: "eupsico-desenvolvimento.appspot.com",
-      messagingSenderId: "1065838851206",
-      appId: "1:1065838851206:web:32b7a40d7f066d0d7c4c86"
-    };
-
-    // ✅ Inicializa Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // ============================================
-    // LÓGICA PRINCIPAL
-    // ============================================
-
-    const params = new URLSearchParams(window.location.search);
-    const testeId = params.get('id');
-    const tipo = params.get('tipo');
-
-    console.log('🔹 Teste ID:', testeId);
-    console.log('🔹 Tipo:', tipo);
-
-    async function carregarTeste() {
-      try {
-        if (!testeId) {
-          mostrarErro('❌ Erro: ID do teste não foi fornecido na URL.');
-          return;
-        }
-
-        console.log('🔹 Buscando teste no Firebase...');
-
-        // ✅ Busca o teste no Firebase
-        const testeSnap = await db
-          .collection('estudos_de_caso')
-          .doc(testeId)
-          .get();
-
-        if (!testeSnap.exists) {
-          mostrarErro(`❌ Teste não encontrado. ID: ${testeId}`);
-          return;
-        }
-
-        const teste = testeSnap.data();
-        console.log('✅ Teste carregado:', teste);
-
-        // Preenche as informações
-        document.getElementById('titulo-teste').innerHTML = `
-          <strong>${teste.titulo}</strong><br>
-          <small>${teste.tipo.replace(/-/g, ' ')}</small>
-        `;
-        document.getElementById('texto-teste').textContent = teste.conteudo_texto;
-
-        // Renderiza as perguntas
-        const perguntasContainer = document.getElementById('perguntas-container');
-        perguntasContainer.innerHTML = '';
-
-        if (teste.perguntas && teste.perguntas.length > 0) {
-          teste.perguntas.forEach((pergunta, index) => {
-            const perguntaHtml = `
-              <div class="pergunta-item">
-                <label class="form-label">
-                  <strong>Pergunta ${index + 1}:</strong> ${pergunta}
-                </label>
-                <textarea 
-                  class="form-control" 
-                  name="resposta-${index}"
-                  placeholder="Digite sua resposta aqui..."
-                  required
-                ></textarea>
-              </div>
-            `;
-            perguntasContainer.innerHTML += perguntaHtml;
-          });
-        } else {
-          perguntasContainer.innerHTML = '<p class="alert alert-warning">Este teste não possui perguntas.</p>';
-        }
-
-        // Mostra o conteúdo
-        document.getElementById('carregamento').style.display = 'none';
-        document.getElementById('conteudo-teste').style.display = 'block';
-
-        console.log('✅ Teste renderizado com sucesso');
-      } catch (error) {
-        console.error('❌ Erro ao carregar teste:', error);
-        mostrarErro(`❌ Erro ao carregar o teste: ${error.message}`);
-      }
-    }
-
-    function mostrarErro(mensagem) {
-      document.getElementById('carregamento').style.display = 'none';
-      document.getElementById('erro-teste').innerHTML = mensagem;
-      document.getElementById('erro-teste').style.display = 'block';
-    }
-
-    // ✅ Listener do formulário
-    document.getElementById('form-resposta')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      console.log('🔹 Enviando respostas...');
-      
-      const formData = new FormData(e.target);
-      const respostas = {};
-      
-      for (let [key, value] of formData.entries()) {
-        respostas[key] = value;
-      }
-
-      console.log('✅ Respostas:', respostas);
-      
-      // Aqui você pode salvar no Firebase se desejar
-      document.getElementById('conteudo-teste').style.display = 'none';
-      document.getElementById('sucesso-teste').innerHTML = `
-        <h4>✅ Respostas Enviadas com Sucesso!</h4>
-        <p>Obrigado por participar da avaliação. Entraremos em contato em breve com o resultado.</p>
-      `;
-      document.getElementById('sucesso-teste').style.display = 'block';
-    });
-
-    // Carrega o teste ao abrir a página
-    carregarTeste();
-  </script>
+  <!-- ✅ CARREGA O ARQUIVO JS -->
+  <script src="../assets/js/avaliacao-publica.js"></script>
 </body>
 </html>
