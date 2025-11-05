@@ -84,9 +84,9 @@
     <div id="sucesso-teste" class="alert alert-success" style="display: none;"></div>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+  <!-- ✅ FIREBASE COMPAT (versão estável para HTML puro) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
     // ============================================
@@ -102,12 +102,9 @@
       appId: "1:1065838851206:web:32b7a40d7f066d0d7c4c86"
     };
 
-    // Importa Firebase
-    const { initializeApp } = firebase;
-    const { getFirestore, collection, query, where, getDocs, doc, getDoc } = firebase.firestore;
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // ✅ Inicializa Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
     // ============================================
     // LÓGICA PRINCIPAL
@@ -127,12 +124,15 @@
           return;
         }
 
-        // Busca o teste no Firebase
-        const estudosRef = collection(db, "estudos_de_caso");
-        const testeDoc = doc(estudosRef, testeId);
-        const testeSnap = await getDoc(testeDoc);
+        console.log('🔹 Buscando teste no Firebase...');
 
-        if (!testeSnap.exists()) {
+        // ✅ Busca o teste no Firebase
+        const testeSnap = await db
+          .collection('estudos_de_caso')
+          .doc(testeId)
+          .get();
+
+        if (!testeSnap.exists) {
           mostrarErro(`❌ Teste não encontrado. ID: ${testeId}`);
           return;
         }
@@ -168,6 +168,8 @@
             `;
             perguntasContainer.innerHTML += perguntaHtml;
           });
+        } else {
+          perguntasContainer.innerHTML = '<p class="alert alert-warning">Este teste não possui perguntas.</p>';
         }
 
         // Mostra o conteúdo
@@ -187,7 +189,7 @@
       document.getElementById('erro-teste').style.display = 'block';
     }
 
-    // Listeners
+    // ✅ Listener do formulário
     document.getElementById('form-resposta')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -202,7 +204,7 @@
 
       console.log('✅ Respostas:', respostas);
       
-      // Aqui você pode salvar as respostas no Firebase
+      // Aqui você pode salvar no Firebase se desejar
       document.getElementById('conteudo-teste').style.display = 'none';
       document.getElementById('sucesso-teste').innerHTML = `
         <h4>✅ Respostas Enviadas com Sucesso!</h4>
