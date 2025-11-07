@@ -1,5 +1,5 @@
 // assets/js/agendamento-voluntario.js
-// VERSÃO 2.0 - Com autenticação obrigatória e exibição do nome do voluntário
+// VERSÃO 2.1 - Com redirecionamento correto após login
 
 import { db as firestoreDb, auth } from "./firebase-init.js";
 import { doc, getDoc, updateDoc, onAuthStateChanged } from "./firebase-init.js";
@@ -15,18 +15,21 @@ onAuthStateChanged(auth, async (user) => {
     await carregarDadosUsuario();
     await inicializar();
   } else {
-    // Usuário não está logado - redirecionar para login
-    redirecionarParaLogin();
+    // Usuário não está logado - salvar URL e redirecionar
+    salvarUrlERedirecionarParaLogin();
   }
 });
 
-function redirecionarParaLogin() {
+function salvarUrlERedirecionarParaLogin() {
+  const urlAtual = window.location.href;
+  sessionStorage.setItem("redirectAfterLogin", urlAtual);
+
   const container = document.getElementById("main-container");
   container.innerHTML = `
-    <div class="error-message">
-      <h3>Acesso Restrito</h3>
-      <p>Você precisa estar logado para agendar uma reunião.</p>
-      <button onclick="window.location.href='/'" style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: #003d7a; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+    <div style="text-align: center; padding: 2rem;">
+      <h3 style="color: #003d7a; margin-bottom: 1rem;">Acesso Restrito</h3>
+      <p style="margin-bottom: 1.5rem;">Você precisa estar logado para agendar uma reunião.</p>
+      <button onclick="window.location.href='/index.html'" style="padding: 0.75rem 1.5rem; background: #003d7a; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
         Fazer Login
       </button>
     </div>
@@ -51,7 +54,6 @@ async function carregarDadosUsuario() {
 }
 
 async function inicializar() {
-  // Pegar ID do agendamento da URL
   const urlParams = new URLSearchParams(window.location.search);
   agendamentoId = urlParams.get("agendamentoId");
 
@@ -103,12 +105,13 @@ function renderizarFormulario() {
     agendamentoData.slots &&
     agendamentoData.slots.length > 0
   ) {
-    // Se todos os slots são do mesmo gestor, mostra uma vez
     const gestoresUnicos = [
-      ...new Set(agendamentoData.slots.map((s) => s.gestorNome)),
+      ...new Set(
+        agendamentoData.slots.map((s) => s.gestorNome).filter(Boolean)
+      ),
     ];
 
-    if (gestoresUnicos.length === 1 && gestoresUnicos[0]) {
+    if (gestoresUnicos.length === 1) {
       gestorInfo = `
         <div class="gestor-info">
           <strong>Reunião com: ${gestoresUnicos[0]}</strong>
@@ -117,7 +120,7 @@ function renderizarFormulario() {
     }
   }
 
-  // Filtrar slots disponíveis (que ainda não têm vagas preenchidas)
+  // Filtrar slots disponíveis
   const slotsDisponiveis = agendamentoData.slots.filter(
     (slot) => !slot.vagas || slot.vagas.length === 0
   );
@@ -151,6 +154,7 @@ function renderizarFormulario() {
               data-data="${slot.data}"
               data-hora-inicio="${slot.horaInicio}"
               data-hora-fim="${slot.horaFim}"
+              data-gestor-id="${slot.gestorId || ""}"
               data-gestor-nome="${slot.gestorNome || ""}"
             />
             <div class="slot-info">
@@ -225,16 +229,18 @@ async function confirmarAgendamento(e) {
 
   try {
     // Encontrar o slot correto no array
-    const slot = agendamentoData.slots.find(
+    const slotIndex = agendamentoData.slots.findIndex(
       (s) =>
         s.data === data &&
         s.horaInicio === horaInicioSelecionada &&
         s.horaFim === horaFimSelecionada
     );
 
-    if (!slot) {
+    if (slotIndex === -1) {
       throw new Error("Slot não encontrado.");
     }
+
+    const slot = agendamentoData.slots[slotIndex];
 
     if (!slot.vagas) {
       slot.vagas = [];
