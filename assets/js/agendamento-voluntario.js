@@ -1,5 +1,5 @@
 // assets/js/agendamento-voluntario.js
-// Página pública para profissionais se inscreverem em reuniões com voluntário
+// VERSÃO 2.0 - Com autenticação obrigatória e exibição do nome do voluntário
 
 import { db as firestoreDb, auth } from "./firebase-init.js";
 import { doc, getDoc, updateDoc, onAuthStateChanged } from "./firebase-init.js";
@@ -15,9 +15,23 @@ onAuthStateChanged(auth, async (user) => {
     await carregarDadosUsuario();
     await inicializar();
   } else {
-    mostrarErro("Você precisa estar logado para agendar uma reunião.");
+    // Usuário não está logado - redirecionar para login
+    redirecionarParaLogin();
   }
 });
+
+function redirecionarParaLogin() {
+  const container = document.getElementById("main-container");
+  container.innerHTML = `
+    <div class="error-message">
+      <h3>Acesso Restrito</h3>
+      <p>Você precisa estar logado para agendar uma reunião.</p>
+      <button onclick="window.location.href='/'" style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: #003d7a; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+        Fazer Login
+      </button>
+    </div>
+  `;
+}
 
 async function carregarDadosUsuario() {
   try {
@@ -26,6 +40,10 @@ async function carregarDadosUsuario() {
     );
     if (userDoc.exists()) {
       usuarioLogado.dadosCompletos = userDoc.data();
+      console.log(
+        "[AGENDAMENTO] Usuário logado:",
+        usuarioLogado.dadosCompletos.nome
+      );
     }
   } catch (error) {
     console.error("[AGENDAMENTO] Erro ao carregar dados do usuário:", error);
@@ -57,6 +75,8 @@ async function carregarAgendamento() {
     }
 
     agendamentoData = agendamentoDoc.data();
+    console.log("[AGENDAMENTO] Dados carregados:", agendamentoData);
+
     renderizarFormulario();
   } catch (error) {
     console.error("[AGENDAMENTO] Erro ao carregar agendamento:", error);
@@ -67,14 +87,37 @@ async function carregarAgendamento() {
 function renderizarFormulario() {
   const container = document.getElementById("main-container");
 
-  const gestorInfo = agendamentoData.exibirGestor
-    ? `
-      <div class="gestor-info">
-        <strong>Reunião com: ${agendamentoData.gestorNome}</strong>
-      </div>
-    `
-    : "";
+  // Info do voluntário logado
+  const voluntarioInfo = `
+    <div class="voluntario-info">
+      <strong>Olá, ${
+        usuarioLogado.dadosCompletos?.nome || "Voluntário"
+      }!</strong>
+    </div>
+  `;
 
+  // Info do gestor (se exibirGestor estiver ativado)
+  let gestorInfo = "";
+  if (
+    agendamentoData.exibirGestor &&
+    agendamentoData.slots &&
+    agendamentoData.slots.length > 0
+  ) {
+    // Se todos os slots são do mesmo gestor, mostra uma vez
+    const gestoresUnicos = [
+      ...new Set(agendamentoData.slots.map((s) => s.gestorNome)),
+    ];
+
+    if (gestoresUnicos.length === 1 && gestoresUnicos[0]) {
+      gestorInfo = `
+        <div class="gestor-info">
+          <strong>Reunião com: ${gestoresUnicos[0]}</strong>
+        </div>
+      `;
+    }
+  }
+
+  // Filtrar slots disponíveis (que ainda não têm vagas preenchidas)
   const slotsDisponiveis = agendamentoData.slots.filter(
     (slot) => !slot.vagas || slot.vagas.length === 0
   );
@@ -84,6 +127,7 @@ function renderizarFormulario() {
       <div class="header">
         <h1>Reunião com Voluntário</h1>
       </div>
+      ${voluntarioInfo}
       <div class="error-message">
         Desculpe, todos os horários já foram preenchidos.
       </div>
@@ -92,24 +136,33 @@ function renderizarFormulario() {
   }
 
   const slotsHTML = slotsDisponiveis
-    .map(
-      (slot, index) => `
-      <label class="slot-option">
-        <input 
-          type="radio" 
-          name="slot" 
-          value="${index}" 
-          data-data="${slot.data}"
-          data-hora-inicio="${slot.horaInicio}"
-          data-hora-fim="${slot.horaFim}"
-        />
-        <div class="slot-info">
-          <span class="slot-date">${formatarData(slot.data)}</span>
-          <span class="slot-time">${slot.horaInicio} - ${slot.horaFim}</span>
-        </div>
-      </label>
-    `
-    )
+    .map((slot, index) => {
+      const gestorTexto =
+        agendamentoData.exibirGestor && slot.gestorNome
+          ? `<span class="slot-gestor">com ${slot.gestorNome}</span>`
+          : "";
+
+      return `
+          <label class="slot-option">
+            <input 
+              type="radio" 
+              name="slot" 
+              value="${index}" 
+              data-data="${slot.data}"
+              data-hora-inicio="${slot.horaInicio}"
+              data-hora-fim="${slot.horaFim}"
+              data-gestor-nome="${slot.gestorNome || ""}"
+            />
+            <div class="slot-info">
+              <span class="slot-date">${formatarData(slot.data)}</span>
+              <span class="slot-time">${slot.horaInicio} - ${
+        slot.horaFim
+      }</span>
+              ${gestorTexto}
+            </div>
+          </label>
+        `;
+    })
     .join("");
 
   container.innerHTML = `
@@ -117,6 +170,7 @@ function renderizarFormulario() {
       <h1>Reunião com Voluntário</h1>
     </div>
 
+    ${voluntarioInfo}
     ${gestorInfo}
 
     <div class="descricao">
@@ -160,20 +214,27 @@ async function confirmarAgendamento(e) {
     return;
   }
 
-  const slotIndex = parseInt(slotSelecionado.value);
   const data = slotSelecionado.dataset.data;
-  const horaInicio = slotSelecionado.dataset.horaInicio;
-  const horaFim = slotSelecionado.dataset.horaFim;
+  const horaInicioSelecionada = slotSelecionado.dataset.horaInicio;
+  const horaFimSelecionada = slotSelecionado.dataset.horaFim;
+  const gestorNome = slotSelecionado.dataset.gestorNome;
 
   const btn = document.querySelector(".btn-confirmar");
   btn.disabled = true;
   btn.textContent = "Confirmando...";
 
   try {
+    // Encontrar o slot correto no array
     const slot = agendamentoData.slots.find(
       (s) =>
-        s.data === data && s.horaInicio === horaInicio && s.horaFim === horaFim
+        s.data === data &&
+        s.horaInicio === horaInicioSelecionada &&
+        s.horaFim === horaFimSelecionada
     );
+
+    if (!slot) {
+      throw new Error("Slot não encontrado.");
+    }
 
     if (!slot.vagas) {
       slot.vagas = [];
@@ -196,7 +257,7 @@ async function confirmarAgendamento(e) {
       }
     );
 
-    mostrarSucesso(data, horaInicio, horaFim);
+    mostrarSucesso(data, horaInicioSelecionada, horaFimSelecionada, gestorNome);
   } catch (error) {
     console.error("[AGENDAMENTO] Erro ao confirmar agendamento:", error);
     alert("Erro ao confirmar agendamento. Tente novamente.");
@@ -205,15 +266,24 @@ async function confirmarAgendamento(e) {
   }
 }
 
-function mostrarSucesso(data, horaInicio, horaFim) {
+function mostrarSucesso(data, horaInicio, horaFim, gestorNome) {
   const container = document.getElementById("main-container");
+
+  const gestorTexto = gestorNome
+    ? `<p><strong>Gestor:</strong> ${gestorNome}</p>`
+    : "";
+
   container.innerHTML = `
     <div class="success-message">
       <div class="success-icon">✓</div>
       <h2>Agendamento Confirmado!</h2>
+      <p><strong>Voluntário:</strong> ${
+        usuarioLogado.dadosCompletos?.nome || "Sem nome"
+      }</p>
       <p><strong>Data:</strong> ${formatarData(data)}</p>
       <p><strong>Horário:</strong> ${horaInicio} - ${horaFim}</p>
-      <p style="margin-top: 1.5rem; color: var(--text-secondary);">
+      ${gestorTexto}
+      <p style="margin-top: 1.5rem; color: #666;">
         Você receberá um lembrete próximo à data da reunião.
       </p>
     </div>
@@ -230,6 +300,7 @@ function mostrarErro(mensagem) {
 }
 
 function formatarData(dataISO) {
+  if (!dataISO) return "Data inválida";
   const [ano, mes, dia] = dataISO.split("-");
   return `${dia}/${mes}/${ano}`;
 }
