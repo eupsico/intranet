@@ -151,7 +151,7 @@ function renderizarFormulario() {
   if (slotsDisponiveis.length === 0) {
     container.innerHTML = `
       <div class="header">
-        <h1>Reunião com Voluntário</h1>
+        <h1>Reunião Online com Voluntário</h1>
       </div>
       ${voluntarioInfo}
       <div class="error-message">
@@ -311,9 +311,8 @@ function mostrarSucesso(data, horaInicio, horaFim, gestorNome) {
       }</p>
       <p><strong>Data:</strong> ${formatarData(data)}</p>
       <p><strong>Horário:</strong> ${horaInicio} - ${horaFim}</p>
-      ${gestorTexto}
       <p style="margin-top: 1.5rem; color: #666;">
-        Você receberá um lembrete próximo à data da reunião.
+        No dia da reunião o gestor enviará o link da reunião.
       </p>
     </div>
   `;
