@@ -709,8 +709,7 @@ async function salvarReuniaoVoluntario(e) {
   const exibirGestor = document.getElementById("exibir-gestor").checked;
   const descricaoCustom = document.getElementById("descricao-voluntario").value;
 
-  const descricaoPadrao = `
-**✨ Conectando Nossas Histórias: Seu Encontro Individual com a Gestão EuPsico**
+  const descricaoPadrao = `**✨ Conectando Nossas Histórias: Seu Encontro Individual com a Gestão EuPsico**
 
 Em nome de toda a equipe EuPsico, queremos começar agradecendo profundamente pela sua dedicação e pelo impacto inestimável do seu trabalho. Você é a força vital que move a nossa missão!
 Reconhecendo a importância de cada um de vocês, preparamos um momento especial e individual de escuta e diálogo, focado inteiramente em você.
