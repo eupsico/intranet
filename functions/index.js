@@ -1,5 +1,8 @@
-// --- IMPORTAÇÕES E CONFIGURAÇÃO INICIAL ---
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const {
+  onCall,
+  HttpsError,
+  onRequest,
+} = require("firebase-functions/v2/https");
 const {
   onDocumentCreated,
   onDocumentUpdated,
@@ -8,16 +11,19 @@ const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { google } = require("googleapis");
 const nodemailer = require("nodemailer");
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const cors = require("cors")({ origin: true });
 
 // Inicialização dos serviços do Firebase Admin
 initializeApp();
 const db = getFirestore();
 const adminAuth = getAuth();
-
-// ---------------------------------------------
-// FUNÇÃO: gerarUsernameUnico (Função Auxiliar)
-// ---------------------------------------------
+// ====================================================================
+// FUNÇÃO AUXILIAR: gerarUsernameUnico
+// ====================================================================
 async function gerarUsernameUnico(nomeCompleto) {
   const partesNome = nomeCompleto
     .trim()
@@ -83,10 +89,10 @@ async function gerarUsernameUnico(nomeCompleto) {
   }
 }
 
-// -----------------------------------------
+// ====================================================================
 // FUNÇÃO: criarNovoProfissional
-// -----------------------------------------
-exports.criarNovoProfissional = onCall(async (request) => {
+// ====================================================================
+exports.criarNovoProfissional = onCall({ cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
@@ -153,9 +159,9 @@ exports.criarNovoProfissional = onCall(async (request) => {
   }
 });
 
-// -----------------------------------------
+// ====================================================================
 // FUNÇÃO: verificarCpfExistente
-// -----------------------------------------
+// ====================================================================
 exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
   const cpf = request.data.cpf;
   if (!cpf) {
@@ -194,9 +200,9 @@ exports.verificarCpfExistente = onCall({ cors: true }, async (request) => {
   }
 });
 
-// -----------------------------------------
-// FUNÇÃO: criarCardTrilhaPaciente
-// -----------------------------------------
+// ====================================================================
+// FUNÇÃO: criarCardTrilhaPaciente (Trigger Firestore)
+// ====================================================================
 exports.criarCardTrilhaPaciente = onDocumentCreated(
   "inscricoes/{inscricaoId}",
   async (event) => {
@@ -244,11 +250,10 @@ exports.criarCardTrilhaPaciente = onDocumentCreated(
     }
   }
 );
-// ---------------------------------------------------------------------------------
-// 5. FUNÇÃO: getTodasDisponibilidadesAssistentes (Chamável pelo Cliente)
-// DESCRIÇÃO: Busca a disponibilidade de todos os assistentes sociais ativos.
-// STATUS: Lógica original mantida. A sintaxe do Admin SDK já estava correta.
-// ---------------------------------------------------------------------------------
+
+// ====================================================================
+// FUNÇÃO: getTodasDisponibilidadesAssistentes
+// ====================================================================
 exports.getTodasDisponibilidadesAssistentes = onCall(
   { cors: true },
   async (request) => {
@@ -324,11 +329,9 @@ exports.getTodasDisponibilidadesAssistentes = onCall(
   }
 );
 
-// ---------------------------------------------------------------------------------
-// 6. FUNÇÃO: definirTipoAgenda (Chamável pelo Cliente)
-// DESCRIÇÃO: Configura a agenda de um assistente para um determinado período.
-// STATUS: Lógica original mantida. Ajustado para usar serverTimestamp.
-// ---------------------------------------------------------------------------------
+// ====================================================================
+// FUNÇÃO: definirTipoAgenda
+// ====================================================================
 exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
   logger.info("🔧 Iniciando definirTipoAgenda...");
   if (!request.auth) {
@@ -416,7 +419,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
           inicio,
           fim,
           configuradoPor: adminUid,
-          configuradoEm: FieldValue.serverTimestamp(), // Melhor prática
+          configuradoEm: FieldValue.serverTimestamp(),
         },
         { merge: true }
       );
@@ -426,7 +429,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     logger.info("✅ Batch de agenda commitado com sucesso.");
 
     await db.collection("logsSistema").add({
-      timestamp: FieldValue.serverTimestamp(), // Melhor prática
+      timestamp: FieldValue.serverTimestamp(),
       usuario: adminUid,
       acao: "Configuração de agenda",
       status: "success",
@@ -440,7 +443,7 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
   } catch (error) {
     logger.error("🔥 ERRO definirTipoAgenda:", error);
     await db.collection("logsSistema").add({
-      timestamp: FieldValue.serverTimestamp(), // Melhor prática
+      timestamp: FieldValue.serverTimestamp(),
       usuario: request.auth?.uid || "desconhecido",
       acao: "Configuração de agenda",
       status: "error",
@@ -454,12 +457,9 @@ exports.definirTipoAgenda = onCall({ cors: true }, async (request) => {
     );
   }
 });
-
-// ---------------------------------------------------------------------------------
-// 7. FUNÇÃO: getHorariosPublicos (Chamável pelo Cliente)
-// DESCRIÇÃO: Busca os horários de triagem disponíveis para o público.
-// STATUS: Lógica original mantida, código completo restaurado.
-// ---------------------------------------------------------------------------------
+// ====================================================================
+// FUNÇÃO: getHorariosPublicos
+// ====================================================================
 exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
   try {
     logger.info("Iniciando getHorariosPublicos...");
@@ -468,18 +468,16 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     hoje.setHours(0, 0, 0, 0);
     const dataInicio = hoje.toISOString().split("T")[0];
 
-    // --- CORREÇÃO APLICADA AQUI ---
     const configGeralDoc = await db
       .collection("configuracoesSistema")
       .doc("geral")
       .get();
 
-    let minimoHorasAntecedencia = 24; // Valor padrão
-    let quantidadeDiasBusca = 7; // Valor padrão
+    let minimoHorasAntecedencia = 24;
+    let quantidadeDiasBusca = 7;
 
     if (configGeralDoc.exists) {
       const configData = configGeralDoc.data();
-      // Acessa o mapa 'agendamentos' dentro do documento 'geral'
       minimoHorasAntecedencia =
         Number(configData.agendamentos?.minimoHorasAntecedencia) || 24;
       quantidadeDiasBusca =
@@ -489,7 +487,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         "Documento 'configuracoesSistema/geral' não encontrado. Usando valores padrão (24h/7d)."
       );
     }
-    // --- FIM DA CORREÇÃO ---
 
     const dataFim = new Date(hoje);
     dataFim.setDate(hoje.getDate() + quantidadeDiasBusca);
@@ -564,7 +561,7 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
 
       for (
         let minutos = inicioEmMinutos;
-        minutos < fimEmMinutos; // Alterado para '<' para não criar slot na hora exata de término
+        minutos < fimEmMinutos;
         minutos += 30
       ) {
         const hAtual = Math.floor(minutos / 60);
@@ -574,7 +571,6 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
         ).padStart(2, "0")}`;
         const dataHoraSlot = new Date(`${diaConfig.data}T${horaSlot}:00`);
 
-        // Garante que o timezone não afete o cálculo
         const diffMs = dataHoraSlot.getTime() - agora.getTime();
         const diffHoras = diffMs / (1000 * 60 * 60);
 
@@ -605,9 +601,10 @@ exports.getHorariosPublicos = onCall({ cors: true }, async (request) => {
     });
   }
 });
-// -----------------------------------------
+
+// ====================================================================
 // FUNÇÃO: agendarTriagemPublico
-// -----------------------------------------
+// ====================================================================
 exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   const {
     cpf,
@@ -618,6 +615,7 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
     nomeCompleto,
     telefone,
   } = request.data;
+
   if (
     !cpf ||
     !assistenteSocialId ||
@@ -678,14 +676,9 @@ exports.agendarTriagemPublico = onCall({ cors: true }, async (request) => {
   }
 });
 
-// ==============================================================================
-//  NOVA FUNÇÃO AUXILIAR: Adicione esta função ao seu arquivo
-// ==============================================================================
-/**
- * Valida um CPF.
- * @param {string} cpf O CPF a ser validado.
- * @return {boolean} Retorna true se o CPF for válido.
- */
+// ====================================================================
+// FUNÇÃO AUXILIAR: validaCPF
+// ====================================================================
 function validaCPF(cpf) {
   cpf = String(cpf).replace(/[^\d]/g, "");
   if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
@@ -707,9 +700,9 @@ function validaCPF(cpf) {
   return true;
 }
 
-// ==============================================================================
-//  FUNÇÃO ATUALIZADA: Substitua sua função 'assinarContrato' por esta
-// ==============================================================================
+// ====================================================================
+// FUNÇÃO: assinarContrato
+// ====================================================================
 exports.assinarContrato = onCall({ cors: true }, async (request) => {
   const {
     pacienteId,
@@ -750,7 +743,6 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
       );
     }
 
-    // O objeto 'contratoAssinado' agora usará o 'FieldValue' importado corretamente
     atendimentos[indiceDoAtendimento].contratoAssinado = {
       assinadoEm: new Date(),
       nomeSignatario,
@@ -776,9 +768,9 @@ exports.assinarContrato = onCall({ cors: true }, async (request) => {
   }
 });
 
-// -----------------------------------------
+// ====================================================================
 // FUNÇÃO: registrarDesfechoPb
-// -----------------------------------------
+// ====================================================================
 exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError(
@@ -816,7 +808,6 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
       );
 
       if (indiceDoAtendimento === -1) {
-        // Se não encontrou, tenta procurar sem a trava do profissionalId (caso seja um admin fazendo a ação)
         const indiceAdmin = atendimentos.findIndex(
           (at) => at.atendimentoId === atendimentoId
         );
@@ -826,18 +817,17 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
             "Atendimento não encontrado ou você não tem permissão para modificá-lo."
           );
         }
-        // Se encontrou (é um admin), usa o indiceAdmin
+
         atendimentos[indiceAdmin].statusAtendimento = "encerrado";
         atendimentos[indiceAdmin].desfecho = {
           tipo: desfecho,
           motivo: motivo || "",
           encaminhamento: encaminhamento || null,
-          responsavelId: profissionalId, // ID de quem executou a ação
+          responsavelId: profissionalId,
           responsavelNome: atendimentos[indiceAdmin].profissionalNome,
           data: FieldValue.serverTimestamp(),
         };
       } else {
-        // Se encontrou (é o próprio profissional), usa o indiceDoAtendimento
         atendimentos[indiceDoAtendimento].statusAtendimento = "encerrado";
         atendimentos[indiceDoAtendimento].desfecho = {
           tipo: desfecho,
@@ -865,10 +855,10 @@ exports.registrarDesfechoPb = onCall({ cors: true }, async (request) => {
     );
   }
 });
-// -----------------------------------------
+// ====================================================================
 // FUNÇÃO: getSupervisorSlots
-// -----------------------------------------
-exports.getSupervisorSlots = onCall(async (request) => {
+// ====================================================================
+exports.getSupervisorSlots = onCall({ cors: true }, async (request) => {
   const supervisorUid = request.data.supervisorUid;
   if (!request.auth) {
     throw new HttpsError(
@@ -953,11 +943,7 @@ exports.getSupervisorSlots = onCall(async (request) => {
     const slotChecks = potentialSlots.map(async (slot) => {
       const q = agendamentosRef
         .where("supervisorUid", "==", supervisorUid)
-        .where(
-          "dataAgendamento",
-          "==",
-          FieldValue.fromMillis(new Date(slot.date).getTime())
-        );
+        .where("dataAgendamento", "==", new Date(slot.date));
 
       const querySnapshot = await q.get();
       return {
@@ -971,7 +957,7 @@ exports.getSupervisorSlots = onCall(async (request) => {
 
     return { slots: finalSlots };
   } catch (error) {
-    console.error("Erro em getSupervisorSlots:", error);
+    logger.error("Erro em getSupervisorSlots:", error);
     throw new HttpsError(
       "internal",
       "Ocorreu um erro ao buscar os horários de supervisão."
@@ -979,9 +965,9 @@ exports.getSupervisorSlots = onCall(async (request) => {
   }
 });
 
-// -----------------------------------------
-// FUNÇÃO: calculateCapacity (Auxiliar)
-// -----------------------------------------
+// ====================================================================
+// FUNÇÃO AUXILIAR: calculateCapacity
+// ====================================================================
 function calculateCapacity(inicio, fim) {
   try {
     const [startH, startM] = inicio.split(":").map(Number);
@@ -999,9 +985,9 @@ function calculateCapacity(inicio, fim) {
   }
 }
 
-// -----------------------------------------
-// FUNÇÃO: gerenciarStatusGeralDoPaciente
-// -----------------------------------------
+// ====================================================================
+// FUNÇÃO: gerenciarStatusGeralDoPaciente (Trigger Firestore)
+// ====================================================================
 exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
   "trilhaPaciente/{pacienteId}",
   async (event) => {
@@ -1049,8 +1035,11 @@ exports.gerenciarStatusGeralDoPaciente = onDocumentUpdated(
     }
   }
 );
+
+// ====================================================================
+// FUNÇÃO: getTodosUsuarios
+// ====================================================================
 exports.getTodosUsuarios = onCall({ cors: true }, async (request) => {
-  // 1. Verificação de autenticação e permissão de administrador
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
@@ -1067,11 +1056,9 @@ exports.getTodosUsuarios = onCall({ cors: true }, async (request) => {
       );
     }
 
-    // 2. Lógica principal para buscar usuários
-    const listUsersResult = await adminAuth.listUsers(1000); // Limite de 1000 por chamada
+    const listUsersResult = await adminAuth.listUsers(1000);
     const allUsersData = [];
 
-    // 3. Itera sobre os usuários do Auth e busca dados complementares no Firestore
     for (const userRecord of listUsersResult.users) {
       const userDoc = await db.collection("usuarios").doc(userRecord.uid).get();
       if (userDoc.exists) {
@@ -1083,7 +1070,6 @@ exports.getTodosUsuarios = onCall({ cors: true }, async (request) => {
           role: (userData.funcoes || []).join(", ") || "Sem função",
         });
       } else {
-        // Caso de um usuário existir no Auth mas não no Firestore
         allUsersData.push({
           uid: userRecord.uid,
           email: userRecord.email,
@@ -1093,20 +1079,20 @@ exports.getTodosUsuarios = onCall({ cors: true }, async (request) => {
       }
     }
 
-    // 4. Retorna a lista combinada para o cliente
     return allUsersData;
   } catch (error) {
     logger.error("Erro ao listar usuários:", error);
     if (error instanceof HttpsError) {
-      throw error; // Re-lança o erro se já for do tipo HttpsError
+      throw error;
     }
     throw new HttpsError("internal", "Não foi possível listar os usuários.");
   }
 });
-// ==============================================================================
-// DESCRIÇÃO: Processa uma planilha de pacientes e os cria na trilha.
-// ==============================================================================
-exports.importarPacientesBatch = onCall(async (request) => {
+
+// ====================================================================
+// FUNÇÃO: importarPacientesBatch
+// ====================================================================
+exports.importarPacientesBatch = onCall({ cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
   }
@@ -1186,20 +1172,16 @@ exports.importarPacientesBatch = onCall(async (request) => {
       const novoCardRef = db.collection("trilhaPaciente").doc();
       const statusInicial = paciente.status || "inscricao_documentos";
 
-      // --- INÍCIO DA LÓGICA AVANÇADA DE DADOS ---
       const dadosAdicionais = {};
 
-      // 1. Processa campos JSON (atendimentosPB e plantaoInfo)
       try {
         if (paciente.atendimentosPB_JSON) {
-          // Tenta converter o texto JSON em um objeto/array
           const atendimentos = JSON.parse(paciente.atendimentosPB_JSON);
-          // Adiciona um ID único para cada atendimento importado
           atendimentos.forEach((at) => {
             at.atendimentoId = `imp_${novoCardRef.id}_${Math.random()
               .toString(36)
               .substr(2, 9)}`;
-            at.dataInicio = agora; // Define a data de início como o momento da importação
+            at.dataInicio = agora;
           });
           dadosAdicionais.atendimentosPB = atendimentos;
         }
@@ -1215,10 +1197,9 @@ exports.importarPacientesBatch = onCall(async (request) => {
             e.message
           })`
         );
-        continue; // Pula para o próximo paciente
+        continue;
       }
 
-      // 2. Processa a lista de IDs de profissionais
       if (paciente.profissionaisPB_ids) {
         dadosAdicionais.profissionaisPB_ids = (
           paciente.profissionaisPB_ids || ""
@@ -1228,28 +1209,19 @@ exports.importarPacientesBatch = onCall(async (request) => {
           .filter(Boolean);
       }
 
-      // --- FIM DA LÓGICA AVANÇADA ---
-
       const cardData = {
-        // Dados Base
         nomeCompleto: paciente.nomeCompleto,
         cpf: cpf,
         status: statusInicial,
         filaDeOrigem: fila,
-
-        // Dados da Ficha (exemplo, adicione outros campos conforme necessário)
         dataNascimento: paciente.dataNascimento || null,
         telefoneCelular: paciente.telefoneCelular || "",
         email: paciente.email || "",
         motivoBusca: paciente.motivoBusca || "",
-
-        // Dados da Trilha
         timestamp: agora,
         lastUpdate: agora,
         lastUpdatedBy: `Importação em Lote por ${adminUid}`,
         importadoEmLote: true,
-
-        // Incorpora os dados adicionais complexos
         ...dadosAdicionais,
       };
 
@@ -1275,21 +1247,581 @@ exports.importarPacientesBatch = onCall(async (request) => {
     );
   }
 });
-// ==============================================================================
-// DESCRIÇÃO: Envia e-mail
-// ==============================================================================
-// ✅ Configurar Gmail
+
+// ====================================================================
+// FUNÇÃO: uploadCurriculo + salvarCandidatura (AMBAS FUNCIONAIS)
+// ====================================================================
+exports.uploadCurriculo = onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.status(200).send("OK");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Método não permitido" });
+    return;
+  }
+
+  try {
+    const { fileData, mimeType, fileName, nomeCandidato, vagaTitulo } =
+      req.body;
+
+    if (!fileData || !mimeType || !fileName) {
+      res.status(400).json({
+        status: "error",
+        message: "Campos obrigatórios ausentes",
+      });
+      return;
+    }
+
+    // ✅ COLOQUE A URL NOVA QUE VOCÊ COPIOU AQUI
+    const GAS_URL =
+      "https://script.google.com/macros/s/AKfycbxgukbZwtnRj-uNRYkl-x2PGRIY1LtDBRAxEYdelM4B_B_5ijpahZqCEOAuPk9XT50y/exec";
+
+    const payload = {
+      fileData: fileData,
+      mimeType: mimeType,
+      fileName: fileName,
+      nomeCandidato: nomeCandidato,
+      vagaTitulo: vagaTitulo,
+    };
+
+    logger.log("📤 Enviando para GAS:", {
+      fileName,
+      nomeCandidato,
+      vagaTitulo,
+    });
+
+    const gasResponse = await fetch(GAS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      timeout: 30000,
+    });
+
+    logger.log("📥 Status GAS:", gasResponse.status);
+    const responseText = await gasResponse.text();
+    logger.log(
+      "📥 Resposta GAS (primeiros 500 chars):",
+      responseText.substring(0, 500)
+    );
+
+    let gasJson;
+    try {
+      gasJson = JSON.parse(responseText);
+    } catch (e) {
+      logger.error("❌ GAS retornou HTML, não JSON!");
+      logger.error("Resposta completa:", responseText.substring(0, 1000));
+      throw new Error(
+        `GAS retornou HTML. Status: ${gasResponse.status}. Verifique se a URL está correta e o Apps Script foi deployado.`
+      );
+    }
+
+    if (gasJson.status === "success" && gasJson.fileUrl) {
+      logger.log("✅ Sucesso!");
+      res.json({
+        status: "success",
+        message: "Arquivo salvo em Google Drive com sucesso!",
+        fileUrl: gasJson.fileUrl,
+      });
+    } else {
+      throw new Error(gasJson.message || "Erro desconhecido no GAS");
+    }
+  } catch (error) {
+    logger.error("❌ Erro na uploadCurriculo:", error.message);
+    res.status(500).json({
+      status: "error",
+      message: `Erro: ${error.message}`,
+    });
+  }
+});
+
+// ====================================================================
+// FUNÇÃO: salvarCandidatura (SALVA NO FIREBASE)
+// ====================================================================
+
+exports.salvarCandidatura = onCall({ cors: true }, async (request) => {
+  try {
+    // ✅ Em Callable Functions, os dados vêm em request.data
+    const data = request.data;
+
+    logger.log("📥 Recebendo candidatura:", data);
+
+    // Validar campos obrigatórios
+    if (!data.vaga_id || !data.nome_completo || !data.link_curriculo_drive) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Os campos vaga_id, nome_completo e link_curriculo_drive são obrigatórios."
+      );
+    }
+
+    // Preparar dados da candidatura
+    const novaCandidaturaData = {
+      vaga_id: data.vaga_id,
+      titulo_vaga_original: data.titulo_vaga_original || "",
+      nome_completo: data.nome_completo,
+      email_candidato: data.email_candidato || "",
+      telefone_contato: data.telefone_contato || "",
+      cep: data.cep || "",
+      numero_endereco: data.numero_endereco || "",
+      complemento_endereco: data.complemento_endereco || "",
+      endereco_rua: data.endereco_rua || "",
+      cidade: data.cidade || "",
+      estado: data.estado || "",
+      resumo_experiencia: data.resumo_experiencia || "",
+      habilidades_competencias: data.habilidades_competencias || "",
+      como_conheceu: data.como_conheceu || "",
+      link_curriculo_drive: data.link_curriculo_drive,
+      data_candidatura: FieldValue.serverTimestamp(),
+      status_recrutamento: "Candidatura Recebida (Triagem Pendente)",
+    };
+
+    logger.log("💾 Salvando no Firestore...");
+
+    // Salvar no Firestore
+    const docRef = await db.collection("candidaturas").add(novaCandidaturaData);
+
+    logger.log("✅ Candidatura salva com sucesso! ID:", docRef.id);
+
+    return {
+      success: true,
+      message: "Candidatura registrada com sucesso!",
+      id: docRef.id,
+    };
+  } catch (error) {
+    logger.error("❌ Erro ao processar candidatura:", error);
+
+    throw new HttpsError(
+      "internal",
+      "Ocorreu um erro interno ao salvar sua candidatura: " + error.message
+    );
+  }
+});
+
+// ============================================
+// CLOUD FUNCTION: Validar Token e Retornar Teste
+// ============================================
+
+/**
+ * URL: https://us-central1-eupsico-agendamentos-d2048.cloudfunctions.net/validarTokenTeste
+ * Método: POST
+ * Body: { token: "xxx" }
+ *
+ * Retorna dados do teste se o token for válido
+ */
+exports.validarTokenTeste = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      // ✅ Apenas POST permitido
+      if (req.method !== "POST") {
+        return res.status(405).json({
+          erro: "Método não permitido. Use POST.",
+        });
+      }
+
+      const { token } = req.body;
+
+      // ✅ Valida se token foi informado
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({
+          erro: "Token inválido ou não informado",
+        });
+      }
+
+      console.log(`🔹 Validando token: ${token.substring(0, 10)}...`);
+
+      // ✅ Busca o token no Firestore
+      const tokenSnap = await db
+        .collection("tokens_acesso")
+        .where("token", "==", token)
+        .limit(1)
+        .get();
+
+      if (tokenSnap.empty) {
+        console.log("❌ Token não encontrado");
+        return res.status(404).json({
+          erro: "Token inválido ou expirado",
+        });
+      }
+
+      const tokenDoc = tokenSnap.docs[0];
+      const dadosToken = tokenDoc.data();
+
+      // ✅ Verifica se o token foi usado
+      if (dadosToken.usado === true) {
+        console.log("❌ Token já foi utilizado");
+        return res.status(403).json({
+          erro: "Este teste já foi respondido",
+        });
+      }
+
+      // ✅ Verifica se o token expirou
+      const agora = new Date();
+      const dataExpiracao =
+        dadosToken.expiraEm?.toDate?.() || dadosToken.expiraEm;
+
+      if (dataExpiracao && agora > new Date(dataExpiracao)) {
+        console.log("❌ Token expirado");
+        return res.status(403).json({
+          erro: "Token expirado. Solicite um novo link.",
+          expiraEm: dataExpiracao?.toISOString(),
+        });
+      }
+
+      // ✅ Busca o teste
+      const testeSnap = await db
+        .collection("estudos_de_caso")
+        .doc(dadosToken.testeId)
+        .get();
+
+      if (!testeSnap.exists) {
+        console.log("❌ Teste não encontrado");
+        return res.status(404).json({
+          erro: "Teste não encontrado",
+        });
+      }
+
+      const dadosTeste = testeSnap.data();
+
+      // ✅ Busca dados do candidato
+      const candidatoSnap = await db
+        .collection("candidaturas")
+        .doc(dadosToken.candidatoId)
+        .get();
+
+      const dadosCandidato = candidatoSnap.exists ? candidatoSnap.data() : {};
+
+      console.log("✅ Token validado com sucesso!");
+
+      // ✅ Retorna dados completos
+      return res.status(200).json({
+        sucesso: true,
+        tokenId: tokenDoc.id,
+        candidato: {
+          id: dadosToken.candidatoId,
+          nome:
+            dadosToken.nomeCandidato ||
+            dadosCandidato.nome_completo ||
+            "Candidato",
+          email: dadosCandidato.email_candidato || "não informado",
+        },
+        teste: {
+          id: dadosToken.testeId,
+          titulo: dadosTeste.titulo || "Teste",
+          descricao: dadosTeste.descricao || "",
+          tipo: dadosTeste.tipo || "estudoDeCaso",
+          conteudo: dadosTeste.conteudo || "",
+          perguntas: dadosTeste.perguntas || [],
+          tempoLimite: dadosTeste.tempo_limite_minutos || 45,
+        },
+        prazoDias: dadosToken.prazoDias || 7,
+        expiraEm: dataExpiracao,
+        diasRestantes: Math.ceil(
+          (new Date(dataExpiracao) - agora) / (1000 * 60 * 60 * 24)
+        ),
+      });
+    } catch (error) {
+      console.error("❌ Erro ao validar token:", error);
+      return res.status(500).json({
+        erro: "Erro interno do servidor",
+        detalhes: error.message,
+      });
+    }
+  });
+});
+
+// ============================================
+// CLOUD FUNCTION: Salvar Respostas do Teste
+// ============================================
+
+// ============================================
+// CLOUD FUNCTION: Salvar Respostas do Teste (CORRIGIDA)
+// ============================================
+
+/**
+ * URL: https://us-central1-eupsico-agendamentos-d2048.cloudfunctions.net/salvarRespostasTeste
+ * Método: POST
+ * Body: { token, respostas, tempoGasto, navegador, ipAddress }
+ */
+exports.salvarRespostasTeste = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).json({
+          erro: "Método não permitido. Use POST.",
+        });
+      }
+
+      const { token, respostas, tempoGasto, navegador, ipAddress } = req.body;
+
+      if (!token) {
+        return res.status(400).json({
+          erro: "Token não informado",
+        });
+      }
+
+      console.log(
+        `🔹 Salvando respostas do token: ${token.substring(0, 10)}...`
+      );
+
+      // ✅ Busca o token
+      const tokenSnap = await db
+        .collection("tokens_acesso")
+        .where("token", "==", token)
+        .limit(1)
+        .get();
+
+      if (tokenSnap.empty) {
+        return res.status(404).json({
+          erro: "Token não encontrado",
+        });
+      }
+
+      const tokenDoc = tokenSnap.docs[0];
+      const dadosToken = tokenDoc.data();
+
+      // ✅ Verifica se já foi respondido
+      if (dadosToken.usado === true) {
+        return res.status(403).json({
+          erro: "Este teste já foi respondido",
+        });
+      }
+
+      // ✅ Verifica expiração
+      const agora = new Date();
+      const dataExpiracao =
+        dadosToken.expiraEm?.toDate?.() || dadosToken.expiraEm;
+      if (dataExpiracao && agora > new Date(dataExpiracao)) {
+        return res.status(403).json({
+          erro: "Token expirado",
+        });
+      }
+
+      // ✅ Atualiza o token como utilizado
+      // ⚠️ IMPORTANTE: Não usar serverTimestamp() aqui, apenas em raiz
+      await db
+        .collection("tokens_acesso")
+        .doc(tokenDoc.id)
+        .update({
+          usado: true,
+          respondidoEm: admin.firestore.FieldValue.serverTimestamp(),
+          respostas: respostas || {},
+          tempoRespostaSegundos: tempoGasto || 0,
+          navegador: navegador || "desconhecido",
+          ipAddress: ipAddress || "não registrado",
+        });
+
+      // ✅ Busca dados do teste
+      const testeSnap = await db
+        .collection("estudos_de_caso")
+        .doc(dadosToken.testeId)
+        .get();
+
+      const nomeTeste = testeSnap.exists ? testeSnap.data().titulo : "Teste";
+
+      // ✅ Atualiza a candidatura com as respostas
+      // ⚠️ IMPORTANTE: Dentro de arrayUnion, usar new Date() em vez de serverTimestamp()
+      await db
+        .collection("candidaturas")
+        .doc(dadosToken.candidatoId)
+        .update({
+          testes_respondidos: admin.firestore.FieldValue.arrayUnion({
+            testeId: dadosToken.testeId,
+            nomeTeste: nomeTeste,
+            tokenId: tokenDoc.id,
+            dataResposta: new Date(), // ✅ CORRIGIDO: usar new Date() em vez de serverTimestamp()
+            tempoGasto: tempoGasto || 0,
+            respostasCount: Object.keys(respostas || {}).length,
+          }),
+          historico: admin.firestore.FieldValue.arrayUnion({
+            data: new Date(), // ✅ CORRIGIDO: usar new Date() em vez de serverTimestamp()
+            acao: `Teste respondido: ${nomeTeste}. Tempo gasto: ${tempoGasto}s`,
+            usuario: "candidato_via_token",
+          }),
+        });
+
+      console.log("✅ Respostas salvas com sucesso!");
+
+      return res.status(200).json({
+        sucesso: true,
+        mensagem: "Respostas registradas com sucesso!",
+        tokenId: tokenDoc.id,
+        dataResposta: agora.toISOString(),
+        tempoGasto: tempoGasto,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao salvar respostas:", error);
+      return res.status(500).json({
+        erro: "Erro ao salvar respostas",
+        detalhes: error.message,
+      });
+    }
+  });
+});
+
+// ============================================
+// CLOUD FUNCTION: Gerar Token Teste
+// ============================================
+
+/**
+ * URL: https://us-central1-eupsico-agendamentos-d2048.cloudfunctions.net/gerarTokenTeste
+ * Método: POST
+ * Body: { candidatoId, testeId, prazoDias }
+ */
+exports.gerarTokenTeste = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).json({
+          erro: "Método não permitido. Use POST.",
+        });
+      }
+
+      const { candidatoId, testeId, prazoDias = 7 } = req.body;
+
+      if (!candidatoId || !testeId) {
+        return res.status(400).json({
+          erro: "candidatoId e testeId são obrigatórios",
+        });
+      }
+
+      console.log(`🔹 Gerando token para candidato: ${candidatoId}`);
+
+      // ✅ Gera token aleatório
+      const token = generateRandomToken();
+
+      // ✅ Calcula data de expiração
+      const dataExpiracao = new Date();
+      dataExpiracao.setDate(dataExpiracao.getDate() + prazoDias);
+
+      // ✅ Busca dados do candidato
+      const candSnap = await db
+        .collection("candidaturas")
+        .doc(candidatoId)
+        .get();
+
+      const dadosCandidato = candSnap.exists ? candSnap.data() : {};
+
+      // ✅ Cria documento do token
+      const novoToken = await db.collection("tokens_acesso").add({
+        token: token,
+        testeId: testeId,
+        candidatoId: candidatoId,
+        nomeCandidato: dadosCandidato.nome_completo || "Candidato",
+        criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        expiraEm: dataExpiracao,
+        prazoDias: prazoDias,
+        usado: false,
+        respondidoEm: null,
+        respostas: {},
+      });
+
+      console.log("✅ Token gerado com sucesso!");
+
+      // ✅ Retorna URL com token (usando a URL correta)
+      const urlTeste = `https://eupsico.github.io/intranet-1/public/avaliacao-publica.html?token=${token}`;
+
+      return res.status(200).json({
+        sucesso: true,
+        token: token,
+        tokenId: novoToken.id,
+        urlTeste: urlTeste,
+        expiraEm: dataExpiracao.toISOString(),
+        prazoDias: prazoDias,
+        mensagem: "Token gerado com sucesso! Compartilhe o link acima.",
+      });
+    } catch (error) {
+      console.error("❌ Erro ao gerar token:", error);
+      return res.status(500).json({
+        erro: "Erro ao gerar token",
+        detalhes: error.message,
+      });
+    }
+  });
+});
+
+// ============================================
+// CLOUD FUNCTION: Listar Tokens (para debug)
+// ============================================
+
+/**
+ * URL: https://us-central1-eupsico-agendamentos-d2048.cloudfunctions.net/listarTokens
+ * Método: GET
+ */
+exports.listarTokens = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { status, candidatoId } = req.query;
+
+      let q = db.collection("tokens_acesso");
+
+      if (status === "usado") {
+        q = q.where("usado", "==", true);
+      } else if (status === "pendente") {
+        q = q.where("usado", "==", false);
+      }
+
+      if (candidatoId) {
+        q = q.where("candidatoId", "==", candidatoId);
+      }
+
+      const snapshot = await q.limit(50).get();
+
+      const tokens = [];
+      snapshot.forEach((doc) => {
+        tokens.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+
+      return res.status(200).json({
+        sucesso: true,
+        total: tokens.length,
+        tokens: tokens,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao listar tokens:", error);
+      return res.status(500).json({
+        erro: "Erro ao listar tokens",
+        detalhes: error.message,
+      });
+    }
+  });
+});
+
+// ============================================
+// HELPER: Gerar Token Aleatório
+// ============================================
+
+function generateRandomToken() {
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  ).substring(0, 50);
+}
+// ====================================================================
+// ✅ NOVA CONFIGURAÇÃO: Nodemailer para Gmail
+// ====================================================================
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "info@eupsico.org.br",
-    pass: "gfts qypt vwsl uvlg",
+    user: "info@eupsico.org.br", // ⚠️ SUBSTITUIR pelo seu e-mail
+    pass: "gfts qypt vwsl uvlg", // ⚠️ SUBSTITUIR pela senha de app do Gmail
   },
 });
 
-// ✅ FUNÇÃO GENÉRICA REUTILIZÁVEL - Chamável do Frontend
+// ====================================================================
+// ✅ NOVA FUNÇÃO: enviarEmail (Reutilizável)
+// ====================================================================
 exports.enviarEmail = functions.https.onCall(async (data, context) => {
-  // Validação de segurança (opcional)
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
@@ -1299,7 +1831,6 @@ exports.enviarEmail = functions.https.onCall(async (data, context) => {
 
   const { destinatario, assunto, html, remetente } = data;
 
-  // Validação dos parâmetros
   if (!destinatario || !assunto || !html) {
     throw new functions.https.HttpsError(
       "invalid-argument",
@@ -1325,7 +1856,9 @@ exports.enviarEmail = functions.https.onCall(async (data, context) => {
   }
 });
 
-// ✅ FUNÇÃO AUTOMÁTICA - Dispara quando agendamento é atualizado
+// ====================================================================
+// ✅ NOVA FUNÇÃO: enviarEmailGestorAgendamento (Automática)
+// ====================================================================
 exports.enviarEmailGestorAgendamento = functions.firestore
   .document("agendamentos_voluntarios/{agendamentoId}")
   .onUpdate(async (change, context) => {
@@ -1361,7 +1894,7 @@ exports.enviarEmailGestorAgendamento = functions.firestore
 
         const linkCalendar = gerarLinkGoogleCalendar(
           `Reunião com ${inscrito.vaga.profissionalNome}`,
-          `Reunião individual com voluntário - EuPsico`,
+          "Reunião individual com voluntário - EuPsico",
           inscrito.slot.data,
           inscrito.slot.horaInicio,
           inscrito.slot.horaFim
@@ -1384,7 +1917,9 @@ exports.enviarEmailGestorAgendamento = functions.firestore
     return null;
   });
 
-// ✅ Função auxiliar: Template de e-mail de agendamento
+// ====================================================================
+// Funções auxiliares para e-mail
+// ====================================================================
 function gerarEmailAgendamento(gestorNome, inscrito, linkCalendar) {
   return `
     <!DOCTYPE html>
@@ -1475,3 +2010,111 @@ function formatarDataCompleta(dataISO) {
   ];
   return `${diasSemana[data.getDay()]}, ${dia}/${mes}/${ano}`;
 }
+// ====================================================================
+// FUNÇÃO: criarEventoGoogleCalendar
+// ====================================================================
+exports.criarEventoGoogleCalendar = onCall({ cors: true }, async (request) => {
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Você precisa estar autenticado.");
+  }
+
+  const data = request.data;
+  const {
+    profissionalId,
+    pacienteNome,
+    data: dataAtendimento,
+    horario,
+    modalidade,
+  } = data;
+
+  try {
+    const profissionalDoc = await db
+      .collection("usuarios")
+      .doc(profissionalId)
+      .get();
+    if (!profissionalDoc.exists) {
+      throw new HttpsError("not-found", "Profissional não encontrado.");
+    }
+
+    const profissionalData = profissionalDoc.data();
+    const calendarId = profissionalData.calendarId;
+
+    if (!calendarId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "O profissional não possui um Google Calendar configurado."
+      );
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+      functions.config().google.client_id,
+      functions.config().google.client_secret,
+      functions.config().google.redirect_uri
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: profissionalData.refreshToken,
+    });
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const [horaInicio, horaFim] = horario.split(" - ");
+    const startDateTime = `${dataAtendimento}T${horaInicio}:00`;
+    const endDateTime = `${dataAtendimento}T${horaFim}:00`;
+
+    const evento = {
+      summary: `Atendimento - ${pacienteNome}`,
+      description: `Modalidade: ${modalidade}`,
+      start: {
+        dateTime: startDateTime,
+        timeZone: "America/Sao_Paulo",
+      },
+      end: {
+        dateTime: endDateTime,
+        timeZone: "America/Sao_Paulo",
+      },
+    };
+
+    const response = await calendar.events.insert({
+      calendarId: calendarId,
+      resource: evento,
+    });
+
+    return {
+      success: true,
+      message: "Evento criado no Google Calendar com sucesso!",
+      eventoId: response.data.id,
+    };
+  } catch (error) {
+    logger.error("Erro ao criar evento no Google Calendar:", error);
+    throw new HttpsError(
+      "internal",
+      "Erro ao criar evento no Google Calendar."
+    );
+  }
+});
+
+// ====================================================================
+// FUNÇÃO: marcarPresenca (Trigger de atualização)
+// ====================================================================
+exports.marcarPresenca = onDocumentUpdated(
+  "horarios/{horarioId}",
+  async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+
+    if (before.presente === after.presente) {
+      return null;
+    }
+
+    if (after.presente === true) {
+      logger.log(`Presença marcada para o horário ${event.params.horarioId}`);
+    }
+
+    return null;
+  }
+);
+
+// ====================================================================
+// FIM DO ARQUIVO
+// ====================================================================
