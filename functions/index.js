@@ -1275,3 +1275,203 @@ exports.importarPacientesBatch = onCall(async (request) => {
     );
   }
 });
+// ==============================================================================
+// DESCRIÇÃO: Envia e-mail
+// ==============================================================================
+// ✅ Configurar Gmail
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "info@eupsico.org.br",
+    pass: "gfts qypt vwsl uvlg",
+  },
+});
+
+// ✅ FUNÇÃO GENÉRICA REUTILIZÁVEL - Chamável do Frontend
+exports.enviarEmail = functions.https.onCall(async (data, context) => {
+  // Validação de segurança (opcional)
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Usuário não autenticado."
+    );
+  }
+
+  const { destinatario, assunto, html, remetente } = data;
+
+  // Validação dos parâmetros
+  if (!destinatario || !assunto || !html) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Parâmetros obrigatórios: destinatario, assunto, html"
+    );
+  }
+
+  try {
+    const mailOptions = {
+      from: remetente || "EuPsico <atendimento@eupsico.org.br>",
+      to: destinatario,
+      subject: assunto,
+      html: html,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    console.log(`✅ E-mail enviado para ${destinatario}`);
+    return { success: true, message: "E-mail enviado com sucesso!" };
+  } catch (error) {
+    console.error("❌ Erro ao enviar e-mail:", error);
+    throw new functions.https.HttpsError("internal", "Erro ao enviar e-mail.");
+  }
+});
+
+// ✅ FUNÇÃO AUTOMÁTICA - Dispara quando agendamento é atualizado
+exports.enviarEmailGestorAgendamento = functions.firestore
+  .document("agendamentos_voluntarios/{agendamentoId}")
+  .onUpdate(async (change, context) => {
+    const novosDados = change.after.data();
+    const dadosAntigos = change.before.data();
+
+    const novosInscritos = [];
+
+    novosDados.slots.forEach((slot, index) => {
+      const vagasNovas = slot.vagas || [];
+      const vagasAntigas = dadosAntigos.slots[index]?.vagas || [];
+
+      if (vagasNovas.length > vagasAntigas.length) {
+        const novaVaga = vagasNovas[vagasNovas.length - 1];
+        novosInscritos.push({ slot, vaga: novaVaga });
+      }
+    });
+
+    for (const inscrito of novosInscritos) {
+      try {
+        const gestorDoc = await admin
+          .firestore()
+          .collection("usuarios")
+          .doc(inscrito.slot.gestorId)
+          .get();
+
+        if (!gestorDoc.exists) continue;
+
+        const gestorEmail = gestorDoc.data().email;
+        const gestorNome = gestorDoc.data().nome;
+
+        if (!gestorEmail) continue;
+
+        const linkCalendar = gerarLinkGoogleCalendar(
+          `Reunião com ${inscrito.vaga.profissionalNome}`,
+          `Reunião individual com voluntário - EuPsico`,
+          inscrito.slot.data,
+          inscrito.slot.horaInicio,
+          inscrito.slot.horaFim
+        );
+
+        const mailOptions = {
+          from: "EuPsico Gestão <atendimento@eupsico.org.br>",
+          to: gestorEmail,
+          subject: `📅 Novo Agendamento - ${inscrito.vaga.profissionalNome}`,
+          html: gerarEmailAgendamento(gestorNome, inscrito, linkCalendar),
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ E-mail enviado para ${gestorEmail}`);
+      } catch (error) {
+        console.error("❌ Erro:", error);
+      }
+    }
+
+    return null;
+  });
+
+// ✅ Função auxiliar: Template de e-mail de agendamento
+function gerarEmailAgendamento(gestorNome, inscrito, linkCalendar) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #003d7a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; }
+        .info-box { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #003d7a; border-radius: 4px; }
+        .button { display: inline-block; background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; font-weight: bold; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h2>🎉 Novo Agendamento Confirmado!</h2>
+        </div>
+        <div class="content">
+          <p>Olá, <strong>${gestorNome}</strong>!</p>
+          <p>Um voluntário acaba de agendar uma reunião individual com você.</p>
+          
+          <div class="info-box">
+            <h3 style="margin-top: 0; color: #003d7a;">📋 Detalhes da Reunião</h3>
+            <p><strong>Voluntário:</strong> ${
+              inscrito.vaga.profissionalNome
+            }</p>
+            <p><strong>Data:</strong> ${formatarDataCompleta(
+              inscrito.slot.data
+            )}</p>
+            <p><strong>Horário:</strong> ${inscrito.slot.horaInicio} - ${
+    inscrito.slot.horaFim
+  }</p>
+          </div>
+          
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="${linkCalendar}" class="button" target="_blank">
+              📅 Adicionar ao Google Calendar
+            </a>
+          </div>
+          
+          <p style="background: #fff3cd; padding: 12px; border-radius: 4px; border-left: 4px solid #ffc107;">
+            <strong>📝 Lembrete:</strong> O link do encontro online deve ser enviado por WhatsApp para o voluntário no dia agendado.
+          </p>
+        </div>
+        <div class="footer">
+          <p>Este é um e-mail automático da EuPsico.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function gerarLinkGoogleCalendar(titulo, descricao, data, horaInicio, horaFim) {
+  const [ano, mes, dia] = data.split("-");
+  const [horaIni, minIni] = horaInicio.split(":");
+  const [horaFimStr, minFim] = horaFim.split(":");
+
+  const dataInicio = `${ano}${mes}${dia}T${horaIni}${minIni}00`;
+  const dataFimFormatada = `${ano}${mes}${dia}T${horaFimStr}${minFim}00`;
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: titulo,
+    dates: `${dataInicio}/${dataFimFormatada}`,
+    details: descricao,
+    location: "Online",
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function formatarDataCompleta(dataISO) {
+  if (!dataISO) return "Data inválida";
+  const [ano, mes, dia] = dataISO.split("-");
+  const data = new Date(ano, parseInt(mes) - 1, dia);
+  const diasSemana = [
+    "Domingo",
+    "Segunda",
+    "Terça",
+    "Quarta",
+    "Quinta",
+    "Sexta",
+    "Sábado",
+  ];
+  return `${diasSemana[data.getDay()]}, ${dia}/${mes}/${ano}`;
+}
