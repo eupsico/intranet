@@ -134,11 +134,20 @@ function renderizarFormulario() {
     }
   }
 
+  // ✅ NOVO: Ordenar slots por data e hora ANTES de filtrar
+  agendamentoData.slots.sort((a, b) => {
+    // Primeiro compara as datas
+    if (a.data !== b.data) {
+      return a.data.localeCompare(b.data);
+    }
+    // Se as datas forem iguais, compara os horários
+    return a.horaInicio.localeCompare(b.horaInicio);
+  });
+
   // Filtrar slots disponíveis
   const slotsDisponiveis = agendamentoData.slots.filter(
     (slot) => !slot.vagas || slot.vagas.length === 0
   );
-
   if (slotsDisponiveis.length === 0) {
     container.innerHTML = `
       <div class="header">
