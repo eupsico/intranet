@@ -1,5 +1,5 @@
 // assets/js/agendamento-voluntario.js
-// VERSÃO 2.1 - Com redirecionamento correto após login
+// VERSÃO 2.2 - Nome do gestor por slot + Redirecionamento após login
 
 import { db as firestoreDb, auth } from "./firebase-init.js";
 import { doc, getDoc, updateDoc, onAuthStateChanged } from "./firebase-init.js";
@@ -15,7 +15,6 @@ onAuthStateChanged(auth, async (user) => {
     await carregarDadosUsuario();
     await inicializar();
   } else {
-    // Usuário não está logado - salvar URL e redirecionar
     salvarUrlERedirecionarParaLogin();
   }
 });
@@ -29,7 +28,7 @@ function salvarUrlERedirecionarParaLogin() {
     <div style="text-align: center; padding: 2rem;">
       <h3 style="color: #003d7a; margin-bottom: 1rem;">Acesso Restrito</h3>
       <p style="margin-bottom: 1.5rem;">Você precisa estar logado para agendar uma reunião.</p>
-      <button onclick="window.location.href='/index.html'" style="padding: 0.75rem 1.5rem; background: #003d7a; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+      <button onclick="window.location.href='/index.html'" style="padding: 0.75rem 1.5rem; background: #003d7a; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600;">
         Fazer Login
       </button>
     </div>
@@ -98,7 +97,7 @@ function renderizarFormulario() {
     </div>
   `;
 
-  // Info do gestor (se exibirGestor estiver ativado)
+  // Info do gestor - se exibirGestor = true e há apenas 1 gestor único
   let gestorInfo = "";
   if (
     agendamentoData.exibirGestor &&
@@ -140,6 +139,7 @@ function renderizarFormulario() {
 
   const slotsHTML = slotsDisponiveis
     .map((slot, index) => {
+      // Mostra nome do gestor em cada slot se exibirGestor = true
       const gestorTexto =
         agendamentoData.exibirGestor && slot.gestorNome
           ? `<span class="slot-gestor">com ${slot.gestorNome}</span>`
