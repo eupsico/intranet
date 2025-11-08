@@ -14,10 +14,11 @@ body {
     background: white;
     border-radius: 12px;
     padding: 2rem;
-    max-width: 600px;
+    max-width: 1200px; /* ✅ AUMENTADO para 1200px */
     width: 100%;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
+
 
 /* Header */
 .header {
