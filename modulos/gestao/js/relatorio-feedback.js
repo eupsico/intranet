@@ -1,5 +1,5 @@
 // /modulos/gestao/js/relatorio-feedback.js
-// VERSÃO 2.1 - Corrigido: Gestor por slot (não por agendamento)
+// VERSÃO 2.1 - Corrigido: Gestor por slot individual
 
 import { db as firestoreDb } from "../../../assets/js/firebase-init.js";
 import {
@@ -63,7 +63,11 @@ async function carregarRelatorios() {
       ...doc.data(),
     }));
 
-    console.log("[RELATÓRIO] Agendamentos carregados:", todosOsAgendamentos);
+    console.log("[RELATÓRIO] Dados carregados:");
+    console.log("Atas:", todasAsAtas.length);
+    console.log("Profissionais:", todosOsProfissionais.length);
+    console.log("Agendamentos:", todosOsAgendamentos);
+
     renderizarRelatorios();
   } catch (error) {
     console.error("[RELATÓRIO] Erro ao carregar dados:", error);
@@ -259,7 +263,7 @@ function renderizarAgendados() {
 function renderizarTabelaAgendados(agendamento) {
   const inscritos = [];
 
-  // ✅ CORRIGIDO: Agora pega o gestor de cada slot individual
+  // ✅ CORRIGIDO: Pega o gestorNome de cada slot individual
   agendamento.slots?.forEach((slot) => {
     slot.vagas?.forEach((vaga) => {
       if (vaga.profissionalId) {
@@ -270,7 +274,7 @@ function renderizarTabelaAgendados(agendamento) {
           nome: profissional?.nome || vaga.profissionalNome || "Desconhecido",
           data: slot.data,
           horario: `${slot.horaInicio} - ${slot.horaFim}`,
-          gestor: slot.gestorNome || "Não especificado", // ✅ CORRIGIDO: Pega do slot
+          gestor: slot.gestorNome || "Não especificado", // ✅ Agora pega do slot
           presente: vaga.presente || false,
           vagaId: vaga.id,
           slotData: slot.data,
@@ -337,10 +341,14 @@ async function marcarPresenca(checkbox) {
   try {
     const agendamento = todosOsAgendamentos.find((a) => a.id === agendamentoId);
 
-    // ✅ CORRIGIDO: Busca slot por data E hora de início
+    // ✅ Busca slot por data E hora de início para garantir o slot correto
     const slot = agendamento.slots.find(
       (s) => s.data === slotData && s.horaInicio === slotHoraInicio
     );
+
+    if (!slot) {
+      throw new Error("Slot não encontrado");
+    }
 
     const vaga = slot.vagas.find((v) => v.id === vagaId);
 
@@ -389,13 +397,13 @@ function formatarData(dataISO) {
 }
 
 function formatarDataCriacao(timestamp) {
-  if (!timestamp) return "";
+  if (!timestamp) return "Data não informada";
 
   // Se for um timestamp do Firestore
-  if (timestamp.toDate) {
+  if (timestamp && timestamp.toDate) {
     const data = timestamp.toDate();
     return `Criado em ${data.toLocaleDateString("pt-BR")}`;
   }
 
-  return "";
+  return "Data não informada";
 }

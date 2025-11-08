@@ -101,6 +101,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
           if (userDoc.exists() && userDoc.data().funcoes?.length > 0) {
             const userData = userDoc.data();
+
+            // ✅ NOVO: Verifica se há um redirecionamento pendente
+            const redirectUrl = sessionStorage.getItem("redirectAfterLogin");
+            if (redirectUrl) {
+              sessionStorage.removeItem("redirectAfterLogin");
+              window.location.href = redirectUrl;
+              return;
+            }
+
             await renderLayoutAndContent(user, userData);
             setupInactivityListeners();
           } else {
