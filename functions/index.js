@@ -1819,20 +1819,17 @@ const transporter = nodemailer.createTransport({
 });
 
 // ====================================================================
-// ✅ NOVA FUNÇÃO: enviarEmail (Reutilizável)
+// ✅ NOVA FUNÇÃO: enviarEmail (Reutilizável) - V2
 // ====================================================================
-exports.enviarEmail = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
-      "unauthenticated",
-      "Usuário não autenticado."
-    );
+exports.enviarEmail = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado.");
   }
 
-  const { destinatario, assunto, html, remetente } = data;
+  const { destinatario, assunto, html, remetente } = request.data;
 
   if (!destinatario || !assunto || !html) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "invalid-argument",
       "Parâmetros obrigatórios: destinatario, assunto, html"
     );
@@ -1848,22 +1845,27 @@ exports.enviarEmail = functions.https.onCall(async (data, context) => {
 
     await transporter.sendMail(mailOptions);
 
-    console.log(`✅ E-mail enviado para ${destinatario}`);
+    logger.log(`✅ E-mail enviado para ${destinatario}`);
     return { success: true, message: "E-mail enviado com sucesso!" };
   } catch (error) {
-    console.error("❌ Erro ao enviar e-mail:", error);
-    throw new functions.https.HttpsError("internal", "Erro ao enviar e-mail.");
+    logger.error("❌ Erro ao enviar e-mail:", error);
+    throw new HttpsError("internal", "Erro ao enviar e-mail.");
   }
 });
 
 // ====================================================================
-// ✅ NOVA FUNÇÃO: enviarEmailGestorAgendamento (Automática)
+// ✅ NOVA FUNÇÃO: enviarEmailGestorAgendamento (Automática) - V2
 // ====================================================================
-exports.enviarEmailGestorAgendamento = functions.firestore
-  .document("agendamentos_voluntarios/{agendamentoId}")
-  .onUpdate(async (change, context) => {
-    const novosDados = change.after.data();
-    const dadosAntigos = change.before.data();
+exports.enviarEmailGestorAgendamento = onDocumentUpdated(
+  "agendamentos_voluntarios/{agendamentoId}",
+  async (event) => {
+    const novosDados = event.data.after.data();
+    const dadosAntigos = event.data.before.data();
+
+    if (!novosDados || !dadosAntigos) {
+      logger.warn("Dados ausentes no evento de atualização");
+      return;
+    }
 
     const novosInscritos = [];
 
@@ -1879,18 +1881,23 @@ exports.enviarEmailGestorAgendamento = functions.firestore
 
     for (const inscrito of novosInscritos) {
       try {
-        const gestorDoc = await admin
-          .firestore()
+        const gestorDoc = await db
           .collection("usuarios")
           .doc(inscrito.slot.gestorId)
           .get();
 
-        if (!gestorDoc.exists) continue;
+        if (!gestorDoc.exists) {
+          logger.warn(`Gestor ${inscrito.slot.gestorId} não encontrado`);
+          continue;
+        }
 
         const gestorEmail = gestorDoc.data().email;
         const gestorNome = gestorDoc.data().nome;
 
-        if (!gestorEmail) continue;
+        if (!gestorEmail) {
+          logger.warn(`Gestor ${gestorNome} não tem e-mail cadastrado`);
+          continue;
+        }
 
         const linkCalendar = gerarLinkGoogleCalendar(
           `Reunião com ${inscrito.vaga.profissionalNome}`,
@@ -1908,14 +1915,15 @@ exports.enviarEmailGestorAgendamento = functions.firestore
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ E-mail enviado para ${gestorEmail}`);
+        logger.log(`✅ E-mail enviado para ${gestorEmail}`);
       } catch (error) {
-        console.error("❌ Erro:", error);
+        logger.error("❌ Erro ao enviar e-mail:", error);
       }
     }
 
     return null;
-  });
+  }
+);
 
 // ====================================================================
 // Funções auxiliares para e-mail
