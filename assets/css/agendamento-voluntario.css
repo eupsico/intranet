@@ -86,6 +86,17 @@ body {
     color: #333;
     font-size: 1.1rem;
 }
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+@media (min-width: 900px) {
+    .slots-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
 
 /* Opções de Slot */
 .slot-option {

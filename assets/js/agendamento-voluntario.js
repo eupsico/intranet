@@ -34,6 +34,21 @@ function salvarUrlERedirecionarParaLogin() {
     </div>
   `;
 }
+function obterDiaSemana(dataISO) {
+  if (!dataISO) return "";
+  const [ano, mes, dia] = dataISO.split("-");
+  const data = new Date(ano, mes - 1, dia);
+  const diasSemana = [
+    "Domingo",
+    "Segunda-feira",
+    "Terça-feira",
+    "Quarta-feira",
+    "Quinta-feira",
+    "Sexta-feira",
+    "Sábado",
+  ];
+  return diasSemana[data.getDay()];
+}
 
 async function carregarDadosUsuario() {
   try {
@@ -139,57 +154,56 @@ function renderizarFormulario() {
 
   const slotsHTML = slotsDisponiveis
     .map((slot, index) => {
-      // Mostra nome do gestor em cada slot se exibirGestor = true
       const gestorTexto =
         agendamentoData.exibirGestor && slot.gestorNome
           ? `<span class="slot-gestor">com ${slot.gestorNome}</span>`
           : "";
 
       return `
-          <label class="slot-option">
-            <input 
-              type="radio" 
-              name="slot" 
-              value="${index}" 
-              data-data="${slot.data}"
-              data-hora-inicio="${slot.horaInicio}"
-              data-hora-fim="${slot.horaFim}"
-              data-gestor-id="${slot.gestorId || ""}"
-              data-gestor-nome="${slot.gestorNome || ""}"
-            />
-            <div class="slot-info">
-              <span class="slot-date">${formatarData(slot.data)}</span>
-              <span class="slot-time">${slot.horaInicio} - ${
-        slot.horaFim
-      }</span>
-              ${gestorTexto}
-            </div>
-          </label>
-        `;
+        <label class="slot-option">
+          <input 
+            type="radio" 
+            name="slot" 
+            value="${index}" 
+            data-data="${slot.data}"
+            data-hora-inicio="${slot.horaInicio}"
+            data-hora-fim="${slot.horaFim}"
+            data-gestor-id="${slot.gestorId || ""}"
+            data-gestor-nome="${slot.gestorNome || ""}"
+          />
+          <div class="slot-info">
+            <span class="slot-date">${formatarData(slot.data)}</span>
+            <span class="slot-time">${slot.horaInicio} - ${slot.horaFim}</span>
+            ${gestorTexto}
+          </div>
+        </label>
+      `;
     })
     .join("");
 
   container.innerHTML = `
-    <div class="header">
-      <h1>Reunião com Voluntário</h1>
+  <div class="header">
+    <h1>Reunião com Voluntário</h1>
+  </div>
+
+  ${voluntarioInfo}
+  ${gestorInfo}
+
+  <div class="descricao">
+    ${agendamentoData.descricao}
+  </div>
+
+  <div class="slots-section">
+    <h3>Escolha o melhor horário para você:</h3>
+    <div class="slots-grid">
+      ${slotsHTML}
     </div>
+  </div>
 
-    ${voluntarioInfo}
-    ${gestorInfo}
-
-    <div class="descricao">
-      ${agendamentoData.descricao}
-    </div>
-
-    <form id="form-agendamento">
-      <div class="slots-section">
-        <h3>Escolha o melhor horário para você:</h3>
-        ${slotsHTML}
-      </div>
-
-      <button type="submit" class="btn-confirmar">Confirmar Agendamento</button>
-    </form>
-  `;
+  <form id="form-agendamento">
+    <button type="submit" class="btn-confirmar">Confirmar Agendamento</button>
+  </form>
+`;
 
   // Event listeners
   document
@@ -308,5 +322,6 @@ function mostrarErro(mensagem) {
 function formatarData(dataISO) {
   if (!dataISO) return "Data inválida";
   const [ano, mes, dia] = dataISO.split("-");
-  return `${dia}/${mes}/${ano}`;
+  const diaSemana = obterDiaSemana(dataISO);
+  return `${diaSemana}, ${dia}/${mes}/${ano}`;
 }
