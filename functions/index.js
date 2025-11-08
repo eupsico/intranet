@@ -8,6 +8,7 @@ const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const nodemailer = require("nodemailer");
 
 // Inicialização dos serviços do Firebase Admin
 initializeApp();
