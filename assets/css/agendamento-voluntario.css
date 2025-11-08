@@ -23,13 +23,18 @@ body {
 .header {
     text-align: center;
     margin-bottom: 2rem;
+    background: #003d7a; /* ✅ Fundo azul */
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+    margin: -2rem -2rem 2rem -2rem; /* Expande até as bordas do container */
 }
 
 .header h1 {
-    color: #003d7a;
-    margin-bottom: 0.5rem;
+    color: white; /* ✅ CORRIGIDO: Texto branco para contraste */
+    margin-bottom: 0;
     font-size: 1.8rem;
 }
+
 
 /* Info do Voluntário Logado */
 .voluntario-info {
