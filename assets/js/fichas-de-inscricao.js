@@ -1,5 +1,5 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão: 3.5 (Correção definitiva para salvar CPF limpo no Firebase)
+// Versão: 3.6 (Correção do erro de IDs e limpeza de CPF garantida)
 
 import {
   db,
@@ -167,7 +167,11 @@ function handleResponsavelCpfBlur(cpfInput, responsavelCpfInput) {
   const cpfResponsavelLimpo = limparCpf(responsavelCpfInput.value);
 
   // A condição só é válida se ambos os campos estiverem preenchidos e forem iguais
-  if (responsavelCpfInput.value && cpfResponsavelLimpo === cpfPacienteLimpo) {
+  if (
+    responsavelCpfInput.value &&
+    cpfResponsavelLimpo === cpfPacienteLimpo &&
+    cpfResponsavelLimpo.length === 11 // Garante que é um CPF válido
+  ) {
     alert(
       "Atenção: O CPF do responsável é o mesmo do paciente. Será gerado um código temporário para o paciente."
     );
@@ -327,21 +331,38 @@ async function handleFormSubmit(event) {
       const docRef = doc(db, "trilhaPaciente", pacienteExistenteData.id);
       await updateDoc(docRef, dadosParaAtualizar);
     } else {
-      // Para novo cadastro - coletar dados com CPFs já limpos
-      const novoCadastro = coletarDadosFormularioNovoComLimpeza();
+      // Para novo cadastro - usar FormData mas FORÇAR limpeza dos CPFs
+      const novoCadastro = coletarDadosFormularioNovo();
+
+      // *** FORÇAR LIMPEZA DOS CPFs ANTES DE SALVAR ***
+      novoCadastro.cpf = limparCpf(novoCadastro.cpf);
+
+      // Limpar CPF do responsável
+      if (novoCadastro.responsavel && novoCadastro.responsavel.cpf) {
+        novoCadastro.responsavel.cpf = limparCpf(novoCadastro.responsavel.cpf);
+      }
+
+      // Limpar CEP se existir
+      if (novoCadastro.cep) {
+        novoCadastro.cep = limparCpf(novoCadastro.cep);
+      }
+
       novoCadastro.timestamp = serverTimestamp();
       novoCadastro.status = "inscricao_documentos";
 
       // DEBUG: Log para verificar se o CPF está limpo antes de salvar
-      console.log("Dados para salvar - CPF:", novoCadastro.cpf);
-      console.log(
-        "Dados para salvar - CPF Responsável:",
-        novoCadastro.responsavel.cpf
-      );
+      console.log("=== DADOS PARA SALVAR ===");
+      console.log("CPF do paciente:", novoCadastro.cpf);
+      if (novoCadastro.responsavel) {
+        console.log("CPF do responsável:", novoCadastro.responsavel.cpf);
+      }
+      console.log("CEP:", novoCadastro.cep);
+      console.log("=== FIM DEBUG ===");
 
       await addDoc(collection(db, "trilhaPaciente"), novoCadastro);
     }
 
+    // Sucesso - limpar form
     form.innerHTML = `<div style="text-align: center; padding: 30px;"><h2>Inscrição Enviada com Sucesso!</h2><p>Recebemos seus dados. Em breve, nossa equipe entrará em contato.</p></div>`;
   } catch (error) {
     console.error("Erro ao salvar inscrição:", error);
@@ -351,67 +372,37 @@ async function handleFormSubmit(event) {
   }
 }
 
-// --- FUNÇÃO TOTALMENTE REESCRITA PARA COLETAR DADOS COM CPFs LIMPOS ---
-/**
- * Coleta dados do formulário novo com CPFs e CEP já limpos.
- * @returns {Object} Dados do formulário com formatação removida dos CPFs e CEP.
- */
-function coletarDadosFormularioNovoComLimpeza() {
+// --- FUNÇÃO ORIGINAL MODIFICADA PARA COLETAR DADOS ---
+function coletarDadosFormularioNovo() {
+  const form = document.getElementById("inscricao-form");
+  const formData = new FormData(form);
   const dados = {};
 
-  // Coletar CPF do paciente - SEMPRE LIMPO
-  const cpfInput = document.getElementById("cpf");
-  dados.cpf = limparCpf(cpfInput.value);
+  for (let [key, value] of formData.entries()) {
+    dados[key] = value;
+  }
 
-  // Coletar outros campos do formulário
-  const outrosCampos = [
-    "nomeCompleto",
-    "dataNascimento",
-    "cep",
-    "rua",
-    "numeroCasa",
-    "bairro",
-    "cidade",
-    "pessoasMoradia",
-    "casaPropria",
-    "valorAluguel",
-    "rendaMensal",
-    "rendaFamiliar",
-    "telefoneCelular",
-    "telefoneFixo",
-    "email",
-  ];
-
-  outrosCampos.forEach((campo) => {
-    const input = document.getElementById(campo);
-    if (input) {
-      if (campo === "cep") {
-        dados[campo] = limparCpf(input.value); // Limpar CEP também
-      } else {
-        dados[campo] = input.value;
-      }
-    }
-  });
-
-  // Coletar dados do responsável
-  if (
-    document.getElementById("responsavel-legal-section") &&
-    !document
-      .getElementById("responsavel-legal-section")
-      .classList.contains("hidden-section")
-  ) {
+  // Processar dados do responsável
+  if (dados.responsavelNome || dados.responsavelCpf) {
     dados.responsavel = {
-      nome: document.getElementById("responsavelNome")?.value || "",
-      cpf: limparCpf(document.getElementById("responsavelCpf")?.value || ""), // SEMPRE LIMPO
+      nome: dados.responsavelNome || "",
+      cpf: dados.responsavelCpf || "", // Será limpo depois
       parentesco:
-        document.getElementById("responsavelParentesco")?.value === "Outro"
-          ? document.getElementById("responsavelParentescoOutro")?.value
-          : document.getElementById("responsavelParentesco")?.value || "",
-      contato: document.getElementById("responsavelContato")?.value || "",
+        dados.responsavelParentesco === "Outro"
+          ? dados.responsavelParentescoOutro || ""
+          : dados.responsavelParentesco || "",
+      contato: dados.responsavelContato || "",
     };
   } else {
     dados.responsavel = null;
   }
+
+  // Limpar campos auxiliares do responsável
+  delete dados.responsavelNome;
+  delete dados.responsavelCpf;
+  delete dados.responsavelParentesco;
+  delete dados.responsavelParentescoOutro;
+  delete dados.responsavelContato;
 
   // Coletar disponibilidade
   dados.disponibilidadeGeral = Array.from(
@@ -421,6 +412,9 @@ function coletarDadosFormularioNovoComLimpeza() {
   dados.disponibilidadeEspecifica = Array.from(
     document.querySelectorAll('input[name="horario-especifico"]:checked')
   ).map((cb) => cb.value);
+
+  // Remover campo que pode conflitar
+  delete dados["horario-especifico"];
 
   return dados;
 }
