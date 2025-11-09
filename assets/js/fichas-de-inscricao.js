@@ -1,5 +1,5 @@
 // Arquivo: /assets/js/fichas-de-inscricao.js
-// Versão: 3.3 (Restaura a lógica de criação de CPF temporário para menores)
+// Versão: 3.5 (Correção definitiva para salvar CPF limpo no Firebase)
 
 import {
   db,
@@ -74,18 +74,11 @@ async function handleCpfBlur(event) {
   const cpf = cpfInput.value.replace(/\D/g, "");
   const cpfError = document.getElementById("cpf-error");
 
-  resetFormState(); // Sempre reseta o estado do formulário primeiro
-
+  resetFormState();
   cpfError.style.display = "none";
 
   if (!validarCPF(cpf)) {
-    if (cpf.length > 0) {
-      cpfError.style.display = "block"; // --- NOVO: Bloqueia o avanço e notifica o usuário ---
-      document.getElementById("form-body").classList.add("hidden-section"); // Garante que a próxima seção esteja oculta
-      alert(
-        "Por favor, digite o CPF correto para continuar o preenchimento da ficha."
-      ); // ----------------------------------------------------
-    }
+    if (cpf.length > 0) cpfError.style.display = "block";
     return;
   }
 
@@ -167,19 +160,19 @@ function handleParentescoChange(event) {
 }
 
 // ####################################################################
-// ## FUNÇÃO CORRIGIDA ##
+// ## FUNÇÃO CORRIGIDA PARA GARANTIR CPF SEM FORMATAÇÃO ##
 // ####################################################################
 function handleResponsavelCpfBlur(cpfInput, responsavelCpfInput) {
+  const cpfPacienteLimpo = limparCpf(cpfInput.value);
+  const cpfResponsavelLimpo = limparCpf(responsavelCpfInput.value);
+
   // A condição só é válida se ambos os campos estiverem preenchidos e forem iguais
-  if (
-    responsavelCpfInput.value &&
-    responsavelCpfInput.value === cpfInput.value
-  ) {
+  if (responsavelCpfInput.value && cpfResponsavelLimpo === cpfPacienteLimpo) {
     alert(
       "Atenção: O CPF do responsável é o mesmo do paciente. Será gerado um código temporário para o paciente."
     );
     const tempId = `99${Date.now()}`;
-    cpfInput.value = tempId;
+    cpfInput.value = tempId; // Valor limpo, sem formatação
     cpfInput.readOnly = true;
     alert(
       `O CPF do paciente foi substituído por um código de identificação: ${tempId}. Guarde este código para futuras consultas.`
@@ -258,30 +251,40 @@ function getMissingRequiredFields(form) {
   return missingFields;
 }
 
+// --- NOVA FUNÇÃO PARA LIMPAR CPF ---
+/**
+ * Remove todos os caracteres não numéricos de um CPF.
+ * @param {string} cpf - O CPF que pode conter formatação.
+ * @returns {string} - O CPF limpo, apenas com números.
+ */
+function limparCpf(cpf) {
+  return cpf.replace(/\D/g, "");
+}
+
 // --- Funções Handler de Eventos (handleFormSubmit) ---
 
 async function handleFormSubmit(event) {
   event.preventDefault();
   const form = document.getElementById("inscricao-form");
   const cpfInput = document.getElementById("cpf");
-  const cpf = cpfInput.value.replace(/\D/g, "");
-  const cpfError = document.getElementById("cpf-error"); // 1. Garante que a mensagem de erro do CPF seja limpa inicialmente
+  const cpf = limparCpf(cpfInput.value); // GARANTIR CPF LIMPO
+  const cpfError = document.getElementById("cpf-error");
 
-  cpfError.style.display = "none"; // 2. Verifica a validade do CPF, que é um requisito crítico
+  cpfError.style.display = "none";
 
   if (!validarCPF(cpf)) {
     cpfInput.setCustomValidity("CPF inválido ou incompleto.");
-    cpfError.style.display = "block"; // Mostra a mensagem de erro
-    form.reportValidity(); // Força a exibição da dica de erro do navegador
+    cpfError.style.display = "block";
+    form.reportValidity();
     alert(
       "Atenção: O CPF informado é inválido. Por favor, corrija para prosseguir."
     );
-    cpfInput.setCustomValidity(""); // Limpa a validade para permitir correções futuras
+    cpfInput.setCustomValidity("");
     return;
-  } // 3. Verifica a validade de TODOS os outros campos obrigatórios
+  }
 
   if (!form.checkValidity()) {
-    form.reportValidity(); // Força o navegador a mostrar a dica de erro no primeiro campo faltante // --- ALTERAÇÃO AQUI: Mensagem detalhada para campos faltantes ---
+    form.reportValidity();
 
     const missingFields = getMissingRequiredFields(form);
     let alertMessage =
@@ -290,12 +293,11 @@ async function handleFormSubmit(event) {
     if (missingFields.length > 0) {
       alertMessage += "• " + missingFields.join("\n• ");
     } else {
-      // Fallback caso a validação do navegador pegue algo que a função não listou (ex: validação de email)
       alertMessage =
         "Por favor, preencha todos os campos obrigatórios (*) corretamente.";
     }
 
-    alert(alertMessage); // ------------------------------------------------------------
+    alert(alertMessage);
     return;
   }
 
@@ -305,12 +307,14 @@ async function handleFormSubmit(event) {
 
   try {
     if (pacienteExistenteData) {
+      // Para atualização - usar CPF já limpo do paciente existente
       const dadosParaAtualizar = {
+        cpf: pacienteExistenteData.cpf, // CPF já limpo do banco
         rua: document.getElementById("update-rua").value,
         numeroCasa: document.getElementById("update-numero").value,
         bairro: document.getElementById("update-bairro").value,
         cidade: document.getElementById("update-cidade").value,
-        cep: document.getElementById("update-cep").value,
+        cep: limparCpf(document.getElementById("update-cep").value), // CEP limpo
         pessoasMoradia: document.getElementById("update-pessoas-moradia").value,
         casaPropria: document.getElementById("update-casa-propria").value,
         valorAluguel: document.getElementById("update-valor-aluguel").value,
@@ -323,9 +327,17 @@ async function handleFormSubmit(event) {
       const docRef = doc(db, "trilhaPaciente", pacienteExistenteData.id);
       await updateDoc(docRef, dadosParaAtualizar);
     } else {
-      const novoCadastro = coletarDadosFormularioNovo();
+      // Para novo cadastro - coletar dados com CPFs já limpos
+      const novoCadastro = coletarDadosFormularioNovoComLimpeza();
       novoCadastro.timestamp = serverTimestamp();
       novoCadastro.status = "inscricao_documentos";
+
+      // DEBUG: Log para verificar se o CPF está limpo antes de salvar
+      console.log("Dados para salvar - CPF:", novoCadastro.cpf);
+      console.log(
+        "Dados para salvar - CPF Responsável:",
+        novoCadastro.responsavel.cpf
+      );
 
       await addDoc(collection(db, "trilhaPaciente"), novoCadastro);
     }
@@ -338,7 +350,80 @@ async function handleFormSubmit(event) {
     submitButton.textContent = "Enviar Inscrição";
   }
 }
-// --- Funções Auxiliares (sem alterações) ---
+
+// --- FUNÇÃO TOTALMENTE REESCRITA PARA COLETAR DADOS COM CPFs LIMPOS ---
+/**
+ * Coleta dados do formulário novo com CPFs e CEP já limpos.
+ * @returns {Object} Dados do formulário com formatação removida dos CPFs e CEP.
+ */
+function coletarDadosFormularioNovoComLimpeza() {
+  const dados = {};
+
+  // Coletar CPF do paciente - SEMPRE LIMPO
+  const cpfInput = document.getElementById("cpf");
+  dados.cpf = limparCpf(cpfInput.value);
+
+  // Coletar outros campos do formulário
+  const outrosCampos = [
+    "nomeCompleto",
+    "dataNascimento",
+    "cep",
+    "rua",
+    "numeroCasa",
+    "bairro",
+    "cidade",
+    "pessoasMoradia",
+    "casaPropria",
+    "valorAluguel",
+    "rendaMensal",
+    "rendaFamiliar",
+    "telefoneCelular",
+    "telefoneFixo",
+    "email",
+  ];
+
+  outrosCampos.forEach((campo) => {
+    const input = document.getElementById(campo);
+    if (input) {
+      if (campo === "cep") {
+        dados[campo] = limparCpf(input.value); // Limpar CEP também
+      } else {
+        dados[campo] = input.value;
+      }
+    }
+  });
+
+  // Coletar dados do responsável
+  if (
+    document.getElementById("responsavel-legal-section") &&
+    !document
+      .getElementById("responsavel-legal-section")
+      .classList.contains("hidden-section")
+  ) {
+    dados.responsavel = {
+      nome: document.getElementById("responsavelNome")?.value || "",
+      cpf: limparCpf(document.getElementById("responsavelCpf")?.value || ""), // SEMPRE LIMPO
+      parentesco:
+        document.getElementById("responsavelParentesco")?.value === "Outro"
+          ? document.getElementById("responsavelParentescoOutro")?.value
+          : document.getElementById("responsavelParentesco")?.value || "",
+      contato: document.getElementById("responsavelContato")?.value || "",
+    };
+  } else {
+    dados.responsavel = null;
+  }
+
+  // Coletar disponibilidade
+  dados.disponibilidadeGeral = Array.from(
+    document.querySelectorAll('input[name="horario"]:checked')
+  ).map((cb) => cb.parentElement.textContent.trim());
+
+  dados.disponibilidadeEspecifica = Array.from(
+    document.querySelectorAll('input[name="horario-especifico"]:checked')
+  ).map((cb) => cb.value);
+
+  return dados;
+}
 
 function mostrarSecaoAtualizacao(dados) {
   document.getElementById("initial-fields").classList.add("hidden-section");
@@ -355,40 +440,6 @@ function mostrarSecaoAtualizacao(dados) {
   document.getElementById("update-bairro").value = dados.bairro || "";
   document.getElementById("update-cidade").value = dados.cidade || "";
   document.getElementById("update-cep").value = dados.cep || "";
-}
-
-function coletarDadosFormularioNovo() {
-  const form = document.getElementById("inscricao-form");
-  const formData = new FormData(form);
-  const dados = {};
-  for (let [key, value] of formData.entries()) {
-    dados[key] = value;
-  }
-
-  dados.responsavel = {
-    nome: dados.responsavelNome,
-    cpf: dados.responsavelCpf,
-    parentesco:
-      dados.responsavelParentesco === "Outro"
-        ? dados.responsavelParentescoOutro
-        : dados.responsavelParentesco,
-    contato: dados.responsavelContato,
-  };
-  delete dados.responsavelNome;
-  delete dados.responsavelCpf;
-  delete dados.responsavelParentesco;
-  delete dados.responsavelParentescoOutro;
-  delete dados.responsavelContato;
-
-  dados.disponibilidadeGeral = Array.from(
-    document.querySelectorAll('input[name="horario"]:checked')
-  ).map((cb) => cb.parentElement.textContent.trim());
-  dados.disponibilidadeEspecifica = Array.from(
-    document.querySelectorAll('input[name="horario-especifico"]:checked')
-  ).map((cb) => cb.value);
-  delete dados["horario-especifico"];
-
-  return dados;
 }
 
 function resetFormState() {
