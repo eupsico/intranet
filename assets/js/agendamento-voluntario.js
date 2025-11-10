@@ -136,7 +136,7 @@ function renderizarFormulario() {
     const diferencaMs = dataInicioSlot - agora;
     const diferencaHoras = diferencaMs / (1000 * 60 * 60); // Converte para horas
 
-    return diferencaHoras >= 12;
+    return diferencaHoras >= 24;
   });
 
   if (slotsDisponiveis.length === 0) {
