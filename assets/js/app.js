@@ -483,7 +483,7 @@ document.addEventListener("DOMContentLoaded", function () {
         titulo: "Gestão",
         descricao: "Registro de atas, plano de ação e dashboards de reuniões.",
         url: "./modulos/gestao/page/painel-gestao.html",
-        roles: ["admin", "gestao"], // Usuários com 'admin' ou 'gestao' poderão ver
+        roles: ["admin", "gestor"], // Usuários com 'admin' ou 'gestao' poderão ver
         icon: icons.gestao,
       },
       servico_social: {
