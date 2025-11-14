@@ -190,12 +190,6 @@ function trocarAba(tabId) {
   if (activeContent) activeContent.classList.add("active");
 
   activeContent.scrollIntoView({ behavior: "smooth", block: "start" });
-
-  // Lazy render para Agendados
-  if (tabId === "agendados" && !activeContent.classList.contains("rendered")) {
-    renderizarAgendados(todosOsAgendamentos, todosOsProfissionais);
-    activeContent.classList.add("rendered");
-  }
 }
 
 // RESUMO GERAL (agora incluída)
