@@ -408,7 +408,7 @@ function mostrarSucesso(data, horaInicio, horaFim, gestorNome) {
       }</p>
       <p><strong>Data:</strong> ${formatarData(data)}</p>
       <p><strong>Horário:</strong> ${horaInicio} - ${horaFim}</p>
-      ${gestorTexto}
+      
       
       <div style="margin-top: 2rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 2px solid #4285f4;">
         <p style="margin: 0 0 1rem 0; font-weight: 600; color: #003d7a;">
