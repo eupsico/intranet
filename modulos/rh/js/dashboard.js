@@ -844,7 +844,7 @@ export async function initdashboard(user, userData) {
   }
 
   // ============================================
-  // FUNÇÃO: Renderizar Lista de Candidatos (CORRIGIDA)
+  // FUNÇÃO: Renderizar Lista de Candidatos
   // ============================================
 
   async function renderizarListaCandidatos() {
@@ -863,23 +863,13 @@ export async function initdashboard(user, userData) {
 
     if (candidatos.length === 0) {
       tabelaBody.innerHTML =
-        '<tr><td colspan="6" class="text-center text-muted">Nenhum candidato encontrado</td></tr>';
+        '<tr><td colspan="7" class="text-center text-muted">Nenhum candidato encontrado</td></tr>';
       return;
     }
 
     candidatos.forEach((cand) => {
-      // ✅ CORRIGIDO: Busca melhorada da vaga
       const vaga = vagasCache.find((v) => v.id === cand.vaga_id);
-      const vagaNome =
-        vaga?.titulo ||
-        vaga?.tituloVaga ||
-        vaga?.nome ||
-        cand.vaga_id ||
-        "Sem vaga";
-
-      console.log(
-        `📋 Candidato: ${cand.nome_completo}, Vaga ID: ${cand.vaga_id}, Vaga Nome: ${vagaNome}`
-      );
+      const vagaNome = vaga?.titulo || vaga?.tituloVaga || "-";
 
       const testeEnviado = tokensCache.some((t) => t.candidatoId === cand.id);
       const testeRespondido = tokensCache.some(
@@ -895,17 +885,23 @@ export async function initdashboard(user, userData) {
       }
 
       const tr = document.createElement("tr");
-      // ✅ REMOVIDA COLUNA "AÇÕES" (colspan ajustado de 7 para 6)
       tr.innerHTML = `
-      <td><strong>${cand.nome_completo || "-"}</strong></td>
-      <td>${cand.email_candidato || "-"}</td>
-      <td>${cand.telefone_contato || "-"}</td>
-      <td><strong>${vagaNome}</strong></td>
-      <td><span class="badge bg-info">${
-        cand.status_recrutamento || "Pendente"
-      }</span></td>
-      <td>${statusTeste}</td>
-    `;
+        <td><strong>${cand.nome_completo || "-"}</strong></td>
+        <td>${cand.email_candidato || "-"}</td>
+        <td>${cand.telefone_contato || "-"}</td>
+        <td>${vagaNome}</td>
+        <td><span class="badge bg-info">${
+          cand.status_recrutamento || "Pendente"
+        }</span></td>
+        <td>${statusTeste}</td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-primary" onclick="alert('Ver detalhes de: ${
+            cand.nome_completo
+          }')">
+            <i class="fas fa-eye"></i>
+          </button>
+        </td>
+      `;
       tabelaBody.appendChild(tr);
     });
   }
@@ -920,8 +916,13 @@ export async function initdashboard(user, userData) {
     atualizarTabelaCandidatos(candidatosFiltrados, tabelaBody);
   }
 
+  // ============================================
+  // FUNÇÃO: Renderizar Respostas aos Testes (COM ÍCONE CLARO)
+  // ============================================
+
   async function renderizarRespostasAosTestes() {
     console.log("🔹 Renderizando respostas aos testes...");
+
     const tabelaBody = document.getElementById("rel-tbody-respostas");
     if (!tabelaBody) return;
 
@@ -957,75 +958,20 @@ export async function initdashboard(user, userData) {
           ? `${tempoMinutos}min ${tempoSegundos % 60}s`
           : `${tempoSegundos}s`;
 
-      // ✅ CALCULA NOTA (CORRIGIDO para tratar objetos)
-      let notaHTML = '<span class="badge bg-secondary">-</span>';
-
-      if (teste?.perguntas && token.respostas) {
-        let acertos = 0;
-        let totalComGabarito = 0;
-
-        teste.perguntas.forEach((pergunta, index) => {
-          let respostaCorreta = pergunta.respostaCorreta || pergunta.gabarito;
-
-          // ✅ CORRIGIDO: Extrai texto se for objeto
-          if (typeof respostaCorreta === "object" && respostaCorreta !== null) {
-            respostaCorreta =
-              respostaCorreta.texto || respostaCorreta.resposta || null;
-          }
-
-          if (respostaCorreta) {
-            totalComGabarito++;
-
-            let respostaCandidato = token.respostas[`resposta-${index}`];
-
-            // ✅ CORRIGIDO: Extrai texto se for objeto
-            if (
-              typeof respostaCandidato === "object" &&
-              respostaCandidato !== null
-            ) {
-              respostaCandidato =
-                respostaCandidato.texto || respostaCandidato.resposta;
-            }
-
-            if (
-              String(respostaCandidato).trim().toLowerCase() ===
-              String(respostaCorreta).trim().toLowerCase()
-            ) {
-              acertos++;
-            }
-          }
-        });
-
-        if (totalComGabarito > 0) {
-          const porcentagem = ((acertos / totalComGabarito) * 100).toFixed(0);
-          let corBadge = "bg-danger";
-
-          if (porcentagem >= 70) {
-            corBadge = "bg-success";
-          } else if (porcentagem >= 50) {
-            corBadge = "bg-warning text-dark";
-          }
-
-          notaHTML = `<span class="badge ${corBadge}">${acertos}/${totalComGabarito} (${porcentagem}%)</span>`;
-        }
-      }
-
       const tr = document.createElement("tr");
       tr.innerHTML = `
       <td><strong>${candidatoNome}</strong></td>
       <td>${testeNome}</td>
       <td>${dataResposta}</td>
       <td class="text-center"><span class="badge bg-info">${tempoFormatado}</span></td>
-      <td class="text-center">${notaHTML}</td>
       <td><span class="badge bg-success">✅ Respondido</span></td>
       <td class="text-center">
         <button 
           class="btn btn-sm btn-primary" 
-          title="Ver Respostas" 
+          title="Ver Respostas"
           onclick="window.abrirModalVerRespostas('${
             token.id
-          }', '${candidatoNome.replace(/'/g, "\\'")}')"
-        >
+          }', '${candidatoNome.replace(/'/g, "\\'")}')">
           <i class="fas fa-eye me-1"></i> Ver Respostas
         </button>
       </td>
@@ -1035,7 +981,7 @@ export async function initdashboard(user, userData) {
 
     if (tokensCache.filter((t) => t.usado).length === 0) {
       tabelaBody.innerHTML =
-        '<tr><td colspan="7" class="text-center text-muted">Nenhuma resposta encontrada</td></tr>';
+        '<tr><td colspan="6" class="text-center text-muted">Nenhuma resposta encontrada</td></tr>';
     }
   }
 
@@ -1212,45 +1158,14 @@ export async function initdashboard(user, userData) {
       },
     };
   }
+
   // ============================================
-  // FUNÇÃO: Visualizar Respostas do Teste (COM CARREGAMENTO DINÂMICO DE SWEETALERT2)
+  // FUNÇÃO: Visualizar Respostas do Teste (SEM BOOTSTRAP)
   // ============================================
 
   window.abrirModalVerRespostas = async function (tokenId, candidatoNome) {
     console.log(`🔹 Abrindo respostas do teste: ${tokenId}`);
 
-    // ✅ VERIFICA SE SWEETALERT2 ESTÁ CARREGADO
-    if (typeof Swal === "undefined") {
-      console.log("⚠️ Carregando SweetAlert2...");
-
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11";
-      script.onload = () => {
-        console.log("✅ SweetAlert2 carregado");
-        // Tenta novamente após carregar
-        abrirModalVerRespostasInterno(tokenId, candidatoNome);
-      };
-      script.onerror = () => {
-        console.error("❌ Erro ao carregar SweetAlert2");
-        if (window.showToast) {
-          window.showToast("Erro ao carregar componente de modal", "error");
-        } else {
-          alert("Erro ao carregar componente de modal");
-        }
-      };
-      document.head.appendChild(script);
-      return;
-    }
-
-    // Se já está carregado, executa direto
-    abrirModalVerRespostasInterno(tokenId, candidatoNome);
-  };
-
-  // ============================================
-  // FUNÇÃO: Visualizar Respostas do Teste COM CORREÇÃO (CORRIGIDO)
-  // ============================================
-
-  async function abrirModalVerRespostasInterno(tokenId, candidatoNome) {
     try {
       if (!db) {
         console.error("❌ ERRO: Firestore não inicializado!");
@@ -1288,144 +1203,22 @@ export async function initdashboard(user, userData) {
 
       console.log("✅ Teste carregado:", testeDados);
 
-      // ✅ NOVA LÓGICA: Calcula acertos e erros
-      let totalPerguntas = 0;
-      let acertos = 0;
-      let erros = 0;
-
-      // ✅ Cria HTML do modal com correção
+      // ✅ Cria HTML do modal com SweetAlert2
       let perguntasHTML = "";
 
       if (testeDados.perguntas && testeDados.perguntas.length > 0) {
-        totalPerguntas = testeDados.perguntas.length;
-
         testeDados.perguntas.forEach((pergunta, index) => {
-          // ✅ CORRIGIDO: Trata resposta do candidato
-          let respostaCandidato = tokenData.respostas[`resposta-${index}`];
-
-          // Se for objeto, extrai o texto da resposta
-          if (
-            typeof respostaCandidato === "object" &&
-            respostaCandidato !== null
-          ) {
-            respostaCandidato =
-              respostaCandidato.texto ||
-              respostaCandidato.resposta ||
-              JSON.stringify(respostaCandidato);
-          }
-
-          respostaCandidato = respostaCandidato || "-";
-
-          // ✅ CORRIGIDO: Trata resposta correta
-          let respostaCorreta =
-            pergunta.respostaCorreta || pergunta.gabarito || null;
-
-          // Se for objeto, extrai o texto
-          if (typeof respostaCorreta === "object" && respostaCorreta !== null) {
-            respostaCorreta =
-              respostaCorreta.texto ||
-              respostaCorreta.resposta ||
-              JSON.stringify(respostaCorreta);
-          }
-
-          console.log(`📝 Pergunta ${index + 1}:`, {
-            respostaCandidato,
-            respostaCorreta,
-            pergunta,
-          });
-
-          // ✅ Verifica se há resposta correta definida
-          let statusResposta = "";
-          let corResposta = "#555"; // cinza padrão
-          let iconeResposta = "";
-
-          if (respostaCorreta) {
-            // Normaliza strings para comparação (case-insensitive e remove espaços extras)
-            const respostaCandidatoNorm = String(respostaCandidato)
-              .trim()
-              .toLowerCase();
-            const respostaCorretaNorm = String(respostaCorreta)
-              .trim()
-              .toLowerCase();
-
-            if (respostaCandidatoNorm === respostaCorretaNorm) {
-              acertos++;
-              statusResposta = "✅ CORRETO";
-              corResposta = "#28a745"; // verde
-              iconeResposta = "✅";
-            } else {
-              erros++;
-              statusResposta = "❌ INCORRETO";
-              corResposta = "#dc3545"; // vermelho
-              iconeResposta = "❌";
-            }
-          } else {
-            statusResposta = "ℹ️ Sem gabarito definido";
-            corResposta = "#6c757d"; // cinza
-            iconeResposta = "ℹ️";
-          }
-
-          // ✅ CORRIGIDO: Trata as opções
-          let opcoesHTML = "";
-
-          if (
-            pergunta.opcoes &&
-            Array.isArray(pergunta.opcoes) &&
-            pergunta.opcoes.length > 0
-          ) {
-            const opcoesTexto = pergunta.opcoes.map((opcao) => {
-              // Se for objeto, extrai o texto
-              if (typeof opcao === "object" && opcao !== null) {
-                return (
-                  opcao.texto ||
-                  opcao.resposta ||
-                  opcao.label ||
-                  JSON.stringify(opcao)
-                );
-              }
-              return String(opcao);
-            });
-
-            opcoesHTML = `
-          <div style="background: #f9f9f9; padding: 8px; border-radius: 4px; margin: 8px 0; font-size: 13px;">
-            <strong>Opções:</strong>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-              ${opcoesTexto.map((opcao) => `<li>${opcao}</li>`).join("")}
-            </ul>
-          </div>
-          `;
-          }
-
+          const resposta = tokenData.respostas[`resposta-${index}`] || "-";
           perguntasHTML += `
-        <div style="background: #f0f8ff; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid ${corResposta}; text-align: left;">
-          <p style="margin: 0 0 8px 0; font-weight: 600; color: #333;">
-            <strong>Pergunta ${index + 1}:</strong> ${pergunta.enunciado}
-          </p>
-          
-          ${opcoesHTML}
-          
-          <div style="background: white; padding: 10px; border-radius: 4px; color: ${corResposta}; border: 2px solid ${corResposta}; margin-top: 8px;">
-            <strong>${iconeResposta} Resposta do Candidato:</strong> ${respostaCandidato}
+          <div style="background: #f0f8ff; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #667eea; text-align: left;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #333;">
+              <strong>Pergunta ${index + 1}:</strong> ${pergunta.enunciado}
+            </p>
+            <div style="background: white; padding: 10px; border-radius: 4px; color: #555;">
+              <strong>Resposta:</strong> ${resposta}
+            </div>
           </div>
-          
-          ${
-            respostaCorreta
-              ? `
-          <div style="background: #e8f8f0; padding: 8px; border-radius: 4px; margin-top: 8px; color: #28a745; border: 1px solid #28a745;">
-            <strong>✓ Resposta Correta:</strong> ${respostaCorreta}
-          </div>
-          <div style="text-align: right; margin-top: 5px; font-weight: bold; color: ${corResposta}; font-size: 14px;">
-            ${statusResposta}
-          </div>
-          `
-              : `
-          <div style="text-align: right; margin-top: 5px; font-style: italic; color: #6c757d; font-size: 12px;">
-            ${statusResposta}
-          </div>
-          `
-          }
-        </div>
-      `;
+        `;
         });
       } else {
         perguntasHTML =
@@ -1451,61 +1244,28 @@ export async function initdashboard(user, userData) {
           }s`
         : "-";
 
-      // ✅ Calcula porcentagem de acerto
-      const porcentagemAcerto =
-        totalPerguntas > 0 ? ((acertos / totalPerguntas) * 100).toFixed(1) : 0;
-
-      // ✅ Define cor do resultado baseado na porcentagem
-      let corResultado = "#6c757d"; // cinza padrão
-      if (porcentagemAcerto >= 70) {
-        corResultado = "#28a745"; // verde (aprovado)
-      } else if (porcentagemAcerto >= 50) {
-        corResultado = "#ffc107"; // amarelo (médio)
-      } else {
-        corResultado = "#dc3545"; // vermelho (reprovado)
-      }
-
       // ✅ Abre com SweetAlert2
       await Swal.fire({
         title: `<i class="fas fa-eye me-2"></i> Respostas do Teste`,
         html: `
-      <div style="text-align: left; max-height: 500px; overflow-y: auto;">
-        <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <p style="margin: 5px 0;"><strong>📋 Candidato:</strong> ${candidatoNome}</p>
-          <p style="margin: 5px 0;"><strong>📝 Teste:</strong> ${
-            testeDados.titulo || "Teste"
-          }</p>
-          <p style="margin: 5px 0;"><strong>⏱️ Tempo gasto:</strong> ${tempoGasto}</p>
-          <p style="margin: 5px 0;"><strong>📅 Data da resposta:</strong> ${dataResposta}</p>
-        </div>
-        
-        <!-- ✅ RESULTADO DA CORREÇÃO -->
-        <div style="background: ${corResultado}; color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-          <h4 style="margin: 0 0 10px 0; font-size: 18px;">📊 Resultado da Correção</h4>
-          <div style="display: flex; justify-content: space-around; margin-top: 10px;">
-            <div>
-              <div style="font-size: 32px; font-weight: bold;">${acertos}</div>
-              <div style="font-size: 14px;">✅ Acertos</div>
-            </div>
-            <div>
-              <div style="font-size: 32px; font-weight: bold;">${erros}</div>
-              <div style="font-size: 14px;">❌ Erros</div>
-            </div>
-            <div>
-              <div style="font-size: 32px; font-weight: bold;">${porcentagemAcerto}%</div>
-              <div style="font-size: 14px;">📈 Aproveitamento</div>
-            </div>
+        <div style="text-align: left; max-height: 500px; overflow-y: auto;">
+          <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <p style="margin: 5px 0;"><strong>📋 Candidato:</strong> ${candidatoNome}</p>
+            <p style="margin: 5px 0;"><strong>📝 Teste:</strong> ${
+              testeDados.titulo || "Teste"
+            }</p>
+            <p style="margin: 5px 0;"><strong>⏱️ Tempo gasto:</strong> ${tempoGasto}</p>
+            <p style="margin: 5px 0;"><strong>📅 Data da resposta:</strong> ${dataResposta}</p>
           </div>
+          
+          <hr style="margin: 20px 0;">
+          
+          <h6 style="color: #667eea; margin-bottom: 15px; text-align: left;"><strong>Respostas Fornecidas:</strong></h6>
+          
+          ${perguntasHTML}
         </div>
-        
-        <hr style="margin: 20px 0;">
-        
-        <h6 style="color: #667eea; margin-bottom: 15px; text-align: left;"><strong>Respostas Fornecidas:</strong></h6>
-        
-        ${perguntasHTML}
-      </div>
-    `,
-        width: "900px",
+      `,
+        width: "800px",
         showCancelButton: true,
         confirmButtonText: '<i class="fas fa-download me-1"></i> Exportar',
         cancelButtonText: "Fechar",
@@ -1513,16 +1273,16 @@ export async function initdashboard(user, userData) {
         cancelButtonColor: "#6c757d",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.exportarRespostaIndividual?.(tokenId, candidatoNome);
+          window.exportarRespostaIndividual(tokenId, candidatoNome);
         }
       });
 
-      console.log("✅ Modal de respostas aberto com correção");
+      console.log("✅ Modal de respostas aberto");
     } catch (error) {
       console.error("❌ Erro ao abrir respostas:", error);
       window.showToast?.(`Erro: ${error.message}`, "error");
     }
-  }
+  };
 
   // ============================================
   // FUNÇÃO: Exportar Resposta Individual (COM RESPOSTAS)
