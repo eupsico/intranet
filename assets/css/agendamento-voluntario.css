@@ -1,0 +1,311 @@
+/* assets/css/agendamento-voluntario.css */
+/* Estilos específicos para a página de agendamento de reunião com voluntário */
+
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.container {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 1200px; /* ✅ AUMENTADO para 1200px */
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+    background: #003d7a; /* ✅ Fundo azul */
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+    margin: -2rem -2rem 2rem -2rem; /* Expande até as bordas do container */
+}
+
+.header h1 {
+    color: white; /* ✅ CORRIGIDO: Texto branco para contraste */
+    margin-bottom: 0;
+    font-size: 1.8rem;
+}
+
+
+/* Info do Voluntário Logado */
+.voluntario-info {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #e8f4f8;
+    border-radius: 8px;
+    border: 1px solid #b3d9e8;
+}
+
+.voluntario-info strong {
+    color: #003d7a;
+    font-size: 1.1rem;
+}
+
+/* Descrição */
+.descricao {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    white-space: pre-line;
+    color: #333;
+}
+
+/* Info do Gestor */
+.gestor-info {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f0f9ff;
+    border-radius: 8px;
+}
+
+.gestor-info strong {
+    color: #003d7a;
+    font-size: 1.1rem;
+}
+
+/* Seção de Slots */
+.slots-section {
+    margin-bottom: 2rem;
+}
+
+.slots-section h3 {
+    margin-bottom: 1rem;
+    color: #333;
+    font-size: 1.1rem;
+}
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+@media (min-width: 900px) {
+    .slots-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Opções de Slot */
+.slot-option {
+    background: white;
+    border: 2px solid #ddd;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.slot-option:hover {
+    border-color: #003d7a;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 61, 122, 0.15);
+}
+
+.slot-option.selected {
+    border-color: #003d7a;
+    background: #e0f2fe;
+    box-shadow: 0 4px 12px rgba(0, 61, 122, 0.2);
+}
+
+.slot-option input[type="radio"] {
+    margin-right: 1rem;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #003d7a;
+}
+
+.slot-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.slot-date {
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+}
+
+.slot-time {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.slot-gestor {
+    color: #003d7a;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Botão Confirmar */
+.btn-confirmar {
+    width: 100%;
+    padding: 1rem;
+    background: #003d7a !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 1 !important;
+}
+
+.btn-confirmar:hover {
+    background: #002952 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 61, 122, 0.3);
+}
+
+.btn-confirmar:active {
+    transform: translateY(0);
+}
+
+.btn-confirmar:disabled {
+    background: #ccc !important;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.6 !important;
+}
+
+/* Mensagem de Sucesso */
+.success-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.success-message h2 {
+    color: #28a745;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.success-message p {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.success-icon {
+    font-size: 4rem;
+    color: #28a745;
+    margin-bottom: 1rem;
+    animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Loading */
+.loading {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+}
+
+.loading p {
+    font-size: 1rem;
+}
+
+/* Mensagem de Erro */
+.error-message {
+    background: #fee;
+    color: #c33;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .container {
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+    
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    .descricao {
+        padding: 1rem;
+        font-size: 0.95rem;
+    }
+
+    .slot-option {
+        padding: 0.75rem;
+    }
+
+    .slot-date {
+        font-size: 0.95rem;
+    }
+
+    .slot-time {
+        font-size: 0.85rem;
+    }
+
+    .btn-confirmar {
+        padding: 0.875rem;
+        font-size: 1rem;
+    }
+
+    .success-icon {
+        font-size: 3rem;
+    }
+
+    .success-message h2 {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .header h1 {
+        font-size: 1.25rem;
+    }
+
+    .slot-option input[type="radio"] {
+        width: 18px;
+        height: 18px;
+    }
+}
