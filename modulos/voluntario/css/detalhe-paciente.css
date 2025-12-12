@@ -1,0 +1,539 @@
+/* Arquivo: /modulos/voluntario/css/detalhe-paciente.css */
+/* Versão Otimizada e Unificada */
+
+/* =============================================================================
+   1. CABEÇALHO E BARRA DE INFORMAÇÕES
+   ============================================================================= */
+.detalhe-paciente-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.detalhe-paciente-header h2 {
+    color: var(--cor-primaria);
+    margin: 0;
+    font-size: 1.8em;
+    word-break: break-word;
+}
+
+/* Barra de Info Rápida */
+.paciente-info-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px 25px;
+    background-color: var(--cor-fundo-box);
+    padding: 15px 20px;
+    border-radius: var(--borda-radius);
+    margin-bottom: 25px;
+}
+
+.info-item {
+    font-size: 0.9em;
+    min-width: 120px;
+}
+
+.info-item .label {
+    display: block;
+    font-weight: 600;
+    color: var(--cor-texto-secundario);
+    font-size: 0.85em;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+}
+
+.info-item .value {
+    color: var(--cor-texto-principal);
+    font-weight: 500;
+    font-size: 1.05em;
+}
+
+/* Status Badge (Usado na barra de info e tabelas) */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: white;
+    vertical-align: middle;
+}
+
+.info-item .value.status-badge {
+    padding: 4px 12px;
+}
+
+/* Cores dos Status Badges */
+.status-badge.em_atendimento_plantao, 
+.status-badge.em_atendimento_pb,
+.status-badge.status-concluída { background-color: var(--cor-sucesso); }
+
+.status-badge.aguardando_info_horarios, 
+.status-badge.aguardando_contrato,
+.status-badge.status-pendente { background-color: var(--cor-alerta); color: #212529; }
+
+.status-badge.status-rejeitada,
+.status-badge.desistencia { background-color: var(--cor-erro); }
+
+.status-badge.alta { background-color: var(--cor-secundaria); }
+
+
+/* =============================================================================
+   2. LAYOUT E FORMULÁRIOS
+   ============================================================================= */
+.detalhe-paciente-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* 1ª coluna 2x maior */
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+/* Grids de Formulário */
+.form-grid {
+    display: grid;
+    gap: 15px 20px;
+}
+.form-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.form-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.form-grid .form-group { margin-bottom: 0; }
+
+/* Grid de Resumo (Info Pessoais) */
+.info-summary-grid {
+    display: grid;
+    gap: 15px 20px;
+    margin-bottom: 20px;
+}
+.info-summary-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.info-summary-grid .readonly-value { display: none; }
+
+/* Estilos de Input Readonly Específicos */
+#form-info-pessoais .form-control[readonly] {
+    background-color: var(--cor-fundo-box);
+    border: 1px solid var(--cor-borda-leve);
+    font-weight: 600;
+    color: var(--cor-texto-principal);
+    cursor: default;
+}
+#form-info-pessoais .status-badge-input[readonly] {
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Descrições de Campo */
+.field-description {
+    font-size: 0.85em;
+    color: var(--cor-texto-secundario);
+    margin-top: -8px;
+    margin-bottom: 10px;
+    padding-left: 2px;
+    line-height: 1.4;
+    font-style: italic;
+}
+.field-description strong { color: var(--cor-erro); font-weight: 600; }
+
+#acompanhamento-clinico-form .form-group textarea { min-height: 150px; }
+
+/* Campos Dinâmicos (Mensagens) */
+.dynamic-form-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+.output-area { margin-top: 20px; }
+.output-area label { display: block; font-weight: 600; margin-bottom: 8px; }
+.output-area textarea {
+    width: 100%; min-height: 120px;
+    background-color: var(--cor-fundo);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    padding: 10px;
+    font-family: monospace; font-size: 0.9em; resize: vertical;
+}
+
+.reavaliacao-info { font-size: 0.8em; color: var(--cor-texto-secundario); margin-left: 5px; display: block; }
+.hidden { display: none; }
+
+
+/* =============================================================================
+   3. LISTA DE SESSÕES
+   ============================================================================= */
+.session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.session-item {
+    background-color: var(--cor-fundo);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.session-info {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.session-info .info-item { font-size: 1em; min-width: auto; }
+.session-info .info-item .label { font-size: 0.9em; }
+
+.session-list-placeholder {
+    text-align: center;
+    padding: 30px;
+    color: var(--cor-texto-secundario);
+    background-color: var(--cor-fundo);
+    border-radius: var(--borda-radius);
+}
+
+/* Cores dos status na lista (Feedback visual Texto) */
+.status-text.presente { color: #28a745; font-weight: bold; }
+.status-text.ausente { color: #856404; font-weight: bold; }
+.status-text.cancelada_paciente { color: #dc3545; text-decoration: line-through; }
+.status-text.cancelada_prof { color: #dc3545; text-decoration: line-through; }
+
+/* =============================================================================
+   4. BOTÕES, DROPDOWNS E AÇÕES
+   ============================================================================= */
+.session-actions {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Botão com Ícone para Dropdown */
+.btn-status-dropdown {
+    padding: 8px 12px;
+    background-color: #fff;
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    color: var(--cor-texto-principal);
+}
+.btn-status-dropdown:hover {
+    background-color: var(--cor-fundo-hover);
+    border-color: var(--cor-primaria);
+}
+.btn-status-dropdown i, .btn-status-dropdown .icon { font-size: 1.1em; }
+
+/* Menu Dropdown de Status */
+.status-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%; right: 0;
+    width: 220px;
+    background-color: white;
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 100;
+    margin-top: 5px; padding: 5px 0;
+}
+.status-dropdown-menu.active { display: block; }
+
+.status-dropdown-item {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 10px 15px;
+    border: none; background: none;
+    text-align: left; cursor: pointer;
+    font-size: 0.95em; color: var(--cor-texto-principal);
+    transition: background 0.2s;
+}
+.status-dropdown-item:hover { background-color: var(--cor-fundo-hover); }
+
+/* Cores dos itens do menu */
+.item-presente:hover { color: #28a745; background-color: #e6f9ed; }
+.item-ausente:hover { color: #856404; background-color: #fff3cd; }
+.item-cancelado-paciente:hover { color: #dc3545; background-color: #f8d7da; }
+.item-cancelado-prof:hover { color: #dc3545; background-color: #f8d7da; }
+
+/* Botões Antigos/Fallback (Presença/Ausência/Cancelar) */
+.btn-presenca, .btn-ausencia, .btn-cancelar {
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: var(--borda-radius);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85em;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+    background-color: white;
+}
+
+.btn-presenca { border-color: var(--cor-sucesso); color: var(--cor-sucesso); }
+.btn-presenca:hover, .btn-presenca.active { background-color: var(--cor-sucesso); color: white; opacity: 1; font-weight: bold; }
+
+.btn-ausencia { border-color: var(--cor-erro); color: var(--cor-erro); }
+.btn-ausencia:hover, .btn-ausencia.active { background-color: var(--cor-erro); color: white; opacity: 1; font-weight: bold; }
+
+.btn-cancelar { border-color: #6c757d; color: #6c757d; }
+.btn-cancelar:hover, .btn-cancelar.active { background-color: #6c757d; color: white; opacity: 1; font-weight: bold; }
+
+/* Dropdown Genérico */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%; right: 0;
+    background-color: var(--cor-fundo-box);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 250px;
+    z-index: 10;
+    padding: 8px 0;
+    margin-top: 4px;
+}
+.dropdown-container.active .dropdown-menu { display: block; }
+.dropdown-item {
+    display: block; width: 100%; padding: 10px 20px;
+    text-align: left; background-color: transparent; border: none;
+    cursor: pointer; font-size: 0.95em; color: var(--cor-texto-principal);
+    white-space: nowrap;
+}
+.dropdown-item:hover { background-color: var(--cor-fundo-hover); color: var(--cor-primaria); }
+.dropdown-item.secondary-button { color: var(--cor-texto-secundario); }
+.dropdown-item.danger-button { color: var(--cor-erro); }
+
+/* Menu Hamburger */
+.action-buttons-container.main-actions { position: relative; display: flex; }
+.hamburger-toggle-button { display: flex; align-items: center; gap: 10px; font-size: 0.9em; font-weight: 600; }
+.hamburger-icon { display: flex; flex-direction: column; gap: 4px; width: 24px; height: 20px; justify-content: center; }
+.hamburger-icon div { width: 100%; height: 3px; background-color: var(--cor-primaria); border-radius: 2px; transition: all 0.3s ease; }
+.action-buttons-container.main-actions.active .hamburger-icon div:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.action-buttons-container.main-actions.active .hamburger-icon div:nth-child(2) { opacity: 0; }
+.action-buttons-container.main-actions.active .hamburger-icon div:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.hamburger-menu-content {
+    display: none; position: absolute; top: 100%; right: 0;
+    min-width: 280px; background-color: var(--cor-fundo-box);
+    border: 1px solid var(--cor-borda); border-radius: var(--borda-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); z-index: 100;
+    padding: 8px 0; margin-top: 4px;
+}
+.action-buttons-container.main-actions.active .hamburger-menu-content { display: block; }
+.hamburger-menu-item {
+    display: block; width: 100%; padding: 12px 20px; text-align: left;
+    background-color: transparent; border: none; cursor: pointer;
+    font-size: 0.95em; color: var(--cor-texto-principal); white-space: nowrap;
+}
+.hamburger-menu-item:hover { background-color: var(--cor-fundo-hover); color: var(--cor-primaria); }
+
+
+/* =============================================================================
+   5. MODAIS E ABAS INTERNAS
+   ============================================================================= */
+.modal-content.large { max-width: 850px; }
+
+.modal-content.flex-layout {
+    display: flex; flex-direction: column;
+    max-height: calc(100vh - 100px); overflow: hidden;
+}
+.modal-content.flex-layout .modal-header,
+.modal-content.flex-layout .modal-footer { flex-shrink: 0; }
+.modal-content.flex-layout .modal-body { flex-grow: 1; overflow-y: auto; min-height: 100px; }
+.modal-content.flex-layout > form {
+    display: flex; flex-direction: column; flex-grow: 1; min-height: 0;
+}
+
+/* Abas Horizontais (Modal Anotações) */
+.tabs-container.horizontal-tabs {
+    display: flex; flex-direction: row; border-bottom: 2px solid var(--cor-borda);
+    margin-bottom: 20px; flex-wrap: nowrap; overflow-x: auto;
+}
+.tabs-container.horizontal-tabs .tab-link {
+    padding: 10px 18px; font-size: 0.95em; font-weight: 500;
+    color: var(--cor-texto-secundario); background-color: transparent;
+    border: none; border-bottom: 3px solid transparent;
+    cursor: pointer; margin-bottom: -2px; white-space: nowrap;
+    transition: all 0.2s ease;
+}
+.tabs-container.horizontal-tabs .tab-link:hover { color: var(--cor-primaria); background-color: var(--cor-fundo-box); }
+.tabs-container.horizontal-tabs .tab-link.active { color: var(--cor-primaria); border-bottom: 3px solid var(--cor-primaria); font-weight: 600; }
+#anotacoes-tabs-content .tab-content { display: none; }
+#anotacoes-tabs-content .tab-content.active { display: block; }
+
+/* Slots de Agendamento (Reavaliação) */
+.slots-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+.slots-container p { width: 100%; font-style: italic; color: var(--cor-texto-secundario); }
+.slot-time {
+    padding: 8px 15px; border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-radius); background-color: var(--cor-fundo-box);
+    color: var(--cor-primaria); cursor: pointer; font-weight: 500;
+    transition: all 0.2s ease;
+}
+.slot-time:hover { background-color: var(--cor-fundo-hover); border-color: var(--cor-primaria); }
+.slot-time.selected { background-color: var(--cor-primaria); color: white; border-color: var(--cor-primaria); font-weight: 600; }
+.slot-time.disabled { background-color: var(--cor-fundo); color: var(--cor-texto-secundario); border-color: var(--cor-borda-leve); cursor: not-allowed; text-decoration: line-through; }
+
+/* Mensagens e Templates */
+.message-templates-list { display: flex; flex-direction: column; gap: 10px; }
+.message-templates-list button { width: 100%; text-align: left; padding: 12px 15px; font-size: 1em; }
+
+/* Feedback Validação Grade */
+#validacao-grade-feedback { margin-top: 15px; padding: 12px; border-radius: var(--borda-radius); border-left-width: 5px; border-left-style: solid; }
+#validacao-grade-feedback.exists { background-color: #fff3cd; border-left-color: var(--cor-alerta); color: #856404; }
+#validacao-grade-feedback.success { background-color: #d4edda; border-left-color: var(--cor-sucesso); color: #155724; }
+
+/* =============================================================================
+   6. ACORDEÃO
+   ============================================================================= */
+.accordion-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+.accordion-item fieldset { margin-bottom: 0; border: none; padding: 0; }
+.accordion-header { padding: 0; border-bottom: 1px solid var(--cor-borda); margin-bottom: 0; }
+.accordion-button {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; padding: 12px 15px; background-color: var(--cor-fundo-box);
+    border: none; cursor: pointer; font-size: 1.1em; font-weight: 600;
+    color: var(--cor-primaria); text-align: left; transition: background-color 0.2s ease;
+}
+.accordion-button:hover { background-color: var(--cor-fundo-hover); }
+.accordion-icon { font-size: 0.9em; transition: transform 0.3s ease; margin-left: 10px; }
+.accordion-item:not(.open) .accordion-content { display: none; }
+.accordion-item.open .accordion-icon { transform: rotate(180deg); }
+.accordion-content { padding: 20px 15px; background-color: var(--cor-fundo); border-top: none; }
+
+/* =============================================================================
+   7. PRONTUÁRIO
+   ============================================================================= */
+.prontuario-generator-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 30px;
+}
+.prontuario-generator-actions {
+    background-color: var(--cor-fundo-box);
+    padding: 20px 25px;
+    border-radius: var(--borda-radius);
+    height: fit-content;
+}
+.prontuario-generator-actions p { font-size: 0.9em; color: var(--cor-texto-secundario); margin-bottom: 20px; }
+.prontuario-generator-actions .action-button { width: 100%; }
+.prontuario-generator-layout .checkbox-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+
+/* =============================================================================
+   8. RESPONSIVIDADE (Media Queries Unificadas)
+   ============================================================================= */
+@media (max-width: 900px) {
+    .detalhe-paciente-layout { grid-template-columns: 1fr; }
+    .form-grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .prontuario-generator-layout { grid-template-columns: 1fr; }
+    .prontuario-generator-actions { order: -1; }
+}
+
+@media (max-width: 768px) {
+    .info-summary-grid, .info-summary-grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+}
+
+@media (max-width: 600px) {
+    .form-grid.cols-2, .form-grid.cols-3, .form-grid.cols-4 { grid-template-columns: 1fr; }
+    .session-item { flex-direction: column; align-items: flex-start; }
+    .session-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+    .btn-presenca, .btn-ausencia, .btn-cancelar { flex-grow: 1; text-align: center; }
+    .detalhe-paciente-header { justify-content: flex-start; }
+    .detalhe-paciente-header h2 { font-size: 1.5em; }
+    .paciente-info-bar { flex-direction: column; gap: 12px; }
+    .action-buttons-container.main-actions { justify-content: flex-start; }
+    .hamburger-toggle-button { width: 100%; justify-content: space-between; }
+    .hamburger-menu-content { width: 100%; }
+    .modal-content.flex-layout { max-height: calc(100vh - 40px); }
+}
+
+@media (max-width: 480px) {
+    .info-summary-grid, .info-summary-grid.cols-3 { grid-template-columns: 1fr; }
+}
+/* Botão que abre o menu */
+.btn-options-toggle {
+    background: transparent;
+    border: 1px solid var(--cor-borda);
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--cor-texto-secundario);
+}
+.btn-options-toggle:hover, .btn-options-toggle.active {
+    background-color: var(--cor-fundo-hover);
+    color: var(--cor-primaria);
+    border-color: var(--cor-primaria);
+}
+
+/* O Menu Dropdown Flutuante */
+.session-dropdown-menu {
+    display: none; /* Oculto */
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 240px;
+    background-color: white;
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 100;
+    margin-top: 5px;
+    padding: 5px 0;
+    flex-direction: column;
+}
+
+.session-dropdown-menu.active {
+    display: flex; /* Mostra quando ativo */
+}
+
+/* Itens do Menu */
+.session-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.95em;
+    color: var(--cor-texto-principal);
+    transition: background 0.2s;
+}
+.session-dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+.session-dropdown-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Cores Específicas dos Itens */
+.item-presente:hover { color: #28a745; background-color: #e6f9ed; }
+.item-ausente:hover { color: #856404; background-color: #fff3cd; }
+.item-cancel-paciente:hover { color: #dc3545; background-color: #f8d7da; }
+.item-cancel-prof:hover { color: #dc3545; background-color: #f8d7da; }
+.item-confirmar:hover { color: #007bff; background-color: #e6f2ff; }
+
+/* Separador no menu */
+.menu-separator {
+    height: 1px;
+    background-color: #eee;
+    margin: 4px 0;
+}

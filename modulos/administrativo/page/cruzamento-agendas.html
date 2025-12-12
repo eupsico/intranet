@@ -1,0 +1,146 @@
+<div class="container-fluid cruzamento-agendas-view">
+    <h2 class="mb-4">Cruzamento de Agendas Profissional x Paciente</h2>
+
+    <div class="tabs-container" id="cruzamento-tabs">
+        <button class="tab-link active" data-tab="compatibilidade">Compatibilidade</button>
+        <button class="tab-link" data-tab="tentativas">Agendamento de Sessão</button> <button class="tab-link" data-tab="agendados">Agendados</button>
+        <button class="tab-link" data-tab="desistencias">Desistências/Cancelados</button>
+        <button class="tab-link" data-tab="disponibilidade-geral">Disponibilidade Geral</button>
+    </div>
+
+    <div id="compatibilidade" class="tab-content active">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Verificar Compatibilidade Automática</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 align-items-end mb-4">
+                    <div class="col-md-6">
+                        <label for="profissional-select" class="form-label"><strong>Buscar por Profissional</strong></label>
+                        <select id="profissional-select" class="form-select">
+                            <option value="">Selecione um profissional...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="paciente-select" class="form-label"><strong>Buscar por Paciente</strong></label>
+                        <select id="paciente-select" class="form-select">
+                            <option value="">Selecione um paciente (Fila de Espera)...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="loading-spinner" class="text-center my-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div>
+                    <p class="mt-2">Realizando cruzamento de dados...</p>
+                </div>
+
+                <div id="resultados-compatibilidade" style="display: none;">
+                    <h5 class="mb-3" id="titulo-resultados">Resultados Encontrados</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light" id="tabela-headers"></thead>
+                            <tbody id="compatibilidade-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="nenhum-resultado-msg" class="alert alert-info mt-3" style="display: none;">Nenhuma compatibilidade encontrada.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tentativas" class="tab-content" style="display: none;">
+        <div class="card shadow-sm">
+             <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Agendamento de Sessão</h5>
+                <select id="filtro-status-tentativa" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="todos">Todos os Status</option>
+                    <option value="Primeiro Contato">Primeiro Contato</option>
+                    <option value="Segundo Contato">Segundo Contato</option>
+                    <option value="Terceiro Contato">Terceiro Contato</option>
+                    <option value="Aguardando Confirmação">Aguardando Confirmação</option>
+                    <option value="Aguardando Pagamento">Aguardando Pagamento</option>
+                </select>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Paciente</th>
+                                <th scope="col">Profissional</th>
+                                <th scope="col">Horário Compatível</th>
+                                <th scope="col">Valor Contrib.</th>
+                                <th scope="col">Telefone</th>
+                                <th scope="col">Status Atual</th>
+                                <th scope="col">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tentativas-tbody"></tbody>
+                    </table>
+                </div>
+                 <div id="nenhuma-tentativa" class="alert alert-info mt-3" style="display: none;">
+                    Nenhum paciente em processo de agendamento no momento.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="agendados" class="tab-content" style="display: none;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white"><h5 class="mb-0">Agendamentos Concluídos</h5></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead><tr><th>Paciente</th><th>Profissional</th><th>Data Agendamento</th><th>Fila</th></tr></thead>
+                        <tbody id="agendados-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="desistencias" class="tab-content" style="display: none;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white"><h5 class="mb-0">Desistências e Cancelamentos</h5></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead><tr><th>Paciente</th><th>Profissional</th><th>Motivo</th><th>Data</th></tr></thead>
+                        <tbody id="desistencias-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="disponibilidade-geral" class="tab-content" style="display: none;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light"><h5 class="mb-0">Disponibilidade Geral</h5></div>
+            <div class="card-body">
+                 <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light"><tr><th>Profissional</th><th>Disponibilidade</th><th>Modalidade</th></tr></thead>
+                        <tbody id="disponibilidade-geral-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-acao-cruzamento" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-acao-titulo">Ação</h3>
+            <span class="close-button" id="btn-close-modal-acao">&times;</span>
+        </div>
+        <div class="modal-body" id="modal-acao-body">
+            </div>
+        <div class="modal-footer">
+            <button type="button" class="action-button secondary-button" id="btn-cancel-modal-acao">Cancelar</button>
+            <button type="button" class="action-button" id="btn-confirm-modal-acao">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="../js/cruzamento-agendas/index.js"></script>

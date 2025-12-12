@@ -1,0 +1,95 @@
+/* Arquivo: /modulos/administrativo/css/cruzamento-agendas.css */
+
+.cruzamento-agendas-view .form-select,
+.cruzamento-agendas-view .btn {
+    height: calc(2.25rem + 8px);
+}
+
+.cruzamento-agendas-view .table .action-button {
+    padding: 6px 12px;
+    font-size: 0.9em;
+}
+
+.cruzamento-agendas-view .status-select {
+    min-width: 200px;
+    font-weight: 500;
+}
+
+/* --- Cores de Status para Tentativas (Forçando a cor na linha inteira) --- */
+/* Primeiro Contato - Azul Claro */
+table tbody tr.status-primeiro-contato,
+table tbody tr.status-primeiro-contato > td {
+    background-color: #e3f2fd !important;
+}
+
+/* Segundo Contato - Amarelo Claro */
+table tbody tr.status-segundo-contato,
+table tbody tr.status-segundo-contato > td {
+    background-color: #fff9c4 !important;
+}
+
+/* Terceiro Contato - Laranja Claro */
+table tbody tr.status-terceiro-contato,
+table tbody tr.status-terceiro-contato > td {
+    background-color: #ffe0b2 !important;
+}
+
+/* Aguardando Confirmação - Verde Claro */
+table tbody tr.status-aguardando-confirmacao,
+table tbody tr.status-aguardando-confirmacao > td {
+    background-color: #c8e6c9 !important;
+}
+
+/* Aguardando Pagamento - Roxo Claro */
+table tbody tr.status-aguardando-pagamento,
+table tbody tr.status-aguardando-pagamento > td {
+    background-color: #e1bee7 !important;
+}
+
+/* Agendado - Verde Forte */
+table tbody tr.status-agendado,
+table tbody tr.status-agendado > td {
+    background-color: #a5d6a7 !important;
+}
+
+/* Cancelado/Sem Sucesso - Vermelho Claro */
+table tbody tr.status-cancelado-sem-sucesso,
+table tbody tr.status-cancelado-sem-sucesso > td {
+    background-color: #ffcdd2 !important;
+}
+
+/* Badges e Listas */
+.availability-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85em;
+    max-width: 400px;
+}
+
+.availability-list li {
+    display: inline-block;
+    background-color: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 2px;
+    border: 1px solid #dee2e6;
+}
+
+.modalidade-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+    border-radius: 12px;
+    text-transform: capitalize;
+}
+
+.modalidade-badge.online { background-color: #d1ecf1; color: #0c5460; }
+.modalidade-badge.presencial { background-color: #d4edda; color: #155724; }
+.modalidade-badge.ambas { background-color: #e2e3e5; color: #383d41; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

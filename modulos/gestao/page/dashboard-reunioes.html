@@ -1,0 +1,110 @@
+<div class="view-container">
+    <div class="tab-nav">
+        <button class="tab-link active" data-tab="reunioes">
+            <span class="material-symbols-outlined">event</span>
+            Reuniões
+        </button>
+        <button class="tab-link" data-tab="graficos">
+            <span class="material-symbols-outlined">analytics</span>
+            Gráficos
+        </button>
+    </div>
+
+    <div id="reunioes-tab" class="tab-content active">
+        
+        <div id="proxima-reuniao-container" class="card mb-4" style="display: none;">
+            <div class="card-header border-0 bg-transparent text-white pt-3 ps-3">
+                <h5 class="mb-0"><span class="material-symbols-outlined me-2">notifications_active</span> Próxima Reunião</h5>
+            </div>
+            <div class="card-body pt-0">
+                <div id="proxima-reuniao-info"></div>
+                <div class="proxima-actions mt-3">
+                    <button id="ver-detalhes-proxima" class="btn btn-light btn-sm me-2 text-primary fw-bold">Ver Detalhes</button>
+                    <button id="calendario-proxima" class="btn btn-outline-light btn-sm">Adicionar ao Calendário</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h4><span class="material-symbols-outlined">list_alt</span> Reuniões Agendadas
+                    <span id="contador-atas" class="badge bg-secondary ms-2">0</span>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="filtros-container d-flex flex-wrap gap-2 align-items-end mb-3">
+                    <div class="flex-grow-1">
+                        <label class="form-label small text-muted mb-1">Tipo</label>
+                        <select id="tipo-filtro" class="form-select">
+                            <option value="Todos">Todos os Tipos</option>
+                            <option value="Reunião Conselho administrativo">Reunião Conselho administrativo</option>
+                            <option value="Reunião com Gestor">Reunião com Gestor</option>
+                            <option value="Reunião Técnica">Reunião Técnica</option>
+                            <option value="Reunião com Voluntário">Reunião com Voluntário</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label small text-muted mb-1">De</label>
+                        <input type="date" id="filtro-data-inicio" class="form-control" title="Data Inicial">
+                    </div>
+                    <div>
+                        <label class="form-label small text-muted mb-1">Até</label>
+                        <input type="date" id="filtro-data-fim" class="form-control" title="Data Final">
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <label class="form-label small text-muted mb-1">Buscar</label>
+                        <input type="text" id="busca-titulo" class="form-control" placeholder="Título...">
+                    </div>
+                    <div>
+                        <button id="limpar-filtros" class="btn btn-secondary w-100" style="margin-bottom: 1px;">Limpar</button>
+                    </div>
+                </div>
+                
+                <div id="atas-container" class="atas-list">
+                    <div class="loading-spinner"></div>
+                    <p class="text-muted">Carregando reuniões...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="graficos-tab" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h4><span class="material-symbols-outlined">analytics</span> Estatísticas</h4>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid mb-4">
+                    <div class="stat-card">
+                        <span class="material-symbols-outlined">event</span>
+                        <h4 id="total-reunioes">0</h4>
+                        <p>Total Geral</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="material-symbols-outlined">schedule</span>
+                        <h4 id="proximas-reunioes">0</h4>
+                        <p>Próximas</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <h4 id="reunioes-concluidas">0</h4>
+                        <p>Concluídas</p>
+                    </div>
+                </div>
+
+                <div class="grafico-item mb-4">
+                    <h5>Reuniões por Tipo</h5>
+                    <div id="grafico-atas-tipo"></div>
+                </div>
+
+                <div class="grafico-item mb-4">
+                    <h5>Agendamentos com Voluntários por Gestor</h5>
+                    <div id="grafico-agendamentos-gestor"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

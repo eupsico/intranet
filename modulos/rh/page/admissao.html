@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Processo de Admissão - EuPsico</title>
+ </head>
+
+<body>
+  <div class="painel-admissao">
+  <h2 class="painel-titulo">Processo de Admissão</h2>
+
+    <div class="description-box">
+   <p>
+    Este painel gerencia o fluxo de onboarding (admissão) de novos
+    colaboradores, desde a criação de acessos até as avaliações de
+    experiência.
+   </p>
+  </div>
+
+  <div class="tabs-container status-tabs" id="status-admissao-tabs">
+      <button class="tab-link active" data-status="solicitacao-email">
+        <i class="fas fa-envelope-open-text me-2"></i>Solicitação de E-mail</button>
+      <button class="tab-link" data-status="cadastro-documentos">
+        <i class="fas fa-id-card me-2"></i>Cadastro e Documentos</button>
+      <button class="tab-link" data-status="assinatura-documentos">
+        <i class="fas fa-file-signature me-2"></i>Assinatura de Documentos</button>
+      <button class="tab-link" data-status="integracao-treinamentos">
+        <i class="fas fa-chalkboard-teacher me-2"></i>Integração e Treinamentos</button>
+      <button class="tab-link" data-status="avaliacao-3-meses">
+        <i class="fas fa-calendar-check me-2"></i>Avaliação (3 Meses)</button>
+      <button class="tab-link" data-status="documentos-pos-3-meses">
+        <i class="fas fa-file-contract me-2"></i>Documentos (Pós-3 Meses)</button>
+        <button class="tab-link" data-status="reprovados-admissao">
+        <i class="fas fa-times-circle me-2"></i>Reprovados na Admissão</button>
+      </div>
+
+    <div id="conteudo-admissao" class="tab-content active">
+   <p id="mensagem-inicial" class="alert alert-info">
+    Carregando candidatos para admissão...
+   </p>
+  </div>
+ </div>
+
+  <div id="modal-candidato" class="modal-overlay">
+ <div class="modal-content" style="max-width: 900px">
+  <div class="modal-header">
+   <h3 id="candidato-nome-titulo">Detalhes da Candidatura</h3>
+   <button
+    type="button"
+    class="close-modal-btn fechar-modal-candidato"
+    aria-label="Fechar modal"
+   >
+    &times;
+   </button>
+  </div>
+
+  <div class="modal-body modal-body-scroll" id="candidato-modal-body">
+      <div class="loading-spinner"></div>
+  </div>
+
+  <div class="modal-footer" id="candidato-modal-footer">
+   <button
+    type="button"
+    class="action-button secondary fechar-modal-candidato"
+   >
+    <i class="fas fa-times me-2"></i> Fechar
+   </button>
+  </div>
+ </div>
+
+ <div id="modal-solicitar-dados" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-contract me-2"></i>Solicitar Dados Cadastrais</h3>
+        <button type="button" class="close-modal-btn fechar-modal-solicitacao">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="info-card mb-4">
+          <h4><i class="fas fa-user me-2"></i>Candidato: <span id="solicitacao-nome-candidato">...</span></h4>
+          <p>Esta ação gerará um link único para que o candidato preencha sua ficha cadastral e anexe os documentos necessários (RG, CPF, Diploma, CRP, etc).</p>
+        </div>
+
+        <form id="form-solicitar-dados">
+          <div class="form-group">
+            <label>Prazo para preenchimento:</label>
+            <select id="solicitacao-prazo" class="form-control">
+              <option value="3">3 dias</option>
+              <option value="5" selected>5 dias</option>
+              <option value="7">7 dias</option>
+            </select>
+          </div>
+
+          <div id="container-link-gerado" class="hidden mt-4">
+            <label>Link Gerado:</label>
+            <div class="input-group">
+              <input type="text" id="link-ficha-admissao" readonly class="form-control" style="background: #f0f0f0;">
+              <button type="button" id="btn-copiar-link-ficha" class="action-button secondary">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            <div class="mt-3">
+               <button type="button" id="btn-enviar-ficha-whatsapp" class="action-button whatsapp w-100">
+                <i class="fab fa-whatsapp me-2"></i> Enviar Link pelo WhatsApp
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="action-button secondary fechar-modal-solicitacao">Cancelar</button>
+        <button type="button" id="btn-gerar-link-ficha" class="action-button primary">
+          <i class="fas fa-link me-2"></i> Gerar Link
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="modal-agendamento-integracao" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-calendar-check me-2"></i>Agendar Integração (Onboarding)</h3>
+        <button type="button" class="close-modal-btn" data-modal-id="modal-agendamento-integracao">&times;</button>
+      </div>
+      <form id="form-agendamento-integracao">
+        <div class="modal-body">
+          <div class="info-card mb-4">
+            <h4 style="margin-top: 0;"><i class="fas fa-user me-2"></i> Candidato: <span id="agendamento-int-nome-candidato">-</span></h4>
+            <p><strong>Status Atual:</strong> <span id="agendamento-int-status-atual" class="status-badge">-</span></p>
+          </div>
+
+          <fieldset>
+            <legend>Dados da Reunião</legend>
+            <div class="form-group">
+              <label for="data-integracao-agendada">Data da Integração:</label>
+              <input type="date" id="data-integracao-agendada" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="hora-integracao-agendada">Horário:</label>
+              <input type="time" id="hora-integracao-agendada" class="form-control" required>
+            </div>
+            <div class="info-note">
+              <i class="fas fa-info-circle"></i> Ao salvar, um convite será enviado para o e-mail corporativo do novo colaborador e uma notificação via WhatsApp.
+            </div>
+          </fieldset>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="action-button secondary" data-modal-id="modal-agendamento-integracao">Cancelar</button>
+          <button type="submit" class="action-button primary">
+            <i class="fas fa-calendar-alt me-2"></i> Agendar Integração
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-enviar-treinamento" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-chalkboard-teacher me-2"></i>Enviar Treinamento</h3>
+        <button type="button" class="close-modal-btn" data-modal-id="modal-enviar-treinamento">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-card mb-4">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Nome:</strong> <span id="treinamento-nome-candidato">...</span></p>
+              <p><strong>E-mail Corporativo:</strong> <span id="treinamento-email-candidato">...</span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>WhatsApp:</strong> <span id="treinamento-whatsapp-candidato">...</span></p>
+            </div>
+          </div>
+        </div>
+
+        <form id="form-enviar-treinamento">
+          <div class="form-group">
+            <label for="treinamento-selecionado">Selecione o Treinamento:</label>
+            <select id="treinamento-selecionado" class="form-control" required>
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="treinamento-mensagem">Mensagem Personalizada (Opcional):</label>
+            <textarea id="treinamento-mensagem" class="form-control" rows="3" placeholder="Deixe em branco para usar a mensagem padrão."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-button secondary" data-modal-id="modal-enviar-treinamento">Cancelar</button>
+        <button type="button" id="btn-enviar-treinamento-whatsapp" class="action-button whatsapp">
+          <i class="fab fa-whatsapp me-2"></i> Enviar via WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+<div id="modal-avaliacao-integracao" class="modal-overlay">
+    <style>
+      /* Correção específica para este modal */
+      #modal-avaliacao-integracao .status-badge {
+        background-color: #6f42c1 !important; /* Roxo para destaque */
+        color: white !important; /* Texto branco legível */
+        padding: 5px 10px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 0.85em;
+      }
+      
+      #modal-avaliacao-integracao .modal-footer {
+        display: flex !important;
+        justify-content: flex-end !important; /* Alinha à direita */
+        gap: 15px !important; /* Espaço entre os botões */
+        padding: 20px !important;
+        background-color: #f8f9fa; /* Cor de fundo leve */
+        border-top: 1px solid #dee2e6;
+      }
+
+      #modal-avaliacao-integracao .action-button {
+        margin: 0 !important; /* Remove margens externas que podem causar sobreposição */
+        min-width: 120px; /* Tamanho mínimo para ficar bonito */
+      }
+    </style>
+
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-check-double me-2"></i>Concluir Integração</h3>
+        <button type="button" class="close-modal-btn">&times;</button>
+      </div>
+      <form id="form-avaliacao-integracao">
+        <div class="modal-body">
+          <div class="info-card mb-4">
+            <h4 style="margin-top: 0;"><i class="fas fa-user me-2"></i> Candidato: <span id="avaliacao-int-nome-candidato" style="font-weight:bold; color:#333;">-</span></h4>
+            <p style="margin-top: 5px;"><strong>Status Atual:</strong> <span id="avaliacao-int-status-atual" class="status-badge">-</span></p>
+          </div>
+
+          <div class="description-box">
+            <p>Confirme que a integração (Onboarding) foi realizada. Ao concluir, o colaborador avançará para a etapa de "Avaliação de Experiência (3 Meses)".</p>
+          </div>
+
+          <fieldset>
+            <legend>Registro de Conclusão</legend>
+            <div class="form-group">
+              <label for="integracao-realizada">A Integração foi realizada?</label>
+              <select id="integracao-realizada" class="form-control" required>
+                <option value="">Selecione...</option>
+                <option value="sim">Sim, realizada com sucesso</option>
+                <option value="nao">Não (Não avançar)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="integracao-observacoes">Observações / Feedback Inicial:</label>
+              <textarea id="integracao-observacoes" class="form-control" rows="3" placeholder="Pontos importantes observados durante a integração..."></textarea>
+            </div>
+          </fieldset>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="action-button secondary close-modal-btn">Cancelar</button>
+          <button type="submit" class="action-button success">
+            <i class="fas fa-check-circle me-2"></i> Concluir Integração
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="modal-avaliacao-3meses" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-clipboard-check me-2"></i>Avaliação de Experiência</h3>
+        <button type="button" class="close-modal-btn" data-modal-id="modal-avaliacao-3meses">&times;</button>
+      </div>
+      <form id="form-avaliacao-3meses">
+        <div class="modal-body">
+          <div class="info-card mb-4">
+            <h4>Colaborador: <span id="avaliacao-3meses-nome">-</span></h4>
+            <p>Esta avaliação define a efetivação do colaborador após o período de experiência.</p>
+          </div>
+
+          <fieldset>
+            <legend>Feedback</legend>
+            <div class="form-group">
+              <label for="avaliacao-3meses-positivo">Pontos Fortes / Destaques:</label>
+              <textarea id="avaliacao-3meses-positivo" class="form-control" rows="3" placeholder="O que o colaborador fez bem?"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="avaliacao-3meses-desenvolver">Pontos de Desenvolvimento:</label>
+              <textarea id="avaliacao-3meses-desenvolver" class="form-control" rows="3" placeholder="O que precisa melhorar?"></textarea>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Decisão Final</legend>
+            <div class="form-group">
+              <label>Resultado da Avaliação:</label>
+              <div class="form-check">
+                <input type="radio" name="resultado_3meses" id="avaliacao-3meses-aprovado" value="Aprovado" required>
+                <label for="avaliacao-3meses-aprovado"><strong class="text-success">Aprovado (Efetivar)</strong></label>
+              </div>
+              <div class="form-check">
+                <input type="radio" name="resultado_3meses" id="avaliacao-3meses-reprovado" value="Reprovado" required>
+                <label for="avaliacao-3meses-reprovado"><strong class="text-danger">Reprovado (Desligar)</strong></label>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="action-button secondary" data-modal-id="modal-avaliacao-3meses">Cancelar</button>
+          <button type="submit" class="action-button success">
+            <i class="fas fa-check-circle me-2"></i> Registrar Decisão
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+   <script type="module" src="../js/admissao.js"></script>
+</body>
+</html>

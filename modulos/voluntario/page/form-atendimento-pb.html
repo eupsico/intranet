@@ -1,0 +1,50 @@
+<form id="form-atendimento-pb" class="form-layout" novalidate>
+    <input type="hidden" id="desfecho-paciente-id">
+    <input type="hidden" id="desfecho-atendimento-id">
+    
+    <fieldset>
+        <legend>Informações do Atendimento</legend>
+        <div class="form-row cols-2">
+            <div class="form-group">
+                <label>Nome do Profissional</label>
+                <input type="text" id="profissional-nome" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label>Nome do Paciente</label>
+                <input type="text" id="paciente-nome" class="form-control" readonly>
+            </div>
+        </div>
+        <div class="form-row cols-2">
+            <div class="form-group">
+                <label>Valor de Contribuição</label>
+                <input type="text" id="valor-contribuicao" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label>Data Início do Atendimento</label>
+                <input type="text" id="data-inicio-atendimento" class="form-control" readonly>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Registro do Desfecho</legend>
+        <div class="form-group">
+            <label for="data-desfecho">Data do Desfecho:*</label>
+            <input type="date" id="data-desfecho" class="form-control" required />
+            <small>Informe a data em que ocorreu a alta ou desistência.</small>
+        </div>
+        <div class="form-group">
+            <label for="desfecho-acompanhamento">Qual o desfecho do acompanhamento?</label>
+            <select id="desfecho-acompanhamento" class="form-control" required>
+                <option value="">Selecione uma opção...</option>
+                <option value="Alta">Alta</option>
+                <option value="Desistencia">Desistência</option>
+                </select>
+        </div>
+
+        <div id="motivo-alta-desistencia-container" class="form-group" style="display: none;">
+            <label for="motivo-alta-desistencia">Motivo da Alta/Desistência:</label>
+            <textarea id="motivo-alta-desistencia" rows="4" class="form-control" placeholder="Descreva brevemente o motivo..."></textarea>
+        </div>
+    </fieldset>
+</form>

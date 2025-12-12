@@ -1,0 +1,134 @@
+<div class="modal-section">
+    <h4>Informações da Solicitação</h4>
+    <div class="details-grid cols-2">
+        <div class="form-group">
+            <span class="label">Solicitante:</span>
+            <span class="value" id="modal-solicitante-nome">Carregando...</span>
+            <input type="hidden" id="modal-solicitante-id">
+        </div>
+        <div class="form-group">
+            <span class="label">Paciente:</span>
+            <span class="value" id="modal-paciente-nome">Carregando...</span>
+        </div>
+        <div class="form-group">
+            <span class="label">Data da Solicitação:</span>
+            <span class="value" id="modal-data-solicitacao">Carregando...</span>
+        </div>
+    </div>
+</div>
+
+<div class="modal-section">
+    <h4>Detalhes do Horário Solicitado pelo Profissional</h4>
+    <div class="details-grid cols-3">
+        <div class="form-group">
+            <span class="label">Dia:</span>
+            <span class="value" id="modal-ns-dia">Carregando...</span>
+        </div>
+        <div class="form-group">
+            <span class="label">Horário:</span>
+            <span class="value" id="modal-ns-horario">Carregando...</span>
+        </div>
+         <div class="form-group">
+            <span class="label">Modalidade:</span>
+            <span class="value" id="modal-ns-modalidade">Carregando...</span>
+        </div>
+        <div class="form-group">
+            <span class="label">Sala:</span>
+            <span class="value" id="modal-ns-sala">Carregando...</span>
+        </div>
+        <div class="form-group">
+            <span class="label">Início Preferencial:</span>
+            <span class="value" id="modal-ns-data-inicio">Carregando...</span>
+        </div>
+        <div class="form-group">
+            <span class="label">Recorrência Solicitada:</span>
+            <span class="value" id="modal-ns-recorrencia" style="font-weight: bold; color: var(--cor-primaria);">Carregando...</span>
+        </div>
+        </div>
+</div>
+
+<div id="admin-agendamento-section" class="modal-section">
+    <h4>Resposta do Administrador (Agendamento)</h4>
+    <form id="admin-agendamento-form">
+        <fieldset>
+             <legend>Definir Agendamento das Sessões</legend>
+             <div class="form-grid cols-2"> <div class="form-group">
+                    <label>Profissional:</label>
+                    <input type="text" id="admin-ag-profissional-nome" class="form-control" readonly>
+                </div>
+                 <div class="form-group">
+                    <label for="admin-ag-data-inicio">Data de início das sessões? *</label>
+                    <input type="date" id="admin-ag-data-inicio" class="form-control" required>
+                </div>
+            </div>
+             <div class="form-grid cols-3"> <div class="form-group">
+                    <label for="admin-ag-hora-inicio">Horário Início *</label>
+                    <input type="time" id="admin-ag-hora-inicio" class="form-control" required step="300"> </div>
+                 <div class="form-group">
+                    <label for="admin-ag-hora-fim">Horário Fim</label>
+                    <input type="time" id="admin-ag-hora-fim" class="form-control" readonly> </div>
+                 <div class="form-group">
+                     <label for="admin-ag-recorrencia">Recorrência da sessão? *</label>
+                     <select id="admin-ag-recorrencia" class="form-control" required>
+                         <option value="">Selecione...</option>
+                         <option value="unica">Somente 1 horário</option>
+                         <option value="semanal">Semanalmente</option>
+                         <option value="quinzenal">Quinzenalmente</option>
+                         <option value="mensal">Mensalmente</option>
+                     </select>
+                </div>
+             </div>
+             
+             <div class="form-grid cols-1">
+                <div class="form-group" id="admin-ag-quantidade-container" style="display: none; background-color: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    <label for="admin-ag-quantidade">Número de Sessões a Gerar? *</label>
+                    <input type="number" id="admin-ag-quantidade" class="form-control" value="4" min="1" max="52" style="width: 100px;">
+                    <p class="field-description" style="margin-top: 5px;">Informe quantas sessões (ex: 4 para um mês) devem ser criadas com base na recorrência selecionada.</p>
+                </div>
+             </div>
+             <div class="form-grid cols-2"> <div class="form-group">
+                     <label for="admin-ag-tipo-sessao">As sessões serão: *</label>
+                     <select id="admin-ag-tipo-sessao" class="form-control" required>
+                         <option value="">Selecione...</option>
+                         <option value="Presencial">Presencial</option>
+                         <option value="Online">Online</option>
+                     </select>
+                </div>
+                 <div class="form-group">
+                     <label for="admin-ag-sala">Qual sala:</label>
+                     <select id="admin-ag-sala" class="form-control" required>
+                         <option value="">Carregando salas...</option>
+                         </select>
+                </div>
+            </div>
+             <div id="agendamento-feedback" class="info-note" style="display: none; margin-top: 15px;"></div>
+        </fieldset>
+
+         <div class="form-group" style="margin-top: 20px;">
+             <label for="admin-ag-message-text">Mensagem para o Voluntário (Opcional ao Aprovar / Obrigatório ao Rejeitar):</label>
+             <textarea id="admin-ag-message-text" class="form-control" rows="3"></textarea>
+         </div>
+    </form>
+</div>
+
+<div id="modal-admin-feedback-view" class="modal-section feedback-view" style="display: none;">
+    <h4>Resposta Anterior</h4>
+    <div class="details-grid cols-2">
+         <div class="form-group">
+            <span class="label">Status Final:</span>
+            <span class="value" id="view-admin-status"></span>
+        </div>
+         <div class="form-group">
+            <span class="label">Respondido por:</span>
+            <span class="value" id="view-admin-nome"></span>
+        </div>
+         <div class="form-group">
+            <span class="label">Data Resposta:</span>
+            <span class="value" id="view-admin-data"></span>
+        </div>
+    </div>
+     <div class="form-group full-width">
+        <span class="label">Mensagem:</span>
+        <p class="value pre-wrap" id="view-admin-mensagem"></p>
+    </div>
+</div>

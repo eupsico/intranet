@@ -1,0 +1,240 @@
+/* =========================================
+   ESTILOS GERAIS E LISTAGEM
+   ========================================= */
+.pacientes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.filter-card {
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+}
+
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-end;
+}
+
+.filter-controls .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Lista de Pacientes */
+.pacientes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.paciente-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #fff;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.paciente-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+
+.paciente-info h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+}
+
+.paciente-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.paciente-actions button {
+    margin-left: 10px;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: #6c757d;
+}
+
+.status-inscricao_documentos { background-color: #007bff; }
+.status-triagem_agendada { background-color: #17a2b8; }
+.status-encaminhar_para_plantao, .status-encaminhar_para_pb { background-color: #ffc107; color: #333; }
+.status-em_atendimento_plantao, .status-em_atendimento_pb { background-color: #28a745; }
+.status-aguardando_info_horarios, .status-cadastrar_horario_psicomanager { background-color: #fd7e14; }
+.status-alta { background-color: #6c757d; }
+.status-desistencia { background-color: #dc3545; }
+
+/* =========================================
+   MODAL DE EDIÇÃO (CORRIGIDO)
+   ========================================= */
+
+/* Fundo escuro (Overlay) */
+.modal {
+    display: none; /* Controlado via JS */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+}
+
+/* Container do Modal */
+.modal-content {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    height: 90vh; /* Ocupa 90% da altura da tela */
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column; /* Organiza Header, Body, Footer em coluna */
+    padding: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    overflow: hidden; /* Impede rolagem no container pai */
+}
+
+/* Cabeçalho Fixo */
+.modal-header-fixed {
+    padding: 15px 25px;
+    border-bottom: 1px solid #eee;
+    background-color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* Não encolhe */
+}
+
+.modal-header-fixed h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #333;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+.close-modal-btn:hover { color: #333; }
+
+/* Corpo com Rolagem */
+.modal-body-scroll {
+    padding: 25px;
+    overflow-y: auto; /* Barra de rolagem aparece AQUI */
+    flex-grow: 1;     /* Ocupa todo o espaço disponível no meio */
+    background-color: #f9f9f9;
+}
+
+/* Rodapé Fixo */
+.modal-footer-fixed {
+    padding: 15px 25px;
+    border-top: 1px solid #eee;
+    background-color: #fff;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0; /* Não encolhe */
+}
+
+/* =========================================
+   FORMULÁRIO DENTRO DO MODAL
+   ========================================= */
+
+/* Estilização dos Fieldsets gerados pelo JS */
+#edit-paciente-form fieldset {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+#edit-paciente-form legend {
+    font-weight: bold;
+    color: #0056b3; /* Var primary-color */
+    padding: 0 5px;
+    font-size: 1rem;
+}
+
+/* Inputs e Selects */
+#edit-paciente-form input[type="text"],
+#edit-paciente-form input[type="date"],
+#edit-paciente-form input[type="time"],
+#edit-paciente-form input[type="email"],
+#edit-paciente-form input[type="tel"],
+#edit-paciente-form input[type="number"],
+#edit-paciente-form select,
+#edit-paciente-form textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
+    margin-bottom: 10px; /* Espaçamento entre inputs */
+    box-sizing: border-box;
+}
+
+#edit-paciente-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #444;
+}
+
+#edit-paciente-form textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Botões de Ação */
+.action-button {
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    border: none;
+    transition: opacity 0.2s;
+}
+.action-button:hover { opacity: 0.9; }
+
+.action-button.secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.action-button.primary {
+    background-color: #28a745;
+    color: white;
+}
+
+.action-button.danger {
+    background-color: #dc3545;
+    color: white;
+}
