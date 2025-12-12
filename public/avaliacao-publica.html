@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avaliação Pública - EuPsico</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+      min-height: 100vh; 
+      display: flex; 
+      align-items: center;
+      padding: 20px;
+    }
+    .container-center { 
+      background: white; 
+      border-radius: 8px; 
+      padding: 40px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 { 
+      color: #667eea; 
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .pergunta-item {
+      margin-bottom: 25px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 5px;
+      border-left: 4px solid #667eea;
+    }
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .btn-enviar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      padding: 12px 30px;
+    }
+    .btn-enviar:hover {
+      background: linear-gradient(135deg, #5568d3 0%, #6a3c8f 100%);
+    }
+    .info-candidato {
+      background: #f0f8ff;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #0078d4;
+    }
+    .tipo-pergunta-badge {
+      display: inline-block;
+      background: #e8f4f8;
+      color: #0078d4;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-left: 10px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-center">
+    <h1><i class="fas fa-bullseye me-2"></i> Avaliação - EuPsico</h1>
+    
+    <!-- CARREGAMENTO -->
+    <div id="carregamento" class="text-center">
+      <i class="fas fa-spinner fa-spin fa-3x mb-3" style="color: #667eea;"></i>
+      <p>Validando acesso e carregando teste...</p>
+    </div>
+
+    <!-- CONTEÚDO DO TESTE -->
+    <div id="conteudo-teste" style="display: none;">
+      <!-- ✅ NOVO: Informações do candidato -->
+      <div class="info-candidato">
+        <p class="mb-1">
+          <strong>📋 Candidato(a):</strong> <span id="info-candidato-nome">-</span>
+        </p>
+        <p class="mb-0">
+          <strong>⏱️ Prazo:</strong> <span id="info-candidato-prazo">-</span>
+        </p>
+      </div>
+
+      <div class="alert alert-info">
+        <h4 id="titulo-teste"></h4>
+        <p id="texto-teste"></p>
+      </div>
+
+      <form id="form-resposta">
+        <!-- As perguntas serão inseridas aqui -->
+        <div id="perguntas-container"></div>
+        
+        <div class="text-center mt-4">
+          <button type="submit" class="btn btn-lg btn-enviar text-white">
+            <i class="fas fa-check me-2"></i> Enviar Respostas
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ERRO -->
+    <div id="erro-teste" class="alert alert-danger" style="display: none;"></div>
+
+    <!-- SUCESSO -->
+    <div id="sucesso-teste" class="alert alert-success" style="display: none;"></div>
+  </div>
+
+  <!-- ✅ FIREBASE COMPAT (versão estável para HTML puro) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <!-- ✅ CARREGA O ARQUIVO JS -->
+  <script src="../assets/js/avaliacao-publica.js"></script>
+</body>
+</html>
